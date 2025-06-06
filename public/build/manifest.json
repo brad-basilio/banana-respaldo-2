@@ -3709,7 +3709,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blog.jsx": {
-    "file": "assets/Blog-CyZfyD2j.js",
+    "file": "assets/Blog-M7dRu-t7.js",
     "name": "Blog",
     "src": "resources/js/Components/Tailwind/Blog.jsx",
     "isDynamicEntry": true,
@@ -3761,7 +3761,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blogs/BlogSimple.jsx": {
-    "file": "assets/BlogSimple-DaqRLzz2.js",
+    "file": "assets/BlogSimple-XBNxVkI_.js",
     "name": "BlogSimple",
     "src": "resources/js/Components/Tailwind/Blogs/BlogSimple.jsx",
     "isEntry": true,
@@ -3802,22 +3802,24 @@
     ]
   },
   "resources/js/Components/Tailwind/Blogs/Components/BlogList.jsx": {
-    "file": "assets/BlogList-DYlcHizO.js",
+    "file": "assets/BlogList-Co_3lRRe.js",
     "name": "BlogList",
     "src": "resources/js/Components/Tailwind/Blogs/Components/BlogList.jsx",
     "isEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
       "_index-yBjzXJbu.js"
     ]
   },
   "resources/js/Components/Tailwind/Blogs/Components/BlogPostCard.jsx": {
-    "file": "assets/BlogPostCard-DYlcHizO.js",
+    "file": "assets/BlogPostCard-Co_3lRRe.js",
     "name": "BlogPostCard",
     "src": "resources/js/Components/Tailwind/Blogs/Components/BlogPostCard.jsx",
     "isEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
       "_index-yBjzXJbu.js"
     ]
   },
@@ -7648,7 +7650,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-B1GKGCRr.js",
+    "file": "assets/System-CZZ7mMGH.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
