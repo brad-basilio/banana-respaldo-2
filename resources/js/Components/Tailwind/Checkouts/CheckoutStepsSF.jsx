@@ -17,17 +17,18 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
         return acc + finalPrice * item.quantity; // Sumar el precio total por cantidad
     }, 0);
 
-    // Calcular el subtotal sin IGV (precio base)
-    const subTotal = (totalPrice / 1.18).toFixed(2);
-
-    // Calcular el IGV (18% del subtotal)
-    const igv = (subTotal * 0.18).toFixed(2);
-
     // Estado para el costo de envío
     const [envio, setEnvio] = useState(0);
 
+    // Calcular el subtotal sin IGV (precio base)
+    const subTotal = (totalPrice / 1.18);
+    
+    // Calcular el IGV (18% del subtotal)
+    const igv = (subTotal * 0.18).toFixed(2);
+
     // Calcular el total final (subtotal sin IGV + IGV + envío)
-    const totalFinal = parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio);
+    const totalFinal = (parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio)).toFixed(2);
+    
     const [sale, setSale] = useState([]);
     const [code, setCode] = useState([]);
     const [delivery, setDelivery] = useState([]);
