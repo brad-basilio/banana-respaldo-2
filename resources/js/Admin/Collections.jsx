@@ -184,7 +184,7 @@ const Collections = () => {
                                     onChange={() =>
                                         onFeaturedChange({
                                             id: data.id,
-                                            value: !data.featured,
+                                            value: data.featured == 1? 0 : 1,
                                         })
                                     }
                                 />
@@ -204,7 +204,7 @@ const Collections = () => {
                                     onChange={() =>
                                         onVisibleChange({
                                             id: data.id,
-                                            value: !data.visible,
+                                            value: data.visible == 1 ? 0 : 1,
                                         })
                                     }
                                 />
