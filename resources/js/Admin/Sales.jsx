@@ -263,9 +263,8 @@ const Sales = ({ statuses = [] }) => {
                                                     {saleLoaded?.address}{" "}
                                                     {saleLoaded?.number}
                                                     <small className="text-muted d-block">
-                                                        {saleLoaded?.province ??
-                                                            saleLoaded?.district}
-                                                        ,{" "}
+                                                        {saleLoaded?.district},{" "}
+                                                        {saleLoaded?.province},{" "}
                                                         {saleLoaded?.department}
                                                         , {saleLoaded?.country}{" "}
                                                         {saleLoaded?.zip_code && (

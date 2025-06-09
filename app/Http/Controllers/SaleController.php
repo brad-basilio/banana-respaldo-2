@@ -193,16 +193,16 @@ class SaleController extends BasicController
         $delivery = DeliveryPrice::query()
                 ->where('ubigeo', $body['ubigeo'])
                 ->first();
-        
+        // dd($body);
         //$body['delivery'] = $delivery?->price ?? 0;
         $body['delivery'] = $deliveryPrice ?? $delivery?->price;
-        $body['department'] = $delivery?->data['departamento'] ?? null;
-        $body['province'] = $delivery?->data['provincia'] ?? null;
-        $body['district'] = $delivery?->data['distrito'] ?? null;
+        // $body['department'] = $delivery?->data['departamento'] ?? null;
+        // $body['province'] = $delivery?->data['provincia'] ?? null;
+        // $body['district'] = $delivery?->data['distrito'] ?? null;
         $body['ubigeo'] = $delivery?->ubigeo ?? null;
         $body['code'] = Trace::getId();
-        $body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
-        //$body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
+        //$body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
+        $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
         $body['user_id'] = Auth::id();
 
         if (Auth::check()) {
