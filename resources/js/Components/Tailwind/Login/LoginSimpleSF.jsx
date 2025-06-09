@@ -146,7 +146,7 @@ export default function LoginSimpleSF() {
                             >
                                 Ingresar
                             </button>
-                            <button
+                            {/* <button
                                 type="submit"
                                 className="w-full text-sm sm:text-base flex flex-row justify-center items-center border border-neutral-dark gap-2 sm:gap-3 lg:col-span-2 rounded-3xl font-semibold px-2 sm:px-4 py-3 customtext-primary hover:opacity-90 focus:outline-none focus:ring-2 transition-all duration-300"
                             >
@@ -159,8 +159,8 @@ export default function LoginSimpleSF() {
                                     </svg>
                                 </span>
                                 Ingresar con mi cuenta de Google
-                            </button>
-                            <button
+                            </button> */}
+                            {/* <button
                                 type="submit"
                                 className="w-full text-sm sm:text-base flex flex-row justify-center items-center border border-neutral-dark gap-2 sm:gap-3 lg:col-span-2 rounded-3xl font-semibold px-2 sm:px-4 py-3 customtext-primary hover:opacity-90 focus:outline-none focus:ring-2 transition-all duration-300"
                             >
@@ -170,7 +170,7 @@ export default function LoginSimpleSF() {
                                 </svg>
                                 </span>
                                 Ingresar con mi cuenta de Facebook
-                            </button>
+                            </button> */}
 
                             <div className="lg:col-span-2">
                                 
@@ -180,9 +180,9 @@ export default function LoginSimpleSF() {
                                             href="/crear-cuenta"
                                             className="text-muted font-medium font-font-general"
                                         >¿Eres nuevo?
-                                            <span className="border-b border-[#F93232] text-[#F93232]"> Registrate como persona </span> 
-                                            o
-                                            <span className="border-b border-[#F93232] text-[#F93232]"> Registrate como comerciante </span>
+                                            <span className="border-b border-[#F93232] text-[#F93232]"> Registrate </span> 
+                                            {/* o
+                                            <span className="border-b border-[#F93232] text-[#F93232]"> Registrate como comerciante </span> */}
                                         </a>
                                     </div>
                                 </div>

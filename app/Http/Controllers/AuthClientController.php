@@ -116,6 +116,9 @@ class AuthClientController extends BasicController
             // Asignar rol
             $role = Role::firstOrCreate(['name' => 'Customer']);
             $user->assignRole($role);
+            
+
+
 
             // Iniciar sesión (opcional)
             Auth::login($user);

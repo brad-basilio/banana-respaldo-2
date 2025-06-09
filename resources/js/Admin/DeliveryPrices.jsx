@@ -102,6 +102,8 @@ const DeliveryPrices = ({ ubigeo = [] }) => {
 
     return (<>
         <input id="file-input" type="file" accept=".xlsx, .xls" style={{ display: 'none' }} onChange={handleFileUpload} />
+        <a id="excel-download-link" href="/ruta/a/tu/archivo.xlsx" download style={{ display: 'none' }}></a>
+
         <Table gridRef={gridRef} title='Costos de envío' rest={deliverypricesRest}
             exportable={true}
             exportableName='delivery.prices'
@@ -130,6 +132,17 @@ const DeliveryPrices = ({ ubigeo = [] }) => {
                         hint: 'Nuevo registro',
                         onClick: () => onModalOpen()
                     }
+                });
+                container.unshift({
+                    widget: 'dxButton',
+                    location: 'after',
+                    options: {
+                        icon: 'export',
+                        hint: 'Exportar todo a Excel',
+                        onClick: () => {
+                            document.getElementById('excel-download-link').click();
+                        },
+                    },
                 });
             }}
             columns={[

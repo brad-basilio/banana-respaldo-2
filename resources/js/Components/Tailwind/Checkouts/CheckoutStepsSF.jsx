@@ -5,8 +5,9 @@ import ShippingStepSF from "./Components/ShippingStepSF";
 import ConfirmationStepSF from "./Components/ConfirmationStepSF";
 import Global from "../../../Utils/Global";
 import { Local } from "sode-extend-react";
+import ProductNavigationSwiper from "../Products/ProductNavigationSwiper";
 
-export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos, items }) {
+export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos, items, contacts }) {
    
     const [currentStep, setCurrentStep] = useState(1);
 
@@ -16,17 +17,18 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
         return acc + finalPrice * item.quantity; // Sumar el precio total por cantidad
     }, 0);
 
-    // Calcular el subtotal sin IGV (precio base)
-    const subTotal = (totalPrice / 1.18).toFixed(2);
-
-    // Calcular el IGV (18% del subtotal)
-    const igv = (subTotal * 0.18).toFixed(2);
-
     // Estado para el costo de envío
     const [envio, setEnvio] = useState(0);
 
+    // Calcular el subtotal sin IGV (precio base)
+    const subTotal = (totalPrice / 1.18);
+    
+    // Calcular el IGV (18% del subtotal)
+    const igv = (subTotal * 0.18).toFixed(2);
+
     // Calcular el total final (subtotal sin IGV + IGV + envío)
-    const totalFinal = parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio);
+    const totalFinal = (parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio)).toFixed(2);
+    
     const [sale, setSale] = useState([]);
     const [code, setCode] = useState([]);
     const [delivery, setDelivery] = useState([]);
@@ -90,8 +92,8 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
     }, []);
 
     return (
-        <div className="min-h-screen bg-white py-6 px-primary">
-            <div className="bg-white  py-8 sm:p-8 rounded-xl">
+        <div className="min-h-screen bg-white pt-6 px-primary lg:-mb-10">
+            <div className="bg-white pt-8 sm:p-8 rounded-xl">
                 {/* Steps indicator */}
                 <div
                     className={`mb-4 xl:mb-8 grid lg:grid-cols-5 !font-font-general ${
@@ -172,6 +174,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         totalFinal={totalFinal}
                         user={user}
                         prefixes={prefixes}
+                        contacts={contacts}
                         ubigeos={ubigeos}
                         items={items}
                     />
@@ -191,7 +194,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                 )}
             </div>
 
-            <section className="px-[5%] xl:px-[8%] bg-white py-12 xl:py-16 font-paragraph">
+            {/* <section className="px-[5%] xl:px-[8%] bg-white py-12 xl:py-16 font-paragraph">
                 <div className="flex flex-col md:flex-row justify-start items-center bg-gradient-to-br from-[#FFFFFF] to-[#91502D1A] w-full rounded-3xl relative">
                     <div className="flex flex-col gap-5 py-8 px-5 lg:pl-16 xl:pl-20  justify-start items-start w-full 2xl:w-3/5 max-w-xl 2xl:max-w-5xl text-white text-left">
                         <h1 className="customtext-primary text-opacity-20 font-bold text-3xl md:text-4xl xl:text-5xl">
@@ -220,7 +223,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         />
                     </div>
                 </div>
-            </section>
+            </section> */}
         </div>
     );
 }

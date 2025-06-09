@@ -26,9 +26,14 @@ class ItemImportSf implements ToModel, WithHeadingRow, SkipsOnError, SkipsOnFail
     public function __construct()
     {
         \DB::statement('SET FOREIGN_KEY_CHECKS=0;'); // ⚠️ Desactiva las claves foráneas
+        
+        SubCategory::truncate();
+        Category::truncate();
+        Collection::truncate();
         Item::truncate();
         ItemSpecification::truncate();
         ItemImage::truncate();
+        
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;'); // ✅ Reactiva las claves foráneas
     }
 

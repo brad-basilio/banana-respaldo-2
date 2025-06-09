@@ -9,6 +9,8 @@ const BannerPostSuscriptionPaani = lazy(() => import("./Banners/BannerPostSuscri
 const BannerStatic = lazy(() => import("./Banners/BannerStatic"));
 const BannerSimpleSF = lazy(() => import("./Banners/BannerSimpleSF"));
 const BannerBananaLab = lazy(() => import("./Banners/BannerBananaLab"));
+const BannerCTAMakita = lazy(() => import("./Banners/BannerCTAMakita"));
+const BannerContactMakita = lazy(() => import("./Banners/BannerContactMakita"));
 const Banner = ({ which, data, items }) => {
     const getBanner = () => {
         switch (which) {
@@ -30,6 +32,11 @@ const Banner = ({ which, data, items }) => {
                 return <BannerSimpleSF data={data} />;
             case "BannerBananaLab":
                 return <BannerBananaLab data={data} />;
+            case "BannerCTAMakita":
+                return <BannerCTAMakita data={data} items={items} />;
+            case "BannerContactMakita":
+                return <BannerContactMakita data={data} />;
+
 
             default:
                 return (

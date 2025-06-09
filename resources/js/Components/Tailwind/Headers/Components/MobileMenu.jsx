@@ -1,143 +1,253 @@
-import { useState } from "react";
-import { Search, X, ChevronRight, ChevronLeft } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, X, ChevronRight, ChevronLeft, Home, ShoppingCart, User, Menu } from "lucide-react";
 
-export default function MobileMenu({ search, setSearch, pages, items }) {
-    const [menuLevel, setMenuLevel] = useState("main"); // main, categories, subcategories
+export default function MobileMenu({ search, setSearch, pages, items, onClose }) {
+    const [menuLevel, setMenuLevel] = useState("main");
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+    const [previousMenus, setPreviousMenus] = useState([]);
+    const [animationDirection, setAnimationDirection] = useState("right"); // "right" o "left" para las animaciones
 
-    const handleCategoryClick = (categoryName) => {
-        setSelectedSubcategory(categoryName);
-        console.log(selectedSubcategory);
-        setSelectedCategory(categoryName);
-        setMenuLevel("subcategories");
+    // Referencia para el input de búsqueda
+    const searchInputRef = useRef(null);
+
+    // Función para manejar el submit del formulario de búsqueda
+    const handleSearchSubmit = (event) => {
+        event.preventDefault();
+        if (search.trim()) {
+            const trimmedSearch = search.trim();
+            window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+        }
+        return false;
+    };
+
+    // Función para manejar el Enter y el icono de búsqueda del teclado móvil
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (search.trim()) {
+                const trimmedSearch = search.trim();
+                window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+            }
+        }
+    };
+
+    // Función para manejar la navegación con animaciones
+    const navigateTo = (level, direction = "right", categoryName = null) => {
+        setAnimationDirection(direction);
+        
+        if (categoryName) {
+            setSelectedCategory(categoryName);
+        }
+        
+        setTimeout(() => {
+            setMenuLevel(level);
+        }, 50); // Pequeño retraso para la animación
+    };
+
+    const handleCategoryClick = (category) => {
+        setSelectedSubcategory(category.name);
+        setPreviousMenus([...previousMenus, { level: menuLevel, name: "Categorías" }]);
+        navigateTo("subcategories", "right", category.name);
     };
 
     const handleBackClick = () => {
-        if (menuLevel === "subcategories") {
-            setMenuLevel("categories");
-        } else if (menuLevel === "categories") {
-            setMenuLevel("main");
+        if (previousMenus.length > 0) {
+            const lastMenu = previousMenus[previousMenus.length - 1];
+            navigateTo(lastMenu.level, "left");
+            setPreviousMenus(previousMenus.slice(0, -1));
+        } else {
+            if (menuLevel === "subcategories") {
+                navigateTo("categories", "left");
+            } else if (menuLevel === "categories") {
+                navigateTo("main", "left");
+            }
         }
     };
 
     const handleMainMenuItemClick = (itemId) => {
         if (itemId === "categories") {
-            setMenuLevel("categories");
+            navigateTo("categories", "right");
         }
     };
 
-    const [category, setCategory] = useState();
+    // Determina el título según el nivel
+    const getMenuTitle = () => {
+         return "Menú principal";
+       
+    };
 
     const renderMenuItems = () => {
         if (menuLevel === "main") {
             return (
-                <>
-                    <div className=" customtext-neutral-dark">
-                        <button
-                            className="py-4 border-b border-gray-100 w-full flex justify-between items-center"
-                            onClick={() =>
-                                handleMainMenuItemClick("categories")
-                            }
-                        >
-                            <span>Categorias</span>
-                            <ChevronRight className="h-5 w-5 customtext-neutral-dark" />
-                        </button>
+                <div className="animate-fade animate-duration-300">
+                    {/* Categorías */}
+                    <button
+                        className="p-4 mb-3 w-full flex justify-between items-center hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
+                        onClick={() => handleMainMenuItemClick("categories")}
+                    >
+                        <div className="flex items-center">
+                          
+                            <span className="font-medium">Categorías</span>
+                        </div>
+                        <ChevronRight className="h-5 w-5 customtext-neutral-light" />
+                    </button>
+                    
+                    {/* Páginas del menú */}
+                    <div className="space-y-2">
+                        {pages.map(
+                            (page, index) =>
+                                page.menuable && (
+                                    <a
+                                        key={index}
+                                        href={page.path}
+                                        className="p-4 flex justify-between items-center w-full hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
+                                    >
+                                        <span className="font-medium">{page.name}</span>
+                                    </a>
+                                )
+                        )}
                     </div>
-                    {pages.map(
-                        (page, index) =>
-                            page.menuable && (
-                                <button
-                                    key={index}
-                                    className="customtext-neutral-dark py-4 border-b border-gray-100 flex justify-between items-center"
-                                    href={page.path}
-                                >
-                                    <span>{page.name}</span>
-                                </button>
-                            )
-                    )}
-                </>
+                </div>
             );
         } else if (menuLevel === "categories") {
-            return items.map((category) => (
-                <div
-                    key={category.id}
-                    className=" py-4 border-b customtext-neutral-dark border-gray-100 flex justify-between items-center"
-                    onClick={() => handleCategoryClick(category.name)}
-                >
-                    <a href={`/catalogo?category=${category.slug}`}>
-                        {category.name}
-                    </a>
-
-                    <ChevronRight className="h-5 w-5 customtext-neutral-dark" />
+            return (
+                <div className={animationDirection === "right" ? "animate-fade-left animate-duration-300" : "animate-fade-right animate-duration-300"}>
+                    <div className="space-y-2">
+                        {items.map((category) => (
+                            <div
+                                key={category.id}
+                                className="p-4  rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 active:bg-primary transition-all"
+                                onClick={() => handleCategoryClick(category)}
+                            >
+                                <span className="font-medium">{category.name}</span>
+                                <ChevronRight className="h-5 w-5 customtext-neutral-light" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            ));
+            );
         } else if (menuLevel === "subcategories" && selectedCategory) {
-            // Por simplicidad, solo mostramos subcategorías para "audio"
-            // En una implementación real, usaríamos selectedCategory para mostrar las subcategorías correspondientes
             const selectedSubcategory = items.find(
                 (category) => category.name === selectedCategory
             );
-            return selectedSubcategory.subcategories.map((subcat, index) => (
-                <a
-                    href={`/catalogo?subcategory=${subcat.slug}`}
-                    key={index}
-                    className="block py-4 customtext-neutral-dark border-b border-gray-100"
-                >
-                    <span>{subcat.name}</span>
-                </a>
-            ));
+            return (
+                <div className={animationDirection === "right" ? "animate-fade-left animate-duration-300" : "animate-fade-right animate-duration-300"}>
+                    <div className="space-y-2">
+                        {selectedSubcategory.subcategories.map((subcat, index) => (
+                            <a
+                                href={`/catalogo?subcategory=${subcat.slug}`}
+                                key={index}
+                                className="flex w-full p-4  rounded-xl justify-between items-center hover:bg-gray-50 active:bg-primary transition-all"
+                            >
+                                <span className="font-medium">{subcat.name}</span>
+                                <ChevronRight className="h-5 w-5 customtext-neutral-light" />
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            );
         }
     };
 
-    return (
-        <div className="w-full fixed h-screen customtext-neutral-dark bg-black/20  max-w-md mx-auto  ">
-            <div className="bg-white shadow-lg rounded-lg z-[999]">
-                <div className="p-4 bg-white flex justify-between items-center border-b border-gray-200">
-                    <h1 className="text-xl font-medium customtext-neutral-dark">
-                        Menú principal
-                    </h1>
-                </div>
+    // Efecto para prevenir el scroll del cuerpo cuando el menú está abierto
+    useEffect(() => {
+        // Al montar el componente
+        document.body.style.overflow = 'hidden';
+        
+        // Al desmontar el componente
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, []);
 
-                <div className="p-4">
-                    <div className="relative mb-4">
-                        <div className={` relative w-full max-w-xl mx-auto`}>
-                            <input
-                                type="search"
-                                placeholder="Buscar productos"
-                                value={search} // Vincula el valor del input al estado
-                                onChange={(e) => setSearch(e.target.value)} // Actualiza el estado cuando el usuario escribe
-                                className="w-full pr-14 py-4  pl-4 border rounded-full focus:ring-0 focus:outline-none"
-                            />
-                            <a
-                                href={
-                                    search.trim()
-                                        ? `/catalogo?search=${encodeURIComponent(
-                                              search
-                                          )}`
-                                        : "#"
-                                }
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg"
-                                aria-label="Buscar"
+    // useEffect para manejar la tecla Escape en la búsqueda
+    useEffect(() => {
+        const handleKeyPress = (event) => {
+            if (event.key === 'Escape') {
+                if (search.trim()) {
+                    setSearch(""); // Limpiar búsqueda
+                } else {
+                    onClose(); // Cerrar menú si no hay búsqueda
+                }
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyPress);
+        return () => {
+            document.removeEventListener("keydown", handleKeyPress);
+        };
+    }, [search, onClose, setSearch]);
+
+    return (
+        <div className="fixed inset-0 z-50 flex flex-col touch-none overscroll-none">
+            {/* Overlay oscuro */}
+            <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
+            
+            {/* Contenedor del menú */}
+            <div className="relative w-full md:w-[400px] md:mx-auto flex flex-col h-[100dvh]  ">
+                {/* Panel del menú - fijo en la parte inferior */}
+                <div className="mt-auto bg-white  shadow-xl flex flex-col max-h-[80vh] rounded-t-2xl overflow-hidden">
+                    {/* Header del menú */}
+                    <div className="p-4 bg-white flex justify-between items-center border-b border-gray-200 sticky top-0 z-10">
+                        <h1 className="text-lg font-bold">{getMenuTitle()}</h1>
+                        <button 
+                            className="p-2 rounded-full hover:bg-gray-100"
+                            onClick={onClose}
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    {/* Contenido scrollable */}
+                    <div className="overflow-y-auto flex-1 p-4 overscroll-contain">
+                        {/* Buscador mejorado para móvil */}
+                        <div className="mb-5">
+                            <form onSubmit={handleSearchSubmit} role="search" className="relative w-full">
+                                <input
+                                    ref={searchInputRef}
+                                    type="search"
+                                    name="search"
+                                    placeholder="Buscar productos"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    className="w-full pr-12 py-3 pl-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                                    enterKeyHint="search"
+                                    inputMode="search"
+                                    autoComplete="off"
+                                    role="searchbox"
+                                    aria-label="Buscar productos"
+                                />
+                                <button
+                                    type="submit"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                    aria-label="Buscar"
+                                >
+                                    <Search className="h-4 w-4" />
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Botón de retroceso */}
+                        {menuLevel !== "main" && (
+                            <button
+                                onClick={handleBackClick}
+                                className="flex items-center customtext-primary mb-4 font-medium"
                             >
-                                <Search />
-                            </a>
+                                <ChevronLeft className="h-5 w-5 mr-1" />
+                                <span>
+                                    {menuLevel === "categories" ? "Categorías" : selectedCategory}
+                                </span>
+                            </button>
+                        )}
+
+                        {/* Lista de ítems */}
+                        <div className="pb-16">
+                            {renderMenuItems()}
                         </div>
                     </div>
 
-                    {menuLevel !== "main" && (
-                        <button
-                            onClick={handleBackClick}
-                            className="flex items-center customtext-primary mb-4 font-semibold"
-                        >
-                            <ChevronLeft className="h-5 w-5 mr-1" />
-                            <span>Atrás</span>
-                        </button>
-                    )}
-
-                    <div className="space-y-0 max-h-[350px]  overflow-scroll">
-                        {renderMenuItems()}
-                    </div>
                 </div>
             </div>
         </div>

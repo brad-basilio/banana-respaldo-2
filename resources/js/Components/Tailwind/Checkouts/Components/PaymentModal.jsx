@@ -5,7 +5,7 @@ import ReactModal from "react-modal";
 import General from "../../../../Utils/General";
 
 
-export default function PaymentModal({ isOpen, onClose, onPaymentComplete, selectedPaymentMethod }) {
+export default function PaymentModal({ isOpen, onClose, onPaymentComplete, contacts }) {
     
     const [paymentMethod, setPaymentMethod] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -27,6 +27,8 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, selec
     };
     
     const isButtonDisabled = saving || !paymentMethod;
+    const ischeckmpobject = contacts.find(x => x.correlative === 'checkout_mercadopago');
+    console.log(ischeckmpobject);
 
     return (
         <ReactModal
@@ -59,7 +61,8 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, selec
                     </div>
 
                     {
-                        General.get("checkout_culqi") !== "true" &&
+                        // General.get("checkout_mercadopago") !== "true" &&
+                        ischeckmpobject.description !== "true" &&
                         General.get("checkout_dwallet") !== "true" &&
                         General.get("checkout_transfer") !== "true" ? (
                             <div className="text-gray-500 text-center py-4">Sin opciones de pago</div>
@@ -68,7 +71,8 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, selec
                             <div className="mt-3 space-y-3">
                                 {/* Opción Tarjeta */}
                                 {
-                                General.get("checkout_culqi") == "true" &&
+                                // General.get("checkout_mercadopago") == "true" &&
+                                ischeckmpobject.description == "true" &&
                                     <div
                                         className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
                                             paymentMethod === "tarjeta"
@@ -210,7 +214,8 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, selec
                     }
 
                     <div className="mt-4 space-y-3">
-                    {(General.get("checkout_culqi") === "true" ||
+                    {/* {(General.get("checkout_mercadopago") === "true" || */}
+                    {(ischeckmpobject.description === "true" ||
                       General.get("checkout_dwallet") === "true" ||
                       General.get("checkout_transfer") === "true") && (
                         <button

@@ -87,7 +87,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
         const request = {
             id: idRef.current.value || undefined,
             name: `${selected.distrito}, ${selected.departamento}`.toTitleCase(),
-            price: inHome || isFreeChecked ? null : priceRef.current.value,
+            price: isFreeChecked ? null : priceRef.current.value,
             is_free: is_freeRef.current.checked,
             is_agency: is_agencyRef.current.checked,
             express_price: express_priceRef.current.value,

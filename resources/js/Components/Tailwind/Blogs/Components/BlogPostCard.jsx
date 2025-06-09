@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function BlogPostCard({ data, flex = false, post, featured = false }) {
 
   return (

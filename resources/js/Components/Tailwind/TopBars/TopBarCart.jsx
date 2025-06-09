@@ -68,24 +68,24 @@ const TopBarCart = ({ data, cart, setCart, isUser, items }) => {
                             <CircleUser />
                         </a>
                     )}
-                    {isMenuOpen && (
-                        <div className="absolute customtext-primary  z-50 top-full left-0 bg-white shadow-xl border-t rounded-xl transition-all duration-300 ease-in-out w-40 mt-2">
+                   {isMenuOpen && (
+                        <div className="fixed sm:absolute font-font-general customtext-primary z-50 top-10 md:top-5 left-1/2 right-0 bg-white shadow-xl border-t rounded-xl transition-all duration-300 ease-in-out w-40 sm:w-40 sm:mt-2 sm:left-auto sm:right-auto">
                             <div className="p-4">
                                 <ul className="space-y-2">
-                                    {/* <li>
+                                    <li>
                                         <a
-                                            href="#"
-                                            className="flex items-center gap-2  text-xs transition-colors duration-300 cursor-pointer"
+                                            href="/customer/dashboard"
+                                            className="flex items-center gap-2 text-sm transition-colors duration-300 cursor-pointer"
                                         >
                                             <CircleUser height="1rem" />
-                                            <span>Mi cuenta</span>
+                                            <span>Mis pedidos</span>
                                         </a>
-                                    </li> */}
+                                    </li>
                                     <li>
                                         <a
                                             href="#"
                                             onClick={Logout}
-                                            className="flex items-center gap-2  text-sm transition-colors duration-300 cursor-pointer"
+                                            className="flex items-center gap-2 text-sm transition-colors duration-300 cursor-pointer"
                                         >
                                             <DoorClosed
                                                 className="customtext-primary"

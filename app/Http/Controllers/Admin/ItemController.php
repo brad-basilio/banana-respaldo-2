@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use SoDe\Extend\Crypto;
 use SoDe\Extend\Text;
 use Exception;
+use App\Models\ItemSpecification;
 
 class ItemController extends BasicController
 {
@@ -170,7 +171,7 @@ class ItemController extends BasicController
     public function setPaginationInstance(Request $request, string $model)
     {
         return $model::select(['items.*'])
-            ->with(['category', 'subcategory', 'brand', 'images', 'collection'])
+            ->with(['category', 'subcategory', 'brand', 'images', 'collection', 'specifications'])
             ->leftJoin('categories AS category', 'category.id', 'items.category_id');
     }
 
@@ -226,5 +227,26 @@ class ItemController extends BasicController
             // Guardar cada specification asociada al item
             (new ItemSpecificationController())->saveSpecifications($jpa, $specifications);
         }
+
+        // if ($specifications && is_array($specifications)) {
+        //     // Primero eliminar las que ya no existen
+        //     $existingIds = collect($specifications)->pluck('id')->filter();
+        //     ItemSpecification::where('item_id', $jpa->id)
+        //         ->whereNotIn('id', $existingIds)
+        //         ->delete();
+            
+        //     // Luego crear/actualizar las restantes
+        //     foreach ($specifications as $spec) {
+        //         ItemSpecification::updateOrCreate(
+        //             ['id' => $spec['id'] ?? null],
+        //             [
+        //                 'item_id' => $jpa->id,
+        //                 'type' => $spec['type'],
+        //                 'title' => $spec['title'],
+        //                 'description' => $spec['description']
+        //             ]
+        //         );
+        //     }
+        // }
     }
 }

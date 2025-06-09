@@ -157,6 +157,15 @@
             .placeholder\:customtext-<?php echo e($color->name); ?>::placeholder {
                 color: <?php echo e($color->description); ?>;
             }
+            .active\:bg-<?php echo e($color->name); ?>:active {
+                background-color: <?php echo e($color->description); ?>;
+            }
+            .active\:customtext-<?php echo e($color->name); ?>:active {
+                color: <?php echo e($color->description); ?>;
+            }
+            .active\:border-<?php echo e($color->name); ?>:active {
+                border-color: <?php echo e($color->description); ?>;
+            }
 
             .border-<?php echo e($color->name); ?> {
                 border-color: <?php echo e($color->description); ?>;

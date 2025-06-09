@@ -26,7 +26,7 @@ const itemsRest = new ItemsRest();
 
 const Items = ({ categories, brands, collections }) => {
     //!FALTA EDIT AND DELETEDE GALERIA
-
+    
     const [itemData, setItemData] = useState([]);
 
     const gridRef = useRef();
@@ -110,14 +110,14 @@ const Items = ({ categories, brands, collections }) => {
         if (itemData && itemData.images) {
             const existingImages = itemData.images.map((img) => ({
                 id: img.id, // ID de la imagen en la BD
-                url: `/storage/images/item_image/${img.url}`, // Ruta de la imagen almacenada
+                url: `/storage/images/item/${img.url}`, // Ruta de la imagen almacenada
             }));
             setGallery(existingImages);
         }
     }, [itemData]);
 
     const onModalOpen = (data) => {
-        console.log(data);
+        console.log('data total',data);
         setItemData(data || null); // Guardamos los datos en el estado
         if (data?.id) setIsEditing(true);
         else setIsEditing(false);
@@ -172,6 +172,15 @@ const Items = ({ categories, brands, collections }) => {
             setGallery([]); // Limpiar la galería si no hay imágenes
         }
 
+        if (data?.specifications) {
+            setSpecifications(data.specifications.map(spec => ({
+                type: spec.type,
+                title: spec.title,
+                description: spec.description
+            })));
+        } else {
+            setSpecifications([]);
+        }
         // Nuevos campos
 
         stockRef.current.value = data?.stock;
@@ -195,7 +204,8 @@ const Items = ({ categories, brands, collections }) => {
             discount: discountRef.current.value,
             tags: $(tagsRef.current).val(),
             description: descriptionRef.current.value,
-            sotck: stockRef.current.value,
+            stock: stockRef.current.value,
+            specifications: JSON.stringify(specifications),
         };
 
         const formData = new FormData();
@@ -278,7 +288,7 @@ const Items = ({ categories, brands, collections }) => {
     const [specifications, setSpecifications] = useState([]); // Especificaciones
 
     // Opciones del campo "type"
-    const typeOptions = ["General", "Principal", "Otro"];
+    const typeOptions = ["General", "Principal"];
     const [showImportModal, setShowImportModal] = useState(false);
     const modalImportRef = useRef();
     const onModalImportOpen = () => {
@@ -369,13 +379,25 @@ const Items = ({ categories, brands, collections }) => {
                         caption: "Nombre",
                         minWidth: "300px",
                         cellTemplate: (container, { data }) => {
+
+                            const truncateWords = (text, maxWords) => {
+                                if (!text) return '';
+                                const words = text.split(' ');
+                                if (words.length > maxWords) {
+                                    return words.slice(0, maxWords).join(' ') + '...';
+                                }
+                                return text;
+                            };
+                    
+                            const truncatedSummary = truncateWords(data.summary, 12);
+
                             container.html(
                                 renderToString(
                                     <>
                                         <b>{data.name}</b>
                                         <br />
-                                        <span className="truncate">
-                                            {data.summary}
+                                        <span>
+                                            {truncatedSummary}
                                         </span>
                                     </>
                                 )
@@ -446,15 +468,16 @@ const Items = ({ categories, brands, collections }) => {
                         dataType: "boolean",
                         width: "80px",
                         cellTemplate: (container, { data }) => {
+                            const is_newValue = data.is_new === 1 || data.is_new === '1' || data.is_new === true;
                             ReactAppend(
                                 container,
                                 <SwitchFormGroup
-                                    checked={data.is_new}
+                                    checked={is_newValue}
                                     onChange={(e) =>
                                         onBooleanChange({
                                             id: data.id,
                                             field: "is_new",
-                                            value: e.target.checked,
+                                            value: e.target.checked ? 1 : 0,
                                         })
                                     }
                                 />
@@ -467,15 +490,16 @@ const Items = ({ categories, brands, collections }) => {
                         dataType: "boolean",
                         width: "80px",
                         cellTemplate: (container, { data }) => {
+                            const offeringValue = data.offering === 1 || data.offering === '1' || data.offering === true;
                             ReactAppend(
                                 container,
                                 <SwitchFormGroup
-                                    checked={data.offering}
+                                    checked={offeringValue}
                                     onChange={(e) =>
                                         onBooleanChange({
                                             id: data.id,
                                             field: "offering",
-                                            value: e.target.checked,
+                                            value: e.target.checked ? 1 : 0,
                                         })
                                     }
                                 />
@@ -488,15 +512,16 @@ const Items = ({ categories, brands, collections }) => {
                         dataType: "boolean",
                         width: "80px",
                         cellTemplate: (container, { data }) => {
+                            const recommendedValue = data.recommended === 1 || data.recommended === '1' || data.recommended === true;
                             ReactAppend(
                                 container,
                                 <SwitchFormGroup
-                                    checked={data.recommended}
+                                    checked={recommendedValue}
                                     onChange={(e) =>
                                         onBooleanChange({
                                             id: data.id,
                                             field: "recommended",
-                                            value: e.target.checked,
+                                            value: e.target.checked ? 1 : 0,
                                         })
                                     }
                                 />
@@ -509,15 +534,17 @@ const Items = ({ categories, brands, collections }) => {
                         dataType: "boolean",
                         width: "80px",
                         cellTemplate: (container, { data }) => {
+                            const featuredValue = data.featured === 1 || data.featured === '1' || data.featured === true;
+                            
                             ReactAppend(
                                 container,
                                 <SwitchFormGroup
-                                    checked={data.featured}
+                                    checked={featuredValue}
                                     onChange={(e) =>
                                         onBooleanChange({
                                             id: data.id,
                                             field: "featured",
-                                            value: e.target.checked,
+                                            value: e.target.checked ? 1 : 0,
                                         })
                                     }
                                 />
@@ -621,7 +648,6 @@ const Items = ({ categories, brands, collections }) => {
                         <SelectFormGroup
                             eRef={brandRef}
                             label="Marca"
-                            required
                             dropdownParent="#principal-container"
                         >
                             {brands.map((item, index) => (
@@ -684,7 +710,6 @@ const Items = ({ categories, brands, collections }) => {
                             eRef={summaryRef}
                             label="Resumen"
                             rows={3}
-                            required
                         />
                         {/* Sección de Características */}
                         {/* Características (Lista de textos) */}
@@ -700,6 +725,7 @@ const Items = ({ categories, brands, collections }) => {
                             ref={specificationsRef}
                             label="Especificaciones"
                             structure={{ type: "", title: "", description: "" }}
+                            value={specifications}
                             onChange={setSpecifications}
                             typeOptions={typeOptions}
                         />

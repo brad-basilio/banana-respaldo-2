@@ -25,7 +25,7 @@ const BannerSimpleSF = ({ data }) => {
                     <img
                         src={`/storage/images/system/${data?.image}`}
                         onError={(e) => (e.target.src = "/assets/img/noimage/no_img.jpg")}
-                        className="object-contain min-h-[250px] max-h-[400px] md:object-contain aspect-[4/3] xl:max-h-[350px] 2xl:max-h-[500px] md:max-h-none w-full object-bottom"
+                        className="object-contain min-h-[250px] max-h-[400px] md:object-contain aspect-[4/3] xl:max-h-[350px] md:max-h-none w-full object-bottom"
                     />
                 </div>
             </div>

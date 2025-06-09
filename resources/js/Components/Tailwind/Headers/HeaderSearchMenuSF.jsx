@@ -3,6 +3,7 @@ import Global from "../../../Utils/Global";
 import { Search } from "lucide-react";
 import MobileMenuSF from "./Components/MobileMenuSF";
 import TopBarCart from "../TopBars/TopBarCart";
+import LiveSearchBar from "./Components/LiveSearchBar";
 
 const HeaderSearchMenuSF = ({
   items,
@@ -121,7 +122,7 @@ const HeaderSearchMenuSF = ({
             </ul>
 
             {/* Barra de búsqueda (visible solo en desktop) */}
-            <div className="hidden lg:flex justify-end">
+            {/* <div className="hidden lg:flex justify-end">
               <div className="relative w-80">
                 <input
                   type="search"
@@ -138,6 +139,9 @@ const HeaderSearchMenuSF = ({
                   <Search />
                 </a>
               </div>
+            </div> */}
+            <div className="hidden lg:flex justify-end">
+                <LiveSearchBar search={search} setSearch={setSearch} />
             </div>
 
             <div

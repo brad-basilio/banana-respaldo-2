@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import axios from "axios";
 import Modal from "../../Components/Adminto/Modal";
 import ItemsRest from "../../Actions/Admin/ItemsRest";
+import { toast } from "sonner";
 const itemsRest = new ItemsRest();
 
 const ModalImportItem = ({ gridRef, modalRef }) => {
@@ -42,9 +43,18 @@ const ModalImportItem = ({ gridRef, modalRef }) => {
                 setIsError(false);
                 $(gridRef.current).dxDataGrid("instance").refresh();
                 // Cerrar el modal si la importación es exitosa
-                if (modalRef.current) {
-                    modalRef.current.close();
-                }
+                $(modalRef.current).modal('hide');
+
+                toast.success("Importacion completada con exito", {
+                    description: 'Todos tus productos han sido importados correctamente.',
+                    duration: 3000,
+                    position: "bottom-center",
+                    richColors:true
+                });
+
+                // if (modalRef.current) {
+                //     modalRef.current.close();
+                // }
             }
         } catch (error) {
             setMessage(
@@ -59,6 +69,7 @@ const ModalImportItem = ({ gridRef, modalRef }) => {
     return (
         <div className="bg-white">
             <div className="modal-content">
+                <div className="mb-1"><a href="/assets/img/salafabulosa/formato_import_products.xlsx" download>Descargar formato .xlsx</a></div>
                 <div>
                     <input
                         className="form-control"

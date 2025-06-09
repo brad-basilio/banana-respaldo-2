@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, X, ChevronRight, ChevronLeft } from "lucide-react";
+import LiveSearchBar from "./LiveSearchBar";
 
 export default function MobileMenuSF({ search, setSearch, pages, items, headerPosts}) {
     const [menuLevel, setMenuLevel] = useState("main"); // main, categories, subcategories
@@ -96,28 +97,7 @@ export default function MobileMenuSF({ search, setSearch, pages, items, headerPo
                 
                 <div className="p-5 w-full flex flex-col gap-3 font-font-general">
                     <div className="relative mb-2">
-                        <div className={`relative w-full max-w-xl mx-auto`}>
-                            <input
-                                type="search"
-                                placeholder="Buscar productos"
-                                value={search} // Vincula el valor del input al estado
-                                onChange={(e) => setSearch(e.target.value)} // Actualiza el estado cuando el usuario escribe
-                                className="w-full pr-14 py-4  pl-4 border rounded-full focus:ring-0 focus:outline-none"
-                            />
-                            <a
-                                href={
-                                    search.trim()
-                                        ? `/catalogo?search=${encodeURIComponent(
-                                              search
-                                          )}`
-                                        : "#"
-                                }
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg"
-                                aria-label="Buscar"
-                            >
-                                <Search />
-                            </a>
-                        </div>
+                        <LiveSearchBar search={search} setSearch={setSearch} />
                     </div>
                     
                     <ul

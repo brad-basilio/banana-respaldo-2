@@ -45,10 +45,22 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap"></noscript>
-    
-  
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RF5XHT4BR6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-RF5XHT4BR6');
+    </script>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-M3KCKSQP');
+    </script>
+    <!-- End Google Tag Manager -->
 
     <?php if($data['fonts']['title']['url'] && $data['fonts']['title']['source'] !== 'true'): ?>
         <link rel="stylesheet" href="<?php echo e($data['fonts']['title']['url']); ?>">
@@ -145,6 +157,15 @@
             .placeholder\:customtext-<?php echo e($color->name); ?>::placeholder {
                 color: <?php echo e($color->description); ?>;
             }
+            .active\:bg-<?php echo e($color->name); ?>:active {
+                background-color: <?php echo e($color->description); ?>;
+            }
+            .active\:customtext-<?php echo e($color->name); ?>:active {
+                color: <?php echo e($color->description); ?>;
+            }
+            .active\:border-<?php echo e($color->name); ?>:active {
+                border-color: <?php echo e($color->description); ?>;
+            }
 
             .border-<?php echo e($color->name); ?> {
                 border-color: <?php echo e($color->description); ?>;
@@ -176,7 +197,11 @@
 
 </head>
 
-<body class="font-paragraph">
+<body class="font-general">
+    <noscript>
+        <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M3KCKSQP" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
+
     <?php if (!isset($__inertiaSsrDispatched)) { $__inertiaSsrDispatched = true; $__inertiaSsrResponse = app(\Inertia\Ssr\Gateway::class)->dispatch($page); }  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->body; } else { ?><div id="app" data-page="<?php echo e(json_encode($page)); ?>"></div><?php } ?>
 
     <!-- Vendor js -->

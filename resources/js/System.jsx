@@ -5,7 +5,7 @@ import CreateReactScript from "./Utils/CreateReactScript";
 // Componente de carga para usar con Suspense
 const LoadingFallback = () => (
     <div className="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
- 
+
         <div className="animate-bounce">
             <img
 
@@ -57,7 +57,7 @@ const Floating = React.lazy(() => import("./Components/Tailwind/Floating"));
 const DeliveryZone = React.lazy(() => import("./Components/Tailwind/DeliveryZone"));
 const Ad = React.lazy(() => import("./Components/Tailwind/Ad"));
 const Testimonials = React.lazy(() => import("./Components/Tailwind/Testimonials"));
-
+const Brands = React.lazy(() => import("./Components/Tailwind/Brands"));
 import { Local } from "sode-extend-react";
 import Global from "./Utils/Global";
 import ItemsRest from "./Actions/ItemsRest";
@@ -83,7 +83,7 @@ const System = ({
     postsLatest,
     textstatic,
 }) => {
-    
+
     const getItems = (itemsId) => {
         return systemItems[itemsId] ?? [];
     };
@@ -96,7 +96,7 @@ const System = ({
         Local.set(`${Global.APP_CORRELATIVE}_cart`, cart);
     }, [cart]);
 
-     const [favorites, setFavorites] = useState(
+    const [favorites, setFavorites] = useState(
         Local.get(`${Global.APP_CORRELATIVE}_favorites`) ?? []
     );
 
@@ -140,7 +140,7 @@ const System = ({
             case "top_bar":
                 return (
 
-                    <TopBar {...componentProps} data={data}/>
+                    <TopBar {...componentProps} data={data} />
 
                 );
             case "header":
@@ -166,8 +166,8 @@ const System = ({
             case "filter":
                 return <Filter which={value} data={data} items={getItems(itemsId)} filteredData={filteredData} cart={cart} setCart={setCart} />
             case "product":
-                return <Product which={value} data={data} items={getItems(itemsId)} filteredData={filteredData} cart={cart} setCart={setCart} pages={pages}      favorites={favorites}
-                        setFavorites={setFavorites}/>
+                return <Product which={value} data={data} items={getItems(itemsId)} filteredData={filteredData} cart={cart} setCart={setCart} pages={pages} favorites={favorites}
+                    setFavorites={setFavorites} />
             case "category":
                 return <Category which={value} data={data} items={getItems(itemsId)} />
             case "collection":
@@ -189,11 +189,11 @@ const System = ({
             case 'delivery-zones':
                 return <DeliveryZone which={value} data={data} items={getItems(itemsId)} />
             case "product-detail":
-                return <ProductDetail which={value} item={filteredData.Item} cart={cart} setCart={setCart} data={data} generals={generals} favorites={favorites} setFavorites={setFavorites} textstatic={textstatic} />
+                return <ProductDetail which={value} item={filteredData.Item} cart={cart} setCart={setCart} data={data} generals={generals} favorites={favorites} setFavorites={setFavorites} textstatic={textstatic} contacts={contacts} />
             case "cart":
                 return <Cart which={value} data={data} cart={cart} setCart={setCart} />
             case "checkout":
-                return <Checkout which={value} data={data} items={getItems(itemsId)} cart={cart} setCart={setCart} isUser={session} prefixes={jsons?.prefixes ?? []} ubigeos={jsons?.ubigeos ?? []} />
+                return <Checkout which={value} data={data} items={getItems(itemsId)} cart={cart} setCart={setCart} isUser={session} prefixes={jsons?.prefixes ?? []} ubigeos={jsons?.ubigeos ?? []} contacts={contacts} generals={generals} />
             case "contact":
                 return <Contact which={value} data={data} contacts={contacts} />
             case "faq":
@@ -217,13 +217,16 @@ const System = ({
             case "frame":
                 return <Frame which={value} data={data} />
             case "footer":
-                return <Footer {...componentProps} contacts={contacts} generals={generals} data={data}  />
+                return <Footer {...componentProps} contacts={contacts} generals={generals} data={data} />
             case "complaints":
                 return <Complaint which={value} data={data} generals={generals} />
             case "floating":
                 return <Floating which={value} data={data} />
             case "testimonials":
                 return <Testimonials which={value} data={data} items={getItems(itemsId)} />
+            case "brands":
+                return <Brands which={value} data={data} items={getItems(itemsId)} />
+
             default:
                 return (
                     <div className="w-full px-[5%] replace-max-w-here p-4 mx-auto">
@@ -247,13 +250,13 @@ const System = ({
 
 CreateReactScript((el, properties) => {
     createRoot(el).render(
-     
-       
-    <Suspense fallback={<LoadingFallback />}>
-        <System {...properties} />
-    </Suspense>
 
-       
+
+        <Suspense fallback={<LoadingFallback />}>
+            <System {...properties} />
+        </Suspense>
+
+
     );
 });
 /* <Suspense fallback={<LoadingFallback />}>

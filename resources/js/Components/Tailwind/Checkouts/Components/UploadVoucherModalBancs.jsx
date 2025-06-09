@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ReactModal from "react-modal";
 import Global from "../../../../Utils/Global";
 import Tippy from "@tippyjs/react";
@@ -13,6 +13,7 @@ import SalesRest from "../../../../Actions/SalesRest";
 import { Notify } from "sode-extend-react";
 import { Local } from "sode-extend-react";
 import { toast } from "sonner";
+import { CircleX } from "lucide-react";
 const salesRest = new SalesRest()
 
 export default function UploadVoucherModalBancs({ 
@@ -25,12 +26,86 @@ export default function UploadVoucherModalBancs({
     igv,
     envio,
     totalFinal,
-    request
+    request,
+    contacts
 }) {
     const [file, setFile] = useState(null);
     const [saving, setSaving] = useState(false);
     const [voucher, setVoucher] = useState('');
+    const fileInputRef = useRef(null);
 
+
+    const handleUploadClick = () => {
+        if (!voucher) {
+            fileInputRef.current?.click();
+        } else {
+            handlePayment();
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setVoucher(selectedFile);
+        }
+    };
+
+    const handleRemoveFile = () => {
+        setVoucher('');
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handlePayment = async () => {
+        if (saving) return;
+        
+        if (!voucher) {
+            toast.error('Error al subir comprobante', {
+                description: `Por favor, sube tu comprobante de pago`,
+                icon: <CircleX className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: 'top-right',
+            });
+            return;
+        }
+    
+        setSaving(true);
+        
+        try {
+            const updatedRequest = {
+                ...request,
+                payment_proof: voucher,
+                details: JSON.stringify(request.cart.map((item) => ({
+                    id: item.id,
+                    quantity: item.quantity
+                }))),
+            };
+            
+            const formData = new FormData();
+            Object.keys(updatedRequest).forEach(key => {
+                formData.append(key, updatedRequest[key]);
+            });
+    
+            const result = await salesRest.save(formData);
+            
+            if (result) {
+                Local.delete(`${Global.APP_CORRELATIVE}_cart`)
+                location.href = `${location.origin}/cart?code=${result.code}`;
+            }
+        } catch (error) {
+            console.error("Error al procesar el pago:", error);
+            toast.error('Error al procesar el pago:', {
+                description: `Ocurrió un error al procesar tu pago`,
+                icon: <CircleX className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: 'top-right',
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+    
     const handleUpload = async () => {
         
         if (saving) return; // Evita múltiples ejecuciones
@@ -124,7 +199,7 @@ export default function UploadVoucherModalBancs({
                     </div> 
                     
                     <div className="flex flex-col gap-3 w-full">
-                        <BancDropdown />
+                        <BancDropdown contacts={contacts} />
                     </div>
                   
                 </div>       
@@ -199,9 +274,41 @@ export default function UploadVoucherModalBancs({
 
                 <div className="space-y-4">
 
-                    <VoucherUpload voucher={voucher} setVoucher={setVoucher} />
+                    {/* <VoucherUpload voucher={voucher} setVoucher={setVoucher} /> */}
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/png, image/jpeg, application/pdf"
+                        className="hidden"
+                    />
+
+                     {/* File preview area */}
+                     {voucher && (
+                        <div className="bg-[#f1f1f1] p-4 rounded-lg border border-dashed">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm truncate">{voucher.name}</span>
+                                <button 
+                                    onClick={handleRemoveFile}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    <CircleX className="h-5 w-5" />
+                                </button>
+                            </div>
+                            {voucher.type.startsWith('image/') && (
+                                <div className="mt-2">
+                                    <img 
+                                        src={URL.createObjectURL(voucher)} 
+                                        alt="Voucher preview" 
+                                        className="max-h-28 mx-auto"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
                     
-                    <div className="pt-2 space-y-3">
+                    {/* <div className="pt-2 space-y-3">
                         <button
                             onClick={handleUpload}
                             disabled={saving}
@@ -218,8 +325,32 @@ export default function UploadVoucherModalBancs({
                         >
                             Cancelar
                         </button>
-                    </div>
+                    </div> */}
 
+                    {/* Upload button */}
+                    <div className="pt-2 space-y-3">
+                        <button
+                            onClick={handleUploadClick}
+                            disabled={saving}
+                            className={`w-full bg-primary text-white text-sm 2xl:text-base py-3 rounded-3xl font-medium ${
+                                saving ? "opacity-70 cursor-not-allowed" : ""
+                            }`}
+                        >
+                            {saving 
+                                ? "Procesando..." 
+                                : voucher 
+                                    ? "Confirmar pago" 
+                                    : "Subir comprobante"}
+                        </button>
+                        
+                        <button
+                            onClick={onClose}
+                            className="w-full border border-primary text-sm 2xl:text-base py-3 rounded-3xl font-medium"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                    
                 </div>
             </div>
         </ReactModal>

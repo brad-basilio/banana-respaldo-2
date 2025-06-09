@@ -29,6 +29,11 @@ export default {
     plugins: [
         require("@tailwindcss/typography"),
         require("tailwindcss-animated"),
+        // require('tailwind-scrollbar')({
+        //     nocompatible: true,
+        //     preferredStrategy: 'pseudoelements',
+        // }),
         // Otros plugins si los tienes
     ],
+    
 };

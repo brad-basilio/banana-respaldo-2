@@ -8,6 +8,7 @@ const ProductNavigation = React.lazy(() => import("./Products/ProductNavigation"
 const ProductNavigationSwiper = React.lazy(() => import("./Products/ProductNavigationSwiper"));
 const ProductBananaLab = React.lazy(() => import("./Products/ProductBananaLab"));
 const ScrapingSimple = React.lazy(() => import("./Scraping/ScrapingSimple"));
+const ProductMakita = React.lazy(() => import("./Products/ProductMakita"));
 
 const Product = ({
     which,
@@ -96,6 +97,15 @@ const Product = ({
                         setCart={setCart}
                         pages={pages}
                         filteredData={filteredData}
+                    />
+                );
+            case "ProductMakita":
+                return (
+                    <ProductMakita
+                        data={data}
+                        items={items}
+                        cart={cart}
+                        setCart={setCart}
                     />
                 );
 

@@ -13,6 +13,7 @@ const FooterTermsCTASocials = React.lazy(() => import("./Footer/FooterTermsCTASo
 const FooterSalaFabulosa = React.lazy(() => import("./Footer/FooterSalaFabulosa"));
 const FooterBananaLab = React.lazy(() => import("./Footer/FooterBananaLab"));
 const FooterPideloPe = React.lazy(() => import("./Footer/FooterPideloPe"));
+const FooterMakita = React.lazy(() => import("./Footer/FooterMakita"));
 
 const Footer = ({ data, which, items, pages, generals, contacts }) => {
     const getFooter = () => {
@@ -91,6 +92,14 @@ const Footer = ({ data, which, items, pages, generals, contacts }) => {
                         pages={pages}
                         generals={generals}
                         contacts={contacts}
+                    />
+                );
+            case "FooterMakita":
+                return (
+                    <FooterMakita
+                        socials={items}
+                        pages={pages}
+                        generals={generals}
                     />
                 );
             default:

@@ -7,6 +7,7 @@ use App\Models\Indicator;
 use App\Models\ItemFeature;
 use App\Models\ItemSpecification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 class ItemSpecificationController extends BasicController
 {
@@ -17,14 +18,30 @@ class ItemSpecificationController extends BasicController
     }
 
     public function saveSpecifications(object $jpa, array $specifications)
-    {
-        foreach ($specifications as $specification) {
-            ItemSpecification::create([
-                'item_id' => $jpa->id,
-                'type' => $specification['type'] ?? null,
-                'title' => $specification['title'] ?? null,
-                'description' => $specification['description'] ?? null,
-            ]);
+    {   
+
+        $existingIds = collect($specifications)
+            ->pluck('id')
+            ->filter() // Elimina valores null/empty
+            ->toArray();
+        
+        ItemSpecification::where('item_id', $jpa->id)
+            ->whereNotIn('id', $existingIds)
+            ->delete();
+
+            
+        foreach ($specifications as $spec) {
+            ItemSpecification::updateOrCreate(
+                [
+                    'id' => Arr::get($spec, 'id'), // Busca por ID si existe
+                    'item_id' => $jpa->id
+                ],
+                [
+                    'type' => Arr::get($spec, 'type'),
+                    'title' => Arr::get($spec, 'title'),
+                    'description' => Arr::get($spec, 'description')
+                ]
+            );
         }
     }
 }

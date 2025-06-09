@@ -157,6 +157,15 @@
             .placeholder\:customtext-{{ $color->name }}::placeholder {
                 color: {{ $color->description }};
             }
+            .active\:bg-{{ $color->name }}:active {
+                background-color: {{ $color->description }};
+            }
+            .active\:customtext-{{ $color->name }}:active {
+                color: {{ $color->description }};
+            }
+            .active\:border-{{ $color->name }}:active {
+                border-color: {{ $color->description }};
+            }
 
             .border-{{ $color->name }} {
                 border-color: {{ $color->description }};

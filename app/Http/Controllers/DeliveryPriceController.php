@@ -74,7 +74,6 @@ class DeliveryPriceController extends BasicController
                 'is_free' => $deliveryPrice->is_free,
                 'is_agency'=>$deliveryPrice->is_agency,
                 'standard' => [
-                   
                     'price' => $deliveryPrice->is_free ? 0 : $deliveryPrice->price,
                     'description' => $deliveryPrice->type->description ?? 'Entrega estándar',
                     'type' => $deliveryPrice->type->name,
@@ -87,7 +86,6 @@ class DeliveryPriceController extends BasicController
                 $expressType = TypeDelivery::where('slug', 'delivery-express')->first();
 
                 $result['express'] = [
-                   
                     'price' => $deliveryPrice->express_price,
                     'description' => $expressType->description ?? 'Entrega express',
                     'type' => $expressType->name,

@@ -110,6 +110,9 @@ const Generals = ({ generals }) => {
     igvCheckout:
       generals.find((x) => x.correlative == "igv_checkout")
         ?.description ?? "",
+    shippingFree:
+      generals.find((x) => x.correlative == "shipping_free")
+        ?.description ?? "",
     location: {
       lat: Number(location.split(",").map((x) => x.trim())[0]),
       lng: Number(location.split(",").map((x) => x.trim())[1]),
@@ -118,6 +121,10 @@ const Generals = ({ generals }) => {
     checkout_culqi_name: generals.find(x => x.correlative == 'checkout_culqi_name')?.description ?? "",
     checkout_culqi_public_key: generals.find(x => x.correlative == 'checkout_culqi_public_key')?.description ?? "",
     checkout_culqi_private_key: generals.find(x => x.correlative == 'checkout_culqi_private_key')?.description ?? "",
+    checkout_mercadopago: generals.find(x => x.correlative == 'checkout_mercadopago')?.description ?? "",
+    checkout_mercadopago_name: generals.find(x => x.correlative == 'checkout_mercadopago_name')?.description ?? "",
+    checkout_mercadopago_public_key: generals.find(x => x.correlative == 'checkout_mercadopago_public_key')?.description ?? "",
+    checkout_mercadopago_private_key: generals.find(x => x.correlative == 'checkout_mercadopago_private_key')?.description ?? "",
     checkout_dwallet: generals.find(x => x.correlative == 'checkout_dwallet')?.description ?? "",
     checkout_dwallet_qr: generals.find(x => x.correlative == 'checkout_dwallet_qr')?.description ?? "",
     checkout_dwallet_name: generals.find(x => x.correlative == 'checkout_dwallet_name')?.description ?? "",
@@ -126,6 +133,17 @@ const Generals = ({ generals }) => {
     checkout_transfer_cci: generals.find(x => x.correlative == 'checkout_transfer_cci')?.description?? "",
     checkout_transfer_name: generals.find(x => x.correlative == 'checkout_transfer_name')?.description?? "",
     checkout_transfer_description: generals.find(x => x.correlative == 'checkout_transfer_description')?.description?? "",
+    transfer_accounts: generals.find(x => x.correlative == 'transfer_accounts')?.description 
+    ? JSON.parse(generals.find(x => x.correlative == 'transfer_accounts')?.description)
+    : [
+        {
+          image: null,
+          cc: "",
+          cci: "",
+          name: "",
+          description: ""
+        }
+      ],
   });
 
   const [activeTab, setActiveTab] = useState("general");
@@ -273,6 +291,26 @@ const Generals = ({ generals }) => {
           description: formData.checkout_culqi_private_key,
         },
         {
+          correlative: "checkout_mercadopago",
+          name: "Habilitar Mercadopago",
+          description: formData.checkout_mercadopago,
+        },
+        {
+          correlative: 'checkout_mercadopago_name',
+          name: 'Nombre de la cuenta de Mercadopago',
+          description: formData.checkout_mercadopago_name,
+        },
+        {
+          correlative: 'checkout_mercadopago_public_key',
+          name: 'Llave pública de Mercadopago',
+          description: formData.checkout_mercadopago_public_key,
+        },
+        {
+          correlative: 'checkout_mercadopago_private_key',
+          name: 'Llave privada de Mercadopago',
+          description: formData.checkout_mercadopago_private_key,
+        },
+        {
           correlative: 'checkout_dwallet',
           name: 'Habilitar Yape/Plin',
           description: formData.checkout_dwallet,
@@ -298,6 +336,11 @@ const Generals = ({ generals }) => {
           description: formData.checkout_transfer,
         },
         {
+          correlative: "transfer_accounts",
+          name: "Cuentas Bancarias para Transferencia",
+          description: JSON.stringify(formData.transfer_accounts),
+        },
+        {
           correlative: 'checkout_transfer_cci',
           name: 'CCI Transferencia',
           description: formData.checkout_transfer_cci,
@@ -316,6 +359,11 @@ const Generals = ({ generals }) => {
           correlative: "location",
           name: "Ubicación",
           description: `${formData.location.lat},${formData.location.lng}`,
+        },
+        {
+          correlative: 'shipping_free',
+          name: 'Envio gratis a partir de',
+          description: formData.shippingFree,
         },
       ]);
       // alert('Datos guardados exitosamente');
@@ -393,6 +441,16 @@ const Generals = ({ generals }) => {
             role="tab"
           >
             Email
+          </button>
+        </li>
+        <li className="nav-item" role="presentation">
+          <button
+            className={`nav-link ${activeTab === "shippingfree" ? "active" : ""}`}
+            onClick={() => setActiveTab("shippingfree")}
+            type="button"
+            role="tab"
+          >
+            Envio Gratis
           </button>
         </li>
         </ul>
@@ -750,6 +808,9 @@ const Generals = ({ generals }) => {
                   <a className="nav-link active show mb-1" id="v-culqi-tab" data-bs-toggle="pill" href="#v-culqi" role="tab" aria-controls="v-culqi" aria-selected="true">
                     Culqi
                   </a>
+                  <a className="nav-link mb-1" id="v-mercadopago-tab" data-bs-toggle="pill" href="#v-mercadopago" role="tab" aria-controls="v-mercadopago" aria-selected="false">
+                    Mercado Pago
+                  </a>
                   <a className="nav-link mb-1" id="v-digital-wallet-tab" data-bs-toggle="pill" href="#v-digital-wallet" role="tab" aria-controls="v-digital-wallet" aria-selected="false">
                     Yape / Plin
                   </a>
@@ -809,6 +870,59 @@ const Generals = ({ generals }) => {
                         onChange={(e) => setFormData({
                           ...formData,
                           checkout_culqi_private_key: e.target.value
+                        })}
+                      />
+                    </div>
+                  </div>
+                  <div className="tab-pane fade" id="v-mercadopago" role="tabpanel" aria-labelledby="v-mercadopago-tab">
+                    <div className="mb-2">
+                      <div className="form-check">
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          id="checkout-mercadopago"
+                          checked={formData.checkout_mercadopago == 'true'}
+                          onChange={(e) => setFormData({ ...formData, checkout_mercadopago: String(e.target.checked) })}
+                        />
+                        <label className="form-check-label form-label" htmlFor="checkout-mercadopago">
+                          Habilitar pago con Mercado Pago
+                          <small className="text-muted d-block">Al habilitar esta opción, permite pagos por Mercado Pago </small>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label">Título del formulario</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.checkout_mercadopago_name}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          checkout_mercadopago_name: e.target.value
+                        })}
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label">Clave Pública</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.checkout_mercadopago_public_key}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          checkout_mercadopago_public_key: e.target.value
+                        })}
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label">Clave Privada (Access Token)</label>
+                      <input
+                        type="password"
+                        className="form-control"
+                        value={formData.checkout_mercadopago_private_key}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          checkout_mercadopago_private_key: e.target.value
                         })}
                       />
                     </div>
@@ -901,7 +1015,7 @@ const Generals = ({ generals }) => {
                       />
                     </div>
                   </div>
-                  <div className="tab-pane fade" id="v-transfer" role="tabpanel" aria-labelledby="v-transfer-tab">
+                  {/* <div className="tab-pane fade" id="v-transfer" role="tabpanel" aria-labelledby="v-transfer-tab">
                     <div className="mb-2">
                       <div className="form-check">
                         <input
@@ -952,6 +1066,172 @@ const Generals = ({ generals }) => {
                         })}
                       />
                     </div>
+                  </div> */}
+                  <div className="tab-pane fade" id="v-transfer" role="tabpanel" aria-labelledby="v-transfer-tab">
+                    <div className="mb-2">
+                      <div className="form-check">
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          id="checkout-transfer"
+                          checked={formData.checkout_transfer === 'true'}
+                          onChange={(e) => setFormData({ ...formData, checkout_transfer: String(e.target.checked) })}
+                        />
+                        <label className="form-check-label form-label" htmlFor="checkout-transfer">
+                          Habilitar pago por transferencia
+                          <small className="text-muted d-block">Al habilitar esta opción, permite pagos por transferencia</small>
+                        </label>
+                      </div>
+                    </div>
+
+                    {formData.transfer_accounts.map((account, index) => (
+                      <div key={index} className="mb-4 p-3 border rounded">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h5>Cuenta Bancaria #{index + 1}</h5>
+                          {index > 0 && (
+                            <button 
+                              type="button" 
+                              className="btn btn-danger btn-sm"
+                              onClick={() => {
+                                const accounts = [...formData.transfer_accounts];
+                                accounts.splice(index, 1);
+                                setFormData({...formData, transfer_accounts: accounts});
+                              }}
+                            >
+                              Eliminar Cuenta
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="mb-2">
+                          <label className="form-label">Imagen de la Cuenta</label>
+                          {account.image ? (
+                            <div className="position-relative">
+                              <Tippy content="Eliminar Imagen">
+                                <button 
+                                  className="position-absolute btn btn-xs btn-danger" 
+                                  style={{top: '5px', left: '5px'}} 
+                                  onClick={() => {
+                                    const accounts = [...formData.transfer_accounts];
+                                    accounts[index].image = null;
+                                    setFormData({...formData, transfer_accounts: accounts});
+                                  }}
+                                >
+                                  <i className="mdi mdi-delete"></i>
+                                </button>
+                              </Tippy>
+                              <img 
+                                src={`/assets/resources/${account.image}`} 
+                                className="img-thumbnail" 
+                                style={{height: '200px', width: 'auto'}} 
+                              />
+                            </div>
+                          ) : (
+                            <input
+                              type="file"
+                              className="form-control"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                e.target.value = null;
+
+                                const ext = file.name.split('.').pop();
+                                const imageName = `transfer-account-${Date.now()}.${ext}`;
+
+                                const request = new FormData();
+                                request.append('image', file);
+                                request.append('name', imageName);
+
+                                const result = await galleryRest.save(request);
+                                if (!result) return;
+
+                                const accounts = [...formData.transfer_accounts];
+                                accounts[index].image = imageName;
+                                setFormData({...formData, transfer_accounts: accounts});
+                              }}
+                            />
+                          )}
+                        </div>
+
+                        <div className="mb-2">
+                          <label className="form-label">Número de Cuenta (CC)</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={account.cc}
+                            onChange={(e) => {
+                              const accounts = [...formData.transfer_accounts];
+                              accounts[index].cc = e.target.value;
+                              setFormData({...formData, transfer_accounts: accounts});
+                            }}
+                          />
+                        </div>
+
+                        <div className="mb-2">
+                          <label className="form-label">Código de Cuenta Interbancario (CCI)</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={account.cci}
+                            onChange={(e) => {
+                              const accounts = [...formData.transfer_accounts];
+                              accounts[index].cci = e.target.value;
+                              setFormData({...formData, transfer_accounts: accounts});
+                            }}
+                          />
+                        </div>
+
+                        <div className="mb-2">
+                          <label className="form-label">Nombre del Banco/Titular</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={account.name}
+                            onChange={(e) => {
+                              const accounts = [...formData.transfer_accounts];
+                              accounts[index].name = e.target.value;
+                              setFormData({...formData, transfer_accounts: accounts});
+                            }}
+                          />
+                        </div>
+
+                        <div className="mb-2">
+                          <label className="form-label">Descripción</label>
+                          <textarea
+                            className="form-control"
+                            value={account.description}
+                            onChange={(e) => {
+                              const accounts = [...formData.transfer_accounts];
+                              accounts[index].description = e.target.value;
+                              setFormData({...formData, transfer_accounts: accounts});
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      className="btn btn-primary mt-2"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          transfer_accounts: [
+                            ...formData.transfer_accounts,
+                            {
+                              image: null,
+                              cc: "",
+                              cci: "",
+                              name: "",
+                              description: ""
+                            }
+                          ]
+                        });
+                      }}
+                    >
+                      Agregar Otra Cuenta
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1034,6 +1314,26 @@ const Generals = ({ generals }) => {
             <small className="form-text text-muted">
               Haz clic en el mapa para seleccionar la ubicación.
             </small>
+          </div>
+
+          <div
+            className={`tab-pane fade ${activeTab === "shippingfree" ? "show active" : ""
+              }`}
+            role="tabpanel"
+          >
+            <div className="mb-2">
+                <label className="form-label">Envio gratis a partir de:</label>
+                <input
+                  type="text"
+                  placeholder="Ingrese el monto para envio gratis"
+                  className="form-control"
+                  value={formData.shippingFree}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    shippingFree: e.target.value
+                  })}
+                />
+              </div>
           </div>
         </div>
 

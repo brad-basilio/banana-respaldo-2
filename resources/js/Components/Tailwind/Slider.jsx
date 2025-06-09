@@ -12,6 +12,9 @@ const SliderBrandsPaani = React.lazy(() =>
     import("./Sliders/SliderBrandsPaani")
 );
 const SliderJustImage = React.lazy(() => import("./Sliders/SliderJustImage"));
+const SliderFeaturedMakita = React.lazy(() =>
+    import("./Sliders/SliderFeaturedMakita")
+);
 
 const Slider = ({ which, data, sliders }) => {
     const getSlider = () => {
@@ -33,6 +36,8 @@ const Slider = ({ which, data, sliders }) => {
                 return <SliderJustImage data={data} items={sliders} />;
             case "SliderBrandsPaani":
                 return <SliderBrandsPaani data={data} items={sliders} />;
+                case "SliderFeaturedMakita":
+                return <SliderFeaturedMakita data={data} items={sliders} />;
             default:
                 return (
                     <div className="w-full px-[5%] replace-max-w-here p-4 mx-auto">

@@ -43,12 +43,14 @@ use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\NotificationVariableController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeliveryPriceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ItemImportController;
@@ -60,7 +62,8 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ScrapController;
-use App\Http\Controllers\TemporalyImageController;  
+use App\Http\Controllers\TemporalyImageController;
+use App\Http\Controllers\UnifiedImportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -78,6 +81,12 @@ Route::post('/scrap', [ScrapController::class, 'scrap']);
 Route::post('/scrap-shopsimon', [ScrapController::class, 'scrapShopSimon']);
 
 Route::post('/import-items', [ItemImportController::class, 'import']);
+
+// Unified Import API
+Route::post('/unified-import', [UnifiedImportController::class, 'import']);
+Route::post('/unified-import/preview', [UnifiedImportController::class, 'preview']);
+Route::get('/unified-import/field-mappings', [UnifiedImportController::class, 'getFieldMappings']);
+
 Route::post('/complaints', [ComplaintController::class, 'saveComplaint']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/signup', [AuthController::class, 'signup']);
@@ -124,6 +133,7 @@ Route::post('/items/combo-items', [ItemController::class, 'verifyCombo']);
 Route::post('/items/update-items', [ItemController::class, 'updateViews']);
 Route::post('/items/relations-items', [ItemController::class, 'relationsItems']);
 Route::post('/items/variations-items', [ItemController::class, 'variationsItems']);
+Route::post('/items/searchProducts', [ItemController::class, 'searchProduct']);
 
 Route::post('/pago', [PaymentController::class, 'charge']);
 Route::get('/pago/{sale_id}', [PaymentController::class, 'getPaymentStatus']);
@@ -140,6 +150,9 @@ Route::post('/temporaly-image/{id}', [TemporalyImageController::class, 'delete']
 Route::post('/vouchers/temp', [TemporalyImageController::class, 'storeTemp'])->name('voucher.temp');
 Route::delete('/vouchers/temp/{id}', [TemporalyImageController::class, 'deleteTemp'])->name('voucher.delete');
 Route::post('/guardarvoucher', [TemporalyImageController::class, 'guardarVoucher'])->name('guardarvoucher');
+
+Route::post('/coupons', [CouponController::class, 'save']);
+Route::post('/coupons/is-first', [CouponController::class, 'isFirst']);
 
 //pedido
 Route::post('/orders', [MercadoPagoController::class, 'getOrder']);
@@ -194,7 +207,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/combos/{id}', [AdminComboController::class, 'delete']);
     Route::get('/combos/{id}', [AdminComboController::class, 'show']);
 
-
+    Route::post('/coupons', [AdminCouponController::class, 'save']);
+    Route::post('/coupons/paginate', [AdminCouponController::class, 'paginate']);
+    Route::patch('/coupons/status', [AdminCouponController::class, 'status']);
+    Route::patch('/coupons/{field}', [AdminCouponController::class, 'boolean']);
+    Route::delete('/coupons/{id}', [AdminCouponController::class, 'delete']);
 
     Route::post('/messages', [AdminMessageController::class, 'save']);
     Route::post('/messages/paginate', [AdminMessageController::class, 'paginate']);

@@ -48,6 +48,15 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
     };
     /*ESPECIFICACIONES */
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isSpecificationsExpanded, setIsSpecificationsExpanded] = useState(false);
+    
+    // Referencias para medir contenido
+    const descriptionRef = useRef(null);
+    const specificationsRef = useRef(null);
+    
+    // Estados para controlar si se necesita "Ver más"
+    const [needsDescriptionExpand, setNeedsDescriptionExpand] = useState(false);
+    const [needsSpecificationsExpand, setNeedsSpecificationsExpand] = useState(false);
 
     const onAddClicked = (product) => {
         const newCart = structuredClone(cart);
@@ -80,6 +89,35 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
             handleViewUpdate(item);
         }
     }, [item]); // Agregar `item` como dependencia
+    
+    // useEffect para verificar si se necesita el botón "Ver más"
+    useEffect(() => {
+        const checkContentHeight = () => {
+            // Verificar descripción
+            if (descriptionRef.current) {
+                const contentHeight = descriptionRef.current.scrollHeight;
+                const maxHeight = 400; // 400px que es nuestra altura máxima
+                setNeedsDescriptionExpand(contentHeight > maxHeight);
+            }
+            
+            // Verificar especificaciones
+            if (specificationsRef.current) {
+                const contentHeight = specificationsRef.current.scrollHeight;
+                const maxHeight = 400; // 400px que es nuestra altura máxima
+                setNeedsSpecificationsExpand(contentHeight > maxHeight);
+            }
+        };
+
+        // Verificar después de que el contenido se haya renderizado
+        setTimeout(checkContentHeight, 100);
+        
+        // También verificar cuando cambie el tamaño de la ventana
+        window.addEventListener('resize', checkContentHeight);
+        
+        return () => {
+            window.removeEventListener('resize', checkContentHeight);
+        };
+    }, [item]); // Ejecutar cuando cambie el item
     const handleViewUpdate = async (item) => {
         try {
             const request = {
@@ -957,7 +995,13 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                         <h2 className="text-2xl font-bold customtext-neutral-dark mb-4 border-b pb-4">
                             Especificaciones
                         </h2>
-                        <div className="space-y-1">
+                        <div 
+                            ref={specificationsRef}
+                            className={`space-y-1 transition-all duration-300 ${!isSpecificationsExpanded
+                                ? "max-h-[400px] overflow-hidden"
+                                : ""
+                                }`}
+                        >
                             {item?.specifications.map(
                                 (spec, index) =>
                                     spec.type === "general" && (
@@ -978,6 +1022,18 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                     )
                             )}
                         </div>
+                        {needsSpecificationsExpand && (
+                            <button
+                                className="border-2 border-primary w-max px-5 py-3 my-8 rounded-xl flex items-center gap-2 customtext-primary font-semibold cursor-pointer hover:bg-primary hover:text-white transition-all duration-300"
+                                onClick={() => setIsSpecificationsExpanded(!isSpecificationsExpanded)}
+                            >
+                                {isSpecificationsExpanded ? "Ver menos" : "Ver más especificaciones"}
+                                <ChevronDown
+                                    className={`transform transition-transform ${isSpecificationsExpanded ? "rotate-180" : ""
+                                        }`}
+                                />
+                            </button>
+                        )}
                     </div>
 
                     {/* Additional Information Section */}
@@ -986,7 +1042,8 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                             Información adicional
                         </h2>
                         <div
-                            className={`space-y-2 ${!isExpanded
+                            ref={descriptionRef}
+                            className={`space-y-2 transition-all duration-300 ${!isExpanded
                                 ? "max-h-[400px] overflow-hidden"
                                 : ""
                                 }`}
@@ -1013,17 +1070,18 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                 </ul>
                             </div>
                         </div>
-                        <botton
-                            variant="ghost"
-                            className="border-2 border-primary  w-max px-5 py-3  my-8  rounded-xl flex items-center gap-2 customtext-primary font-semibold cursor-pointer"
-                            onClick={() => setIsExpanded(!isExpanded)}
-                        >
-                            Ver más
-                            <ChevronDown
-                                className={`transform transition-transform ${isExpanded ? "rotate-180" : ""
-                                    }`}
-                            />
-                        </botton>
+                        {needsDescriptionExpand && (
+                            <button
+                                className="border-2 border-primary w-max px-5 py-3 my-8 rounded-xl flex items-center gap-2 customtext-primary font-semibold cursor-pointer hover:bg-primary hover:text-white transition-all duration-300"
+                                onClick={() => setIsExpanded(!isExpanded)}
+                            >
+                                {isExpanded ? "Ver menos" : "Ver más"}
+                                <ChevronDown
+                                    className={`transform transition-transform ${isExpanded ? "rotate-180" : ""
+                                        }`}
+                                />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

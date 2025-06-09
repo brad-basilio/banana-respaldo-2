@@ -16,7 +16,7 @@ class Item extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
+        // 'id',
         'slug',
         'name',
         'summary',
