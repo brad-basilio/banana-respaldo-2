@@ -43,6 +43,8 @@ const HeaderSearchB = ({
 
     const menuRef = useRef(null);
     const searchRef = useRef(null);
+    const mobileSearchInputRef = useRef(null);
+    const desktopSearchInputRef = useRef(null);
 
     const totalCount = cart.reduce((acc, item) => Number(acc) + Number(item.quantity), 0);
 
@@ -51,14 +53,22 @@ const HeaderSearchB = ({
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setIsMenuOpen(false);
             }
+            // Mejorar el manejo del click outside para la búsqueda móvil
             if (searchRef.current && !searchRef.current.contains(event.target)) {
-                setSearchMobile(false);
+                // Solo cerrar si no se está escribiendo activamente
+                if (!search.trim()) {
+                    setSearchMobile(false);
+                }
             }
         }
 
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+        document.addEventListener("touchstart", handleClickOutside); // Para dispositivos táctiles
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [search]); // Agregar search como dependencia
 
     useEffect(() => {
         const handleScroll = () => {
@@ -71,6 +81,24 @@ const HeaderSearchB = ({
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // useEffect para manejar el escape en la búsqueda móvil
+    useEffect(() => {
+        const handleKeyPress = (event) => {
+            if (event.key === 'Escape' && searchMobile) {
+                setSearchMobile(false);
+                setSearch("");
+            }
+        };
+
+        if (searchMobile) {
+            document.addEventListener("keydown", handleKeyPress);
+        }
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyPress);
+        };
+    }, [searchMobile]);
 
     const menuVariants = {
         hidden: {
@@ -120,6 +148,39 @@ const HeaderSearchB = ({
             onClick: Logout
         }
     ];
+
+    // Función para manejar el submit del form (mejorada)
+    const handleFormSubmit = (event) => {
+        event.preventDefault();
+        if (search.trim()) {
+            const trimmedSearch = search.trim();
+            window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+        }
+        return false; // Prevenir comportamiento por defecto adicional
+    };
+
+    // Función específica para el input móvil
+    const handleMobileSearch = (event) => {
+        event.preventDefault();
+        if (search.trim()) {
+            const trimmedSearch = search.trim();
+            setSearchMobile(false); // Cerrar el input móvil
+            window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+        }
+        return false;
+    };
+
+    // Función para manejar el Enter y el icono de búsqueda del teclado móvil
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (search.trim()) {
+                const trimmedSearch = search.trim();
+                setSearchMobile(false); // Cerrar el input móvil si está abierto
+                window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+            }
+        }
+    };
 
     return (
         <header className={`w-full top-0 left-0 z-50 transition-all duration-300 ${isFixed ? "fixed bg-white shadow-lg" : "relative bg-white"}`}>
@@ -249,22 +310,32 @@ const HeaderSearchB = ({
                         </div>
                     )}
 
-                    {/* Search Bar */}
+                    {/* Search Bar - Desktop */}
                     <div className="hidden md:block relative w-full max-w-xl mx-auto">
-                        <input
-                            type="search"
-                            placeholder="Buscar productos"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
-                        />
-                        <a
-                            href={search.trim() ? `/catalogo?search=${encodeURIComponent(search)}` : "#"}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                            aria-label="Buscar"
-                        >
-                            <Search />
-                        </a>
+                        <form onSubmit={handleFormSubmit} role="search">
+                            <input
+                                ref={desktopSearchInputRef}
+                                type="search"
+                                name="search"
+                                placeholder="Buscar productos"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
+                                enterKeyHint="search"
+                                inputMode="search"
+                                autoComplete="off"
+                                role="searchbox"
+                                aria-label="Buscar productos"
+                            />
+                            <button
+                                type="submit"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                aria-label="Buscar"
+                            >
+                                <Search />
+                            </button>
+                        </form>
                     </div>
 
                     {/* Account and Cart */}
@@ -357,168 +428,113 @@ const HeaderSearchB = ({
                             >
                                 Haz tu Pedido
                             </a>
-                            {/* Mobile: solo ícono de búsqueda, al tap mostrar input */}
+                            {/* Mobile: búsqueda expandible */}
                             <div className="md:hidden relative w-full max-w-xl mx-auto">
                                 {!searchMobile ? (
                                     <button
-                                        aria-label="Buscar"
-                                        onClick={() => setSearchMobile(true)}
+                                        aria-label="Buscar productos"
+                                        onClick={() => {
+                                            setSearchMobile(true);
+                                            // Pequeño delay para asegurar que el input se renderice antes del focus
+                                            setTimeout(() => {
+                                                if (mobileSearchInputRef.current) {
+                                                    mobileSearchInputRef.current.focus();
+                                                }
+                                            }, 100);
+                                        }}
                                         className="flex items-center justify-end w-full px-0 py-3"
                                     >
                                         <Search className="customtext-primary" size={28} />
                                     </button>
                                 ) : (
                                     <div className="relative w-full">
-                                        <input
-                                            type="search"
-                                            placeholder="Buscar productos"
-                                            value={search}
-                                            onChange={(e) => setSearch(e.target.value)}
-                                            className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
-                                            autoFocus
-                                        />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
-                                            <button
-                                                aria-label="Cerrar"
-                                                onClick={() => setSearchMobile(false)}
-                                                className="p-2 bg-gray-200 text-gray-600 rounded-lg"
-                                            >
-                                                <XIcon size={20} />
-                                            </button>
-                                            <a
-                                                href={search.trim() ? `/catalogo?search=${encodeURIComponent(search)}` : "#"}
-                                                className="p-2 bg-primary text-white rounded-lg"
-                                                aria-label="Buscar"
-                                            >
-                                                <Search />
-                                            </a>
-                                        </div>
+                                        <form onSubmit={handleMobileSearch} role="search">
+                                            <input
+                                                ref={mobileSearchInputRef}
+                                                type="search"
+                                                name="search"
+                                                placeholder="Buscar productos"
+                                                value={search}
+                                                onChange={(e) => setSearch(e.target.value)}
+                                                onKeyDown={handleKeyDown}
+                                                className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
+                                                autoFocus
+                                                enterKeyHint="search"
+                                                inputMode="search"
+                                                autoComplete="off"
+                                                role="searchbox"
+                                                aria-label="Buscar productos"
+                                                onBlur={() => {
+                                                    // Solo cerrar si no hay búsqueda activa
+                                                    setTimeout(() => {
+                                                        if (!search.trim()) {
+                                                            setSearchMobile(false);
+                                                        }
+                                                    }, 200);
+                                                }}
+                                            />
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSearch("");
+                                                        setSearchMobile(false);
+                                                    }}
+                                                    className="p-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors"
+                                                    aria-label="Cerrar búsqueda"
+                                                >
+                                                    <XIcon size={16} />
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                                    aria-label="Buscar"
+                                                >
+                                                    <Search size={16} />
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 )}
                             </div>
                         </>
                     )}
                 </div>
-                {/* Mobile Search and Menu */}
-                {/* <div ref={searchRef} className="flex md:hidden relative w-full">
-                        <div className="flex w-full items-center justify-between gap-4">
-                            <button
-                                onClick={() => setSearchMobile(!searchMobile)}
-                                className={`${searchMobile ? "hidden" : "block"} px-3 py-2 bg-primary text-white rounded-lg`}
-                                aria-label="Buscar"
-                            >
-                                <Search width="1rem" />
-                            </button>
-*/}
-                {/* Mobile Account and Cart */}
-                {/* <div className={`${searchMobile ? "hidden" : "flex"} items-center gap-4`}>
-                                {isUser ? (
-                                    <div ref={menuRef} className="relative">
-                                        <button
-                                            aria-label="user"
-                                            className="flex items-center gap-2 hover:customtext-primary transition-colors duration-300"
-                                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                        >
-                                            <CircleUser className="customtext-primary" width="1.3rem" />
-                                        </button>
 
-                                        <AnimatePresence>
-                                            {isMenuOpen && (
-                                                <motion.div
-                                                    initial="hidden"
-                                                    animate="visible"
-                                                    exit="exit"
-                                                    variants={menuVariants}
-                                                    className="absolute z-50 top-full right-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
-                                                >
-                                                    <div className="p-4">
-                                                        <ul className="space-y-3">
-                                                            {menuItems.map((item, index) => (
-                                                                <li key={index}>
-                                                                    {item.onClick ? (
-                                                                        <button
-                                                                        aria-label="menu-items"
-                                                                            onClick={item.onClick}
-                                                                            className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
-                                                                        >
-                                                                            {item.icon}
-                                                                            <span>{item.label}</span>
-                                                                        </button>
-                                                                    ) : (
-                                                                        <a
-                                                                            href={item.href}
-                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
-                                                                        >
-                                                                            {item.icon}
-                                                                            <span>{item.label}</span>
-                                                                        </a>
-                                                                    )}
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                ) : (
-                                    <a href="/iniciar-sesion" className="flex items-center">
-                                        <CircleUser className="customtext-primary" width="1.3rem" />
-                                    </a>
-                                )}
-
+                {/* NUEVA SECCIÓN MÓVIL*/}
+                   {data?.mobileSearch && (
+                <div className="block md:hidden mt-6 space-y-4">
+                  
+                    {/* Tercera fila móvil: Barra de búsqueda completa */}
+                 
+                        <div className="w-full ">
+                            <form onSubmit={handleMobileSearch} role="search" className="relative w-full">
+                                <input
+                                    type="search"
+                                    name="search"
+                                    placeholder="Buscar productos..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    className="w-full pr-14 py-3 font-normal pl-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent focus:outline-none bg-gray-50"
+                                    enterKeyHint="search"
+                                    inputMode="search"
+                                    autoComplete="off"
+                                    role="searchbox"
+                                    aria-label="Buscar productos"
+                                />
                                 <button
-                                aria-label=""
-                                    onClick={() => setModalOpen(true)}
-                                    className="flex items-center relative"
+                                    type="submit"
+                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                    aria-label="Buscar"
                                 >
-                                    <ShoppingCart className="customtext-primary" width="1.3rem" />
-                                    <span className="absolute -right-2 -top-2 inline-flex items-center justify-center w-4 h-4 bg-primary text-white rounded-full text-[8px]">
-                                        {totalCount}
-                                    </span>
+                                    <Search size={18} />
                                 </button>
-                            </div>
+                            </form>
                         </div>
-
-                        <AnimatePresence>
-                            {searchMobile && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="fixed top-24 left-0 right-0 bg-white p-4 z-50"
-                                >
-                                    <div className="relative w-full">
-                                        <input
-                                            type="search"
-                                            placeholder="Buscar productos"
-                                            value={search}
-                                            onChange={(e) => setSearch(e.target.value)}
-                                            className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
-                                        />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
-                                            <button
-                                                aria-label="Cerrar"
-                                                onClick={() => setSearchMobile(false)}
-                                                className="p-2 bg-gray-200 text-gray-600 rounded-lg"
-                                            >
-                                                <XIcon size={20} />
-                                            </button>
-                                            <a
-                                                href={search.trim() ? `/catalogo?search=${encodeURIComponent(search)}` : "#"}
-                                                className="p-2 bg-primary text-white rounded-lg"
-                                                aria-label="Buscar"
-                                            >
-                                                <Search />
-                                            </a>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>*/}
-                {/*</div>*/}
+                   
+                </div>
+                )} 
             </div>
 
             <AnimatePresence>
@@ -567,5 +583,6 @@ const HeaderSearchB = ({
         </header>
     );
 };
+
 
 export default HeaderSearchB;

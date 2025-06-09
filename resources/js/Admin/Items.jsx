@@ -110,7 +110,7 @@ const Items = ({ categories, brands, collections }) => {
         if (itemData && itemData.images) {
             const existingImages = itemData.images.map((img) => ({
                 id: img.id, // ID de la imagen en la BD
-                url: `/storage/images/item_image/${img.url}`, // Ruta de la imagen almacenada
+                url: `/storage/images/item/${img.url}`, // Ruta de la imagen almacenada
             }));
             setGallery(existingImages);
         }

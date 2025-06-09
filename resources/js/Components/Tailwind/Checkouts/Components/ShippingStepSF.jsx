@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import Number2Currency from "../../../../Utils/Number2Currency";
 import ubigeoData from "../../../../../../storage/app/utils/ubigeo.json";
 import DeliveryPricesRest from "../../../../Actions/DeliveryPricesRest";
@@ -20,6 +20,10 @@ import UploadVoucherModalYape from "./UploadVoucherModalYape";
 import UploadVoucherModalBancs from "./UploadVoucherModalBancs";
 import { toast } from "sonner";
 import Global from "../../../../Utils/Global";
+import CouponsRest from "../../../../Actions/CouponsRest";
+import Tippy from "@tippyjs/react";
+
+const couponRest = new CouponsRest();
 
 export default function ShippingStepSF({
     cart,
@@ -39,7 +43,8 @@ export default function ShippingStepSF({
     ubigeos = [],
     contacts,
 }) {
-    
+    const couponRef = useRef(null);
+    const [coupon, setCoupon] = useState(null);
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
     const [formData, setFormData] = useState({
@@ -134,7 +139,6 @@ export default function ShippingStepSF({
     const numericIgv = typeof igv === 'number' ? igv : parseFloat(igv) || 0;
     const hasShippingFree = parseFloat(getContact("shipping_free"));
    
-
     const subFinal = numericSubTotal + numericIgv;
     
     const handleUbigeoChange = async (selected) => {
@@ -827,7 +831,36 @@ export default function ShippingStepSF({
         }),
       };
 
-    
+    const planDiscount = totalFinal * 0;
+
+    const couponDiscount =
+        ((totalFinal - planDiscount) * (coupon?.amount || 0)) / 100;
+
+    const onCouponApply = (e) => {
+        e.preventDefault();
+        const coupon = (couponRef.current.value || "").trim().toUpperCase();
+        if (!coupon) return;
+        couponRest
+            .save({
+                coupon,
+                amount: totalFinal,
+                email: "basiliohinostroza2003bradneve@gmail.com",
+            })
+            .then((result) => {
+              
+                if (result && result.id) { 
+                    setCoupon(result); 
+                } else {
+                    setCoupon(null);
+                }
+                
+            });
+            
+    };
+
+    const onCouponKeyDown = (e) => {
+        if (e.key == "Enter") onCouponApply(e);
+    };
 
     return (
         <>
@@ -1264,6 +1297,28 @@ export default function ShippingStepSF({
                         ))}
                     </div>
 
+                    {!coupon && (
+                        <div className="mt-6 flex">
+                            <input
+                                ref={couponRef}
+                                type="text"
+                                placeholder="Código de cupón"
+                                className="w-full rounded-l-md border border-gray-300 p-2 px-4 text-sm outline-none uppercase focus:border-[#C5B8D4]"
+                                value={coupon?.name}
+                                onKeyDown={onCouponKeyDown}
+                                disabled={loading}
+                            />
+                            <button
+                                className="rounded-r-md bg-[#5339B1] px-4 py-2 text-sm text-white"
+                                type="button"
+                                onClick={onCouponApply}
+                                disabled={loading}
+                            >
+                                Aplicar
+                            </button>
+                        </div>
+                    )}
+
                     <div className="space-y-4 mt-6">
                         <div className="flex justify-between">
                             <span className="customtext-neutral-dark">
@@ -1279,6 +1334,42 @@ export default function ShippingStepSF({
                                 S/ {Number2Currency(igv)}
                             </span>
                         </div>
+                        {coupon && (
+                            <div className="mb-2 mt-2 flex justify-between items-center border-b pb-2 text-sm font-bold">
+                                <span>
+                                    Cupón aplicado{" "}
+                                    <Tippy content="Eliminar">
+                                        <i
+                                            className="mdi mdi-close text-red-500 cursor-pointer"
+                                            onClick={() =>
+                                                setCoupon(null)
+                                            }
+                                        ></i>
+                                    </Tippy>
+                                    <small className="block text-xs font-light">
+                                        {coupon.name}{" "}
+                                        <Tippy
+                                            content={
+                                                coupon.description
+                                            }
+                                        >
+                                            <i className="mdi mdi-information-outline ms-1"></i>
+                                        </Tippy>{" "}
+                                        (-
+                                        {Math.round(
+                                            coupon.amount * 100
+                                        ) / 100}
+                                        %)
+                                    </small>
+                                </span>
+                                <span>
+                                    S/ -
+                                    {Number2Currency(
+                                        couponDiscount
+                                    )}
+                                </span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span className="customtext-neutral-dark">Envío</span>
                             <span className="font-semibold">

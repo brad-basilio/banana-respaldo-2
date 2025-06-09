@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, X, ChevronRight, ChevronLeft, Home, ShoppingCart, User, Menu } from "lucide-react";
 
 export default function MobileMenu({ search, setSearch, pages, items, onClose }) {
@@ -7,6 +7,30 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
     const [previousMenus, setPreviousMenus] = useState([]);
     const [animationDirection, setAnimationDirection] = useState("right"); // "right" o "left" para las animaciones
+
+    // Referencia para el input de búsqueda
+    const searchInputRef = useRef(null);
+
+    // Función para manejar el submit del formulario de búsqueda
+    const handleSearchSubmit = (event) => {
+        event.preventDefault();
+        if (search.trim()) {
+            const trimmedSearch = search.trim();
+            window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+        }
+        return false;
+    };
+
+    // Función para manejar el Enter y el icono de búsqueda del teclado móvil
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (search.trim()) {
+                const trimmedSearch = search.trim();
+                window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+            }
+        }
+    };
 
     // Función para manejar la navegación con animaciones
     const navigateTo = (level, direction = "right", categoryName = null) => {
@@ -137,6 +161,24 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
         };
     }, []);
 
+    // useEffect para manejar la tecla Escape en la búsqueda
+    useEffect(() => {
+        const handleKeyPress = (event) => {
+            if (event.key === 'Escape') {
+                if (search.trim()) {
+                    setSearch(""); // Limpiar búsqueda
+                } else {
+                    onClose(); // Cerrar menú si no hay búsqueda
+                }
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyPress);
+        return () => {
+            document.removeEventListener("keydown", handleKeyPress);
+        };
+    }, [search, onClose, setSearch]);
+
     return (
         <div className="fixed inset-0 z-50 flex flex-col touch-none overscroll-none">
             {/* Overlay oscuro */}
@@ -159,27 +201,32 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
 
                     {/* Contenido scrollable */}
                     <div className="overflow-y-auto flex-1 p-4 overscroll-contain">
-                        {/* Buscador */}
+                        {/* Buscador mejorado para móvil */}
                         <div className="mb-5">
-                            <div className="relative w-full">
+                            <form onSubmit={handleSearchSubmit} role="search" className="relative w-full">
                                 <input
+                                    ref={searchInputRef}
                                     type="search"
+                                    name="search"
                                     placeholder="Buscar productos"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={handleKeyDown}
                                     className="w-full pr-12 py-3 pl-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                                    enterKeyHint="search"
+                                    inputMode="search"
+                                    autoComplete="off"
+                                    role="searchbox"
+                                    aria-label="Buscar productos"
                                 />
-                                <a
-                                    href={
-                                        search.trim()
-                                            ? `/catalogo?search=${encodeURIComponent(search)}`
-                                            : "#"
-                                    }
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg"
+                                <button
+                                    type="submit"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                                    aria-label="Buscar"
                                 >
                                     <Search className="h-4 w-4" />
-                                </a>
-                            </div>
+                                </button>
+                            </form>
                         </div>
 
                         {/* Botón de retroceso */}

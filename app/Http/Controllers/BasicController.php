@@ -212,7 +212,7 @@ class BasicController extends Controller
       $response->status = 200;
       $response->message = 'Operación correcta';
       $response->data = $jpas;
-      $response->summary = $this->setPaginationSummary($request, $instance, $originalInstance, $originalInstance);
+      $response->summary = $this->setPaginationSummary($request, $instance, $originalInstance);
       $response->totalCount = $totalCount;
     } catch (\Throwable $th) {
      // dump($th);

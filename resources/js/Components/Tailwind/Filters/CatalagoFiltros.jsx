@@ -1,7 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CardHoverBtn from "../Products/Components/CardHoverBtn";
-import { ChevronDown, ChevronLeft, ChevronRight, Filter, Search, Tag, X } from "lucide-react";
+import { 
+    ChevronDown, 
+    ChevronLeft, 
+    ChevronRight, 
+    Filter, 
+    Search, 
+    Tag, 
+    X, 
+    Zap, 
+    Sparkles, 
+    Star,
+    ShoppingBag,
+    TrendingUp,
+    CheckCircle2,
+    Layers,
+    Grid3X3,
+    Sliders,
+    Trash
+} from "lucide-react";
 import ItemsRest from "../../../Actions/ItemsRest";
 import ArrayJoin from "../../../Utils/ArrayJoin";
 import { Loading } from "../Components/Resources/Loading";
@@ -11,23 +29,165 @@ import { GET } from "sode-extend-react";
 
 const itemsRest = new ItemsRest();
 
-const SkeletonCard = () => {
+// Configuración de animaciones para todos los elementos del filtro
+const filterAnimations = {
+    container: {
+        initial: { opacity: 0, scale: 0.95 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.95 },
+        transition: { duration: 0.3, ease: "easeOut" }
+    },
+    section: {
+        initial: { opacity: 0, height: 0 },
+        animate: { opacity: 1, height: "auto" },
+        exit: { opacity: 0, height: 0 },
+        transition: { duration: 0.3, ease: "easeInOut" }
+    },
+    item: {
+        initial: { opacity: 0, x: -10 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: 10 },
+        transition: { duration: 0.2, ease: "easeOut" }
+    },
+    badge: {
+        initial: { scale: 0, opacity: 0 },
+        animate: { scale: 1, opacity: 1 },
+        exit: { scale: 0, opacity: 0 },
+        transition: { type: "spring", stiffness: 300, damping: 20 }
+    },
+    hover: { 
+        scale: 1.02, 
+        y: -2,
+        transition: { duration: 0.2 }
+    },
+    tap: { 
+        scale: 0.98,
+        transition: { duration: 0.1 }
+    },
+    stagger: {
+        animate: {
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    }
+};
+
+// Estilos CSS modernos para una mejor experiencia de usuario
+const modernFilterStyles = {
+    filterContainer: "backdrop-blur-xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 border border-gray-200/60 rounded-2xl shadow-2xl shadow-gray-900/10",
+    filterHeader: "bg-white border-b border-gray-200/60 rounded-t-2xl",
+    filterSection: "group transition-all duration-300 hover:bg-gradient-to-r hover:from-gray-50/60 hover:to-blue-50/40 rounded-xl",
+    filterButton: "w-full flex items-center justify-between p-4 rounded-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 group",
+    filterContent: "bg-gradient-to-b from-white/90 to-gray-50/50 rounded-xl border border-gray-200/40 backdrop-blur-sm",
+    searchInput: "w-full pl-12 pr-4 py-3 bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all duration-300 placeholder:customtext-neutral-dark",
+    checkbox: "min-h-5 min-w-5 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-blue-500/30 focus:ring-2 transition-all duration-200 hover:border-blue-400",
+    label: "flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/60 hover:to-indigo-50/40 cursor-pointer group",
+    activeFilter: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25",
+    badge: "inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-full text-sm font-medium text-blue-700",
+    glowEffect: "shadow-lg shadow-blue-500/20 ring-1 ring-blue-500/20",
+    pulseAnimation: "animate-pulse",
+    shimmerEffect: "relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent"
+};
+
+
+
+
+
+
+const SkeletonCard = ({ delay = 0 }) => {
     return (
-        <div className={`group animate-pulse transition-transform duration-300 hover:scale-105 w-1/2 lg:w-1/4 flex-shrink-0 font-font-general customtext-primary cursor-pointer`}>
-            <div className="px-4">
-                <div className="bg-white rounded-3xl">
-                    <div className="relative">
-                        <div className="aspect-square bg-gray-300 rounded-3xl overflow-hidden flex items-center justify-center bg-secondary">
-                            <svg className="w-10 h-10 text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
-                                <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z" />
-                            </svg>
+        <motion.div 
+            className="group w-full h-full"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+                delay,
+                duration: 0.6,
+                ease: "easeOut"
+            }}
+        >
+            <div className="px-4 h-full">
+                <div className="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full">
+                    {/* Contenedor principal con altura fija similar a las tarjetas reales */}
+                    <div className="flex flex-col h-[400px] lg:h-[460px] xl:h-[400px] 2xl:h-[430px]">
+                        
+                        {/* Imagen del producto skeleton */}
+                        <div className="relative flex-1 bg-gray-100 rounded-t-3xl overflow-hidden">
+                            {/* Efecto shimmer mejorado */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200">
+                                {/* Shimmer principal */}
+                                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2.5s_infinite] bg-gradient-to-r from-transparent via-white/70 to-transparent transform skew-x-12"></div>
+                                
+                                {/* Shimmer secundario para más profundidad */}
+                                <div className="absolute inset-0 -translate-x-full animate-[shimmer_3s_infinite] bg-gradient-to-r from-transparent via-blue-100/30 to-transparent transform skew-x-12" style={{ animationDelay: '0.5s' }}></div>
+                            </div>
+                            
+                            {/* Placeholder del icono de imagen */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <motion.div
+                                    animate={{ 
+                                        scale: [1, 1.1, 1],
+                                        opacity: [0.5, 0.8, 0.5]
+                                    }}
+                                    transition={{ 
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
+                                >
+                                    <ShoppingBag className="w-12 h-12 text-gray-300" />
+                                </motion.div>
+                            </div>
+
+                            {/* Badge de descuento skeleton */}
+                            <div className="absolute top-3 left-3">
+                                <div className="h-6 w-16 bg-gray-300 rounded-full animate-pulse"></div>
+                            </div>
+
+                            {/* Botón de favorito skeleton */}
+                            <div className="absolute top-3 right-3">
+                                <div className="h-8 w-8 bg-gray-300 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+
+                        {/* Contenido del producto skeleton */}
+                        <div className="p-4 space-y-3 bg-white flex-shrink-0">
+                            {/* Marca skeleton */}
+                            <div className="h-3 w-20 bg-gray-200 rounded-full animate-pulse"></div>
+                            
+                            {/* Título del producto skeleton */}
+                            <div className="space-y-2">
+                                <div className="h-4 w-full bg-gray-300 rounded animate-pulse"></div>
+                                <div className="h-4 w-3/4 bg-gray-300 rounded animate-pulse"></div>
+                            </div>
+
+                            {/* Precio skeleton */}
+                            <div className="flex items-center justify-between pt-2">
+                                <div className="space-y-1">
+                                    <div className="h-3 w-16 bg-gray-200 rounded animate-pulse"></div>
+                                    <div className="h-5 w-24 bg-gray-400 rounded animate-pulse"></div>
+                                </div>
+                                
+                                {/* Botón de agregar al carrito skeleton */}
+                                <div className="h-10 w-10 bg-gray-300 rounded-xl animate-pulse"></div>
+                            </div>
+
+                            {/* Rating skeleton */}
+                            <div className="flex items-center space-x-1 pt-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <div key={star} className="h-3 w-3 bg-gray-200 rounded-full animate-pulse"></div>
+                                ))}
+                                <div className="h-3 w-8 bg-gray-200 rounded animate-pulse ml-2"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
+
 
 const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     // Estado para el filtro padre (independiente)
@@ -176,11 +336,16 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 ),
             });
             // Update all filter options from backend summary
+            console.log('🔍 DEBUG - Response summary:', response?.summary);
+            console.log('🔍 DEBUG - Subcategories raw:', response?.summary.subcategories);
+            
             setBrands(response?.summary.brands || []);
             setCategories(response?.summary.categories || []);
             setSubcategories(response?.summary.subcategories || []);
             setCollections(response?.summary.collections || []);
             setPriceRanges(response?.summary.priceRanges || []);
+            
+            console.log('✅ DEBUG - Subcategories state set:', response?.summary.subcategories || []);
         } catch (error) {
             console.log("Error fetching products:", error);
         } finally {
@@ -188,10 +353,51 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
     };
 
-
-
-
-
+    useEffect(() => {
+        // Initialize state from filteredData prop
+        console.log('🚀 DEBUG - filteredData prop:', filteredData);
+        
+        // Debug the complete filteredData object structure
+        console.log('🔍 FULL DEBUG - Complete filteredData object:');
+        console.log('Keys:', Object.keys(filteredData || {}));
+        Object.keys(filteredData || {}).forEach(key => {
+            console.log(`${key}:`, filteredData[key]);
+            if (Array.isArray(filteredData[key])) {
+                console.log(`${key} length:`, filteredData[key].length);
+                if (filteredData[key].length > 0) {
+                    console.log(`First ${key}:`, filteredData[key][0]);
+                }
+            }
+        });
+        
+        if (filteredData) {
+            console.log('📊 DEBUG - Available data keys:', Object.keys(filteredData));
+            
+            // Set initial data from SystemController
+            if (filteredData.categories) {
+                console.log('📂 DEBUG - Setting categories:', filteredData.categories);
+                setCategories(filteredData.categories || []);
+            }
+            
+            if (filteredData.brands) {
+                console.log('🏷️ DEBUG - Setting brands:', filteredData.brands);
+                setBrands(filteredData.brands || []);
+            }
+            
+            if (filteredData.subcategories) {
+                console.log('📋 DEBUG - Setting subcategories from filteredData:', filteredData.subcategories);
+                setSubcategories(filteredData.subcategories || []);
+            }
+            
+            if (filteredData.priceRanges) {
+                console.log('💰 DEBUG - Setting price ranges:', filteredData.priceRanges);
+                setPriceRanges(filteredData.priceRanges || []);
+            }
+        }
+        
+        // Initial fetch to get products and update summary data
+        fetchProducts(1, false);
+    }, [filteredData]);
 
     useEffect(() => {
         // Cuando cambian los filtros, volvemos a la primera página y desplazamos hacia arriba
@@ -320,6 +526,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const filteredSubcategories = subcategories.filter((subcategory) =>
         subcategory.name.toLowerCase().includes(searchSubcategory.toLowerCase())
     );
+    
+ 
 
     // Filtrar marcas según el input
     const filteredBrands = brands.filter((brand) =>
@@ -328,20 +536,54 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
     const [filtersOpen, setFiltersOpen] = useState(false);
 
+    // Efecto para manejar el scroll del body cuando el modal está abierto
+    useEffect(() => {
+        if (filtersOpen) {
+            // Prevenir scroll del body cuando el modal esté abierto en mobile
+            document.body.classList.add('filter-modal-open');
+            document.body.style.overflow = 'hidden';
+        } else {
+            // Restaurar scroll del body cuando el modal se cierre
+            document.body.classList.remove('filter-modal-open');
+            document.body.style.overflow = 'unset';
+        }
+        
+        // Cleanup cuando el componente se desmonta
+        return () => {
+            document.body.classList.remove('filter-modal-open');
+            document.body.style.overflow = 'unset';
+        };
+    }, [filtersOpen]);
+
     return (
-        <section className="py-12 bg-sections-color customtext-neutral-dark">
+        <section className="py-12 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
             <div className="mx-auto px-primary 2xl:px-0 2xl:max-w-7xl">
-                <div className="flex flex-col md:flex-row md:justify-between items-center mb-8 pb-4 border-b-2">
-                    <h2 className="text-[32px] md:text-4xl font-bold md:w-6/12">
-                        {data?.title}
-                    </h2>
-                    <div className="flex flex-col w-full  items-center gap-4 md:flex-row md:w-5/12">
-                        <span className="block md:w-6/12 order-1 md:order-none">
-                            Productos seleccionados:{" "}
-                            <strong>{products?.length}</strong>
-                        </span>
-                        {/* Ordenación */}
-                        <div className="w-full md:w-6/12">
+                {/* Header mejorado con estadísticas y acciones rápidas */}
+                <motion.div 
+                    className="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-8 pb-6 border-b-2 border-gradient-to-r from-blue-200 via-indigo-200 to-purple-200"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <motion.div 
+                        className="md:w-6/12 mb-4 md:mb-0"
+                        whileHover={{ scale: 1.02 }}
+                    >
+                        <h2 className="text-[32px] md:text-4xl font-bold customtext-primary  mb-2">
+                            {data?.title}
+                        </h2>
+                      
+                    </motion.div>
+                    
+                    <div className="flex flex-col w-full items-start md:items-cenrter justify-end gap-4 md:flex-row md:w-5/12">
+                        {/* Estadísticas mejoradas */}
+                      
+                        
+                        {/* Selector de ordenación mejorado */}
+                        <motion.div 
+                            className="w-full md:w-6/12  relative"
+                         
+                        >
                             <SelectForm
                                 options={sortOptions}
                                 placeholder="Ordenar por"
@@ -361,327 +603,891 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 labelKey="label"
                                 valueKey="value"
                             />
-                        </div>
+                        </motion.div>
                     </div>
-                </div>
+                </motion.div>
 
-                <div className="relative flex flex-col lg:flex-row gap-4">
-                    <button
-                        className="w-full flex lg:hidden gap-2 items-center"
-                        onClick={() => setFiltersOpen(true)}
-                    >
-                        <h2 className="text-2xl font-bold">Filtros</h2>
-                        <Filter className="h-5 w-5" />
-                    </button>
-                    <div className={`${filtersOpen
-                        ? "fixed inset-0  bg-white flex flex-col h-screen z-[999]"
-                        : "hidden"
-                        } lg:block lg:w-3/12 lg:bg-white lg:p-4 lg:rounded-lg lg:h-max`}
-                    >
-                        {/* Header fijo para mobile */}
-                        <div className="fixed top-0 left-0 right-0 bg-white p-4 border-b z-10 h-16 flex items-center justify-between lg:relative lg:p-0 lg:border-none lg:h-auto">
-                            <h2 className="text-xl font-bold">Filtros</h2>
-                            <button
-                                className="lg:hidden"
-                                onClick={() => setFiltersOpen(false)}
+                <div className="relative flex flex-col lg:flex-row gap-6">
+                    {/* Botón de filtros para móvil ultra mejorado */}
+                    <motion.div className="w-full lg:hidden mb-6">
+                        <Tooltip text="Abrir panel de filtros avanzados" position="bottom">
+                            <motion.button
+                                className="w-full flex items-center z-0 gap-2 py-2 px-4 bg-primary text-white rounded-2xl shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 overflow-hidden relative"
+                                onClick={() => setFiltersOpen(true)}
+                                whileHover={{ scale: 1.02, y: -3 }}
+                                whileTap={{ scale: 0.98 }}
+                                {...filterAnimations.container}
                             >
-                                <X className="h-5 w-5" />
-                            </button>
-                            <Filter className="hidden lg:block h-5 w-5" />
-                        </div>
-
-                        {/* Contenido principal con scroll */}
-                        <div className="flex-1 overflow-y-auto px-4 mt-16 pb-20 lg:mt-0 lg:pb-0 lg:px-0">
-                            {/* Sección Marcas */}
-                            <div className="mb-6">
-                                <button
-                                    onClick={() => toggleSection("marca")}
-                                    className="flex items-center justify-between w-full mb-4 p-2 lg:p-0"
-                                >
-                                    <span className="font-medium">Marca</span>
-                                    <ChevronDown
-                                        className={`h-5 w-5 transform transition-transform ${sections.marca ? "" : "-rotate-180"
-                                            }`}
-                                    />
-                                </button>
-                                {sections.marca && (
-                                    <div className="space-y-4">
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                            <input
-                                                type="text"
-                                                placeholder="Buscar"
-                                                className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-0 focus:outline-0"
-                                                value={searchBrand}
-                                                onChange={(e) => setSearchBrand(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="space-y-3 max-h-[200px] overflow-y-auto p-1">
-                                            {filteredBrands.map((brand) => (
-                                                <label
-                                                    key={brand.id}
-                                                    className="flex items-center gap-2 py-1.5"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        className="h-5 w-5 rounded border-gray-300 accent-primary"
-                                                        onChange={() => handleFilterChange("brand_id", brand.slug)}
-                                                    />
-                                                    <span className="text-sm lg:text-base">{brand.name}</span>
-                                                </label>
-                                            ))}
-                                        </div>
+                                {/* Fondo animado */}
+                                <motion.div
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                                    animate={{ x: ['-100%', '100%'] }}
+                                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                />
+                                
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <motion.div
+                                        className="p-3 bg-white/20 rounded-xl backdrop-blur-sm"
+                                        animate={{ 
+                                            rotate: [0, 10, 0],
+                                            scale: [1, 1.1, 1]
+                                        }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                        <Sliders className="h-4 w-4" />
+                                    </motion.div>
+                                    <div className="text-left">
+                                        <h2 className="text-xl font-bold flex items-center gap-2">
+                                            Filtros
+                                           
+                                        </h2>
+                                       
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                                
+                               
+                            </motion.button>
+                        </Tooltip>
+                    </motion.div>
 
-                            {/* Sección Categorías */}
-                            <div className="mb-6">
-                                <button
-                                    onClick={() => toggleSection("categoria")}
-                                    className="flex items-center justify-between w-full mb-4 p-2 lg:p-0"
+                    {/* Panel de filtros mejorado */}
+                    <motion.div 
+                        className={`${filtersOpen
+                            ? "fixed inset-0 backdrop-blur-md z-[999] flex flex-col mobile-filter-modal"
+                            : "hidden"
+                        } lg:block lg:w-3/12 lg:bg-transparent lg:h-max lg:relative lg:z-auto`}
+                        {...(filtersOpen ? filterAnimations.container : {})}
+                        initial={filtersOpen ? { opacity: 0 } : false}
+                        animate={filtersOpen ? { opacity: 1 } : false}
+                        exit={filtersOpen ? { opacity: 0 } : false}
+                        transition={{ duration: 0.3 }}
+                        onClick={filtersOpen ? (e) => {
+                            if (e.target === e.currentTarget) {
+                                setFiltersOpen(false);
+                            }
+                        } : undefined}
+                    >
+                        {/* Contenedor principal de filtros - Estructura mejorada para mobile */}
+                        <div className={`${filtersOpen 
+                            ? "flex flex-col h-full bg-transparent" 
+                            : modernFilterStyles.filterContainer
+                        } lg:backdrop-blur-xl lg:border lg:border-gray-200/60 lg:rounded-2xl lg:shadow-2xl lg:shadow-gray-900/10`}>
+                            
+                            {/* Contenido principal del modal mobile - ocupando todo excepto el footer */}
+                            <div className={`${filtersOpen 
+                                ? "mx-4 mt-4 mb-2 bg-white rounded-t-3xl shadow-2xl flex flex-col flex-1 overflow-hidden safe-area-top mobile-filter-content"
+                                : ""
+                            }`}>
+                            
+                            {/* Header mejorado */}
+                            <motion.div 
+                                className={`${modernFilterStyles.filterHeader} p-6 flex items-center justify-between lg:relative lg:p-4`}
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <motion.div 
+                                        className="p-2 bg-primary rounded-xl shadow-lg"
+                                        whileHover={{ rotate: 360 }}
+                                        transition={{ duration: 0.6 }}
+                                    >
+                                        <Filter className="h-5 w-5 text-white" />
+                                    </motion.div>
+                                    <div>
+                                        <h2 className="text-xl font-bold customtext-neutral-dark">
+                                            Filtros
+                                        </h2>
+                                        <p className="text-sm customtext-neutral-dark hidden lg:block">
+                                            Refina tu búsqueda con precisión
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                              
+                            </motion.div>
+
+                            {/* Contenido principal con scroll mejorado - ajustado para footer móvil */}
+                            <div className="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar" 
+                                 style={{ 
+                                     height: filtersOpen ? 'calc(100vh - 200px)' : 'auto',
+                                     paddingBottom: filtersOpen ? '1rem' : '1.5rem'
+                                 }}>
+                                {/* Sección Marcas Mejorada */}
+                                <motion.div 
+                                    className={modernFilterStyles.filterSection}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
                                 >
-                                    <span className="font-medium">Categoría</span>
-                                    <ChevronDown
-                                        className={`h-5 w-5 transform transition-transform ${sections.categoria ? "" : "-rotate-180"
-                                            }`}
-                                    />
-                                </button>
-                                {sections.categoria && (
-                                    <div className="space-y-4">
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                            <input
-                                                type="text"
-                                                placeholder="Buscar"
-                                                className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-0 focus:outline-0"
-                                                value={searchCategory}
-                                                onChange={(e) => setSearchCategory(e.target.value)}
-                                            />
+                                    <motion.button
+                                        onClick={() => toggleSection("marca")}
+                                        className={modernFilterStyles.filterButton}
+                                        whileHover={filterAnimations.hover}
+                                        whileTap={filterAnimations.tap}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <motion.div 
+                                                className="p-2 bg-primary rounded-lg shadow-md"
+                                                animate={{ rotate: sections.marca ? 360 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <Tag className="h-4 w-4 text-white" />
+                                            </motion.div>
+                                            <div className="text-left">
+                                                <span className="font-semibold customtext-neutral-dark">Marcas</span>
+                                                <p className="text-xs customtext-neutral-dark">Selecciona tus marcas favoritas</p>
+                                            </div>
                                         </div>
-                                        <div className="space-y-3 max-h-[200px] overflow-y-auto p-1">
-                                            {filteredCategories.map((category) => (
-                                                <div key={category.id}>
-                                                    <label className="flex items-center gap-2 py-1.5">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="h-5 w-5 rounded border-gray-300 accent-primary"
-                                                            onChange={() => handleFilterChange("category_id", category.slug)}
-                                                            checked={selectedFilters.category_id?.includes(category.slug)}
-                                                        />
-                                                        <span className="text-sm lg:text-base">{category.name}</span>
-                                                    </label>
+                                        <motion.div
+                                            animate={{ rotate: sections.marca ? 180 : 0 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <ChevronDown className="h-5 w-5 customtext-neutral-dark" />
+                                        </motion.div>
+                                    </motion.button>
+                                    
+                                    <AnimatePresence>
+                                        {sections.marca && (
+                                            <motion.div 
+                                                className={`mt-4 p-4 ${modernFilterStyles.filterContent}`}
+                                                {...filterAnimations.section}
+                                            >
+                                                {/* Barra de búsqueda mejorada */}
+                                                <div className="relative mb-4">
+                                                    <motion.div
+                                                        className="absolute left-4 top-4 z-[99]"
+                                                    
+                                                    >
+                                                        <Search className="h-4 w-4" />
+                                                    </motion.div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Buscar marcas..."
+                                                        className={modernFilterStyles.searchInput}
+                                                        value={searchBrand}
+                                                        onChange={(e) => setSearchBrand(e.target.value)}
+                                                    />
+                                                   
+                                                </div>
+                                                
+                                                {/* Lista de marcas mejorada */}
+                                                <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                                    <AnimatePresence>
+                                                        {filteredBrands.map((brand, index) => (
+                                                            <motion.label
+                                                                key={brand.id}
+                                                                className={modernFilterStyles.label}
+                                                                {...filterAnimations.item}
+                                                                transition={{ delay: index * 0.05 }}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className={modernFilterStyles.checkbox}
+                                                                    onChange={() => handleFilterChange("brand_id", brand.slug)}
+                                                                    checked={selectedFilters.brand_id?.includes(brand.slug)}
+                                                                />
+                                                                <span className="text-sm font-medium line-clamp-1 customtext-neutral-dark  transition-colors duration-200">
+                                                                    {brand.name}
+                                                                </span>
+                                                                {selectedFilters.brand_id?.includes(brand.slug) && (
+                                                                    <motion.div
+                                                                        className="ml-auto"
+                                                                        initial={{ scale: 0 }}
+                                                                        animate={{ scale: 1 }}
+                                                                        exit={{ scale: 0 }}
+                                                                    >
+                                                                        <CheckCircle2 className="h-4 w-4 customtext-primary" />
+                                                                    </motion.div>
+                                                                )}
+                                                            </motion.label>
+                                                        ))}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
 
-                                                    {selectedFilters.category_id?.includes(category.slug) && (
-                                                        <ul className="ml-4 pl-3 mt-1 space-y-2 border-l-2 border-gray-200">
-                                                            {category.subcategories?.map((sub) => (
-                                                                <label key={sub.id} className="flex items-center gap-2 py-1.5">
+                                {/* Sección Categorías Mejorada */}
+                                <motion.div 
+                                    className={modernFilterStyles.filterSection}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                >
+                                    <motion.button
+                                        onClick={() => toggleSection("categoria")}
+                                        className={modernFilterStyles.filterButton}
+                                        whileHover={filterAnimations.hover}
+                                        whileTap={filterAnimations.tap}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <motion.div 
+                                                className="p-2 bg-primary rounded-lg shadow-md"
+                                                animate={{ rotate: sections.categoria ? 360 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <Layers className="h-4 w-4 text-white" />
+                                            </motion.div>
+                                            <div className="text-left">
+                                                <span className="font-semibold customtext-neutral-dark">Categorías</span>
+                                                <p className="text-xs customtext-neutral-dark">Explora por categorías</p>
+                                            </div>
+                                        </div>
+                                        <motion.div
+                                            animate={{ rotate: sections.categoria ? 180 : 0 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <ChevronDown className="h-5 w-5 customtext-neutral-dark" />
+                                        </motion.div>
+                                    </motion.button>
+                                    
+                                    <AnimatePresence>
+                                        {sections.categoria && (
+                                            <motion.div 
+                                                className={`mt-4 p-4 ${modernFilterStyles.filterContent}`}
+                                                {...filterAnimations.section}
+                                            >
+                                                {/* Barra de búsqueda */}
+                                                <div className="relative mb-4">
+                                                    <motion.div
+                                                         className="absolute left-4 top-4 z-[99]"
+                                                   
+                                                    >
+                                                        <Search className="h-4 w-4" />
+                                                    </motion.div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Buscar categorías..."
+                                                        className={modernFilterStyles.searchInput}
+                                                        value={searchCategory}
+                                                        onChange={(e) => setSearchCategory(e.target.value)}
+                                                    />
+                                                </div>
+                                                
+                                                {/* Lista de categorías con subcategorías */}
+                                                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                    <AnimatePresence>
+                                                        {filteredCategories.map((category, index) => (
+                                                            <motion.div 
+                                                                key={category.id}
+                                                                className=" rounded-xl overflow-hidden"
+                                                                {...filterAnimations.item}
+                                                                transition={{ delay: index * 0.05 }}
+                                                            >
+                                                                <motion.label 
+                                                                    className={`${modernFilterStyles.label} `}
+                                                                  
+                                                                >
                                                                     <input
                                                                         type="checkbox"
-                                                                        className="h-4 w-4 rounded border-gray-300 accent-primary"
-                                                                        onChange={() => handleFilterChange("subcategory_id", sub.slug)}
-                                                                        checked={selectedFilters.subcategory_id?.includes(sub.slug)}
+                                                                        className={modernFilterStyles.checkbox}
+                                                                        onChange={() => handleFilterChange("category_id", category.slug)}
+                                                                        checked={selectedFilters.category_id?.includes(category.slug)}
                                                                     />
-                                                                    <span className="text-sm lg:text-base">{sub.name}</span>
-                                                                </label>
-                                                            ))}
-                                                        </ul>
+                                                                    <span className="text-sm line-clamp-1 customtext-neutral-dark  transition-colors duration-200">
+                                                                        {category.name}
+                                                                    </span>
+                                                                    {selectedFilters.category_id?.includes(category.slug) && (
+                                                                        <motion.div
+                                                                            className="ml-auto"
+                                                                            initial={{ scale: 0 }}
+                                                                            animate={{ scale: 1 }}
+                                                                            exit={{ scale: 0 }}
+                                                                        >
+                                                                            <CheckCircle2 className="h-4 w-4 customtext-primary" />
+                                                                        </motion.div>
+                                                                    )}
+                                                                </motion.label>
+
+                                                                {/* Subcategorías expandibles */}
+                                                                <AnimatePresence>
+                                                                    {selectedFilters.category_id?.includes(category.slug) && category.subcategories && (
+                                                                        <motion.div
+                                                                            className="bg-gradient-to-b from-purple-25 to-white/50 p-3"
+                                                                            initial={{ height: 0, opacity: 0 }}
+                                                                            animate={{ height: "auto", opacity: 1 }}
+                                                                            exit={{ height: 0, opacity: 0 }}
+                                                                            transition={{ duration: 0.3 }}
+                                                                        >
+                                                                            <div className="space-y-2 pl-4 border-l-2 border-purple-200">
+                                                                                {category.subcategories.map((sub) => (
+                                                                                    <motion.label 
+                                                                                        key={sub.id} 
+                                                                                        className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-purple-50/60 transition-colors duration-200 cursor-pointer group"
+                                                                                        whileHover={{ x: 3 }}
+                                                                                    >
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            className="h-4 w-4 rounded border-2 border-purple-300 text-purple-600 focus:ring-purple-500/30"
+                                                                                            onChange={() => handleFilterChange("subcategory_id", sub.slug)}
+                                                                                            checked={selectedFilters.subcategory_id?.includes(sub.slug)}
+                                                                                        />
+                                                                                        <span className="text-sm line-clamp-1 customtext-neutral-dark group-hover:text-purple-600 transition-colors duration-200">
+                                                                                            {sub.name}
+                                                                                        </span>
+                                                                                    </motion.label>
+                                                                                ))}
+                                                                            </div>
+                                                                        </motion.div>
+                                                                    )}
+                                                                </AnimatePresence>
+                                                            </motion.div>
+                                                        ))}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+   {/* Sección Subcategorías Independiente */}
+                                <motion.div 
+                                    className={modernFilterStyles.filterSection}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.35 }}
+                                >
+                                    <motion.button
+                                        onClick={() => toggleSection("subcategoria")}
+                                        className={modernFilterStyles.filterButton}
+                                        whileHover={filterAnimations.hover}
+                                        whileTap={filterAnimations.tap}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <motion.div 
+                                                className="p-2 bg-primary rounded-lg shadow-md"
+                                                animate={{ rotate: sections.subcategoria ? 360 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <Grid3X3 className="h-4 w-4 text-white" />
+                                            </motion.div>
+                                            <div className="text-left">
+                                                <span className="font-semibold customtext-neutral-dark">Subcategorías</span>
+                                                <p className="text-xs customtext-neutral-dark">Busca por subcategorías específicas</p>
+                                            </div>
+                                        </div>
+                                        <motion.div
+                                            animate={{ rotate: sections.subcategoria ? 180 : 0 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <ChevronDown className="h-5 w-5 customtext-neutral-dark" />
+                                        </motion.div>
+                                    </motion.button>
+                                    
+                                    <AnimatePresence>
+                                        {sections.subcategoria && (
+                                            <motion.div 
+                                                className={`mt-4 p-4 ${modernFilterStyles.filterContent}`}
+                                                {...filterAnimations.section}
+                                            >
+                                                {/* Barra de búsqueda para subcategorías */}
+                                                <div className="relative mb-4">
+                                                    <motion.div
+                                                       className="absolute left-4 top-4 z-[99]"
+                                                        animate={{ scale: [1, 1.1, 1] }}
+                                                        transition={{ duration: 2, repeat: Infinity }}
+                                                    >
+                                                        <Search className="h-4 w-4" />
+                                                    </motion.div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Buscar subcategorías..."
+                                                        className={modernFilterStyles.searchInput}
+                                                        value={searchSubcategory}
+                                                        onChange={(e) => setSearchSubcategory(e.target.value)}
+                                                    />
+                                                
+                                                </div>
+                                                
+                                                {/* Lista de subcategorías mejorada */}
+                                                <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar">
+                                                    <AnimatePresence>
+                                                        {filteredSubcategories.length > 0 ? (
+                                                            filteredSubcategories.map((subcategory, index) => (
+                                                                <motion.label
+                                                                    key={subcategory.id}
+                                                                    className={modernFilterStyles.label}
+                                                                    {...filterAnimations.item}
+                                                                    transition={{ delay: index * 0.05 }}
+                                                                >
+                                                                    <input
+                                                                   
+                                                                        type="checkbox"
+                                                                        className={modernFilterStyles.checkbox}
+                                                                        onChange={() => handleFilterChange("subcategory_id", subcategory.slug)}
+                                                                        checked={selectedFilters.subcategory_id?.includes(subcategory.slug)}
+                                                                    />
+                                                                    <span className="text-sm line-clamp-1 font-medium customtext-neutral-dark transition-colors duration-200">
+                                                                        {subcategory.name}
+                                                                    </span>
+                                                                    {selectedFilters.subcategory_id?.includes(subcategory.slug) && (
+                                                                        <motion.div
+                                                                            className="ml-auto"
+                                                                            initial={{ scale: 0 }}
+                                                                            animate={{ scale: 1 }}
+                                                                            exit={{ scale: 0 }}
+                                                                        >
+                                                                            <CheckCircle2 className="h-4 w-4 customtext-primary" />
+                                                                        </motion.div>
+                                                                    )}
+                                                                </motion.label>
+                                                            ))
+                                                        ) : (
+                                                            <motion.div 
+                                                                className="text-center py-6 customtext-neutral-dark"
+                                                                initial={{ opacity: 0 }}
+                                                                animate={{ opacity: 1 }}
+                                                            >
+                                                                <Grid3X3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                                <p className="text-sm">No se encontraron subcategorías</p>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+                                {/* Sección Precio Mejorada */}
+                                <motion.div 
+                                    className={modernFilterStyles.filterSection}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                >
+                                    <motion.button
+                                        onClick={() => toggleSection("precio")}
+                                        className={modernFilterStyles.filterButton}
+                                        whileHover={filterAnimations.hover}
+                                        whileTap={filterAnimations.tap}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <motion.div 
+                                                className="p-2 bg-primary rounded-lg shadow-md"
+                                                animate={{ rotate: sections.precio ? 360 : 0 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <TrendingUp className="h-4 w-4 text-white" />
+                                            </motion.div>
+                                            <div className="text-left">
+                                                <span className="font-semibold customtext-neutral-dark">Rango de Precio</span>
+                                                <p className="text-xs customtext-neutral-dark">Encuentra tu presupuesto ideal</p>
+                                            </div>
+                                        </div>
+                                        <motion.div
+                                            animate={{ rotate: sections.precio ? 180 : 0 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <ChevronDown className="h-5 w-5 customtext-neutral-dark" />
+                                        </motion.div>
+                                    </motion.button>
+                                    
+                                    <AnimatePresence>
+                                        {sections.precio && (
+                                            <motion.div 
+                                                className={`mt-4 p-4 ${modernFilterStyles.filterContent}`}
+                                                {...filterAnimations.section}
+                                            >
+                                                <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                                    <AnimatePresence>
+                                                        {priceRanges.map((range, index) => (
+                                                            <motion.label
+                                                                key={`${range.min}-${range.max}`}
+                                                                className={modernFilterStyles.label}
+                                                                {...filterAnimations.item}
+                                                                transition={{ delay: index * 0.05 }}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className={modernFilterStyles.checkbox}
+                                                                    onChange={() => handleFilterChange("price", range)}
+                                                                    checked={
+                                                                        selectedFilters.price?.min === range.min &&
+                                                                        selectedFilters.price?.max === range.max
+                                                                    }
+                                                                />
+                                                                <span className="text-sm line-clamp-1 font-medium customtext-neutral-dark  transition-colors duration-200">
+                                                                    S/ {range.min} - S/ {range.max}
+                                                                </span>
+                                                                {(selectedFilters.price?.min === range.min && selectedFilters.price?.max === range.max) && (
+                                                                    <motion.div
+                                                                        className="ml-auto"
+                                                                        initial={{ scale: 0 }}
+                                                                        animate={{ scale: 1 }}
+                                                                        exit={{ scale: 0 }}
+                                                                    >
+                                                                        <CheckCircle2 className="h-4 w-4 customtext-primary" />
+                                                                    </motion.div>
+                                                                )}
+                                                            </motion.label>
+                                                        ))}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+
+                             
+
+                                {/* Chips de filtros activos mejorados */}
+                                <motion.div
+                                    className="mt-6 pt-6 border-t border-gray-200/60"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.5 }}
+                                >
+                                    <AnimatePresence>
+                                        {(selectedFilters.brand_id?.length > 0 || 
+                                          selectedFilters.category_id?.length > 0 || 
+                                          selectedFilters.subcategory_id?.length > 0 || 
+                                          selectedFilters.price) && (
+                                            <motion.div
+                                                className="mb-4"
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                            >
+                                                <h4 className="text-sm font-semibold customtext-neutral-dark mb-3 flex items-center gap-2">
+                                                    <Star className="h-4 w-4 customtext-primary" />
+                                                    Filtros Activos
+                                                </h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {/* Chips de marcas con AnimatedBadge */}
+                                                    {selectedFilters.brand_id?.map((brandSlug) => {
+                                                        const brand = brands.find(b => b.slug === brandSlug);
+                                                        return brand ? (
+                                                            <AnimatedBadge
+                                                                key={brandSlug}
+                                                             
+                                                                onClick={() => handleFilterChange("brand_id", brandSlug)}
+                                                                className="group"
+                                                            >
+                                                                <Tag className="h-3 w-3" />
+                                                                <span>{brand.name}</span>
+                                                                <motion.div
+                                                                    className="ml-1  rounded-full p-0.5 transition-colors duration-200"
+                                                                    whileHover={{ scale: 1.2 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </motion.div>
+                                                            </AnimatedBadge>
+                                                        ) : null;
+                                                    })}
+                                                    
+                                                    {/* Chips de categorías con AnimatedBadge */}
+                                                    {selectedFilters.category_id?.map((categorySlug) => {
+                                                        const category = categories.find(c => c.slug === categorySlug);
+                                                        return category ? (
+                                                            <AnimatedBadge
+                                                                key={categorySlug}
+                                                              
+                                                                onClick={() => handleFilterChange("category_id", categorySlug)}
+                                                            >
+                                                                <Layers className="h-3 w-3" />
+                                                                <span>{category.name}</span>
+                                                                <motion.div
+                                                                    className="ml-1  rounded-full p-0.5 transition-colors duration-200"
+                                                                    whileHover={{ scale: 1.2 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </motion.div>
+                                                            </AnimatedBadge>
+                                                        ) : null;
+                                                    })}
+
+                                                    {/* Chips de subcategorías con AnimatedBadge */}
+                                                    {selectedFilters.subcategory_id?.map((subcategorySlug) => {
+                                                        const subcategory = subcategories.find(sub => sub.slug === subcategorySlug);
+                                                        return subcategory ? (
+                                                            <AnimatedBadge
+                                                                key={subcategorySlug}
+                                                                onClick={() => handleFilterChange("subcategory_id", subcategorySlug)}
+                                                            >
+                                                                <Grid3X3 className="h-3 w-3" />
+                                                                <span>{subcategory.name}</span>
+                                                                <motion.div
+                                                                    className="ml-1 rounded-full p-0.5 transition-colors duration-200"
+                                                                    whileHover={{ scale: 1.2 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </motion.div>
+                                                            </AnimatedBadge>
+                                                        ) : null;
+                                                    })}
+
+                                                    {/* Chip de precio con AnimatedBadge */}
+                                                    {selectedFilters.price && (
+                                                        <AnimatedBadge
+                                                           
+                                                            onClick={() => handleFilterChange("price", selectedFilters.price)}
+                                                        >
+                                                            <TrendingUp className="h-3 w-3" />
+                                                            <span>S/ {selectedFilters.price.min} - S/ {selectedFilters.price.max}</span>
+                                                            <motion.div
+                                                                className="ml-1  rounded-full p-0.5 transition-colors duration-200"
+                                                                whileHover={{ scale: 1.2 }}
+                                                                whileTap={{ scale: 0.9 }}
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </motion.div>
+                                                        </AnimatedBadge>
                                                     )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
 
-                            {/* Sección Subcategorías */}
-                            <motion.div className="mb-6">
-                                <motion.button
-                                    onClick={() => toggleSection("subcategoria")}
-                                    className="flex items-center justify-between w-full mb-4 p-2 lg:p-0"
-                                    whileHover={{ x: 3 }}
+                                {/* Botón de limpiar filtros mejorado */}
+                                <motion.div
+                                    className="mt-6 pt-6 border-t border-gray-200"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.6 }}
                                 >
-                                    <span className="font-medium">Sub Categorías</span>
-                                    <ChevronDown
-                                        className={`h-5 w-5 transform transition-transform ${sections.subcategoria ? "" : "-rotate-180"
-                                            }`}
-                                    />
+                                    <motion.button
+                                        className="w-full p-4 bg-secondary customtext-neutral-dark rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
+                                        onClick={() => {
+                                            setSelectedFilters({
+                                                collection_id: [],
+                                                category_id: [],
+                                                brand_id: [],
+                                                subcategory_id: [],
+                                                price: null,
+                                                name: null,
+                                                sort_by: "created_at",
+                                                order: "desc",
+                                            });
+                                            setFilterSequence([]);
+                                        }}
+                                        whileHover={{ scale: 1.02, y: -2 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <div className="flex items-center justify-center gap-3">
+                                          
+                                                <Trash className="h-5 w-5" />
+                                            
+                                            <span>Limpiar todos los filtros</span>
+                                        </div>
+                                    </motion.button>
+                                </motion.div>
+                            </div>
+                        </div>
+</div>
+                        {/* Footer móvil mejorado */}
+                        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-white via-white to-gray-50 border-t border-gray-200 p-4 shadow-2xl backdrop-blur-xl lg:hidden z-50">
+                            <div className="flex items-center gap-3">
+                                <motion.button
+                                    className="flex-1 bg-primary text-white py-3 px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                                    onClick={() => {
+                                        setFiltersOpen(false);
+                                        window.scrollTo({
+                                            top: 0,
+                                            behavior: 'smooth'
+                                        });
+                                    }}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <ShoppingBag className="h-5 w-5" />
+                                        <span>Ver {pagination.totalItems} Productos</span>
+                                    </div>
                                 </motion.button>
+                                
+                                <motion.button
+                                    className="p-3 bg-gray-100 hover:bg-gray-200 customtext-neutral-dark rounded-xl transition-colors duration-200"
+                                    onClick={() => setFiltersOpen(false)}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                >
+                                    <X className="h-5 w-5" />
+                                </motion.button>
+                            </div>
+                        </div>
+                    </motion.div>
 
-                                <AnimatePresence>
-                                    {sections.subcategoria && (
+                    {/* Área de productos mejorada */}
+                    <motion.div 
+                        className="w-full lg:w-9/12 py-4"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                    >
+               
+                     
+
+                        {/* Grid de productos con animaciones mejoradas */}
+                        <AnimatePresence mode="wait">
+                            {loading ? (
+                                <motion.div 
+                                    className="w-full"
+                                    key="loading"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.3 } }}
+                                >
+                                    {/* Header de loading mejorado */}
+                                    <motion.div 
+                                        className="mb-8 text-center"
+                                        initial={{ opacity: 0, y: -20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                    >
                                         <motion.div
-                                            className="space-y-1"
-                                            initial="hidden"
-                                            animate="visible"
-                                            exit="hidden"
-                                            variants={{
-                                                hidden: { opacity: 0, height: 0 },
-                                                visible: { opacity: 1, height: "auto" }
+                                            animate={{ 
+                                                rotate: [0, 360],
+                                                scale: [1, 1.1, 1]
                                             }}
+                                            transition={{ 
+                                                rotate: { duration: 3, repeat: Infinity, ease: "linear" },
+                                                scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                                            }}
+                                            className="inline-block mb-4"
                                         >
-                                            <div className="relative">
-                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Buscar"
-                                                    className="w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-0 focus:outline-0"
-                                                    value={searchSubcategory}
-                                                    onChange={(e) => setSearchSubcategory(e.target.value)}
-                                                />
-                                            </div>
+                                            <Sparkles className="h-8 w-8 customtext-primary" />
+                                        </motion.div>
+                                        <h3 className="text-xl font-bold customtext-neutral-dark mb-2">Cargando productos increíbles</h3>
+                                        <p className="customtext-neutral-dark">Preparando la mejor selección para ti...</p>
+                                    </motion.div>
 
-                                            <div className="space-y-3 max-h-[200px] overflow-y-auto p-1">
-                                                {filteredSubcategories.map((subcategory) => (
-                                                    <label
-                                                        key={subcategory.id}
-                                                        className="flex items-center gap-2 py-1.5"
+                                    {/* Grid de skeleton cards */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                                        {Array.from({ length: 12 }, (_, index) => (
+                                            <div key={index} className="h-[400px] lg:h-[460px] xl:h-[400px] 2xl:h-[430px]">
+                                                <SkeletonCard delay={index * 0.08} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <motion.div 
+                                    className="flex items-center flex-wrap gap-y-8 transition-all duration-300 ease-in-out"
+                                    key="products"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                >
+                                    {Array.isArray(products) && products.length > 0 ? (
+                                        products.map((product, index) => (
+                                            <motion.div
+                                                className="w-1/2 lg:w-1/3 xl:w-1/4 lg:h-[460px] lg:max-h-[460px] xl:h-[400px] xl:max-h-[400px] 2xl:h-[430px] 2xl:max-h-[430px] flex items-center justify-center"
+                                                key={product.id}
+                                                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                transition={{ 
+                                                    delay: index * 0.1,
+                                                    duration: 0.5,
+                                                    type: "spring",
+                                                    stiffness: 100
+                                                }}
+                                                whileHover={{ 
+                                                    y: -5,
+                                                    transition: { duration: 0.2 }
+                                                }}
+                                            >
+                                                <CardHoverBtn
+                                                    data={data}
+                                                    product={product}
+                                                    widthClass="w-full sm:w-full lg:w-full"
+                                                    cart={cart}
+                                                    setCart={setCart}
+                                                />
+                                            </motion.div>
+                                        ))
+                                    ) : (
+                                        <motion.div
+                                            className="w-full flex items-center justify-center py-16"
+                                            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+                                        >
+                                            <div className="text-center space-y-6">
+                                               
+                                                <motion.div 
+                                                    className="space-y-3"
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    transition={{ delay: 0.3 }}
+                                                >
+                                                    <h3 className="text-xl font-bold customtext-neutral-dark">¡Ups! No encontramos productos</h3>
+                                                    <p className="customtext-neutral-dark max-w-md">Intenta ajustar tus filtros o buscar términos diferentes.</p>
+                                                    <motion.button
+                                                        className="mt-4 px-6 py-3 bg-primary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                                                        onClick={() => {
+                                                            setSelectedFilters({
+                                                                collection_id: [],
+                                                                category_id: [],
+                                                                brand_id: [],
+                                                                subcategory_id: [],
+                                                                price: null,
+                                                                name: null,
+                                                                sort_by: "created_at",
+                                                                order: "desc",
+                                                            });
+                                                            setFilterSequence([]);
+                                                        }}
+                                                        whileHover={{ scale: 1.05, y: -2 }}
+                                                        whileTap={{ scale: 0.95 }}
                                                     >
-                                                        <input
-                                                            type="checkbox"
-                                                            className="h-5 w-5 rounded border-gray-300 accent-primary"
-                                                            onChange={() => handleFilterChange("subcategory_id", subcategory.slug)}
-                                                            checked={selectedFilters.subcategory_id?.includes(subcategory.slug)}
-                                                        />
-                                                        <span className="text-sm lg:text-base">{subcategory.name}</span>
-                                                    </label>
-                                                ))}
+                                                        <div className="flex items-center gap-2">
+                                                            <Trash className="h-4 w-4" />
+                                                            <span>Limpiar filtros</span>
+                                                        </div>
+                                                    </motion.button>
+                                                </motion.div>
                                             </div>
                                         </motion.div>
                                     )}
-                                </AnimatePresence>
-                            </motion.div>
-
-                            {/* Sección Precio */}
-                            <div className="mb-6">
-                                <button
-                                    onClick={() => toggleSection("precio")}
-                                    className="flex items-center justify-between w-full mb-4 p-2 lg:p-0"
-                                >
-                                    <span className="font-medium">Precio</span>
-                                    <ChevronDown
-                                        className={`h-5 w-5 transform transition-transform ${sections.precio ? "" : "-rotate-180"
-                                            }`}
-                                    />
-                                </button>
-                                {sections.precio && (
-                                    <div className="space-y-3 p-1">
-                                        {priceRanges.map((range) => (
-                                            <label
-                                                key={`${range.min}-${range.max}`}
-                                                className="flex items-center gap-2 py-1.5"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    className="h-5 w-5 rounded border-gray-300 accent-primary"
-                                                    onChange={() => handleFilterChange("price", range)}
-                                                    checked={
-                                                        selectedFilters.price?.min === range.min &&
-                                                        selectedFilters.price?.max === range.max
-                                                    }
-                                                />
-                                                <span className="text-sm lg:text-base">{`S/ ${range.min} - S/ ${range.max}`}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Footer móvil */}
-                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 h-20 flex items-center lg:hidden">
-                            <button
-                                className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition-colors"
-                                onClick={() => {
-                                    // Cerrar filtros y desplazar hacia arriba
-                                    setFiltersOpen(false);
-                                    window.scrollTo({
-                                        top: 0,
-                                        behavior: 'smooth'
-                                    });
-                                }}
-                            >
-                                Ver resultados
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="w-full lg:w-9/12 py-4">
-                        {/* Productos */}
-                        {loading ? (
-                            <div className="flex items-center flex-wrap gap-y-8 transition-all duration-300 ease-in-out">
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(
-                                    (index) => (
-                                        <SkeletonCard key={index} />
-                                    )
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex items-center flex-wrap gap-y-8 transition-all duration-300 ease-in-out">
-                                {Array.isArray(products) &&
-                                    products.length > 0 ? (
-                                    products.map((product) => (
-                                        <div
-                                            className="   w-1/2 lg:w-1/3 xl:w-1/4 lg:h-[460px] lg:max-h-[460px]  xl:h-[400px] xl:max-h-[400px] 2xl:h-[430px] 2xl:max-h-[430px] flex items-center justify-center"
-                                            // className="   w-1/2 lg:w-1/3 xl:w-1/4"
-                                            key={product.id}
-                                        >
-                                            <CardHoverBtn
-                                                data={data}
-                                                product={product}
-                                                widthClass="w-full sm:w-full lg:w-full"
-                                                cart={cart}
-                                                setCart={setCart}
-                                            />
-                                        </div>
-                                    ))
-                                ) : (
-                                    <NoResults />
-                                )}
-                            </div>
-                        )}
-                        {/* Paginación inferior */}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        {/* Paginación mejorada */}
                         <motion.div
-                            className="flex flex-col md:flex-row justify-between items-center mb-4 w-full mt-8 gap-4"
+                            className="flex flex-col md:flex-row justify-between items-center mb-4 w-full mt-12 gap-4 p-6 bg-gradient-to-r from-white via-gray-50/50 to-blue-50/50 rounded-2xl border border-gray-200/60 backdrop-blur-sm"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
                         >
+                            {/* Navegación de páginas mejorada */}
                             <div className="customtext-primary font-semibold w-full md:w-auto">
                                 <div className="overflow-x-auto pb-2">
                                     <nav className="flex items-center gap-x-2 min-w-max">
                                         <motion.button
-                                            className={`p-4 inline-flex items-center ${pagination.currentPage === 1
-                                                ? "opacity-50 cursor-not-allowed"
-                                                : ""
-                                                }`}
-                                            onClick={() =>
-                                                handlePageChange(
-                                                    pagination.currentPage - 1
-                                                )
-                                            }
+                                            className={`p-3 inline-flex items-center gap-2 rounded-xl transition-all duration-300 ${
+                                                pagination.currentPage === 1
+                                                    ? "opacity-50 cursor-not-allowed bg-gray-100"
+                                                    : "bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 customtext-primary border border-blue-200"
+                                            }`}
+                                            onClick={() => handlePageChange(pagination.currentPage - 1)}
                                             disabled={pagination.currentPage === 1}
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
+                                          
+                                            whileTap={pagination.currentPage !== 1 ? { scale: 0.95 } : {}}
                                         >
-                                            <ChevronLeft />
+                                            <ChevronLeft className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Anterior</span>
                                         </motion.button>
 
                                         {getPageNumbers().map((page, index) => (
                                             <React.Fragment key={index}>
                                                 {page === "..." ? (
-                                                    <span className="w-10 h-10 bg-transparent p-2 inline-flex items-center justify-center rounded-full">
+                                                    <span className="w-10 h-10 bg-transparent p-2 inline-flex items-center justify-center rounded-full customtext-neutral-dark">
                                                         ...
                                                     </span>
                                                 ) : (
                                                     <motion.button
-                                                        className={`w-10 h-10 p-2 inline-flex items-center justify-center rounded-full transition-all duration-300 
-                                                        ${page ===
-                                                                pagination.currentPage
-                                                                ? "bg-primary text-white"
-                                                                : "bg-transparent hover:text-white hover:bg-primary"
-                                                            }`}
-                                                        onClick={() =>
-                                                            handlePageChange(page)
-                                                        }
-                                                        whileHover={{ scale: 1.05 }}
+                                                        className={`w-10 h-10 p-2 inline-flex items-center justify-center rounded-xl transition-all duration-300 font-semibold
+                                                        ${page === pagination.currentPage
+                                                            ? " bg-primary text-white shadow-lg shadow-blue-500/25"
+                                                            : "bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 customtext-primary border border-gray-200 hover:border-blue-300"
+                                                        }`}
+                                                        onClick={() => handlePageChange(page)}
+                                                        whileHover={{ scale: 1.1, y: -2 }}
                                                         whileTap={{ scale: 0.95 }}
                                                     >
                                                         {page}
@@ -691,36 +1497,37 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                         ))}
 
                                         <motion.button
-                                            className={`p-4 inline-flex items-center ${pagination.currentPage ===
-                                                pagination.totalPages
-                                                ? "opacity-50 cursor-not-allowed"
-                                                : ""
-                                                }`}
-                                            onClick={() =>
-                                                handlePageChange(
-                                                    pagination.currentPage + 1
-                                                )
-                                            }
-                                            disabled={
-                                                pagination.currentPage ===
-                                                pagination.totalPages
-                                            }
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
+                                            className={`p-3 inline-flex items-center gap-2 rounded-xl transition-all duration-300 ${
+                                                pagination.currentPage === pagination.totalPages
+                                                    ? "opacity-50 cursor-not-allowed bg-gray-100"
+                                                    : "bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 customtext-primary border border-blue-200"
+                                            }`}
+                                            onClick={() => handlePageChange(pagination.currentPage + 1)}
+                                            disabled={pagination.currentPage === pagination.totalPages}
+                                          
+                                            whileTap={pagination.currentPage !== pagination.totalPages ? { scale: 0.95 } : {}}
                                         >
-                                            <ChevronRight />
+                                            <span className="hidden sm:inline">Siguiente</span>
+                                            <ChevronRight className="h-4 w-4" />
                                         </motion.button>
                                     </nav>
                                 </div>
                             </div>
-                            <div className="w-full md:w-auto text-center md:text-right">
-                                <p className="font-semibold">
-                                    {pagination.from} - {pagination.to} de{" "}
-                                    {pagination.totalItems} Resultados
-                                </p>
-                            </div>
+                            
+                            {/* Información de paginación mejorada */}
+                            <motion.div 
+                                className="w-full md:w-auto text-center md:text-right"
+                                whileHover={{ scale: 1.02 }}
+                            >
+                                <div className="flex items-center justify-center md:justify-end gap-2 p-4">
+                                
+                                    <p className="font-semibold text-sm customtext-neutral-dark">
+                                        {pagination.from} - {pagination.to} de {pagination.totalItems} Resultados
+                                    </p>
+                                </div>
+                            </motion.div>
                         </motion.div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </section>
@@ -728,3 +1535,160 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 };
 
 export default CatalagoFiltros;
+
+// CSS-in-JS para scrollbar personalizado y efectos adicionales
+const customStyles = `
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #2563eb, #4f46e5);
+    }
+    
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%) skew(-12deg);
+        }
+        100% {
+            transform: translateX(200%) skew(-12deg);
+        }
+    }
+    
+    .animate-shimmer {
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+    
+    .filter-shadow {
+        box-shadow: 
+            0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06),
+            0 0 0 1px rgba(59, 130, 246, 0.1),
+            0 0 20px rgba(59, 130, 246, 0.1);
+    }
+    
+    .gradient-border {
+        position: relative;
+        background: linear-gradient(white, white) padding-box,
+                    linear-gradient(135deg, #3b82f6, #6366f1, #8b5cf6) border-box;
+        border: 2px solid transparent;
+    }
+`;
+
+// Inyectar estilos en el documento
+if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = customStyles;
+    document.head.appendChild(styleSheet);
+}
+
+// Componente de Tooltip personalizado para mejor UX
+const Tooltip = ({ children, text, position = "top" }) => {
+    const [show, setShow] = useState(false);
+    
+    const positionClasses = {
+        top: "-top-10 left-1/2 -translate-x-1/2",
+        bottom: "-bottom-10 left-1/2 -translate-x-1/2",
+        left: "-left-2 top-1/2 -translate-y-1/2 -translate-x-full",
+        right: "-right-2 top-1/2 -translate-y-1/2 translate-x-full"
+    };
+    
+    return (
+        <div 
+            className="relative inline-block"
+            onMouseEnter={() => setShow(true)}
+            onMouseLeave={() => setShow(false)}
+        >
+            {children}
+            <AnimatePresence>
+                {show && (
+                    <motion.div
+                        className={`absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-lg whitespace-nowrap ${positionClasses[position]}`}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.15 }}
+                    >
+                        {text}
+                        <div className={`absolute w-0 h-0 border-l-4 border-r-4 border-transparent ${
+                            position === 'top' ? 'border-t-4 border-t-gray-900 top-full left-1/2 -translate-x-1/2' :
+                            position === 'bottom' ? 'border-b-4 border-b-gray-900 bottom-full left-1/2 -translate-x-1/2' :
+                            position === 'left' ? 'border-l-4 border-l-gray-900 left-full top-1/2 -translate-y-1/2' :
+                            'border-r-4 border-r-gray-900 right-full top-1/2 -translate-y-1/2'
+                        }`} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+// Componente de Badge con animación mejorada
+const AnimatedBadge = ({ children, color = "blue", onClick, className = "" }) => {
+    const colorClasses = {
+        blue: "bg-secondary border-blue-200 customtext-primary",
+      
+    };
+    
+    return (
+        <motion.div
+            className={`inline-flex items-center gap-2 px-3 py-1.5  ${colorClasses[color]} border rounded-full text-sm font-medium cursor-pointer select-none ${className}`}
+            onClick={onClick}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+            {children}
+        </motion.div>
+    );
+};
+
+// Hook personalizado para animaciones de lista
+const useStaggerAnimation = (items, delay = 0.1) => {
+    return {
+        container: {
+            animate: {
+                transition: {
+                    staggerChildren: delay
+                }
+            }
+        },
+        item: {
+            initial: { opacity: 0, y: 20 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -20 }
+        }
+    };
+};
+
+

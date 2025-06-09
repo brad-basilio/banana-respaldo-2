@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import MessagesRest from "../../../Actions/MessagesRest";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import Global from "../../../Utils/Global";
+import { toast } from "sonner";
 const messagesRest = new MessagesRest();
 
 const ContactGrid = ({ data, contacts }) => {
@@ -22,46 +23,103 @@ const ContactGrid = ({ data, contacts }) => {
         lng: Number(location.split(",").map((x) => x.trim())[1]),
     };
 
-    const nameRef = useRef();
 
+    const nameRef = useRef();
+    const phoneRef = useRef();
     const emailRef = useRef();
     const descriptionRef = useRef();
 
     const [sending, setSending] = useState(false);
+    const [phoneValue, setPhoneValue] = useState("");
+    const [phoneError, setPhoneError] = useState("");
+
+    // Formatea el teléfono en formato 999 999 999
+    const formatPhone = (value) => {
+        const numbers = value.replace(/\D/g, "");
+        const truncated = numbers.slice(0, 9);
+        if (truncated.length <= 3) {
+            return truncated;
+        } else if (truncated.length <= 6) {
+            return `${truncated.slice(0, 3)} ${truncated.slice(3)}`;
+        } else {
+            return `${truncated.slice(0, 3)} ${truncated.slice(3, 6)} ${truncated.slice(6)}`;
+        }
+    };
+
+    // Valida el teléfono peruano
+    const validatePhone = (phone) => {
+        const numbers = phone.replace(/\D/g, "");
+        if (numbers.length !== 9) {
+            return "El teléfono debe tener 9 dígitos";
+        }
+        if (!numbers.startsWith("9")) {
+            return "Solo se aceptan celulares peruanos (empiezan con 9)";
+        }
+        return "";
+    };
+
+    const handlePhoneChange = (e) => {
+        const inputValue = e.target.value;
+        const formattedValue = formatPhone(inputValue);
+        const error = validatePhone(formattedValue);
+        setPhoneValue(formattedValue);
+        setPhoneError(error);
+        if (phoneRef.current) {
+            phoneRef.current.value = formattedValue.replace(/\D/g, "");
+        }
+    };
 
     const onSubmit = async (e) => {
         e.preventDefault();
         if (sending) return;
+
+        // Validación de teléfono
+        const phoneNumbers = phoneValue.replace(/\D/g, "");
+        const phoneValidationError = validatePhone(phoneValue);
+        if (phoneValidationError) {
+            setPhoneError(phoneValidationError);
+         
+            toast.error("Error de validación", {
+                description: phoneValidationError,
+                duration: 3000,
+                position: "bottom-center",
+                richColors: true
+            });
+            return;
+        }
+
         setSending(true);
 
         const request = {
             name: nameRef.current.value,
-
+            phone: phoneNumbers,
             email: emailRef.current.value,
             description: descriptionRef.current.value,
         };
 
         const result = await messagesRest.save(request);
+        toast.success("Mensaje enviado", {
+            description: 'Tu mensaje ha sido enviado correctamente. ¡Nos pondremos en contacto contigo pronto!',
+            duration: 3000,
+            position: "bottom-center",
+            richColors:true
+        });
         setSending(false);
 
         if (!result) return;
 
-        Swal.fire({
-            icon: "success",
-            title: "Mensaje enviado",
-            text: "Tu mensaje ha sido enviado correctamente. ¡Nos pondremos en contacto contigo pronto!",
-            showConfirmButton: false,
-            timer: 3000,
-        });
+        // Limpiar campos solo después de éxito
+        if (nameRef.current) nameRef.current.value = "";
+        if (phoneRef.current) setPhoneValue("");
+        setPhoneError("");
+        if (emailRef.current) emailRef.current.value = "";
+        if (descriptionRef.current) descriptionRef.current.value = "";
+       
+      
 
         if (data.redirect) {
             location.href = data.redirect;
         }
-
-        nameRef.current.value = null;
-
-        emailRef.current.value = null;
-        descriptionRef.current.value = null;
     };
     return (
         <section section className=" bg-[#F7F9FB] py-12 px-primary ">
@@ -91,6 +149,31 @@ const ContactGrid = ({ data, contacts }) => {
                         </div>
                         <div>
                             <input
+                                ref={phoneRef}
+                                disabled={sending}
+                                type="tel"
+                                name="phone"
+                                placeholder="Teléfono (9 dígitos)"
+                                value={phoneValue}
+                                onChange={handlePhoneChange}
+                                maxLength={11}
+                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                required
+                                aria-describedby={phoneError ? "phone-error" : "phone-help"}
+                                aria-invalid={phoneError ? "true" : "false"}
+                            />
+                            {phoneError && (
+                                <span id="phone-error" className="text-red-500 text-xs flex items-center gap-1 mt-1" role="alert">
+                                    <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                    {phoneError}
+                                </span>
+                            )}
+                          
+                        </div>
+                        <div>
+                            <input
                                 ref={emailRef}
                                 disabled={sending}
                                 type="email"
@@ -113,9 +196,16 @@ const ContactGrid = ({ data, contacts }) => {
                         </div>
                         <button
                             type="submit"
-                            className="bg-primary text-base font-bold text-white px-6 py-3 rounded-xl hover:brightness-90 transition-all"
+                            className="bg-primary text-base font-bold text-white px-6 py-3 rounded-xl hover:brightness-90 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                            disabled={sending}
                         >
-                            Enviar mensaje
+                            {sending && (
+                                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            )}
+                            {sending ? 'Enviando...' : 'Enviar mensaje'}
                         </button>
                     </form>
                 </div>

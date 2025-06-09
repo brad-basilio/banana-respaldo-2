@@ -9,7 +9,7 @@ class ItemsRest extends BasicRest {
         console.log("FormData recibido en importData:", [...request.entries()]);
 
         try {
-            const response = await fetch(`/api/import-items`, {
+            const response = await fetch(`/api/unified-import`, {
                 method: "POST",
                 body: request,
             });

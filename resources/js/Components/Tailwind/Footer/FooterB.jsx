@@ -17,8 +17,9 @@ const FooterB = ({ pages, generals }) => {
     const [saving, setSaving] = useState();
 
     const policyItems = {
+         privacy_policy: "Políticas de privacidad",
         terms_conditions: "Términos y condiciones",
-        privacy_policy: "Políticas de privacidad",
+       
         // 'delivery_policy': 'Políticas de envío',
         saleback_policy: "Políticas de devolucion y cambio",
     };

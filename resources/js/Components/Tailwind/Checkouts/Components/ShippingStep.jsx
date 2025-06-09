@@ -27,6 +27,7 @@ export default function ShippingStep({
     setEnvio,
     envio,
     ubigeos = [],
+    openModal,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
@@ -510,12 +511,9 @@ export default function ShippingStep({
                         Ir a Pagar
                     </ButtonPrimary>
 
-                    <p className="text-xs text-gray-600 mt-4 text-center">
-                        Al completar tu compra aceptas nuestros{' '}
-                        <a href="/terminos" className="text-blue-600 hover:underline">
-                            Términos y Condiciones
-                        </a>
-                    </p>
+                    <p className="text-xs md:text-sm customtext-neutral-dark">
+                            Al realizar tu pedido, aceptas los <a href="#" onClick={() => openModal(1)} className="customtext-primary font-bold">Términos y Condiciones</a>, y que nosotros usaremos sus datos personales de acuerdo con nuestra <a href="#" onClick={() => openModal(0)} className="customtext-primary font-bold">Política de Privacidad</a>.
+                        </p>
                 </div>
             </div>
         </div>

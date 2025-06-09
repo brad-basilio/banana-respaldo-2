@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Message;
 use App\Http\Requests\StoreMessageRequest;
 use App\Http\Requests\UpdateMessageRequest;
+use App\Notifications\MessageContactNotification;
 use Illuminate\Http\Request;
 
 class MessageController extends BasicController
@@ -40,6 +41,7 @@ class MessageController extends BasicController
 
     public function afterSave(Request $request, object $jpa, ?bool $isNew)
     {
-        MailingController::notifyContact($jpa);
+        //MailingController::notifyContact($jpa);
+        $jpa->notify(new MessageContactNotification($jpa));
     }
 }
