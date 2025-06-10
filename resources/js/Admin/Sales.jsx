@@ -342,7 +342,7 @@ const Sales = ({ statuses = [] }) => {
                                 <table className="table table-striped table-bordered table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Imagen</th>
+                                            <th className="w-20">Imagen</th>
                                             <th>Nombre</th>
                                             <th>Precio</th>
                                             <th>Cantidad</th>
