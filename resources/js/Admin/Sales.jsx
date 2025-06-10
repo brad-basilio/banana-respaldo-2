@@ -361,6 +361,7 @@ const Sales = ({ statuses = [] }) => {
                                                     <tr key={index}>
                                                         <td>{detail.name}{detail.colors ? ' - ' + detail.colors : ''}</td>
                                                         <td><img 
+                                                            className="aspect-square min-w-16"
                                                             src={`/storage/images/indicator/${detail.image}`}
                                                             onError={(e) => {
                                                                 e.target.src = "/api/cover/thumbnail/null"
