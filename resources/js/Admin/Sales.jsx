@@ -364,7 +364,7 @@ const Sales = ({ statuses = [] }) => {
                                                             <td>
                                                                 <div className="h-16 w-16">
                                                                     <img 
-                                                                        className="w-full h-full object-contain"
+                                                                        className="h-16 w-16 object-contain"
                                                                         src={`/storage/images/item/${detail.image}`}
                                                                     />
                                                                 </div>
