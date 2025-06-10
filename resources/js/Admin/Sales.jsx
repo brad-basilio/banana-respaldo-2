@@ -360,11 +360,12 @@ const Sales = ({ statuses = [] }) => {
                                                     detail.quantity;
                                                 return (
                                                     <tr key={index}>
-                                                        <td>
+                                                        <td className="max-w-20 p-0">
                                                             {detail.image ? (
-                                                                <img 
-                                                                    className="h-20 w-20 object-contain"
+                                                                <img
+                                                                    className="h-20 w-20 object-scale-down mx-auto block"
                                                                     src={`/storage/images/item/${detail.image}`}
+                                                                    alt={detail.name}
                                                                 />
                                                             ) : null}
                                                         </td>
