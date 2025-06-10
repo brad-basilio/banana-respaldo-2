@@ -343,9 +343,6 @@ const Sales = ({ statuses = [] }) => {
                                     <thead>
                                         <tr>
                                             <th>Nombre</th>
-                                            {detail.image ? (
-                                             <th>Imagen</th>
-                                            ) : null}
                                             <th>Precio</th>
                                             <th>Cantidad</th>
                                             <th>Subtotal</th>
