@@ -359,7 +359,13 @@ const Sales = ({ statuses = [] }) => {
                                                     detail.quantity;
                                                 return (
                                                     <tr key={index}>
-                                                        <td>{detail.name}</td>
+                                                        <td>{detail.name}{detail.colors ? ' - ' + detail.colors : ''}</td>
+                                                        <td><img 
+                                                            src={`/storage/images/indicator/${detail.image}`}
+                                                            onError={(e) => {
+                                                                e.target.src = "/api/cover/thumbnail/null"
+                                                            }} />
+                                                        </td>
                                                         <td align="right">
                                                             <span className="text-nowrap">
                                                                 S/{" "}
