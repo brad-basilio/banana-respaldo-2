@@ -359,17 +359,16 @@ const Sales = ({ statuses = [] }) => {
                                                     detail.quantity;
                                                 return (
                                                     <tr key={index}>
-                                                        <td>{detail.name}{detail.colors ? ' - ' + detail.colors : ''}</td>
-                                                        {detail.image ? (
-                                                            <td className="max-w-16">
-                                                                <div className="max-h-16 max-w-16">
-                                                                    <img 
-                                                                        className="max-h-16 max-w-16 object-contain"
-                                                                        src={`/storage/images/item/${detail.image}`}
-                                                                    />
-                                                                </div>
-                                                            </td>
-                                                        ) : null}
+                                                        <td>{detail.name}{detail.colors ? ' - ' + detail.colors : ''}
+                                                            {detail.image ? (
+                                                                    <div className="max-h-16 max-w-16">
+                                                                        <img 
+                                                                            className="max-h-16 max-w-16 object-contain"
+                                                                            src={`/storage/images/item/${detail.image}`}
+                                                                        />
+                                                                    </div>
+                                                            ) : null}
+                                                        </td>
                                                         <td align="right">
                                                             <span className="text-nowrap">
                                                                 S/{" "}
