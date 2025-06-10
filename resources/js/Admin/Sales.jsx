@@ -363,9 +363,14 @@ const Sales = ({ statuses = [] }) => {
                                                         <td className="max-w-20 p-0">
                                                             {detail.image ? (
                                                                 <img
-                                                                    className="h-20 w-20 object-scale-down mx-auto block"
+                                                                    className="object-scale-down mx-auto block"
                                                                     src={`/storage/images/item/${detail.image}`}
                                                                     alt={detail.name}
+                                                                    style={{
+                                                                        height: '5rem',       
+                                                                        width: '5rem',       
+                                                                        objectFit: 'scale-down',
+                                                                    }}
                                                                 />
                                                             ) : null}
                                                         </td>
