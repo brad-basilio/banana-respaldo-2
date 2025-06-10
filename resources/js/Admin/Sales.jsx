@@ -342,6 +342,7 @@ const Sales = ({ statuses = [] }) => {
                                 <table className="table table-striped table-bordered table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
+                                            <th>Imagen</th>
                                             <th>Nombre</th>
                                             <th>Precio</th>
                                             <th>Cantidad</th>
@@ -359,15 +360,16 @@ const Sales = ({ statuses = [] }) => {
                                                     detail.quantity;
                                                 return (
                                                     <tr key={index}>
-                                                        <td>{detail.name}{detail.colors ? ' - ' + detail.colors : ''}
+                                                        <td>
                                                             {detail.image ? (
-                                                                    <div className="max-h-16 max-w-16">
-                                                                        <img 
-                                                                            className="max-h-16 max-w-16 object-contain"
-                                                                            src={`/storage/images/item/${detail.image}`}
-                                                                        />
-                                                                    </div>
+                                                                <img 
+                                                                    className="h-20 w-20 object-contain"
+                                                                    src={`/storage/images/item/${detail.image}`}
+                                                                />
                                                             ) : null}
+                                                        </td>
+                                                        <td>
+                                                            {detail.name}{detail.colors ? ' - ' + detail.colors : ''}
                                                         </td>
                                                         <td align="right">
                                                             <span className="text-nowrap">
