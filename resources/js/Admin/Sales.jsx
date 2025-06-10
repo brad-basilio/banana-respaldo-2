@@ -361,10 +361,10 @@ const Sales = ({ statuses = [] }) => {
                                                     <tr key={index}>
                                                         <td>{detail.name}{detail.colors ? ' - ' + detail.colors : ''}</td>
                                                         {detail.image ? (
-                                                            <td>
-                                                                <div className="h-16 w-16">
+                                                            <td className="max-w-16">
+                                                                <div className="max-h-16 max-w-16">
                                                                     <img 
-                                                                        className="h-16 w-16 object-contain"
+                                                                        className="max-h-16 max-w-16 object-contain"
                                                                         src={`/storage/images/item/${detail.image}`}
                                                                     />
                                                                 </div>
