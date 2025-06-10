@@ -360,14 +360,16 @@ const Sales = ({ statuses = [] }) => {
                                                 return (
                                                     <tr key={index}>
                                                         <td>{detail.name}{detail.colors ? ' - ' + detail.colors : ''}</td>
-                                                        <td><div className="h-16 w-16">
-                                                            <img className="w-full h-full object-contain"
-                                                            src={`/storage/images/indicator/${detail.image}`}
-                                                            onError={(e) => {
-                                                                e.target.src = "/api/cover/thumbnail/null"
-                                                            }} />
-                                                            </div>
-                                                        </td>
+                                                        {detail.image ? (
+                                                            <td>
+                                                                <div className="h-16 w-16">
+                                                                    <img 
+                                                                        className="w-full h-full object-contain"
+                                                                        src={`/storage/images/item/${detail.image}`}
+                                                                    />
+                                                                </div>
+                                                            </td>
+                                                        ) : null}
                                                         <td align="right">
                                                             <span className="text-nowrap">
                                                                 S/{" "}
