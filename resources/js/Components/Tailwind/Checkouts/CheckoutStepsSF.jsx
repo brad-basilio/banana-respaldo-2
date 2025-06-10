@@ -152,6 +152,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         setCart={setCart}
                         onContinue={() => setCurrentStep(2)}
                         subTotal={subTotal}
+                        totalPrice={totalPrice}
                         envio={envio}
                         igv={igv}
                         totalFinal={totalFinal}
@@ -168,6 +169,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         onContinue={() => setCurrentStep(3)}
                         noContinue={() => setCurrentStep(1)}
                         subTotal={subTotal}
+                        totalPrice={totalPrice}
                         envio={envio}
                         setEnvio={setEnvio}
                         igv={igv}
@@ -187,6 +189,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         delivery={delivery}
                         cart={sale}
                         subTotal={subTotal}
+                        totalPrice={totalPrice}
                         envio={envio}
                         igv={igv}
                         totalFinal={totalFinal}

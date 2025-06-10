@@ -42,6 +42,7 @@ export default function ShippingStepSF({
     prefixes,
     ubigeos = [],
     contacts,
+    totalPrice,
 }) {
     const couponRef = useRef(null);
     const [coupon, setCoupon] = useState(null);
@@ -656,7 +657,7 @@ export default function ShippingStepSF({
                     number: formData?.number || "",
                     comment: formData?.comment || "",
                     /*reference: formData?.reference || "",*/
-                    amount: totalFinal || 0,
+                    amount: totalPrice || 0,
                     delivery: envio,
                     cart: cart,
                     invoiceType: formData.invoiceType || "",
