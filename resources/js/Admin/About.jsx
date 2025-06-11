@@ -222,7 +222,8 @@ const About = ({ details: detailsDB }) => {
                                     onChange={() =>
                                         onVisibleChange({
                                             id: data.id,
-                                            value: !data.visible,
+                                            //value: !data.visible,
+                                            value: data.visible == 1? 0 : 1,
                                         })
                                     }
                                 />
