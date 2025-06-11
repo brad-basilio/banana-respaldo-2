@@ -20,6 +20,7 @@ class Aboutus extends Model
         'description',
         'image',
         'visible',
-        'status'
+        'status',
+        'link'
     ];
 }
