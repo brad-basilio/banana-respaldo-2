@@ -404,7 +404,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
             borderRadius: "1rem 1rem 0 0",
             border: "none",
             padding: "0",
-            height: "75vh",
+            height: "85vh",
             transform: isVisible ? "translateY(0)" : "translateY(100%)",
             transition: "transform 300ms ease-in-out",
             willChange: 'transform', // Mejora el rendimiento de la animación
@@ -482,7 +482,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="checkbox"
-                                                className="h-5 w-5 rounded border-gray-300 accent-primary hidden "
+                                                className="h-4 w-4 rounded border-gray-300 accent-primary form-checkbox focus:ring-0 customtext-neutral-dark"
                                                 onChange={() => handleFilterChange("collection_id", collection.slug)}
                                                 checked={isChecked}
                                             />
@@ -539,7 +539,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="checkbox"
-                                                className="h-5 w-5 rounded border-gray-300 accent-primary hidden"
+                                                className="h-4 w-4 rounded border-gray-300 accent-primary form-checkbox focus:ring-0 customtext-neutral-dark"
                                                 onChange={() => handleFilterChange("category_id", category.slug)}
                                                 checked={isChecked}
                                             />

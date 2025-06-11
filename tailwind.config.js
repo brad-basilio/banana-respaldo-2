@@ -29,6 +29,9 @@ export default {
     plugins: [
         require("@tailwindcss/typography"),
         require("tailwindcss-animated"),
+        require('@tailwindcss/forms')({
+            strategy: 'class',
+        }),
         // require('tailwind-scrollbar')({
         //     nocompatible: true,
         //     preferredStrategy: 'pseudoelements',

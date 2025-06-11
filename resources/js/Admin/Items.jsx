@@ -49,6 +49,7 @@ const Items = ({ categories, brands, collections }) => {
     const imageRef = useRef();
     const textureRef = useRef();
     const descriptionRef = useRef();
+    const skuRef = useRef();
     // Nuevos campos
 
     const stockRef = useRef();
@@ -138,6 +139,7 @@ const Items = ({ categories, brands, collections }) => {
             .val(data?.brand_id || null)
             .trigger("change");
         nameRef.current.value = data?.name || "";
+        skuRef.current.value = data?.sku || "";
         colorRef.current.value = data?.color || "";
         summaryRef.current.value = data?.summary || "";
         priceRef.current.value = data?.price || 0;
@@ -198,6 +200,7 @@ const Items = ({ categories, brands, collections }) => {
             subcategory_id: subcategoryRef.current.value,
             brand_id: brandRef.current.value,
             name: nameRef.current.value,
+            sku: skuRef.current.value,
             color: colorRef.current.value,
             summary: summaryRef.current.value,
             price: priceRef.current.value,
@@ -607,6 +610,11 @@ const Items = ({ categories, brands, collections }) => {
                 <div className="row" id="principal-container">
                     <input ref={idRef} type="hidden" />
                     <div className="col-md-3">
+                        <InputFormGroup
+                            eRef={skuRef}
+                            label="SKU"
+                            required
+                        />
                         <SelectFormGroup
                             eRef={categoryRef}
                             label="Categoría"
