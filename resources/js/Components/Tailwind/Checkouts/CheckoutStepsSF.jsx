@@ -10,7 +10,7 @@ import ProductNavigationSwiper from "../Products/ProductNavigationSwiper";
 export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos, items, contacts }) {
    
     const [currentStep, setCurrentStep] = useState(1);
-
+    const [descuentofinal, setDescuentoFinal] = useState(null);
     // Calcular el precio total incluyendo IGV
     const totalPrice = cart.reduce((acc, item) => {
         const finalPrice = item.final_price;
@@ -27,7 +27,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
     const igv = (subTotal * 0.18).toFixed(2);
 
     // Calcular el total final (subtotal sin IGV + IGV + envío)
-    const totalFinal = (parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio)).toFixed(2);
+    const totalFinal = (parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio) - descuentofinal).toFixed(2);
     
     const [sale, setSale] = useState([]);
     const [code, setCode] = useState([]);
@@ -179,6 +179,8 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         contacts={contacts}
                         ubigeos={ubigeos}
                         items={items}
+                        descuentofinal={descuentofinal}
+                        setDescuentoFinal={setDescuentoFinal}
                     />
                 )}
 
@@ -193,6 +195,8 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         envio={envio}
                         igv={igv}
                         totalFinal={totalFinal}
+                        descuentofinal={descuentofinal}
+                        setDescuentoFinal={setDescuentoFinal}
                     />
                 )}
             </div>

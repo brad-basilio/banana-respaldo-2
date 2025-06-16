@@ -43,6 +43,8 @@ export default function ShippingStepSF({
     ubigeos = [],
     contacts,
     totalPrice,
+    descuentofinal,
+    setDescuentoFinal,
 }) {
     const couponRef = useRef(null);
     const [coupon, setCoupon] = useState(null);
@@ -140,7 +142,7 @@ export default function ShippingStepSF({
     const numericIgv = typeof igv === 'number' ? igv : parseFloat(igv) || 0;
     const hasShippingFree = parseFloat(getContact("shipping_free"));
    
-    const subFinal = numericSubTotal + numericIgv;
+    const subFinal = numericSubTotal + numericIgv - descuentofinal;
     
     const handleUbigeoChange = async (selected) => {
         if (!selected) return;
@@ -238,7 +240,7 @@ export default function ShippingStepSF({
         if (selectedUbigeo) {
             handleUbigeoChange(selectedUbigeo);
         }
-    }, [cart, subTotal]);
+    }, [cart, subTotal, descuentofinal]);
 
     const loadOptions = useCallback(
         debounce((inputValue, callback) => {
@@ -656,7 +658,6 @@ export default function ShippingStepSF({
                     address: formData?.address || "",
                     number: formData?.number || "",
                     comment: formData?.comment || "",
-                    /*reference: formData?.reference || "",*/
                     amount: totalPrice || 0,
                     delivery: envio,
                     cart: cart,
@@ -665,6 +666,9 @@ export default function ShippingStepSF({
                     document: formData.document || "",
                     businessName: formData.businessName || "",
                     payment_method: paymentMethod || null,
+                    coupon_id: coupon ? coupon.id : null,
+                    coupon_discount: descuentofinal || 0,
+                    total_amount: totalFinal || 0,
                 };
                 
                 try {
@@ -711,7 +715,7 @@ export default function ShippingStepSF({
                     address: formData?.address || "",
                     number: formData?.number || "",
                     comment: formData?.comment || "",
-                    amount: totalFinal || 0,
+                    amount: totalPrice || 0,
                     delivery: envio,
                     cart: cart,
                     invoiceType: formData.invoiceType || "",
@@ -719,7 +723,10 @@ export default function ShippingStepSF({
                     document: formData.document || "",
                     businessName: formData.businessName || "",
                     payment_method: paymentMethod || null,
-                    payment_proof: null, // Se actualizará después con el voucher
+                    payment_proof: null,
+                    coupon_id: coupon ? coupon.id : null,
+                    coupon_discount: descuentofinal || 0,
+                    total_amount: totalFinal || 0,
                 };
 
                 setPaymentRequest(request);
@@ -742,7 +749,7 @@ export default function ShippingStepSF({
                     address: formData?.address || "",
                     number: formData?.number || "",
                     comment: formData?.comment || "",
-                    amount: totalFinal || 0,
+                    amount: totalPrice || 0,
                     delivery: envio,
                     cart: cart,
                     invoiceType: formData.invoiceType || "",
@@ -750,7 +757,10 @@ export default function ShippingStepSF({
                     document: formData.document || "",
                     businessName: formData.businessName || "",
                     payment_method: paymentMethod || null,
-                    payment_proof: null, // Se actualizará después con el voucher
+                    payment_proof: null,
+                    coupon_id: coupon ? coupon.id : null,
+                    coupon_discount: descuentofinal || 0,
+                    total_amount: totalFinal || 0,
                 };
                 setPaymentRequest(request);
                 setShowVoucherModalBancs(true);
@@ -832,11 +842,21 @@ export default function ShippingStepSF({
         }),
       };
 
-    const planDiscount = totalFinal * 0;
+      useEffect(() => {
+        if (coupon) {
+            let descuento = 0;
+            if (coupon.type === 'percentage') {
+                descuento = totalPrice * (coupon.amount / 100);
+            } else {
+                descuento = coupon.amount;
+            }
+            setDescuentoFinal(descuento);
+        } else {
+            setDescuentoFinal(0); 
+        }
+    }, [totalPrice, coupon]); 
 
-    const couponDiscount =
-        ((totalFinal - planDiscount) * (coupon?.amount || 0)) / 100;
-
+    
     const onCouponApply = (e) => {
         e.preventDefault();
         const coupon = (couponRef.current.value || "").trim().toUpperCase();
@@ -844,17 +864,28 @@ export default function ShippingStepSF({
         couponRest
             .save({
                 coupon,
-                amount: totalFinal,
+                amount: totalPrice,
                 email: "basiliohinostroza2003bradneve@gmail.com",
             })
             .then((result) => {
-              
-                if (result && result.id) { 
-                    setCoupon(result); 
+                // let descuento = 0; 
+                // if (result && result.id) { 
+                //     if (result.type == 'percentage') {
+                //         descuento = totalPrice * (result.amount / 100)
+                //     } else {
+                //         descuento = result.amount 
+                //     }
+                //     setDescuentoFinal(descuento);
+                //     setCoupon(result); 
+                // } else {
+                //     setCoupon(null);
+                // }
+                if (result && result.id) {
+                    setCoupon(result);
                 } else {
                     setCoupon(null);
+                    setDescuentoFinal(0);
                 }
-                
             });
             
     };
@@ -1342,8 +1373,10 @@ export default function ShippingStepSF({
                                     <Tippy content="Eliminar">
                                         <i
                                             className="mdi mdi-close text-red-500 cursor-pointer"
-                                            onClick={() =>
-                                                setCoupon(null)
+                                            onClick={() =>{
+                                                setCoupon(null);
+                                                couponRef.current.value = "";
+                                                }
                                             }
                                         ></i>
                                     </Tippy>
@@ -1356,17 +1389,15 @@ export default function ShippingStepSF({
                                         >
                                             <i className="mdi mdi-information-outline ms-1"></i>
                                         </Tippy>{" "}
-                                        (-
-                                        {Math.round(
-                                            coupon.amount * 100
-                                        ) / 100}
-                                        %)
+                                        ({coupon.type === 'percentage' 
+                                            ? `-${Math.round(coupon.amount * 100) / 100}%`
+                                            : `S/ -${Number2Currency(coupon.amount)}`})
                                     </small>
                                 </span>
                                 <span>
                                     S/ -
                                     {Number2Currency(
-                                        couponDiscount
+                                        descuentofinal
                                     )}
                                 </span>
                             </div>
@@ -1443,6 +1474,8 @@ export default function ShippingStepSF({
                 request={paymentRequest}
                 onClose={() => setShowVoucherModal(false)}
                 paymentMethod={currentPaymentMethod}
+                coupon={coupon}
+                descuentofinal={descuentofinal}
             />
 
             <UploadVoucherModalBancs
@@ -1456,6 +1489,8 @@ export default function ShippingStepSF({
                 request={paymentRequest}
                 onClose={() => setShowVoucherModalBancs(false)}
                 paymentMethod={currentPaymentMethod}
+                coupon={coupon}
+                descuentofinal={descuentofinal}
             />
 
         </>

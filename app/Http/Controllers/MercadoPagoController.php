@@ -27,6 +27,11 @@ class MercadoPagoController extends Controller
             // MercadoPagoConfig::setAccessToken(config('services.mercadopago.access_token'));
             MercadoPagoConfig::setAccessToken($access_token->description);
             
+            $discountAmount = 0;
+            if ($request->coupon_id != 'null' && $request->coupon_discount > 0) {
+                $discountAmount = (float) $request->coupon_discount;
+            }
+
             // Generar número de orden
             $orderNumber = $this->generateOrderNumber();
             
@@ -50,7 +55,7 @@ class MercadoPagoController extends Controller
                 'number' => $request->number,
                 'reference' => $request->reference,
                 'comment' => $request->comment,
-                'amount' => $request->amount,
+                'amount' => $request->amount + $request->delivery - $discountAmount,
                 'delivery' => $request->delivery,
                 'payment_status' => 'pendiente',
                 'status_id' => $saleStatusPendiente ? $saleStatusPendiente->id : null,
@@ -59,6 +64,9 @@ class MercadoPagoController extends Controller
                 'document' => $request->document,
                 'businessName' => $request->businessName,
                 'payment_method' => $request->payment_method,
+                'coupon_id' => $request->coupon_id != 'null' ? $request->coupon_id : null,
+                'coupon_discount' => $discountAmount,
+                'total_amount' => $request->amount + $request->delivery - $discountAmount,
             ]);
            
              // Registrar detalles de la venta (sin afectar stock aún)
@@ -99,6 +107,16 @@ class MercadoPagoController extends Controller
                     'title' => 'Costo de envío',
                     'quantity' => 1,
                     'unit_price' => round(max((float) $request->delivery, 0.1), 2),
+                    'currency_id' => 'PEN',
+                ];
+            }
+            
+            if ($discountAmount > 0) {
+                $items[] = [
+                    'id' => 'discount',
+                    'title' => 'Descuento por cupón',
+                    'quantity' => 1,
+                    'unit_price' => round(-abs($discountAmount), 2), // Valor negativo
                     'currency_id' => 'PEN',
                 ];
             }
@@ -347,6 +365,9 @@ class MercadoPagoController extends Controller
                     'payment_status' => $order->payment_status,
                     'amount' => $order->amount,
                     'delivery' => $order->delivery,
+                    'coupon_id' => $order->coupon_id,
+                    'coupon_discount' => $order->coupon_discount,
+                    'total_amount' => $order->total_amount,
                     'shipping_address' => [
                         'address' => $order->address,
                         'department' => $order->department,

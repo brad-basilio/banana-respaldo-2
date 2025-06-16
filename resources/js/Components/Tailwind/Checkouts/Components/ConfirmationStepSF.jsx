@@ -73,8 +73,8 @@ export default function ConfirmationStepSF({setCart, cart, code, delivery }) {
     const igv = (subTotal * 0.18).toFixed(2);
 
     // Calcular el total final (subtotal sin IGV + IGV + envío)
-    const totalFinal = parseFloat(subTotal) + parseFloat(igv) + parseFloat(order.delivery);
-
+    const totalFinal = parseFloat(subTotal) + parseFloat(igv) + parseFloat(order.delivery) - parseFloat(order.coupon_discount || 0);
+    console.log(order.delivery, "order.coupon_discount");
     return (
         <div className="mx-auto">
             <div className="bg-white rounded-lg shadow p-6 font-font-general">
@@ -126,6 +126,19 @@ export default function ConfirmationStepSF({setCart, cart, code, delivery }) {
                                 <span className="customtext-neutral-dark">IGV</span>
                                 <span className="font-semibold">S/ {Number2Currency(igv)}</span>
                             </div>
+                            {order.coupon_id && (
+                                <div className="mb-2 mt-2 flex justify-between items-center border-b pb-2 text-sm font-bold">
+                                    <span>
+                                        Cupón aplicado{" "}
+                                    </span>
+                                    <span>
+                                        S/ -
+                                        {Number2Currency(
+                                           order.coupon_discount
+                                        )}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex justify-between">
                                 <span className="customtext-neutral-dark">Envío</span>
                                 <span className="font-semibold">S/ {Number2Currency(order.delivery)}</span>

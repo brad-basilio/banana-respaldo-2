@@ -25,7 +25,9 @@ export default function UploadVoucherModalYape({
     igv,
     envio,
     totalFinal,
-    request
+    request,
+    coupon = null,
+    descuentofinal = 0
 }) {
     const [file, setFile] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -257,6 +259,40 @@ export default function UploadVoucherModalYape({
                                 S/ {Number2Currency(igv)}
                             </span>
                         </div>
+                        {coupon && (
+                                <div className="mb-2 mt-2 flex justify-between items-center border-b pb-2 text-sm font-bold">
+                                    <span>
+                                        Cupón aplicado{" "}
+                                        <Tippy content="Eliminar">
+                                            <i
+                                                className="mdi mdi-close text-red-500 cursor-pointer"
+                                                onClick={() =>
+                                                    setCoupon(null)
+                                                }
+                                            ></i>
+                                        </Tippy>
+                                        <small className="block text-xs font-light">
+                                            {coupon.name}{" "}
+                                            <Tippy
+                                                content={
+                                                    coupon.description
+                                                }
+                                            >
+                                                <i className="mdi mdi-information-outline ms-1"></i>
+                                            </Tippy>{" "}
+                                            ({coupon.type === 'percentage' 
+                                                ? `-${Math.round(coupon.amount * 100) / 100}%`
+                                                : `S/ -${Number2Currency(coupon.amount)}`})
+                                        </small>
+                                    </span>
+                                    <span>
+                                        S/ -
+                                        {Number2Currency(
+                                            descuentofinal
+                                        )}
+                                    </span>
+                                </div>
+                            )}
                         <div className="flex justify-between text-sm 2xl:text-base">
                             <span className="customtext-neutral-dark">Envío</span>
                             <span className="font-semibold">

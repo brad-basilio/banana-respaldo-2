@@ -426,6 +426,14 @@ const Sales = ({ statuses = [] }) => {
                                         {Number2Currency(saleLoaded?.delivery)}
                                     </span>
                                 </div>
+                                { saleLoaded?.coupon_discount > 0 && (<div className="d-flex justify-content-between">
+                                    <b>Descuento por cupon:</b>
+                                    <span>
+                                        - S/{" "}
+                                        {Number2Currency(saleLoaded?.coupon_discount)}
+                                    </span>
+                                </div>
+                                )}       
                                 <hr className="my-2" />
                                 <div className="d-flex justify-content-between">
                                     <b>Total:</b>
