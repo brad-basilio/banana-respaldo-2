@@ -71,8 +71,8 @@ const Sales = ({ statuses = [] }) => {
         Number(saleLoaded?.coupon_discount || 0);
 
     return (
-        <>  
-           
+        <>
+
             <Table
                 gridRef={gridRef}
                 title="Pedidos"
@@ -135,9 +135,7 @@ const Sales = ({ statuses = [] }) => {
                         sortOrder: "desc",
                         cellTemplate: (container, { data }) => {
                             // container.text(moment(data.created_at).fromNow())
-                            container.text(
-                                moment(data.created_at).format("LLL")
-                            );
+                            container.text(moment(data.created_at).subtract(5, 'hours').format("LLL"));
                         },
                     },
                     {
@@ -177,10 +175,10 @@ const Sales = ({ statuses = [] }) => {
                             container.text(
                                 `S/. ${Number2Currency(
                                     amount +
-                                        delivery -
-                                        bundle_discount -
-                                        renewal_discount -
-                                        coupon_discount
+                                    delivery -
+                                    bundle_discount -
+                                    renewal_discount -
+                                    coupon_discount
                                 )}`
                             );
                         },
@@ -254,9 +252,9 @@ const Sales = ({ statuses = [] }) => {
                                             <th>Teléfono:</th>
                                             <td>{saleLoaded?.phone}</td>
                                         </tr>
-                                        
+
                                         {saleLoaded?.delivery_type &&
-                                        //== "express"  (
+                                            //== "express"  (
                                             <tr>
                                                 <th>Dirección:</th>
                                                 <td>
@@ -278,7 +276,7 @@ const Sales = ({ statuses = [] }) => {
                                                     </small>
                                                 </td>
                                             </tr>
-                                        // )
+                                            // )
                                         }
 
                                         {saleLoaded?.reference && (
@@ -298,7 +296,7 @@ const Sales = ({ statuses = [] }) => {
                                         {saleLoaded?.invoiceType && (
                                             <tr>
                                                 <th>{saleLoaded?.invoiceType}:</th>
-                                                <td>{saleLoaded?.documentType} - {saleLoaded?.document} <br></br> {saleLoaded?.document && ( saleLoaded?.businessName )}</td>
+                                                <td>{saleLoaded?.documentType} - {saleLoaded?.document} <br></br> {saleLoaded?.document && (saleLoaded?.businessName)}</td>
                                             </tr>
                                         )}
 
@@ -367,8 +365,8 @@ const Sales = ({ statuses = [] }) => {
                                                                     src={`/storage/images/item/${detail.image}`}
                                                                     alt={detail.name}
                                                                     style={{
-                                                                        height: '5rem',       
-                                                                        width: '5rem',       
+                                                                        height: '5rem',
+                                                                        width: '5rem',
                                                                         objectFit: 'scale-down',
                                                                     }}
                                                                 />
@@ -426,14 +424,14 @@ const Sales = ({ statuses = [] }) => {
                                         {Number2Currency(saleLoaded?.delivery)}
                                     </span>
                                 </div>
-                                { saleLoaded?.coupon_discount > 0 && (<div className="d-flex justify-content-between">
+                                {saleLoaded?.coupon_discount > 0 && (<div className="d-flex justify-content-between">
                                     <b>Descuento por cupon:</b>
                                     <span>
                                         - S/{" "}
                                         {Number2Currency(saleLoaded?.coupon_discount)}
                                     </span>
                                 </div>
-                                )}       
+                                )}
                                 <hr className="my-2" />
                                 <div className="d-flex justify-content-between">
                                     <b>Total:</b>
@@ -465,7 +463,7 @@ const Sales = ({ statuses = [] }) => {
                                         id="statusSelect"
                                         value={saleLoaded?.status_id}
                                         onChange={onStatusChange}
-                                        //  disabled={!saleLoaded?.status?.reversible}
+                                    //  disabled={!saleLoaded?.status?.reversible}
                                     >
                                         {statuses.map((status, index) => {
                                             return (
