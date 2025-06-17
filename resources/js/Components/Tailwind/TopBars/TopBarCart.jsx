@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import General from "../../../Utils/General";
 import { adjustTextColor } from "../../../Functions/adjustTextColor";
 import { CircleUser, DoorClosed, ShoppingCart } from "lucide-react";
 import Logout from "../../../Actions/Logout";
 import CartModal from "../Components/CartModal";
+import { SystemContext } from "../../../System";
 
 const TopBarCart = ({ data, cart, setCart, isUser, items }) => {
     const sectionRef = useRef(null);
@@ -35,6 +36,8 @@ const TopBarCart = ({ data, cart, setCart, isUser, items }) => {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
     const [search, setSearch] = useState("");
+
+    const { hasRole } = useContext(SystemContext)
 
     return (
         <section
@@ -68,17 +71,17 @@ const TopBarCart = ({ data, cart, setCart, isUser, items }) => {
                             <CircleUser />
                         </a>
                     )}
-                   {isMenuOpen && (
+                    {isMenuOpen && (
                         <div className="fixed sm:absolute font-font-general customtext-primary z-50 top-10 md:top-5 left-1/2 right-0 bg-white shadow-xl border-t rounded-xl transition-all duration-300 ease-in-out w-40 sm:w-40 sm:mt-2 sm:left-auto sm:right-auto">
                             <div className="p-4">
                                 <ul className="space-y-2">
                                     <li>
                                         <a
-                                            href="/customer/dashboard"
+                                            href={hasRole('Root', 'Admin') ? '/admin/home' : "/customer/dashboard"}
                                             className="flex items-center gap-2 text-sm transition-colors duration-300 cursor-pointer"
                                         >
                                             <CircleUser height="1rem" />
-                                            <span>Mis pedidos</span>
+                                            <span>{hasRole('Root', 'Admin') ? 'Dashboard' : 'Mis pedidos'}</span>
                                         </a>
                                     </li>
                                     <li>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, createContext } from "react";
 import { createRoot } from "react-dom/client";
 import CreateReactScript from "./Utils/CreateReactScript";
 
@@ -66,6 +66,8 @@ import { Toaster } from "sonner";
 
 const itemsRest = new ItemsRest();
 
+export const SystemContext = createContext();
+
 const System = ({
     session,
     page,
@@ -82,6 +84,7 @@ const System = ({
     headerPosts,
     postsLatest,
     textstatic,
+    hasRole
 }) => {
 
     const getItems = (itemsId) => {
@@ -117,8 +120,6 @@ const System = ({
             setCart(newCart);
         });
     }, [null]);
-
-    console.log("FilteredData", filteredData);
 
     const getSystem = ({ component, value, data, itemsId, visible }) => {
         if (visible == 0) return <></>;
@@ -241,10 +242,14 @@ const System = ({
     );
 
     return (
-        <main className="font-paragraph">
-            {systemsSorted.map((system) => getSystem(system))}
-            <Toaster />
-        </main>
+        <SystemContext.Provider value={{
+            hasRole
+        }}>
+            <main className="font-paragraph">
+                {systemsSorted.map((system) => getSystem(system))}
+                <Toaster />
+            </main>
+        </SystemContext.Provider>
     );
 };
 
