@@ -102,7 +102,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
 
                         <div className="hidden md:flex gap-2 sm:gap-3 items-center justify-start w-full flex-wrap py-2">
 
-                            {variationsItems.slice(0, 4).map((variant) => (
+                            {variationsItems?.slice(0, 4).map((variant) => (
                                 <Tippy content={variant.color} key={variant.slug}>
                                     <a
                                         href={`/item/${variant.slug}`}
@@ -138,7 +138,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
 
                         <div className="flex md:hidden gap-2 sm:gap-3 items-center justify-start w-full flex-wrap py-2">
 
-                            {variationsItems.slice(0, 3).map((variant) => (
+                            {variationsItems?.slice(0, 3).map((variant) => (
                                 <Tippy content={variant.color} key={variant.slug}>
                                     <a
                                         href={`/item/${variant.slug}`}

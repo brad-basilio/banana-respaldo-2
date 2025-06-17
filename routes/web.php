@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController
 // Public 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RepositoryController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SystemController;
 use SoDe\Extend\File;
 
@@ -67,12 +68,11 @@ foreach ($pages as $page) {
 
 Route::get('/base-template', [SystemController::class, 'reactView'])->name('System.jsx');
 Route::get('/login', [AuthController::class, 'loginView'])->name('Login.jsx');
-Route::middleware('auth')->group(
-    function () {
-        Route::get('/profile', [AdminProfileController::class, 'reactView'])->name('Admin/Profile.jsx');
-        Route::get('/account', [AdminAccountController::class, 'reactView'])->name('Admin/Account.jsx');
-    }
-);
+Route::middleware('auth')->group(function () {
+    Route::get('/sales/blade/{code}', [SaleController::class,  'blade']);
+    Route::get('/profile', [AdminProfileController::class, 'reactView'])->name('Admin/Profile.jsx');
+    Route::get('/account', [AdminAccountController::class, 'reactView'])->name('Admin/Account.jsx');
+});
 
 // Admin routes
 Route::middleware(['can:Admin', 'auth'])->prefix('admin')->group(function () {

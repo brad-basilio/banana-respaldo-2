@@ -11,10 +11,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', 'Stech Perú')); ?></title>
+    <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', 'Sala Fabulosa')); ?></title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v=<?php echo e(uniqid()); ?>" type="image/png">
-    <meta name="description" content="Stech Perú">
+    <meta name="description" content="Sala Fabulosa">
     <?php if(isset($data['description'])): ?>
         <meta name="description" content="<?php echo e($data['description']); ?>">
     <?php endif; ?>
@@ -156,6 +156,15 @@
 
             .placeholder\:customtext-<?php echo e($color->name); ?>::placeholder {
                 color: <?php echo e($color->description); ?>;
+            }
+            .active\:bg-<?php echo e($color->name); ?>:active {
+                background-color: <?php echo e($color->description); ?>;
+            }
+            .active\:customtext-<?php echo e($color->name); ?>:active {
+                color: <?php echo e($color->description); ?>;
+            }
+            .active\:border-<?php echo e($color->name); ?>:active {
+                border-color: <?php echo e($color->description); ?>;
             }
 
             .border-<?php echo e($color->name); ?> {
