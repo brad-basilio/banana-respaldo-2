@@ -6102,7 +6102,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Product.jsx": {
-    "file": "assets/Product-B-dq5er3.js",
+    "file": "assets/Product-CLjFxPit.js",
     "name": "Product",
     "src": "resources/js/Components/Tailwind/Product.jsx",
     "isDynamicEntry": true,
@@ -6125,7 +6125,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-Bv5SQqkK.js",
+    "file": "assets/ProductDetail-DhXIb994.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -6146,7 +6146,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailB.jsx": {
-    "file": "assets/ProductDetailB-DkHn0g9J.js",
+    "file": "assets/ProductDetailB-BZ5T7T12.js",
     "name": "ProductDetailB",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailB.jsx",
     "isDynamicEntry": true,
@@ -7710,7 +7710,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-DBwf30xN.js",
+    "file": "assets/System-D_pDU6pI.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

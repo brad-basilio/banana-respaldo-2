@@ -89,7 +89,7 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
                             1024: { slidesPerView: 4, grid: { rows: 1 } },
                             1280: { slidesPerView: 5, grid: { rows: 1 } },
                         }}
-                        className="lg:min-h-[550px] lg:max-h-[550px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
+                        className="lg:h-[600px] lg:max-h-[600px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
                     >
                         {items.map((product, index) => (
                             <SwiperSlide
