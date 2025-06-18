@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class SendPostEmailsJob implements ShouldQueue
 {
@@ -34,7 +35,7 @@ class SendPostEmailsJob implements ShouldQueue
                 $subscription->notify(new BlogPublishedNotification($this->jpa));
             }
         } catch (\Throwable $th) {
-            dump('Error al enviar notificaciones de blog publicado: ' . $th->getMessage());
+            Log::error('Error al enviar notificaciones de blog publicado: ' . $th->getMessage());
         }
     }
 }
