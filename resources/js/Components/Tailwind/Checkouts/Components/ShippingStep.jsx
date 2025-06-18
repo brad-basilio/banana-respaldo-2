@@ -615,7 +615,7 @@ export default function ShippingStep({
 
                     <div className="form-group">
                         <label className="block text-sm 2xl:text-base mb-2 font-medium customtext-neutral-dark">
-                            Ubicación de entrega (Distrito)<span className="text-red-500 ml-1">*</span>
+                        Distrito / Provincia / Departamento (Ubicación de entrega)<span className="text-red-500 ml-1">*</span>
                         </label>
                         <AsyncSelect
                             name="ubigeo"
@@ -757,6 +757,10 @@ export default function ShippingStep({
                                 src={`/storage/images/item/${item.image}`}
                                 alt={item.name}
                                 className="w-16 h-16 object-cover rounded-lg"
+                                onError={(e) =>
+                                    (e.target.src =
+                                        "/api/cover/thumbnail/null")
+                                }
                             />
                             <div>
                                 <h4 className="font-medium">{item.name}</h4>

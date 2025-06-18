@@ -17,7 +17,7 @@ export default function ConfirmationStep({ cart, code, delivery }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12"
+            className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12"
         >
             <div className="bg-white rounded-2xl shadow-xl p-6 md:p-10">
                 <motion.div 
@@ -66,11 +66,22 @@ export default function ConfirmationStep({ cart, code, delivery }) {
                                                 src={`/storage/images/item/${item.image}`}
                                                 alt={item.name}
                                                 className="w-24 h-24 object-cover rounded-lg"
+                                                onError={(e) =>
+                                                    (e.target.src =
+                                                        "/api/cover/thumbnail/null")
+                                                }
+                                                loading="lazy"
                                             />
                                         </div>
                                         <div className="text-center sm:text-left flex-1">
-                                            <h3 className="font-semibold text-xl mb-3">{item.name}</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div className="flex flex-col sm:flex-row sm:justify-between mb-3">
+                                                <h3 className="font-semibold text-xl w-10/12">{item.name}</h3>
+                                                <div className="mt-2 sm:mt-0 text-right w-2/12">
+                                                    <div className="font-bold text-lg text-primary">S/ {Number2Currency(item.final_price * item.quantity)}</div>
+                                                    
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                 <p className="text-sm customtext-neutral-light">Marca: <span className="customtext-neutral-dark font-medium">{item.brand.name}</span></p>
                                                 <p className="text-sm customtext-neutral-light">Cantidad: <span className="customtext-neutral-dark font-medium">{item.quantity}</span></p>
                                                 <p className="text-sm customtext-neutral-light">SKU: <span className="customtext-neutral-dark font-medium">{item.sku}</span></p>
@@ -111,7 +122,7 @@ export default function ConfirmationStep({ cart, code, delivery }) {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            <ButtonPrimary href="/catalogo" className="w-full md:w-auto">
+                            <ButtonPrimary href="/catalogo" className="w-full mx-auto md:w-auto">
                                 Seguir Comprando
                             </ButtonPrimary>
                         </motion.div>
