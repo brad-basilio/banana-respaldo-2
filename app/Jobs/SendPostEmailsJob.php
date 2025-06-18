@@ -32,7 +32,11 @@ class SendPostEmailsJob implements ShouldQueue
        try {
             $subscriptions = Subscription::where('status', true)->get();
             foreach ($subscriptions as $subscription) {
-                $subscription->notify(new BlogPublishedNotification($this->jpa));
+                try {
+                    $subscription->notify(new BlogPublishedNotification($this->jpa));
+                } catch (\Throwable $th) {
+                    Log::error('Error al enviar notificación a ' . $subscription->email . ': ' . $th->getMessage());
+                }
             }
         } catch (\Throwable $th) {
             Log::error('Error al enviar notificaciones de blog publicado: ' . $th->getMessage());
