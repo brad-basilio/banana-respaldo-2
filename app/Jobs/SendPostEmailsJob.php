@@ -14,11 +14,11 @@ use Illuminate\Queue\SerializesModels;
 class SendPostEmailsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    private Post $jpa;
+    protected  $jpa;
     /**
      * Create a new job instance.
      */
-    public function __construct(Post $jpa)
+    public function __construct($jpa)
     {
         $this->jpa = $jpa;
     }
