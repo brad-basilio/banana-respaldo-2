@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\BasicController;
+use App\Jobs\SendPostEmailsJob;
 use App\Models\Post;
 use App\Models\PostTag;
 use App\Models\Subscription;
@@ -60,12 +61,12 @@ class PostController extends BasicController
         });
 
         // Notificar a los suscriptores si es nuevo blog (usando colas)
+        //Crear un jobs
         if ($isNew) {
-            $subscribers = Subscription::all();
-           
-            foreach ($subscribers as $subscriber) {
-                $subscriber->notify(new BlogPublishedNotification($jpa));
-            }
+           SendPostEmailsJob::dispatchAfterResponse(
+                $jpa
+            )->onQueue('emails');
+
         }
     }
 }
