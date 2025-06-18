@@ -65,7 +65,7 @@ class PostController extends BasicController
         if ($isNew) {
            SendPostEmailsJob::dispatchAfterResponse(
                 $jpa
-            )->onQueue('emails');
+            );
 
         }
     }
