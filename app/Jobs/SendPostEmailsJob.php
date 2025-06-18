@@ -34,7 +34,7 @@ class SendPostEmailsJob implements ShouldQueue
                 $subscription->notify(new BlogPublishedNotification($this->jpa));
             }
         } catch (\Throwable $th) {
-            \Log::error('Error al enviar notificaciones de blog publicado: ' . $th->getMessage());
+            dump('Error al enviar notificaciones de blog publicado: ' . $th->getMessage());
         }
     }
 }
