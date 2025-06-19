@@ -28,18 +28,31 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
         if (!swiperInstance) return;
 
         const handleResize = () => {
-            const isDesktop = window.innerWidth >= 768;
-            swiperInstance.params.navigation.prevEl = isDesktop 
-                ? navigationDesktopPrevRef.current 
-                : navigationMobilePrevRef.current;
-            
-            swiperInstance.params.navigation.nextEl = isDesktop 
-                ? navigationDesktopNextRef.current 
-                : navigationMobileNextRef.current;
+            // Añadir un pequeño delay para asegurar que el DOM esté actualizado
+            setTimeout(() => {
+                if (!swiperInstance || !swiperInstance.navigation) return;
+                
+                const isDesktop = window.innerWidth >= 768;
+                const prevEl = isDesktop 
+                    ? navigationDesktopPrevRef.current 
+                    : navigationMobilePrevRef.current;
+                const nextEl = isDesktop 
+                    ? navigationDesktopNextRef.current 
+                    : navigationMobileNextRef.current;
 
-            swiperInstance.navigation.destroy();
-            swiperInstance.navigation.init();
-            swiperInstance.navigation.update();
+                if (prevEl && nextEl) {
+                    swiperInstance.params.navigation.prevEl = prevEl;
+                    swiperInstance.params.navigation.nextEl = nextEl;
+                    
+                    try {
+                        swiperInstance.navigation.destroy();
+                        swiperInstance.navigation.init();
+                        swiperInstance.navigation.update();
+                    } catch (error) {
+                        console.warn('Swiper navigation update failed:', error);
+                    }
+                }
+            }, 50);
         };
 
         window.addEventListener('resize', handleResize);
@@ -67,43 +80,61 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
 
                 {/* Swiper Carousel */}
                 <div className="relative lg:px-10">
-                    <Swiper
-                        modules={[Navigation, Grid]}
-                        navigation={{
-                            prevEl: navigationDesktopPrevRef.current,
-                            nextEl: navigationDesktopNextRef.current,
-                            enabled: true,
-                        }}
-                        slidesPerView={2}
-                        grid={{
-                             fill: 'row',
-                            rows: 3,
-                        }}
-                        loop={true}
-                        onSwiper={setSwiperInstance}
-                        breakpoints={{
-                            640: { slidesPerView: 2},
-                            768: { slidesPerView: 3, grid: { rows: 1 }, spaceBetween:10 },
-                            1024: { slidesPerView: 4, grid: { rows: 1 } },
-                            1280: { slidesPerView: 5, grid: { rows: 1 } },
-                        }}
-                        className="md:h-[600px] md:max-h-[600px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
-                    >
-                        {items.map((product, index) => (
-                            <SwiperSlide
-                                key={index}
-                                className="mb-4 lg:mb-0 px-1 md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
-                            >
-                                <CardHoverBtn
-                                    product={product}
-                                    setCart={setCart}
-                                    cart={cart}
-                                    data={data}
-                                    isFirstCard={index === 0}
-                                />
-                            </SwiperSlide>
-                        ))}
-                    </Swiper>
+                    {items && items.length > 0 && (
+                        <Swiper
+                            modules={[Navigation, Grid]}
+                            navigation={{
+                                prevEl: null, // Se configurará después
+                                nextEl: null, // Se configurará después
+                                enabled: true,
+                            }}
+                            slidesPerView={2}
+                            grid={{
+                                fill: 'row',
+                                rows: 3,
+                            }}
+                            loop={items.length > 6} // Solo hacer loop si hay suficientes elementos
+                            onSwiper={(swiper) => {
+                                // Configurar navegación después de que Swiper esté listo
+                                setTimeout(() => {
+                                    const isDesktop = window.innerWidth >= 768;
+                                    swiper.params.navigation.prevEl = isDesktop 
+                                        ? navigationDesktopPrevRef.current 
+                                        : navigationMobilePrevRef.current;
+                                    swiper.params.navigation.nextEl = isDesktop 
+                                        ? navigationDesktopNextRef.current 
+                                        : navigationMobileNextRef.current;
+                                    
+                                    swiper.navigation.destroy();
+                                    swiper.navigation.init();
+                                    swiper.navigation.update();
+                                    setSwiperInstance(swiper);
+                                }, 100);
+                            }}
+                            breakpoints={{
+                                640: { slidesPerView: 2, spaceBetween: 10 },
+                                768: { slidesPerView: 3, grid: { rows: 1 }, spaceBetween: 0 },
+                                1024: { slidesPerView: 4, grid: { rows: 1 }, spaceBetween: 0 },
+                                1280: { slidesPerView: 5, grid: { rows: 1 }, spaceBetween: 0 },
+                            }}
+                            className="md:h-[600px] md:max-h-[600px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
+                        >
+                            {items.map((product, index) => (
+                                <SwiperSlide
+                                    key={`${product.id}-${index}`}
+                                    className="mb-4 lg:mb-0 px-1 md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
+                                >
+                                    <CardHoverBtn
+                                        product={product}
+                                        setCart={setCart}
+                                        cart={cart}
+                                        data={data}
+                                        isFirstCard={index === 0}
+                                    />
+                                </SwiperSlide>
+                            ))}
+                        </Swiper>
+                    )}
 
                     {/* Navigation Buttons - Desktop */}
                     <div className="hidden md:block">

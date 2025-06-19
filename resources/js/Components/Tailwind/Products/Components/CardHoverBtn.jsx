@@ -46,7 +46,7 @@ const CardHoverBtn = ({
         <>
             <motion.div
                 key={product.id}
-                className={`group px-1 md:px-2 w-full  flex-shrink-0 font-font-secondary cursor-pointer relative`}
+                className={`group px-1 md:px-2 w-full flex-shrink-0 font-font-secondary cursor-pointer relative`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
@@ -55,9 +55,9 @@ const CardHoverBtn = ({
                 <motion.div
                     className="bg-white rounded-xl shadow-md p-2 md:p-4 "
                     style={{ boxShadow: "0px 0px 6px 0px #00000040" }}
-                    whileHover={{ 
+                    whileHover={{
                         boxShadow: "0px 10px 25px 0px #00000020",
-                        scale: 1.02 
+                        scale: 1.02
                     }}
                     transition={{ duration: 0.3 }}
                 >
@@ -69,17 +69,17 @@ const CardHoverBtn = ({
                                     -
                                     {Number(
                                         100 -
-                                            Number(
-                                                (product?.discount * 100) /
-                                                    product?.price
-                                            )
+                                        Number(
+                                            (product?.discount * 100) /
+                                            product?.price
+                                        )
                                     ).toFixed(0)}
                                     %
                                 </span>
                             )}
-                        <motion.div 
+                        <motion.div
                             className="aspect-square rounded-lg overflow-hidden flex items-center justify-center p-0"
-                           
+
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         >
                             <motion.img
@@ -90,7 +90,7 @@ const CardHoverBtn = ({
                                 alt={product.name}
                                 className="w-full h-full object-cover bg-slate-100"
                                 loading="lazy"
-                              
+                                whileHover={{ scale: 1.1 }}
                                 transition={{ duration: 0.3 }}
                             />
                         </motion.div>
@@ -128,29 +128,30 @@ const CardHoverBtn = ({
                     </div>
 
                     {/* Botones de acción (ocultos por defecto, aparecen con hover) */}
-                    <motion.div 
-                        className={`overflow-visible pb-4 flex gap-2 md:gap-3 my-2 transform ${isFirstCard ? 'lg:group-hover:-translate-y-1/2' : ''} h-auto opacity-100 transition-opacity duration-500 ease-in-out md:h-auto md:opacity-100 lg:h-0 lg:opacity-0 lg:overflow-hidden lg:group-hover:h-auto lg:group-hover:opacity-100`}
+                    <motion.div
+                        className={`hidden lg:flex overflow-hidden pb-4  gap-2 my-2 transform ${isFirstCard ? 'lg:group-hover:-translate-y-1/2' : ''} max-h-0 opacity-1 group-hover:max-h-20 group-hover:opacity-100 transition-[max-height,opacity] duration-500 ease-in-out md:max-h-20 md:opacity-100 lg:max-h-0 lg:opacity-0`}
                         initial={false}
                     >
                         <motion.a
                             href={`/product/${product.slug}`}
-                            className="flex-1 inline-flex items-center justify-center font-bold text-sm md:text-base bg-primary text-white py-1 md:py-3 px-3 md:px-4 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90 min-h-[44px] touch-manipulation"
+                            className="flex-1 inline-flex items-center justify-center font-bold  text-sm bg-primary text-white py-2 md:py-3 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
                             <span className="hidden md:block">Ver detalle</span>
-                            <span className="md:hidden flex gap-2 text-sm items-center font-semibold" > Ver <LucideEye width="1.2rem" /></span>
+                            <span className="md:hidden flex gap-2 text-sm items-center" > Ver <LucideEye width="1.1rem" /></span>
                         </motion.a>
                         <motion.button
                             aria-label="Agregar al carrito"
-                            className="py-0 md:py-3 px-3 md:px-2.5 border-2 border-primary rounded-xl customtext-primary transition-all duration-300 hover:opacity-90 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+                            className="py-2 px-2.5 border border-primary rounded-lg customtext-primary transition-all duration-300  hover:opacity-90"
                             onClick={() => onAddClicked(product)}
+
                             whileTap={{ scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
                             <motion.svg
-                                className="w-5 h-5 md:w-5 md:h-5"
+                                className="w-5 h-5"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -166,7 +167,42 @@ const CardHoverBtn = ({
                             </motion.svg>
                         </motion.button>
                     </motion.div>
+                    <motion.div
+                        className={`overflow-hidden pb-4 flex lg:hidden gap-2 my-2 transform ${isFirstCard ? 'lg:group-hover:-translate-y-1/2' : ''}  group-hover:opacity-100 transition-[max-height,opacity] duration-500 ease-in-out md:max-h-20 md:opacity-100 lg:max-h-0 lg:opacity-0`}
+                      
+                    >
+                        <motion.a
+                            href={`/product/${product.slug}`}
+                            className="flex-1 inline-flex items-center justify-center font-bold  text-sm bg-primary text-white py-2 md:py-3 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90"
 
+                        >
+
+                            <span className="md:hidden flex gap-2 text-sm items-center" > Ver <LucideEye width="1.1rem" /></span>
+                        </motion.a>
+                        <motion.button
+                            aria-label="Agregar al carrito"
+                            className="py-2 px-2.5 border border-primary rounded-lg customtext-primary transition-all duration-300  hover:opacity-90"
+                            onClick={() => onAddClicked(product)}
+
+
+                        >
+                            <motion.svg
+                                className="w-5 h-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                whileHover={{ rotate: 10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                                />
+                            </motion.svg>
+                        </motion.button>
+                    </motion.div>
                     {/* Información del producto */}
                     <div>
                         <p className="text-xs customtext-neutral-light font-semibold mb-1">
