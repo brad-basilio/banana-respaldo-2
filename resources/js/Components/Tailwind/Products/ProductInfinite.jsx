@@ -117,12 +117,12 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
                                 1024: { slidesPerView: 4, grid: { rows: 1 }, spaceBetween: 0 },
                                 1280: { slidesPerView: 5, grid: { rows: 1 }, spaceBetween: 0 },
                             }}
-                            className="md:h-[600px] md:max-h-[600px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
+                            className=" md:h-[600px] md:max-h-[600px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
                         >
                             {items.map((product, index) => (
                                 <SwiperSlide
                                     key={`${product.id}-${index}`}
-                                    className="mb-4 lg:mb-0 px-1 md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
+                                    className="mb-4 lg:mb-0 px-1 py-2  md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
                                 >
                                     <CardHoverBtn
                                         product={product}

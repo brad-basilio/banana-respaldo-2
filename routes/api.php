@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 
 use App\Http\Controllers\Admin\SubCategoryController as AdminSubCategoryController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\SystemColorController as AdminSystemColorController;
 use App\Http\Controllers\Admin\SystemController as AdminSystemController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
@@ -185,6 +186,14 @@ Route::middleware('auth')->group(function () {
     Route::patch('/items/status', [AdminItemController::class, 'status']);
     Route::patch('/items/{field}', [AdminItemController::class, 'boolean']);
     Route::delete('/items/{id}', [AdminItemController::class, 'delete']);
+
+    // Cupones
+    Route::post('/coupons', [AdminCouponController::class, 'save']);
+    Route::post('/coupons/paginate', [AdminCouponController::class, 'paginate']);
+    Route::patch('/coupons/{field}', [AdminCouponController::class, 'boolean']);
+    Route::delete('/coupons/{id}', [AdminCouponController::class, 'delete']);
+    Route::post('/coupons/validate', [AdminCouponController::class, 'validateCoupon']);
+    Route::get('/coupons/generate-code', [AdminCouponController::class, 'generateCode']);
 
     Route::post('/ads', [AdminAdController::class, 'save']);
     Route::post('/ads/paginate', [AdminAdController::class, 'paginate']);

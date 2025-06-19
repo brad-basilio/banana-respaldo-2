@@ -82,7 +82,7 @@ const modernFilterStyles = {
     filterContent: "bg-gradient-to-b from-white/90 to-gray-50/50 rounded-xl border border-gray-200/40 backdrop-blur-sm",
     searchInput: "w-full pl-12 pr-4 py-3 bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all duration-300 placeholder:customtext-neutral-dark",
     checkbox: "min-h-5 min-w-5 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-blue-500/30 focus:ring-2 transition-all duration-200 hover:border-blue-400",
-    label: "flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/60 hover:to-indigo-50/40 cursor-pointer group",
+    label: "flex items-center gap-3 py-1 px-3 rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/60 hover:to-indigo-50/40 cursor-pointer group",
     activeFilter: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25",
     badge: "inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-full text-sm font-medium text-blue-700",
     glowEffect: "shadow-lg shadow-blue-500/20 ring-1 ring-blue-500/20",
