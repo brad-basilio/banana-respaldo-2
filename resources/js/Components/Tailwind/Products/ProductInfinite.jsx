@@ -66,7 +66,7 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
                 </div>
 
                 {/* Swiper Carousel */}
-                <div className="relative">
+                <div className="relative px-10">
                     <Swiper
                         modules={[Navigation, Grid]}
                         navigation={{

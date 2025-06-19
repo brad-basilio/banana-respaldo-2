@@ -146,7 +146,7 @@ const CardHoverBtn = ({
                             aria-label="Agregar al carrito"
                             className="py-2 px-2.5 border border-primary rounded-lg customtext-primary transition-all duration-300  hover:opacity-90"
                             onClick={() => onAddClicked(product)}
-                            whileHover={{ scale: 1.05, rotate: 5 }}
+                           
                             whileTap={{ scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
