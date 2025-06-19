@@ -199,6 +199,18 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const [priceRanges, setPriceRanges] = useState([]);
     const [activeSection, setActiveSection] = useState(null);
 
+    // Rangos de precios estáticos
+    const staticPriceRanges = [
+        { min: 0, max: 50, label: "Hasta s/ 50" },
+        { min: 50, max: 100, label: "S/ 50 - s/ 100" },
+        { min: 100, max: 250, label: "S/ 100 - s/ 250" },
+        { min: 250, max: 500, label: "S/ 250 - s/ 500" },
+        { min: 500, max: 1000, label: "S/ 500 - s/ 1.000" },
+        { min: 1000, max: 2000, label: "S/ 1.000 - s/ 2.000" },
+        { min: 2000, max: 5000, label: "S/ 2.000 - s/ 5.000" },
+        { min: 5000, max: 999999, label: "Desde s/ 5.000" }
+    ];
+
     const [sections, setSections] = useState({
         marca: true,
         precio: true,
@@ -213,7 +225,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         category_id: GET.category ? GET.category.split(',') : [],
         brand_id: GET.brand ? GET.brand.split(',') : [],
         subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
-        price: null,
+        price: [],
         name: GET.search || null,
         sort_by: "created_at",
         order: "desc",
@@ -272,15 +284,16 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             transformedFilters.push([...brandConditions]);
         }
 
-        if (filters.price) {
-            transformedFilters.push([
-                "or",
+        if (filters.price && filters.price.length > 0) {
+            const priceConditions = filters.price.map((priceRange) => [
+                "and",
                 [
-                    ["final_price", ">=", filters.price.min],
+                    ["final_price", ">=", priceRange.min],
                     "and",
-                    ["final_price", "<=", filters.price.max],
+                    ["final_price", "<=", priceRange.max],
                 ],
             ]);
+            transformedFilters.push(ArrayJoin(priceConditions, 'or'));
         }
 
         if (filters.name) {
@@ -456,15 +469,26 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const handleFilterChange = (type, value) => {
         setSelectedFilters((prev) => {
             if (type === "price") {
-                // Si el mismo rango ya está seleccionado, lo deseleccionamos; de lo contrario, lo asignamos
+                // Manejar múltiples rangos de precio
+                const currentPrices = Array.isArray(prev.price) ? prev.price : [];
+                const isAlreadySelected = currentPrices.some(
+                    (range) => range.min === value.min && range.max === value.max
+                );
+                
+                let newPrices;
+                if (isAlreadySelected) {
+                    // Deseleccionar el rango
+                    newPrices = currentPrices.filter(
+                        (range) => !(range.min === value.min && range.max === value.max)
+                    );
+                } else {
+                    // Agregar el nuevo rango
+                    newPrices = [...currentPrices, value];
+                }
+                
                 return {
                     ...prev,
-                    price:
-                        prev.price &&
-                                prev.price.min === value.min &&
-                                prev.price.max === value.max
-                            ? null
-                            : value,
+                    price: newPrices,
                 };
             }
 
@@ -1091,7 +1115,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                             >
                                                 <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar">
                                                     <AnimatePresence>
-                                                        {priceRanges.map((range, index) => (
+                                                        {staticPriceRanges.map((range, index) => (
                                                             <motion.label
                                                                 key={`${range.min}-${range.max}`}
                                                                 className={modernFilterStyles.label}
@@ -1103,14 +1127,21 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                     className={modernFilterStyles.checkbox}
                                                                     onChange={() => handleFilterChange("price", range)}
                                                                     checked={
-                                                                        selectedFilters.price?.min === range.min &&
-                                                                        selectedFilters.price?.max === range.max
+                                                                        selectedFilters.price?.some(
+                                                                            (priceRange) => 
+                                                                                priceRange.min === range.min && 
+                                                                                priceRange.max === range.max
+                                                                        ) || false
                                                                     }
                                                                 />
                                                                 <span className="text-sm line-clamp-1 font-medium customtext-neutral-dark  transition-colors duration-200">
-                                                                    S/ {range.min} - S/ {range.max}
+                                                                    {range.label}
                                                                 </span>
-                                                                {(selectedFilters.price?.min === range.min && selectedFilters.price?.max === range.max) && (
+                                                                {selectedFilters.price?.some(
+                                                                    (priceRange) => 
+                                                                        priceRange.min === range.min && 
+                                                                        priceRange.max === range.max
+                                                                ) && (
                                                                     <motion.div
                                                                         className="ml-auto"
                                                                         initial={{ scale: 0 }}
@@ -1142,7 +1173,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                         {(selectedFilters.brand_id?.length > 0 || 
                                           selectedFilters.category_id?.length > 0 || 
                                           selectedFilters.subcategory_id?.length > 0 || 
-                                          selectedFilters.price) && (
+                                          (selectedFilters.price && selectedFilters.price.length > 0)) && (
                                             <motion.div
                                                 className="mb-4"
                                                 initial={{ opacity: 0, y: 10 }}
@@ -1220,23 +1251,31 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                         ) : null;
                                                     })}
 
-                                                    {/* Chip de precio con AnimatedBadge */}
-                                                    {selectedFilters.price && (
-                                                        <AnimatedBadge
-                                                           
-                                                            onClick={() => handleFilterChange("price", selectedFilters.price)}
-                                                        >
-                                                            <TrendingUp className="h-3 w-3" />
-                                                            <span>S/ {selectedFilters.price.min} - S/ {selectedFilters.price.max}</span>
-                                                            <motion.div
-                                                                className="ml-1  rounded-full p-0.5 transition-colors duration-200"
-                                                                whileHover={{ scale: 1.2 }}
-                                                                whileTap={{ scale: 0.9 }}
+                                                    {/* Chips de precio con AnimatedBadge */}
+                                                    {selectedFilters.price?.map((priceRange, index) => {
+                                                        const staticRange = staticPriceRanges.find(range => 
+                                                            range.min === priceRange.min && 
+                                                            range.max === priceRange.max
+                                                        );
+                                                        return (
+                                                            <AnimatedBadge
+                                                                key={`price-${priceRange.min}-${priceRange.max}`}
+                                                                onClick={() => handleFilterChange("price", priceRange)}
                                                             >
-                                                                <X className="h-3 w-3" />
-                                                            </motion.div>
-                                                        </AnimatedBadge>
-                                                    )}
+                                                                <TrendingUp className="h-3 w-3" />
+                                                                <span>
+                                                                    {staticRange?.label || `S/ ${priceRange.min} - S/ ${priceRange.max}`}
+                                                                </span>
+                                                                <motion.div
+                                                                    className="ml-1 rounded-full p-0.5 transition-colors duration-200"
+                                                                    whileHover={{ scale: 1.2 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </motion.div>
+                                                            </AnimatedBadge>
+                                                        );
+                                                    })}
                                                 </div>
                                             </motion.div>
                                         )}
@@ -1258,7 +1297,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 category_id: [],
                                                 brand_id: [],
                                                 subcategory_id: [],
-                                                price: null,
+                                                price: [],
                                                 name: null,
                                                 sort_by: "created_at",
                                                 order: "desc",
@@ -1425,7 +1464,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                 category_id: [],
                                                                 brand_id: [],
                                                                 subcategory_id: [],
-                                                                price: null,
+                                                                price: [],
                                                                 name: null,
                                                                 sort_by: "created_at",
                                                                 order: "desc",

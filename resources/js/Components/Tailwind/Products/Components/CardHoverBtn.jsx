@@ -178,15 +178,32 @@ const CardHoverBtn = ({
                         </h3>
                         {/* Precio */}
                         <div className="flex flex-col items-baseline gap-2 md:mb-4">
-                            {product.discount != null &&
-                                !isNaN(product.discount) && (
-                                    <span className="text-xs customtext-neutral-light font-semibold1 line-through">
-                                        S/ {product.price}
+                            {product.static_price ? (
+                                // Formato especial cuando tiene static_price
+                                <div className="flex flex-col items-start gap-1">
+                                    <span className="customtext-neutral-dark text-[20px] md:text-2xl font-bold">
+                                        {product.static_price}
                                     </span>
-                                )}
-                            <span className="customtext-neutral-dark text-[20px] md:text-2xl font-bold">
-                                S/ {product.final_price}
-                            </span>
+                                    {product.discount != null && !isNaN(product.discount) && (
+                                        <span className="text-xs customtext-neutral-light font-semibold1 line-through">
+                                            S/ {product.price}
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                // Formato normal cuando no tiene static_price
+                                <>
+                                    {product.discount != null &&
+                                        !isNaN(product.discount) && (
+                                            <span className="text-xs customtext-neutral-light font-semibold1 line-through">
+                                                S/ {product.price}
+                                            </span>
+                                        )}
+                                    <span className="customtext-neutral-dark text-[20px] md:text-2xl font-bold">
+                                        S/ {product.final_price}
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </motion.div>
