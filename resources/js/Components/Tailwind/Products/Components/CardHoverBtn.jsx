@@ -46,7 +46,7 @@ const CardHoverBtn = ({
         <>
             <motion.div
                 key={product.id}
-                className={`group px-1 md:px-2 w-full flex-shrink-0 font-font-secondary cursor-pointer relative`}
+                className={`group px-1 md:px-2 w-full  flex-shrink-0 font-font-secondary cursor-pointer relative`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
@@ -79,7 +79,7 @@ const CardHoverBtn = ({
                             )}
                         <motion.div 
                             className="aspect-square rounded-lg overflow-hidden flex items-center justify-center p-0"
-                            whileHover={{ scale: 1.05 }}
+                           
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         >
                             <motion.img
@@ -90,7 +90,7 @@ const CardHoverBtn = ({
                                 alt={product.name}
                                 className="w-full h-full object-cover bg-slate-100"
                                 loading="lazy"
-                                whileHover={{ scale: 1.1 }}
+                              
                                 transition={{ duration: 0.3 }}
                             />
                         </motion.div>
