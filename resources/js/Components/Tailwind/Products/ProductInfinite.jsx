@@ -83,7 +83,7 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
                         onSwiper={setSwiperInstance}
                         breakpoints={{
                             640: { slidesPerView: 2},
-                            768: { slidesPerView: 3, grid: { rows: 1 } },
+                            768: { slidesPerView: 3, grid: { rows: 1 }, spaceBetween:10 },
                             1024: { slidesPerView: 4, grid: { rows: 1 } },
                             1280: { slidesPerView: 5, grid: { rows: 1 } },
                         }}
@@ -92,7 +92,7 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
                         {items.map((product, index) => (
                             <SwiperSlide
                                 key={index}
-                                className="px-1 md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
+                                className="mb-4 lg:mb-0 px-1 md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
                             >
                                 <CardHoverBtn
                                     product={product}
