@@ -129,62 +129,82 @@ const CardHoverBtn = ({
 
                     {/* Botones de acción (ocultos por defecto, aparecen con hover) */}
                     <motion.div
-                        className={`hidden lg:flex overflow-hidden pb-4  gap-2 my-2 transform ${isFirstCard ? 'lg:group-hover:-translate-y-1/2' : ''} max-h-0 opacity-1 group-hover:max-h-20 group-hover:opacity-100 transition-[max-height,opacity] duration-500 ease-in-out md:max-h-20 md:opacity-100 lg:max-h-0 lg:opacity-0`}
+                        className={`hidden lg:flex overflow-hidden pb-4 gap-2 my-2 h-0 opacity-0 group-hover:opacity-100 group-hover:h-12 transition-[height] duration-500 ease-in-out relative`}
                         initial={false}
+                    >
+                        <motion.div
+                            className="absolute inset-0 flex gap-2 w-full"
+                            initial={{ y: 60, opacity: 0 }}
+                            animate={{ 
+                                y: 0, 
+                                opacity: 1,
+                                transition: { 
+                                    delay: 0.1,
+                                    duration: 0.4,
+                                    ease: "easeOut"
+                                }
+                            }}
+                            exit={{ 
+                                y: 60, 
+                                opacity: 0,
+                                transition: { 
+                                    duration: 0.3,
+                                    ease: "easeIn"
+                                }
+                            }}
+                        >
+                            <motion.a
+                                href={`/product/${product.slug}`}
+                                className="flex-1 inline-flex items-center justify-center font-bold text-sm bg-primary text-white py-0 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                            >
+                                <span>Ver detalle</span>
+                            </motion.a>
+                            <motion.button
+                                aria-label="Agregar al carrito"
+                                className="py-0 px-3 border border-primary rounded-xl customtext-primary transition-all duration-300 hover:opacity-90 min-w-[48px] flex items-center justify-center"
+                                onClick={() => onAddClicked(product)}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                            >
+                                <motion.svg
+                                    className="w-5 h-5"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    whileHover={{ rotate: 10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                                    />
+                                </motion.svg>
+                            </motion.button>
+                        </motion.div>
+                    </motion.div>
+                    <motion.div
+                        className={`pb-4 flex lg:hidden gap-2 my-2 h-16 relative`}
                     >
                         <motion.a
                             href={`/product/${product.slug}`}
-                            className="flex-1 inline-flex items-center justify-center font-bold  text-sm bg-primary text-white py-2 md:py-3 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90"
+                            className="flex-1 inline-flex items-center justify-center font-bold text-sm bg-primary text-white py-3 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90 min-h-[44px] touch-manipulation"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
-                            <span className="hidden md:block">Ver detalle</span>
-                            <span className="md:hidden flex gap-2 text-sm items-center" > Ver <LucideEye width="1.1rem" /></span>
+                            <span className="flex gap-2 text-sm items-center font-semibold"> Ver <LucideEye width="1.2rem" /></span>
                         </motion.a>
                         <motion.button
                             aria-label="Agregar al carrito"
-                            className="py-2 px-2.5 border border-primary rounded-lg customtext-primary transition-all duration-300  hover:opacity-90"
+                            className="py-3 px-3 border-2 border-primary rounded-xl customtext-primary transition-all duration-300 hover:opacity-90 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
                             onClick={() => onAddClicked(product)}
-
                             whileTap={{ scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        >
-                            <motion.svg
-                                className="w-5 h-5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                whileHover={{ rotate: 10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                                />
-                            </motion.svg>
-                        </motion.button>
-                    </motion.div>
-                    <motion.div
-                        className={`overflow-hidden pb-4 flex lg:hidden gap-2 my-2 transform ${isFirstCard ? 'lg:group-hover:-translate-y-1/2' : ''}  group-hover:opacity-100 transition-[max-height,opacity] duration-500 ease-in-out md:max-h-20 md:opacity-100 lg:max-h-0 lg:opacity-0`}
-                      
-                    >
-                        <motion.a
-                            href={`/product/${product.slug}`}
-                            className="flex-1 inline-flex items-center justify-center font-bold  text-sm bg-primary text-white py-2 md:py-3 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90"
-
-                        >
-
-                            <span className="md:hidden flex gap-2 text-sm items-center" > Ver <LucideEye width="1.1rem" /></span>
-                        </motion.a>
-                        <motion.button
-                            aria-label="Agregar al carrito"
-                            className="py-2 px-2.5 border border-primary rounded-lg customtext-primary transition-all duration-300  hover:opacity-90"
-                            onClick={() => onAddClicked(product)}
-
-
                         >
                             <motion.svg
                                 className="w-5 h-5"
