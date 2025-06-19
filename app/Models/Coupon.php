@@ -5,10 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Coupon extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'code',
@@ -50,31 +54,31 @@ class Coupon extends Model
     public function scopeValid($query)
     {
         return $query->where('active', true)
-                    ->where('starts_at', '<=', now())
-                    ->where('expires_at', '>=', now());
+            ->where('starts_at', '<=', now())
+            ->where('expires_at', '>=', now());
     }
 
     public function scopeAvailable($query)
     {
         return $query->valid()
-                    ->where(function($q) {
-                        $q->whereNull('usage_limit')
-                          ->orWhereColumn('used_count', '<', 'usage_limit');
-                    });
+            ->where(function ($q) {
+                $q->whereNull('usage_limit')
+                    ->orWhereColumn('used_count', '<', 'usage_limit');
+            });
     }
 
     // Accessors
     public function getIsValidAttribute()
     {
-        return $this->active && 
-               $this->starts_at <= now() && 
-               $this->expires_at >= now();
+        return $this->active &&
+            $this->starts_at <= now() &&
+            $this->expires_at >= now();
     }
 
     public function getIsAvailableAttribute()
     {
-        return $this->is_valid && 
-               (is_null($this->usage_limit) || $this->used_count < $this->usage_limit);
+        return $this->is_valid &&
+            (is_null($this->usage_limit) || $this->used_count < $this->usage_limit);
     }
 
     public function getStatusAttribute()
@@ -88,8 +92,8 @@ class Coupon extends Model
 
     public function getFormattedValueAttribute()
     {
-        return $this->type === 'percentage' 
-            ? $this->value . '%' 
+        return $this->type === 'percentage'
+            ? $this->value . '%'
             : 'S/. ' . number_format($this->value, 2);
     }
 
@@ -104,7 +108,7 @@ class Coupon extends Model
         // Verificar monto mínimo
         if ($cartTotal < $this->minimum_amount) {
             return [
-                'valid' => false, 
+                'valid' => false,
                 'message' => "El monto mínimo para usar este cupón es S/. " . number_format($this->minimum_amount, 2)
             ];
         }
