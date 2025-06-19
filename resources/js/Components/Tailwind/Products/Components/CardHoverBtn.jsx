@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { LucideEye, ShoppingCart } from "lucide-react"; // Icono para la cesta
 import Swal from "sweetalert2";
 import axios from "axios";
@@ -14,6 +15,7 @@ const CardHoverBtn = ({
     widthClass = "lg:w-1/5",
     setCart,
     cart,
+    isFirstCard
 }) => {
     const [message, setMessage] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
@@ -42,13 +44,22 @@ const CardHoverBtn = ({
 
     return (
         <>
-            <div
+            <motion.div
                 key={product.id}
                 className={`group px-1 md:px-2 w-full flex-shrink-0 font-font-secondary cursor-pointer relative`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                whileHover={{ y: -5 }}
             >
-                <div
+                <motion.div
                     className="bg-white rounded-xl shadow-md p-2 md:p-4 "
                     style={{ boxShadow: "0px 0px 6px 0px #00000040" }}
+                    whileHover={{ 
+                        boxShadow: "0px 10px 25px 0px #00000020",
+                        scale: 1.02 
+                    }}
+                    transition={{ duration: 0.3 }}
                 >
                     {/* Imagen del producto y etiqueta de descuento */}
                     <div className="relative ">
@@ -66,8 +77,12 @@ const CardHoverBtn = ({
                                     %
                                 </span>
                             )}
-                        <div className="aspect-square rounded-lg overflow-hidden flex items-center justify-center p-0">
-                            <img
+                        <motion.div 
+                            className="aspect-square rounded-lg overflow-hidden flex items-center justify-center p-0"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        >
+                            <motion.img
                                 src={`/storage/images/item/${product.image}`}
                                 onError={(e) =>
                                     (e.target.src = "/api/cover/thumbnail/null")
@@ -75,8 +90,10 @@ const CardHoverBtn = ({
                                 alt={product.name}
                                 className="w-full h-full object-cover bg-slate-100"
                                 loading="lazy"
+                                whileHover={{ scale: 1.1 }}
+                                transition={{ duration: 0.3 }}
                             />
-                        </div>
+                        </motion.div>
                         {/* <div className="hidden    pb-4 lg:opacity-0 absolute -bottom-5 w-full  group-hover:opacity-100   group-hover:flex gap-2 my-2 transition-all  duration-500 ">
                             <a
                                 href={`/product/${product.slug}`}
@@ -111,24 +128,35 @@ const CardHoverBtn = ({
                     </div>
 
                     {/* Botones de acción (ocultos por defecto, aparecen con hover) */}
-                    <div className="overflow-hidden max-h-20  lg:max-h-0 pb-4 lg:opacity-0 group-hover:max-h-20 group-hover:opacity-100 transition-[max-height,opacity] duration-1000 ease-in-out flex gap-2 my-2 transform ">
-                        <a
+                    <motion.div 
+                        className={`overflow-hidden pb-4 flex gap-2 my-2 transform ${isFirstCard ? 'lg:group-hover:-translate-y-1/2' : ''} max-h-0 opacity-1 group-hover:max-h-20 group-hover:opacity-100 transition-[max-height,opacity] duration-500 ease-in-out md:max-h-20 md:opacity-100 lg:max-h-0 lg:opacity-0`}
+                        initial={false}
+                    >
+                        <motion.a
                             href={`/product/${product.slug}`}
                             className="flex-1 inline-flex items-center justify-center font-bold  text-sm bg-primary text-white py-2 md:py-3 rounded-xl shadow-lg transition-all duration-300 hover:opacity-90"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
                             <span className="hidden md:block">Ver detalle</span>
                             <span className="md:hidden flex gap-2 text-sm items-center" > Ver <LucideEye width="1.1rem" /></span>
-                        </a>
-                        <button
-                        aria-label="Agregar al carrito"
+                        </motion.a>
+                        <motion.button
+                            aria-label="Agregar al carrito"
                             className="py-2 px-2.5 border border-primary rounded-lg customtext-primary transition-all duration-300  hover:opacity-90"
                             onClick={() => onAddClicked(product)}
+                            whileHover={{ scale: 1.05, rotate: 5 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
-                            <svg
+                            <motion.svg
                                 className="w-5 h-5"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
+                                whileHover={{ rotate: 10 }}
+                                transition={{ duration: 0.2 }}
                             >
                                 <path
                                     strokeLinecap="round"
@@ -136,9 +164,9 @@ const CardHoverBtn = ({
                                     strokeWidth={2}
                                     d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
                                 />
-                            </svg>
-                        </button>
-                    </div>
+                            </motion.svg>
+                        </motion.button>
+                    </motion.div>
 
                     {/* Información del producto */}
                     <div>
@@ -161,8 +189,8 @@ const CardHoverBtn = ({
                             </span>
                         </div>
                     </div>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
             <CartModal
                 data={data}
                 cart={cart}

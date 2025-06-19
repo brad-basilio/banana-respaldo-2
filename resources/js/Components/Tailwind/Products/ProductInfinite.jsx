@@ -74,12 +74,10 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
                             nextEl: navigationDesktopNextRef.current,
                             enabled: true,
                         }}
-                     
                         slidesPerView={2}
                         grid={{
                              fill: 'row',
                             rows: 3,
-                           
                         }}
                         loop={true}
                         onSwiper={setSwiperInstance}
@@ -89,18 +87,19 @@ const ProductInfinite = ({ items, data, setCart, cart }) => {
                             1024: { slidesPerView: 4, grid: { rows: 1 } },
                             1280: { slidesPerView: 5, grid: { rows: 1 } },
                         }}
-                        className="lg:h-[600px] lg:max-h-[600px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
+                        className="md:h-[600px] md:max-h-[600px] lg:!flex lg:items-center lg:justify-center animate-fadeIn"
                     >
                         {items.map((product, index) => (
                             <SwiperSlide
                                 key={index}
-                                className="py-2 px-1 md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
+                                className="px-1 md:p-0 !h-full lg:!flex lg:items-center lg:justify-center animate-slideIn"
                             >
                                 <CardHoverBtn
                                     product={product}
                                     setCart={setCart}
                                     cart={cart}
                                     data={data}
+                                    isFirstCard={index === 0}
                                 />
                             </SwiperSlide>
                         ))}
