@@ -104,7 +104,7 @@ export default function LoginSimple() {
 
                                         <div className="space-y-2">
                                             <label
-                                                className="block text-sm mb-1 customtext-neutral-dark"
+                                                className="block text-sm 2xl:text-base mb-1 customtext-neutral-dark"
                                                 htmlFor="password"
                                             >
                                                 Contraseña
