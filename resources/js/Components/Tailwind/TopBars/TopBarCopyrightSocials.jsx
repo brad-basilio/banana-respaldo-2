@@ -12,7 +12,7 @@ const TopBarCopyrightSocials = ({ items, data }) => {
     }
   }, []);
 
-  return <section ref={sectionRef} className="font-font-general bg-primary text-white font-bold text-xs">
+  return <section ref={sectionRef} className="font-paragraph bg-primary text-white font-bold text-xs">
     <div className="px-[5%] replace-max-w-here mx-auto py-3 flex flex-wrap justify-center md:justify-between items-center gap-2">
 
       <p>Copyright © 2025 PideloPe. Reservados todos los derechos.</p>

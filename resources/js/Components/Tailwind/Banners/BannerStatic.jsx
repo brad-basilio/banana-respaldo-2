@@ -44,7 +44,7 @@ export default function BannerStatic( {data, items} ) {
                                 {items.slice(0, 3).map((logo, index) => (
                                     <a
                                         key={logo?.id}
-                                        href={logo?.title}
+                                        href={logo?.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex justify-center rounded-full items-center w-full p-4 bg-secondary transition-colors hover:bg-secondary-dark"

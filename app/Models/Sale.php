@@ -45,6 +45,9 @@ class Sale extends Model
         'delivery',
         'delivery_type',
         'status_id',
+        'coupon_id',
+        'coupon_code',
+        'coupon_discount',
         'culqi_charge_id',
         'payment_status',
         'invoiceType',
@@ -52,7 +55,10 @@ class Sale extends Model
         'document',
         'businessName',
         'payment_method',
-        'payment_proof'
+        'payment_proof',
+        'coupon_id',
+        'coupon_discount',
+        'total_amount',
     ];
 
     public function details()
@@ -68,6 +74,11 @@ class Sale extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
     }
 
     public function scopeWithUser($query)

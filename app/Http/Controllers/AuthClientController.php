@@ -168,23 +168,31 @@ class AuthClientController extends BasicController
                 'email' => 'required',
             ]);
 
-            if (!$this->validarEmail(Controller::decode($request->email))) {
+            $email = Controller::decode($request->email);
+
+            if (!$this->validarEmail($email)) {
                 $response->status = 400;
                 $response->message = 'Operación Incorrecta. Por favor, ingresa un correo electrónico válido.';
+                return response($response->toArray(), $response->status);
             }
+
             // Buscar al usuario por correo electrónico
-            $user = User::where('email', Controller::decode($request->email))->first();
+            $user = User::where('email', $email)->first();
+            
             if (!$user) {
-                $response->status = 400;
-                $response->message = 'Operación Incorrecta. No se encontró ningún usuario con este correo electrónico.';
+                // En lugar de devolver error, devolvemos éxito pero con información específica
+                $response->status = 200;
+                $response->message = 'Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña.';
+                $response->data = [
+                    'user_exists' => false,
+                    'email' => $email
+                ];
+                return response($response->toArray(), $response->status);
             }
 
-            // Generar un token único para restablecer la contraseña
+            // Si el usuario existe, proceder con el envío del correo
             $token = Password::createToken($user);
-
-            // Enviar correo con el enlace de restablecimiento
             $resetUrl = env('APP_URL') . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
-            // $resetUrl = env('APP_URL') . '/reset-password?token=' . $token;
 
             // Renderizar la plantilla Blade
             $content = View::make('emails.reset_password', ['RESET_URL' => $resetUrl])->render();
@@ -192,10 +200,14 @@ class AuthClientController extends BasicController
             // Enviar notificación con el link de restablecimiento de contraseña
             $notificationService = new EmailNotificationService();
             $notificationService->sendToUser($user, new \App\Notifications\PasswordResetLinkNotification($resetUrl));
-            //dump($mailer);
+            
             // Respuesta exitosa
             $response->status = 200;
             $response->message = 'Se ha enviado un enlace para restablecer tu contraseña.';
+            $response->data = [
+                'user_exists' => true,
+                'email' => $email
+            ];
         } catch (\Throwable $th) {
             $response->status = 400;
             $response->message = $th->getMessage();

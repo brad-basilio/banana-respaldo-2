@@ -4,6 +4,22 @@
 @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
 
+/* Colores personalizados para compatibilidad */
+@layer utilities {
+    .bg-primary {
+        @apply bg-primary-600;
+    }
+    .text-primary {
+        @apply text-primary-600;
+    }
+    .customtext-primary {
+        @apply text-primary-600;
+    }
+    .customtext-neutral-dark {
+        @apply text-neutral-dark;
+    }
+}
+
 .text-shadow {
     /* o el color que prefieras */
     text-shadow: 0px 0px 32px rgba(0, 0, 0, 0.5);

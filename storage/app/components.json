@@ -18,7 +18,10 @@
                 "image": "top-bar-socials.png",
                 "data": [
                     "background_color",
-                    "color"
+                    "color",
+                    "isCopyright",
+                    "border_color"
+
                 ],
                 "using": {
                     "model": "Social"
@@ -104,7 +107,8 @@
                 "data": [
                     "class",
                     "link_cart",
-                    "showLoginCart"
+                    "showLoginCart",
+                    "mobileSearch"
                    
                     
                 ],
@@ -1021,7 +1025,7 @@
                         "subcategory",
                         "brand"
                     ],
-                    "limit": 10
+                    "limit": 12
                 }
             },
               {

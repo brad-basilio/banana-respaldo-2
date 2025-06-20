@@ -4,7 +4,7 @@ import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
 import CardItem from "./CardItem";
 
-export default function CartStep({ cart, setCart, onContinue, subTotal, envio, igv, totalFinal }) {
+export default function CartStep({ cart, setCart, onContinue, subTotal, envio, igv, totalFinal, openModal }) {
     const isCartEmpty = cart.length === 0;
 
     return (
@@ -62,7 +62,7 @@ export default function CartStep({ cart, setCart, onContinue, subTotal, envio, i
                     </div>
                     <div>
                         <p className="text-xs md:text-sm customtext-neutral-dark">
-                            Al realizar tu pedido, aceptas los <a className="customtext-primary font-bold">Términos</a> y <a className="customtext-primary font-bold">Privacidad</a>.
+                            Al realizar tu pedido, aceptas los <a href="#" onClick={() => openModal(1)} className="customtext-primary font-bold">Términos y Condiciones</a>, y que nosotros usaremos sus datos personales de acuerdo con nuestra <a href="#" onClick={() => openModal(0)} className="customtext-primary font-bold">Política de Privacidad</a>.
                         </p>
                     </div>
                 </div>

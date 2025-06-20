@@ -263,9 +263,8 @@ const Sales = ({ statuses = [] }) => {
                                                     {saleLoaded?.address}{" "}
                                                     {saleLoaded?.number}
                                                     <small className="text-muted d-block">
-                                                        {saleLoaded?.province ??
-                                                            saleLoaded?.district}
-                                                        ,{" "}
+                                                        {saleLoaded?.district},{" "}
+                                                        {saleLoaded?.province},{" "}
                                                         {saleLoaded?.department}
                                                         , {saleLoaded?.country}{" "}
                                                         {saleLoaded?.zip_code && (
@@ -293,6 +292,20 @@ const Sales = ({ statuses = [] }) => {
                                             <tr>
                                                 <th>Comentario:</th>
                                                 <td>{saleLoaded?.comment}</td>
+                                            </tr>
+                                        )}
+
+                                        {saleLoaded?.coupon_code && (
+                                            <tr>
+                                                <th>Cupón aplicado:</th>
+                                                <td>
+                                                    <span className="badge bg-success">
+                                                        {saleLoaded?.coupon_code}
+                                                    </span>
+                                                    <small className="text-success d-block">
+                                                        Descuento: S/ {Number2Currency(saleLoaded?.coupon_discount || 0)}
+                                                    </small>
+                                                </td>
                                             </tr>
                                         )}
 
@@ -343,6 +356,7 @@ const Sales = ({ statuses = [] }) => {
                                 <table className="table table-striped table-bordered table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
+                                            <th className="w-20">Imagen</th>
                                             <th>Nombre</th>
                                             <th>Precio</th>
                                             <th>Cantidad</th>
@@ -360,7 +374,23 @@ const Sales = ({ statuses = [] }) => {
                                                     detail.quantity;
                                                 return (
                                                     <tr key={index}>
-                                                        <td>{detail.name}</td>
+                                                        <td className="max-w-20 p-0">
+                                                            {detail.image ? (
+                                                                <img
+                                                                    className="object-scale-down mx-auto block"
+                                                                    src={`/storage/images/item/${detail.image}`}
+                                                                    alt={detail.name}
+                                                                    style={{
+                                                                        height: '5rem',       
+                                                                        width: '5rem',       
+                                                                        objectFit: 'scale-down',
+                                                                    }}
+                                                                />
+                                                            ) : null}
+                                                        </td>
+                                                        <td>
+                                                            {detail.name}{detail.colors ? ' - ' + detail.colors : ''}
+                                                        </td>
                                                         <td align="right">
                                                             <span className="text-nowrap">
                                                                 S/{" "}
@@ -410,6 +440,47 @@ const Sales = ({ statuses = [] }) => {
                                         {Number2Currency(saleLoaded?.delivery)}
                                     </span>
                                 </div>
+                                
+                                {/* Mostrar descuentos si existen */}
+                                {(saleLoaded?.bundle_discount > 0 || 
+                                  saleLoaded?.renewal_discount > 0 || 
+                                  saleLoaded?.coupon_discount > 0) && (
+                                    <>
+                                        <hr className="my-2" />
+                                        {saleLoaded?.bundle_discount > 0 && (
+                                            <div className="d-flex justify-content-between text-success">
+                                                <span>Descuento por paquete:</span>
+                                                <span>
+                                                    -S/ {Number2Currency(saleLoaded?.bundle_discount)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {saleLoaded?.renewal_discount > 0 && (
+                                            <div className="d-flex justify-content-between text-success">
+                                                <span>Descuento por renovación:</span>
+                                                <span>
+                                                    -S/ {Number2Currency(saleLoaded?.renewal_discount)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {saleLoaded?.coupon_discount > 0 && (
+                                            <div className="d-flex justify-content-between text-success">
+                                                <span>
+                                                    Descuento con cupón
+                                                    {saleLoaded?.coupon_code && (
+                                                        <small className="text-muted d-block">
+                                                            Código: {saleLoaded?.coupon_code}
+                                                        </small>
+                                                    )}
+                                                </span>
+                                                <span>
+                                                    -S/ {Number2Currency(saleLoaded?.coupon_discount)}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                                
                                 <hr className="my-2" />
                                 <div className="d-flex justify-content-between">
                                     <b>Total:</b>

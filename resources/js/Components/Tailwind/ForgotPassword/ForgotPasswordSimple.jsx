@@ -3,6 +3,7 @@ import image from "../../../../sources/images/forgot-password.png";
 import { useEffect, useRef, useState } from "react";
 import JSEncrypt from "jsencrypt";
 import Swal from "sweetalert2";
+import { toast } from "sonner";
 import { GET } from "sode-extend-react";
 import Global from "../../../Utils/Global";
 export default function ForgotPasswordSimple() {
@@ -35,8 +36,66 @@ export default function ForgotPasswordSimple() {
         };
         const result = await AuthClientRest.forgotPassword(request);
 
-        if (!result) return setLoading(false);
-        window.location.href = "/";
+        setLoading(false);
+
+        if (!result || !result.success) {
+            // Si user_exists es false, el toast ya se mostró en AuthClientRest
+            if (result && result.user_exists === false) {
+                // Opcional: agregar un botón para ir al login también
+                setTimeout(() => {
+                    toast.info("¿Ya tienes cuenta?", {
+                        description: "Puedes intentar iniciar sesión aquí",
+                        duration: 4000,
+                        position: "top-right",
+                        action: {
+                            label: "Ir al login",
+                            onClick: () => {
+                                window.location.href = "/iniciar-sesion";
+                            }
+                        },
+                        actionButtonStyle: {
+                            backgroundColor: Global.APP_COLOR_PRIMARY || "#10b981",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 16px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease"
+                        },
+                    });
+                }, 2000);
+            }
+            return;
+        }
+
+        // Si la solicitud fue exitosa (usuario existe y correo enviado)
+        toast.success("¡Revisa tu correo!", {
+            description: "Te hemos enviado las instrucciones para restablecer tu contraseña.",
+            duration: 4000,
+            position: "top-right",
+            action: {
+                label: "Ir al login",
+                onClick: () => {
+                    window.location.href = "/iniciar-sesion";
+                }
+            },
+            actionButtonStyle: {
+                backgroundColor: Global.APP_COLOR_PRIMARY || "#10b981",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+            },
+        });
+
+        // Redirigir automáticamente después de unos segundos
+        setTimeout(() => {
+            window.location.href = "/iniciar-sesion";
+        }, 4000);
     };
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#F7F9FB] px-primary 2xl:px-0  ">

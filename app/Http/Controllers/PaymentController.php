@@ -7,10 +7,12 @@ use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\SaleStatus;
 use App\Models\User;
+use App\Models\Coupon;
 use App\Notifications\PurchaseSummaryNotification;
 use Culqi\Culqi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -23,18 +25,56 @@ class PaymentController extends Controller
     public function charge(Request $request)
     {
         try {
+            // Debug: Log de todos los datos recibidos
+            Log::info('PaymentController - Datos recibidos:', $request->all());
+            
+            // Redondear y convertir el monto a centavos para Culqi
+            $amountInSoles = round((float)$request->amount, 2);
+            $amountInCents = round($amountInSoles * 100);
+            
+            Log::info('PaymentController - Monto procesado:', [
+                'amount_original' => $request->amount,
+                'amount_type' => gettype($request->amount),
+                'amount_rounded' => $amountInSoles,
+                'amount_cents' => $amountInCents,
+                'delivery' => $request->delivery,
+                'coupon_discount' => $request->coupon_discount
+            ]);
             
             $culqi = new Culqi([
                 'api_key' => config('services.culqi.secret_key'),
             ]);
             
             // Crear el intento de pago
-            $charge = $culqi->Charges->create([
-                "amount" => $request->amount * 100,
-                "currency_code" => "PEN",
-                "email" => $request->email,
-                "source_id" => $request->token
-            ]);
+            try {
+                Log::info('PaymentController - Intentando crear cargo en Culqi:', [
+                    'amount_cents' => $amountInCents,
+                    'email' => $request->email,
+                    'token' => $request->token
+                ]);
+                
+                $charge = $culqi->Charges->create([
+                    "amount" => $amountInCents,  // Usar el monto redondeado en centavos
+                    "currency_code" => "PEN",
+                    "email" => $request->email,
+                    "source_id" => $request->token
+                ]);
+                
+                Log::info('PaymentController - Respuesta de Culqi:', [
+                    'charge_id' => $charge->id ?? 'No ID',
+                    'charge_outcome' => $charge->outcome ?? 'No outcome',
+                    'charge_full' => $charge
+                ]);
+            } catch (\Exception $culqiException) {
+                Log::error('PaymentController - Error en Culqi:', [
+                    'error' => $culqiException->getMessage(),
+                    'trace' => $culqiException->getTraceAsString()
+                ]);
+                return response()->json([
+                    'message' => 'Error del procesador de pagos: ' . $culqiException->getMessage(),
+                    'status' => false
+                ], 400);
+            }
 
             // Validar si el pago fue exitoso
             if (!isset($charge->id) || ($charge->outcome->type ?? '') !== 'venta_exitosa') {
@@ -45,9 +85,19 @@ class PaymentController extends Controller
                 ], 400);
             }
 
+            Log::info('PaymentController - Pago exitoso, iniciando creación de venta');
+
             $saleStatusPagado = SaleStatus::getByName('Pagado');
+            Log::info('PaymentController - SaleStatus obtenido', ['status_id' => $saleStatusPagado?->id]);
 
             // Registrar la venta
+            Log::info('PaymentController - Creando venta con datos:', [
+                'code' => $request->orderNumber,
+                'amount' => $request->amount,
+                'coupon_code' => $request->coupon_code,
+                'coupon_discount' => $request->coupon_discount
+            ]);
+            
             $sale = Sale::create([
                 'code' => $request->orderNumber,
                 'user_id' => $request->user_id,
@@ -67,6 +117,9 @@ class PaymentController extends Controller
                 'comment' => $request->comment,
                 'amount' => $request->amount,
                 'delivery' => $request->delivery,
+                'coupon_id' => $request->coupon_id,
+                'coupon_code' => $request->coupon_code,
+                'coupon_discount' => $request->coupon_discount ?? 0,
                 'culqi_charge_id' => $charge->id,
                 'payment_status' => 'pagado',
                 'status_id' => $saleStatusPagado ? $saleStatusPagado->id : null,
@@ -75,8 +128,12 @@ class PaymentController extends Controller
                 'document' => $request->document,
                 'businessName' => $request->businessName
             ]);
+            
+            Log::info('PaymentController - Venta creada exitosamente', ['sale_id' => $sale->id]);
 
             // Registrar detalles de la venta y actualizar stock
+            Log::info('PaymentController - Procesando detalles de venta', ['cart_items' => count($request->cart)]);
+            
             foreach ($request->cart as $item) {
                 $itemId = is_array($item) ? $item['id'] ?? null : $item->id ?? null;
                 $itemName = is_array($item) ? $item['name'] ?? null : $item->name ?? null;
@@ -92,6 +149,20 @@ class PaymentController extends Controller
                 ]);
 
                 Item::where('id', $itemId)->decrement('stock', $itemQuantity);
+            }
+            
+            Log::info('PaymentController - Detalles de venta procesados exitosamente');
+
+            // Incrementar el contador de uso del cupón si se aplicó uno
+            if ($request->coupon_code) {
+                $coupon = Coupon::where('code', $request->coupon_code)->first();
+                if ($coupon) {
+                    $coupon->incrementUsage();
+                    Log::info('PaymentController - Cupón incrementado', [
+                        'coupon_code' => $coupon->code,
+                        'usage_count' => $coupon->usage_count + 1
+                    ]);
+                }
             }
 
             //usuario autenticado actualizar datos de contacto
@@ -111,9 +182,25 @@ class PaymentController extends Controller
                 $userJpa->save();
             }
 
+            Log::info('PaymentController - Datos procesados exitosamente', [
+                'sale_id' => $sale->id,
+                'amount' => $sale->amount,
+                'coupon_code' => $sale->coupon_code,
+                'coupon_discount' => $sale->coupon_discount
+            ]);
+
             // Enviar correo de resumen de compra
-            $details = $sale->details ?? $sale->saleDetails ?? $sale->sale_details ?? SaleDetail::where('sale_id', $sale->id)->get();
-            $sale->notify(new PurchaseSummaryNotification($sale, $details));
+            try {
+                Log::info('PaymentController - Preparando notificación de email');
+                $details = $sale->details ?? $sale->saleDetails ?? $sale->sale_details ?? SaleDetail::where('sale_id', $sale->id)->get();
+                $sale->notify(new PurchaseSummaryNotification($sale, $details));
+                Log::info('PaymentController - Email enviado exitosamente');
+            } catch (\Exception $emailException) {
+                Log::warning('PaymentController - Error enviando email (no crítico)', [
+                    'error' => $emailException->getMessage()
+                ]);
+                // No retornamos error aquí porque el pago ya se procesó exitosamente
+            }
 
             return response()->json([
                 'message' => 'Pago exitoso',
@@ -125,8 +212,15 @@ class PaymentController extends Controller
             ]);
             
         } catch (\Exception $e) {
+            Log::error('PaymentController - Error completo', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
-                'message' => 'Error en el pago',
+                'message' => 'Error en el pago: ' . $e->getMessage(),
                 'status' => false,
                 'error' => $e->getMessage()
             ], 400);

@@ -30,6 +30,7 @@ const About = ({ details: detailsDB }) => {
     const nameRef = useRef();
     const descriptionRef = useRef();
     const titleRef = useRef();
+    const linkRef = useRef();
     const imageRef = useRef();
 
     const [isEditing, setIsEditing] = useState(false);
@@ -42,6 +43,7 @@ const About = ({ details: detailsDB }) => {
         nameRef.current.value = data?.name ?? "";
         descriptionRef.editor.root.innerHTML = data?.description ?? "";
         titleRef.current.value = data?.title ?? "";
+        linkRef.current.value = data?.link ?? "";
         imageRef.current.value = null;
         imageRef.image.src = `/storage/images/aboutus/${
             data?.image ?? "undefined"
@@ -57,6 +59,7 @@ const About = ({ details: detailsDB }) => {
             name: nameRef.current.value,
             description: descriptionRef.current.value,
             title: titleRef.current.value,
+            link: linkRef.current.value,
         };
 
         const formData = new FormData();
@@ -219,7 +222,8 @@ const About = ({ details: detailsDB }) => {
                                     onChange={() =>
                                         onVisibleChange({
                                             id: data.id,
-                                            value: !data.visible,
+                                            //value: !data.visible,
+                                            value: data.visible == 1? 0 : 1,
                                         })
                                     }
                                 />
@@ -263,6 +267,12 @@ const About = ({ details: detailsDB }) => {
                     <InputFormGroup
                         eRef={titleRef}
                         label="Título"
+                        col="col-12"
+                        rows={2}
+                    />
+                    <InputFormGroup
+                        eRef={linkRef}
+                        label="Link"
                         col="col-12"
                         rows={2}
                     />

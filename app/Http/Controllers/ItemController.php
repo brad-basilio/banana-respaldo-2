@@ -163,7 +163,8 @@ class ItemController extends BasicController
 
         try {
             //code...
-            $i4price = clone $builder;
+            // IMPORTANTE: Usar originalBuilder para rangos de precio, no builder con paginación
+            $i4price = clone $originalBuilder;
             $minPrice = $i4price->min('final_price');
             $maxPrice = $i4price->max('final_price') ?? 0;
             $rangeSize = round($maxPrice / 6); // Define el tamaño del rango
@@ -189,11 +190,12 @@ class ItemController extends BasicController
             $selectedCollections = $request->input('collection_id', []);
             // $mainFilter = $request->filterSequence[0] ?? null;
 
-            $i4collection = clone $builder;
-            $i4category = clone $builder;
-            $i4subcategory = clone $builder;
-            $i4brand = clone $builder;
-            $i4tag = clone $builder;
+            // IMPORTANTE: Usar siempre originalBuilder para los filtros, nunca builder con paginación
+            $i4collection = clone $originalBuilder;
+            $i4category = clone $originalBuilder;
+            $i4subcategory = clone $originalBuilder;
+            $i4brand = clone $originalBuilder;
+            $i4tag = clone $originalBuilder;
             
             // PADRES: nunca se filtran entre sí, siempre usan el builder original
             $collections = in_array('collection_id', $filterSequence)
@@ -207,7 +209,7 @@ class ItemController extends BasicController
             // CATEGORIAS: si hay marcas seleccionadas, filtrar categorías por esas marcas, SIEMPRE, aunque category_id esté en filterSequence
             if (!empty($selectedBrands)) {
                 // Si hay marcas seleccionadas, solo mostrar categorías que tengan productos de esas marcas
-                $catBuilder = clone $builder;
+                $catBuilder = clone $originalBuilder;
                 $catBuilder->whereIn('brand_id', $selectedBrands);
                 $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
             } else {
