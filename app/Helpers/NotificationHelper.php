@@ -32,9 +32,7 @@ class NotificationHelper
             ]);
             return null;
         }
-    }
-
-    /**
+    }    /**
      * Envía una notificación tanto al destinatario original como al administrador
      */
     public static function sendToClientAndAdmin($originalNotifiable, $notification)
@@ -71,9 +69,7 @@ class NotificationHelper
             ]);
             throw $e;
         }
-    }
-
-    /**
+    }    /**
      * Crea una notificación específica para el administrador basada en la notificación original
      */
     private static function createAdminNotification($originalNotification)

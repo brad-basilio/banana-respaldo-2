@@ -14,10 +14,12 @@ class AdminContactNotification extends Notification implements ShouldQueue
     use Queueable;
 
     protected $message;
+    protected $coorporative_email;
 
     public function __construct($message)
     {
         $this->message = $message;
+        $this->coorporative_email = \App\Models\General::where('correlative', 'coorporative_email')->first();
     }
 
     /**
@@ -52,16 +54,16 @@ class AdminContactNotification extends Notification implements ShouldQueue
 
         $body = $template
             ? \App\Helpers\Text::replaceData($template->description, [
-                'customer_name'    => $this->message->name,
-                'customer_email'   => $this->message->email,
+                'customer_name'    => $this->message->name ?? 'Sin nombre',
+                'customer_email'   => $this->message->email ?? 'No proporcionado',
                 'customer_phone'   => $this->message->phone ?? 'No proporcionado',
                 'message_subject'  => $this->message->subject ?? 'Sin asunto',
                 'message_content'  => $this->message->description,
                 'fecha_contacto'   => $this->message->created_at ? $this->message->created_at->format('d/m/Y H:i:s') : now()->format('d/m/Y H:i:s'),
                 'year'             => date('Y'),
                 'admin_note'       => 'Este es un nuevo mensaje de contacto que requiere tu atención.',
-                
-                // Variables compatibles con la plantilla existente
+
+                //Variables compatibles con la plantilla existente
                 'nombre'           => $this->message->name,
                 'descripcion'      => $this->message->description,
                 'email'            => $this->message->email,
@@ -69,9 +71,6 @@ class AdminContactNotification extends Notification implements ShouldQueue
             ])
             : 'Nuevo mensaje de contacto recibido de: ' . $this->message->name;
 
-        return (new RawHtmlMail(
-            $body,
-            '[NUEVO CONTACTO] Mensaje de ' . $this->message->name . ' - ' . ($this->message->subject ?? 'Sin asunto')
-        ));
+        return (new RawHtmlMail($body, '[NUEVO CONTACTO] Mensaje de: ' . $this->message->name, $this->coorporative_email->description));
     }
 }

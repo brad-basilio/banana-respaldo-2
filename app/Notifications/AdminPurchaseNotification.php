@@ -70,9 +70,7 @@ class AdminPurchaseNotification extends Notification implements ShouldQueue
     public function via($notifiable)
     {
         return ['mail'];
-    }
-
-    public function toMail($notifiable)
+    }    public function toMail($notifiable)
     {
         // Buscar plantilla específica para administrador, si no existe usar la del cliente
         $template = \App\Models\General::where('correlative', 'admin_purchase_email')->first();
@@ -80,8 +78,24 @@ class AdminPurchaseNotification extends Notification implements ShouldQueue
             $template = \App\Models\General::where('correlative', 'purchase_summary_email')->first();
         }
 
-        $subtotal = round($this->sale->amount / 1.18, 2);
-        $igv = round($subtotal * 0.18, 2);
+        // Calcular valores monetarios - REPLICANDO LA LÓGICA DE PurchaseSummaryNotification
+        // amount ya es el total final (con IGV, envío y descuento de cupón aplicado)
+        $totalAmount = $this->sale->amount ?? 0;
+        $deliveryCost = $this->sale->delivery ?? 0;
+        $couponDiscount = $this->sale->coupon_discount ?? 0;
+        
+        // Para mostrar el desglose correcto, necesitamos calcular el subtotal ORIGINAL
+        // (antes del descuento del cupón) para que coincida con lo que se muestra en web
+        
+        // Paso 1: Obtener el total sin envío
+        $totalSinEnvio = $totalAmount - $deliveryCost;
+        
+        // Paso 2: Agregar el descuento del cupón para obtener el total original (antes del cupón)
+        $totalOriginalSinEnvio = $totalSinEnvio + $couponDiscount;
+        
+        // Paso 3: Separar subtotal e IGV del total original
+        $subtotalAmount = $totalOriginalSinEnvio / 1.18;  // Subtotal sin IGV
+        $igvAmount = $totalOriginalSinEnvio - $subtotalAmount;  // IGV del subtotal
 
         // Crear dirección completa
         $direccion_completa = collect([
@@ -107,20 +121,20 @@ class AdminPurchaseNotification extends Notification implements ShouldQueue
                 'customer_email'  => $this->sale->email,
                 'customer_phone'  => $this->sale->phone,
                 'year'            => date('Y'),
-                'total'           => 'S/ ' . number_format($this->sale->amount, 2),
-                'subtotal'        => 'S/ ' . number_format($subtotal, 2),
-                'igv'             => 'S/ ' . number_format($igv, 2),
-                'costo_envio'     => 'S/ ' . number_format($this->sale->delivery, 2),
+                'total'           => 'S/ ' . number_format($totalAmount, 2),
+                'subtotal'        => 'S/ ' . number_format($subtotalAmount, 2),
+                'igv'             => 'S/ ' . number_format($igvAmount, 2),
+                'costo_envio'     => 'S/ ' . number_format($deliveryCost, 2),
                 'direccion_envio' => $direccion_completa,
                 'distrito'        => $this->sale->district,
                 'provincia'       => $this->sale->province,
-                'departamento'    => $this->sale->departamento,
+                'departamento'    => $this->sale->department,
                 'referencia'      => $this->sale->reference,
                 'comentario'      => $this->sale->comment,
                 
                 // Variables del cupón
                 'cupon_codigo'    => $this->sale->coupon_code ?? 'No aplicado',
-                'cupon_descuento' => $this->sale->coupon_discount ? 'S/ ' . number_format($this->sale->coupon_discount, 2) : 'S/ 0.00',
+                'cupon_descuento' => 'S/ ' . number_format($couponDiscount, 2),
                 
                 // Variables de facturación
                 'invoice_type'    => $this->sale->invoiceType ?? 'Boleta',
@@ -136,9 +150,10 @@ class AdminPurchaseNotification extends Notification implements ShouldQueue
                 'payment_method'  => 'Tarjeta de Crédito/Débito (Culqi)',
                 'payment_id'      => $this->sale->culqi_charge_id,
             ])
-            : 'Nueva compra realizada - Pedido #' . $this->sale->code;        return (new RawHtmlMail(
-            $body,
-            '[NUEVA COMPRA] Pedido #' . $this->sale->code . ' - ' . $this->sale->name
-        ));
+            : 'Nueva compra realizada - Pedido #' . $this->sale->code;
+
+        return (new MailMessage)
+            ->subject('[NUEVA COMPRA] Pedido #' . $this->sale->code . ' - ' . $this->sale->name)
+            ->view('emails.raw-html', ['body' => $body]);
     }
 }
