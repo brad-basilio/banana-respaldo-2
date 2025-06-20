@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\CollectionController as AdminCollectionController
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\SocialController as AdminSocialController;
 use App\Http\Controllers\Admin\StrengthController as AdminStrengthController;
+use App\Http\Controllers\Admin\CertificationController as AdminCertificationController;
+use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\GeneralController as AdminGeneralController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
@@ -50,6 +52,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeliveryPriceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ItemImportController;
@@ -117,6 +120,8 @@ Route::get('/indicators/media/{uuid}', [AdminIndicatorController::class, 'media'
 
 Route::get('/aboutuses/media/{uuid}', [AdminAboutusController::class, 'media']);
 Route::get('/strengths/media/{uuid}', [AdminStrengthController::class, 'media']);
+Route::get('/certifications/media/{uuid}', [AdminCertificationController::class, 'media']);
+Route::get('/partners/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/ads/media/{uuid}', [AdminAdController::class, 'media'])->withoutMiddleware('throttle');
 
 Route::post('/posts/paginate', [PostController::class, 'paginate']);
@@ -152,6 +157,9 @@ Route::post('/temporaly-image/{id}', [TemporalyImageController::class, 'delete']
 Route::post('/vouchers/temp', [TemporalyImageController::class, 'storeTemp'])->name('voucher.temp');
 Route::delete('/vouchers/temp/{id}', [TemporalyImageController::class, 'deleteTemp'])->name('voucher.delete');
 Route::post('/guardarvoucher', [TemporalyImageController::class, 'guardarVoucher'])->name('guardarvoucher');
+
+Route::post('/coupons', [CouponController::class, 'save']);
+Route::post('/coupons/is-first', [CouponController::class, 'isFirst']);
 
 //pedido
 Route::post('/orders', [MercadoPagoController::class, 'getOrder']);
@@ -214,7 +222,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/combos/{id}', [AdminComboController::class, 'delete']);
     Route::get('/combos/{id}', [AdminComboController::class, 'show']);
 
-
+    Route::post('/coupons', [AdminCouponController::class, 'save']);
+    Route::post('/coupons/paginate', [AdminCouponController::class, 'paginate']);
+    Route::patch('/coupons/status', [AdminCouponController::class, 'status']);
+    Route::patch('/coupons/{field}', [AdminCouponController::class, 'boolean']);
+    Route::delete('/coupons/{id}', [AdminCouponController::class, 'delete']);
 
     Route::post('/messages', [AdminMessageController::class, 'save']);
     Route::post('/messages/paginate', [AdminMessageController::class, 'paginate']);
@@ -324,6 +336,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/strengths/status', [AdminStrengthController::class, 'status']);
     Route::patch('/strengths/{field}', [AdminStrengthController::class, 'boolean']);
     Route::delete('/strengths/{id}', [AdminStrengthController::class, 'delete']);
+
+    Route::post('/certifications', [AdminCertificationController::class, 'save']);
+    Route::post('/certifications/paginate', [AdminCertificationController::class, 'paginate']);
+    Route::patch('/certifications/status', [AdminCertificationController::class, 'status']);
+    Route::patch('/certifications/{field}', [AdminCertificationController::class, 'boolean']);
+    Route::delete('/certifications/{id}', [AdminCertificationController::class, 'delete']);
+
+    Route::post('/partners', [AdminPartnerController::class, 'save']);
+    Route::post('/partners/paginate', [AdminPartnerController::class, 'paginate']);
+    Route::patch('/partners/status', [AdminPartnerController::class, 'status']);
+    Route::patch('/partners/{field}', [AdminPartnerController::class, 'boolean']);
+    Route::delete('/partners/{id}', [AdminPartnerController::class, 'delete']);
 
     Route::post('/socials', [AdminSocialController::class, 'save']);
     Route::post('/socials/paginate', [AdminSocialController::class, 'paginate']);

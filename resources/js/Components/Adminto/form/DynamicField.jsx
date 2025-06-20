@@ -1,51 +1,33 @@
-import React, { useState, useEffect, useRef  } from "react";
+import React, { useState, useEffect } from 'react';
 
 const DynamicField = ({ label, structure, value = [], onChange, typeOptions = [] }) => {
-    
     const [fields, setFields] = useState([]);
-    const isInitialMount = useRef(true);
-   
-    // useEffect(() => {
-    //     // if (JSON.stringify(value) !== JSON.stringify(fields)) {
-    //     //     setFields(value);
-    //     // }
-    //     const normalizedValues = value.map(item => ({
-    //         ...item,
-    //         type: item.type?.charAt(0).toUpperCase() + item.type?.slice(1).toLowerCase()
-    //     }));
-    //     setFields(normalizedValues);
-    // }, [value])
+    const isObjectStructure = typeof structure === 'object' && !Array.isArray(structure);
 
+    // Sincronización con el valor inicial
     useEffect(() => {
-        if (isInitialMount.current) {
-            // Solo ejecuta en el primer render
-            const normalizedValues = value.map(item => ({
+        if (isObjectStructure) {
+            // Para especificaciones (objetos)
+            setFields(value.map(item => ({
                 ...item,
-                type: item.type?.charAt(0).toUpperCase() + item.type?.slice(1).toLowerCase()
-            }));
-            setFields(normalizedValues);
-            isInitialMount.current = false;
+                type: item.type?.charAt(0).toUpperCase() + item.type?.slice(1).toLowerCase(),
+            })));
         } else {
-            // Actualización normal, compara antes de actualizar
-            if (JSON.stringify(value) !== JSON.stringify(fields)) {
-                const normalizedValues = value.map(item => ({
-                    ...item,
-                    type: item.type?.charAt(0).toUpperCase() + item.type?.slice(1).toLowerCase()
-                }));
-                setFields(normalizedValues);
-            }
+            // Para características (strings o objetos)
+            setFields(value.map(item => {
+                if (typeof item === 'object') {
+                    return item.feature || '';
+                }
+                return item;
+            }));
         }
     }, [value]);
 
     const handleAdd = () => {
-        // if (typeof structure === "object") {
-        //     setFields([...fields, { ...structure }]);
-        // } else {
-        //     setFields([...fields, ""]);
-        // }
-        const newFields = [...fields, { ...structure }];
+        const newItem = isObjectStructure ? { ...structure} : '';
+        const newFields = [...fields, newItem];
         setFields(newFields);
-        onChange([...fields, structure])
+        onChange(newFields);
     };
 
     const handleRemove = (index) => {
@@ -56,38 +38,44 @@ const DynamicField = ({ label, structure, value = [], onChange, typeOptions = []
 
     const handleFieldChange = (index, key, value) => {
         const newFields = [...fields];
-        // if (typeof newFields[index] === "object") {
-        //     newFields[index][key] = value;
-        // } else {
-        //     newFields[index] = value;
-        // }
-        newFields[index][key] = key === 'type' 
-            ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
-            : value;
-
+        
+        if (isObjectStructure) {
+            newFields[index][key] = key === 'type' 
+                ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+                : value;
+        } else {
+            newFields[index] = value;
+        }
+        
         setFields(newFields);
         onChange(newFields);
+    };
+
+    const getPlaceholder = (key, fieldType) => {
+        if (key === 'title' && fieldType === 'Icono') {
+            return 'Url de icono';
+        }
+        return key; 
     };
 
     return (
         <div className="mb-3">
             <label className="form-label">{label}</label>
 
-            {fields.map((field, index) => {
-                const isLastOdd = fields.length % 2 !== 0 && index === fields.length - 1;
-                return (
-                    <div key={index} className="row g-2 mb-2">
-                        {typeof field === "object" ? (
-                            Object.keys(structure).map((key) => (
-                                <div key={key} className={isLastOdd ? "col-9" : "col-6"}>
-                                    {key === "type" ? (
+            {fields.map((field, index) => (
+                <div key={index} className="row g-2 mb-2">
+                    {isObjectStructure ? (
+                        <>
+                            {Object.keys(structure).map(key => (
+                                <div key={key} className="col">
+                                    {key === 'type' ? (
                                         <select
                                             className="form-select"
-                                            value={field[key] || ""}
+                                            value={field[key] || ''}
                                             onChange={(e) => handleFieldChange(index, key, e.target.value)}
                                         >
                                             <option value="">Seleccionar...</option>
-                                            {typeOptions.map((option) => (
+                                            {typeOptions.map(option => (
                                                 <option key={option} value={option}>{option}</option>
                                             ))}
                                         </select>
@@ -95,15 +83,26 @@ const DynamicField = ({ label, structure, value = [], onChange, typeOptions = []
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={field[key] || ""}
+                                            value={field[key] || ''}
                                             onChange={(e) => handleFieldChange(index, key, e.target.value)}
-                                            placeholder={key}
+                                            placeholder={getPlaceholder(key, field.type)}
                                         />
                                     )}
                                 </div>
-                            ))
-                        ) : (
-                            <div className={isLastOdd ? "col-9" : "col-6"}>
+                            ))}
+                            <div className="col-auto">
+                                <button
+                                    type="button"
+                                    className="btn btn-danger"
+                                    onClick={() => handleRemove(index)}
+                                >
+                                    X
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="col">
                                 <input
                                     type="text"
                                     className="form-control"
@@ -112,20 +111,21 @@ const DynamicField = ({ label, structure, value = [], onChange, typeOptions = []
                                     placeholder="Característica"
                                 />
                             </div>
-                        )}
-                        <div className="col-3">
-                            <button type="button" 
-                                    className="btn btn-danger w-100" 
+                            <div className="col-auto">
+                                <button
+                                    type="button"
+                                    className="btn btn-danger"
                                     onClick={() => handleRemove(index)}
-                                    >
-                                X
-                            </button>
-                        </div>
-                    </div>
-                );
-            })}
+                                >
+                                    X
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            ))}
 
-            <button type="button" className="btn btn-primary" onClick={handleAdd}>
+            <button type="button" className="btn btn-primary mt-2" onClick={handleAdd}>
                 + Agregar
             </button>
         </div>
@@ -133,3 +133,4 @@ const DynamicField = ({ label, structure, value = [], onChange, typeOptions = []
 };
 
 export default DynamicField;
+

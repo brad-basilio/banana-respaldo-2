@@ -263,9 +263,8 @@ const Sales = ({ statuses = [] }) => {
                                                     {saleLoaded?.address}{" "}
                                                     {saleLoaded?.number}
                                                     <small className="text-muted d-block">
-                                                        {saleLoaded?.province ??
-                                                            saleLoaded?.district}
-                                                        ,{" "}
+                                                        {saleLoaded?.district},{" "}
+                                                        {saleLoaded?.province},{" "}
                                                         {saleLoaded?.department}
                                                         , {saleLoaded?.country}{" "}
                                                         {saleLoaded?.zip_code && (
@@ -357,6 +356,7 @@ const Sales = ({ statuses = [] }) => {
                                 <table className="table table-striped table-bordered table-sm table-hover mb-0">
                                     <thead>
                                         <tr>
+                                            <th className="w-20">Imagen</th>
                                             <th>Nombre</th>
                                             <th>Precio</th>
                                             <th>Cantidad</th>
@@ -374,7 +374,23 @@ const Sales = ({ statuses = [] }) => {
                                                     detail.quantity;
                                                 return (
                                                     <tr key={index}>
-                                                        <td>{detail.name}</td>
+                                                        <td className="max-w-20 p-0">
+                                                            {detail.image ? (
+                                                                <img
+                                                                    className="object-scale-down mx-auto block"
+                                                                    src={`/storage/images/item/${detail.image}`}
+                                                                    alt={detail.name}
+                                                                    style={{
+                                                                        height: '5rem',       
+                                                                        width: '5rem',       
+                                                                        objectFit: 'scale-down',
+                                                                    }}
+                                                                />
+                                                            ) : null}
+                                                        </td>
+                                                        <td>
+                                                            {detail.name}{detail.colors ? ' - ' + detail.colors : ''}
+                                                        </td>
                                                         <td align="right">
                                                             <span className="text-nowrap">
                                                                 S/{" "}

@@ -96,12 +96,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
         category_id: GET.category ? GET.category.split(',') : [],
         brand_id: GET.brand ? GET.brand.split(',') : [],
         subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
-        collection_id: GET.collection ? GET.collection.split(',') : [],
-        category_id: GET.category ? GET.category.split(',') : [],
-        brand_id: GET.brand ? GET.brand.split(',') : [],
-        subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
         price: null,
-        name: GET.search || null,
         name: GET.search || null,
         sort_by: "created_at",
         order: "desc",
@@ -404,7 +399,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
             borderRadius: "1rem 1rem 0 0",
             border: "none",
             padding: "0",
-            height: "75vh",
+            height: "85vh",
             transform: isVisible ? "translateY(0)" : "translateY(100%)",
             transition: "transform 300ms ease-in-out",
             willChange: 'transform', // Mejora el rendimiento de la animación
@@ -482,7 +477,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="checkbox"
-                                                className="h-5 w-5 rounded border-gray-300 accent-primary hidden "
+                                                className="h-4 w-4 rounded border-gray-300 accent-primary form-checkbox focus:ring-0 customtext-neutral-dark"
                                                 onChange={() => handleFilterChange("collection_id", collection.slug)}
                                                 checked={isChecked}
                                             />
@@ -539,7 +534,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="checkbox"
-                                                className="h-5 w-5 rounded border-gray-300 accent-primary hidden"
+                                                className="h-4 w-4 rounded border-gray-300 accent-primary form-checkbox focus:ring-0 customtext-neutral-dark"
                                                 onChange={() => handleFilterChange("category_id", category.slug)}
                                                 checked={isChecked}
                                             />

@@ -175,18 +175,25 @@ class SaleController extends BasicController
     public function beforeSave(Request $request)
     {
         $body = $request->all();
-       
+        
         // Primero calculamos el total temporal para verificar el envío gratuito
+        // Inicio de calculo de envio gratuito 
         $tempTotal = 0;
         $details = json_decode($request->details, true);
-        
+        $montocupon = 0;
+
         foreach ($details as $item) {
             $itemJpa = Item::find($item['id']);
             if ($itemJpa) {
                 $tempTotal += $itemJpa->final_price * $item['quantity'];
             }
         }
-    
+
+        if ($request->coupon_id != 'null' && $request->coupon_discount > 0) {
+            $montocupon = $request->coupon_discount ?? 0;
+            $tempTotal -= $montocupon;
+        }
+        
         $freeShippingThreshold = General::where('correlative', 'shipping_free')->first();
         $minFreeShipping = $freeShippingThreshold ? (float)$freeShippingThreshold->description : 0;
         $deliveryPrice = $request->delivery;
@@ -194,16 +201,17 @@ class SaleController extends BasicController
         if ($minFreeShipping > 0 && $tempTotal >= $minFreeShipping) {
             $deliveryPrice = 0;
         }
-        
+        // Fin de calculo de envio gratuito 
+
         $delivery = DeliveryPrice::query()
                 ->where('ubigeo', $body['ubigeo'])
                 ->first();
         
         //$body['delivery'] = $delivery?->price ?? 0;
         $body['delivery'] = $deliveryPrice ?? $delivery?->price;
-        $body['department'] = $delivery?->data['departamento'] ?? null;
-        $body['province'] = $delivery?->data['provincia'] ?? null;
-        $body['district'] = $delivery?->data['distrito'] ?? null;
+        // $body['department'] = $delivery?->data['departamento'] ?? null;
+        // $body['province'] = $delivery?->data['provincia'] ?? null;
+        // $body['district'] = $delivery?->data['distrito'] ?? null;
         $body['ubigeo'] = $delivery?->ubigeo ?? null;
         $body['code'] = Trace::getId();
         //$body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
@@ -257,11 +265,11 @@ class SaleController extends BasicController
             ]);
             $totalPrice += $itemJpa->final_price * $item['quantity'];
         }
-        
-        if ($totalPrice >= 300) {
-            $jpa->delivery = 0;
-        }
 
+        if ($request->coupon_id != 'null' && $request->coupon_discount > 0) {
+            $totalPrice -= $request->coupon_discount ?? 0;
+        }
+        
         $jpa->amount = $totalPrice;
         $jpa->save();
         return $jpa;

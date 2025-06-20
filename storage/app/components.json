@@ -196,6 +196,25 @@
                     "phone_whatsapp",
                     "message_whatsapp"
                 ]
+            },
+            {
+                "id": "HeaderSimple",
+                "name": "Header - Simple",
+                "image": "header-with-search.png",
+                "data": [
+                    "class",
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Category",
+                    "with": [
+                        "subcategories"
+                    ]
+                },
+                "generals": [
+                    "phone_whatsapp",
+                    "message_whatsapp"
+                ]
             }
         ]
     },
@@ -255,7 +274,18 @@
                 "using": {
                     "model": "Indicator"
                 }
+            },
+            {
+                "id": "CarruselBenefitsSwiper",
+                "name": "Beneficios Simple Swiper",
+                "data": [
+                    "background"
+                ],
+                "using": {
+                    "model": "Indicator"
+                }
             }
+
         ]
     },
     {
@@ -416,6 +446,24 @@
                         "name",
                         "description",
                         "image"
+                    ]
+                }
+            },
+            {
+                "id": "SliderTwoColumnSwiper",
+                "name": "Two Column Swiper",
+                "image": "slider-simple.png",
+                "data": [
+                    "pagination"
+                ],
+                "using": {
+                    "model": "Slider",
+                    "fields": [
+                        "name",
+                        "description",
+                        "bg_image",
+                        "button_text",
+                        "button_link"
                     ]
                 }
             }
@@ -776,6 +824,24 @@
                 }
             },
             {
+                "id": "CategoryBoxSwiper",
+                "name": "Carousel Category Box",
+                "image": "categories-carousel.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_catalog"
+                ],
+                "using": {
+                    "model": "Category",
+                    "limit": 10,
+                    "filters": [
+                        "featured"
+                    ]
+                }
+            },
+            {
                 "id": "CategoryFlex",
                 "name": "Flex",
                 "image": "categories-carousel.png",
@@ -1043,6 +1109,54 @@
                 }
             },
             {
+                "id": "ProductNavigationSwiperSimple",
+                "name": "NavegacionSwiper Simple",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": ["category", "subcategory", "brand"],
+                    "limit": 20
+                }
+            },
+            {
+                "id": "ProductFeaturedSwiper",
+                "name": "Navegacion Swiper Featured",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": ["category", "subcategory", "brand", "specifications"],
+                    "limit": 20
+                }
+            },
+            {
                 "id": "ProductBananaLab",
                 "name": "ProductBananaLab",
                 "image": "products-list.png",
@@ -1160,6 +1274,16 @@
                 "name": "Estatico",
                 "using": {
                     "model": "Aboutus"
+                }
+            },
+            {
+                "id": "BannerStaticSecond",
+                "name": "Estatico 2",
+                "data": [
+                    "title"
+                ],
+                "using": {
+                    "model": "Certification"
                 }
             },
             {
@@ -1546,6 +1670,23 @@
                         "category"
                     ]
                 }
+            },
+            {
+                "id": "BlogSectionAko",
+                "name": "BlogSectionAko",
+                "data": [
+                    "title",
+                    "description",
+                    "button_text",
+                    "link_blog"
+                ],
+                "using": {
+                    "model": "Post",
+                    "limit": 4,
+                    "with": [
+                        "category"
+                    ]
+                }
             }
         ]
     },
@@ -1861,10 +2002,10 @@
             {
                 "id": "TestimonialsPaani",
                 "name": "Paani",
-               "using": {
-                    "model": "Testimony"
-                  
-                }
+                "using": {
+                        "model": "Testimony"
+                    
+                    }
             }
         ]
     },
@@ -1916,13 +2057,29 @@
             }
         ]
     },
-     {
+    {
         "id": "brands",
         "name": "Brands",
         "options": [
             {
                 "id": "BrandMakita",
                 "name": "BrandMakita"
+            }
+        ]
+    },
+    {
+        "id": "partner",
+        "name": "Partners",
+        "options": [
+            {
+                "id": "PartnerSimple",
+                "name": "PartnerSimple",
+                "using": {
+                    "model": "Partner"
+                },
+                "data": [
+                    "title"
+                ]
             }
         ]
     }

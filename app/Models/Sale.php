@@ -55,7 +55,10 @@ class Sale extends Model
         'document',
         'businessName',
         'payment_method',
-        'payment_proof'
+        'payment_proof',
+        'coupon_id',
+        'coupon_discount',
+        'total_amount',
     ];
 
     public function details()

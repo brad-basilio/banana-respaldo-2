@@ -10,24 +10,25 @@ import ProductNavigationSwiper from "../Products/ProductNavigationSwiper";
 export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos, items, contacts }) {
    
     const [currentStep, setCurrentStep] = useState(1);
-
+    const [descuentofinal, setDescuentoFinal] = useState(null);
     // Calcular el precio total incluyendo IGV
     const totalPrice = cart.reduce((acc, item) => {
         const finalPrice = item.final_price;
         return acc + finalPrice * item.quantity; // Sumar el precio total por cantidad
     }, 0);
 
-    // Calcular el subtotal sin IGV (precio base)
-    const subTotal = (totalPrice / 1.18).toFixed(2);
-
-    // Calcular el IGV (18% del subtotal)
-    const igv = (subTotal * 0.18).toFixed(2);
-
     // Estado para el costo de envío
     const [envio, setEnvio] = useState(0);
 
+    // Calcular el subtotal sin IGV (precio base)
+    const subTotal = (totalPrice / 1.18);
+    
+    // Calcular el IGV (18% del subtotal)
+    const igv = (subTotal * 0.18).toFixed(2);
+
     // Calcular el total final (subtotal sin IGV + IGV + envío)
-    const totalFinal = parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio);
+    const totalFinal = (parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio) - descuentofinal).toFixed(2);
+    
     const [sale, setSale] = useState([]);
     const [code, setCode] = useState([]);
     const [delivery, setDelivery] = useState([]);
@@ -151,6 +152,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         setCart={setCart}
                         onContinue={() => setCurrentStep(2)}
                         subTotal={subTotal}
+                        totalPrice={totalPrice}
                         envio={envio}
                         igv={igv}
                         totalFinal={totalFinal}
@@ -167,6 +169,7 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         onContinue={() => setCurrentStep(3)}
                         noContinue={() => setCurrentStep(1)}
                         subTotal={subTotal}
+                        totalPrice={totalPrice}
                         envio={envio}
                         setEnvio={setEnvio}
                         igv={igv}
@@ -176,6 +179,8 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         contacts={contacts}
                         ubigeos={ubigeos}
                         items={items}
+                        descuentofinal={descuentofinal}
+                        setDescuentoFinal={setDescuentoFinal}
                     />
                 )}
 
@@ -186,9 +191,12 @@ export default function CheckoutStepsSF({ cart, setCart, user, prefixes, ubigeos
                         delivery={delivery}
                         cart={sale}
                         subTotal={subTotal}
+                        totalPrice={totalPrice}
                         envio={envio}
                         igv={igv}
                         totalFinal={totalFinal}
+                        descuentofinal={descuentofinal}
+                        setDescuentoFinal={setDescuentoFinal}
                     />
                 )}
             </div>

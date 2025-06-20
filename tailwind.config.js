@@ -9,9 +9,10 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                "font-general": ["Lato", "serif"], //"Lato" "serif" usado para Sala Fabulosa
+                "font-general": ["Roboto", "serif"], //"Lato" "serif" usado para Sala Fabulosa
                 "font-primary": ["Rajdhani", "sans-serif"], // usado para Stech Peru
                 "font-secondary": ["Open Sans", "serif"],
+                "roboto": ["Roboto", "sans-serif"], // usado para Xcleretor
             },
             colors: {
                 primary: {
@@ -43,12 +44,17 @@ export default {
                 "right-25": "75% center", // Esto desplaza la imagen 75% a la derecha y la centra verticalmente
                 "right-10": "90% center", // Esto desplaza la imagen 90% a la derecha y la centra verticalmente
             },
-            // Puedes agregar personalizaciones aquí si es necesario
+            fontStyle: {
+                'oblique-light': 'oblique 5deg',
+            },
         },
     },
     plugins: [
         require("@tailwindcss/typography"),
         require("tailwindcss-animated"),
+        require('@tailwindcss/forms')({
+            strategy: 'class',
+        }),
         // require('tailwind-scrollbar')({
         //     nocompatible: true,
         //     preferredStrategy: 'pseudoelements',

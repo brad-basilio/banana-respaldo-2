@@ -16,11 +16,17 @@ class ItemFeatureController extends BasicController
     }
     public function saveFeatures(object $jpa, array $features)
     {
+        ItemFeature::where('item_id', $jpa->id)->delete();
+        
         foreach ($features as $feature) {
-            ItemFeature::create([
-                'item_id' => $jpa->id,
-                'feature' => $feature,
-            ]);
+            $featureValue = is_array($feature) ? ($feature['feature'] ?? '') : $feature;
+            
+            if (!empty(trim($featureValue))) {
+                ItemFeature::create([
+                    'item_id' => $jpa->id,
+                    'feature' => $featureValue
+                ]);
+            }
         }
     }
 }

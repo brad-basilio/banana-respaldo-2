@@ -1,8 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
 
 /* Colores personalizados para compatibilidad */
 @layer utilities {
@@ -63,6 +63,18 @@
   position: -webkit-sticky; /* Para Safari */
   position: sticky;
   top: 0;
+}
+
+.swiper-pagination-slider .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  border-radius: 100px;
+  background-color: #0082CA !important;     
+}
+
+.swiper-pagination-slider .swiper-pagination-bullet:not(.swiper-pagination-bullet-active) {
+  background-color: #ffffff!important;
+  opacity: 1;
 }
 
   /*  */
