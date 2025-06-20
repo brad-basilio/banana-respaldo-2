@@ -7,8 +7,8 @@
     "file": "assets/ArrayJoin-2k6ba35P.js",
     "name": "ArrayJoin"
   },
-  "_AuthClientRest-CFrcbUFf.js": {
-    "file": "assets/AuthClientRest-CFrcbUFf.js",
+  "_AuthClientRest-Bj1mruzx.js": {
+    "file": "assets/AuthClientRest-Bj1mruzx.js",
     "name": "AuthClientRest",
     "imports": [
       "_main-BvVILmTO.js",
@@ -5581,7 +5581,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ForgotPassword.jsx": {
-    "file": "assets/ForgotPassword-CN8FTmwk.js",
+    "file": "assets/ForgotPassword-DF4bMHik.js",
     "name": "ForgotPassword",
     "src": "resources/js/Components/Tailwind/ForgotPassword.jsx",
     "isDynamicEntry": true,
@@ -5597,22 +5597,22 @@
     ]
   },
   "resources/js/Components/Tailwind/ForgotPassword/ForgotBananaLab.jsx": {
-    "file": "assets/ForgotBananaLab-CCzhhpcv.js",
+    "file": "assets/ForgotBananaLab-BSyexVUy.js",
     "name": "ForgotBananaLab",
     "src": "resources/js/Components/Tailwind/ForgotPassword/ForgotBananaLab.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
-      "_AuthClientRest-CFrcbUFf.js",
+      "_AuthClientRest-Bj1mruzx.js",
       "_index-BH53Isel.js",
       "_JSEncrypt-BF8AmNNu.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
+      "_index-CMHsc23u.js",
       "_main-BvVILmTO.js",
       "_Global-ErywZRdd.js",
       "_proxy-BTYtmp9V.js",
       "_index-CFtDjG4d.js",
       "_index-yBjzXJbu.js",
-      "_index-CMHsc23u.js",
       "_index-rimy3MAc.js",
       "_index-fNjTmf9T.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js"
@@ -6010,7 +6010,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Login.jsx": {
-    "file": "assets/Login-Bs6WZokc.js",
+    "file": "assets/Login-DyEcZqw8.js",
     "name": "Login",
     "src": "resources/js/Components/Tailwind/Login.jsx",
     "isDynamicEntry": true,
@@ -6731,7 +6731,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ResetPassword.jsx": {
-    "file": "assets/ResetPassword-B0zicphs.js",
+    "file": "assets/ResetPassword-Ck2wGnzJ.js",
     "name": "ResetPassword",
     "src": "resources/js/Components/Tailwind/ResetPassword.jsx",
     "isDynamicEntry": true,
@@ -6942,7 +6942,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Signup.jsx": {
-    "file": "assets/Signup-BmIRPuXU.js",
+    "file": "assets/Signup-DpeoscQV.js",
     "name": "Signup",
     "src": "resources/js/Components/Tailwind/Signup.jsx",
     "isDynamicEntry": true,
@@ -7753,7 +7753,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-ClQ5sqtB.js",
+    "file": "assets/System-DZVHjXwl.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
