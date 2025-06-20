@@ -44,7 +44,6 @@ use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\NotificationVariableController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
