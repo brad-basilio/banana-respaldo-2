@@ -14,13 +14,24 @@ class GeneralsPixelsSeeder extends Seeder
      * @return void
      */
     public function run()
-    {
-        $generals = [
+    {        $generals = [
             // Email corporativo
             [
                 'correlative' => 'coorporative_email',
                 'name' => 'Email Corporativo',
                 'description' => '',
+            ],
+
+            // Plantillas de email para administrador
+            [
+                'correlative' => 'admin_purchase_email',
+                'name' => 'Plantilla Email Admin - Nueva Compra',
+                'description' => '<h2>Nueva Compra Recibida</h2><p><strong>Pedido:</strong> {orderId}</p><p><strong>Cliente:</strong> {customer_name}</p><p><strong>Email:</strong> {customer_email}</p><p><strong>Teléfono:</strong> {customer_phone}</p><p><strong>Total:</strong> {total}</p><p><strong>Dirección:</strong> {direccion_envio}</p><p><strong>Productos:</strong></p><pre>{productos_detalle}</pre>',
+            ],
+            [
+                'correlative' => 'admin_contact_email',
+                'name' => 'Plantilla Email Admin - Nuevo Contacto',
+                'description' => '<h2>Nuevo Mensaje de Contacto</h2><p><strong>De:</strong> {customer_name}</p><p><strong>Email:</strong> {customer_email}</p><p><strong>Teléfono:</strong> {customer_phone}</p><p><strong>Asunto:</strong> {message_subject}</p><p><strong>Mensaje:</strong></p><p>{message_content}</p>',
             ],
             
             // Píxeles de tracking para ecommerce

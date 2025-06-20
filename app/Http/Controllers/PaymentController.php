@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Coupon;
 use App\Notifications\PurchaseSummaryNotification;
 use App\Helpers\PixelHelper;
+use App\Helpers\NotificationHelper;
 use Culqi\Culqi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -209,12 +210,15 @@ class PaymentController extends Controller
             $conversionScripts = PixelHelper::trackPurchase($orderData);
             Log::info('PaymentController - Scripts de conversión generados');
 
-            // Enviar correo de resumen de compra
+            // Enviar correo de resumen de compra al cliente y administrador
             try {
                 Log::info('PaymentController - Preparando notificación de email');
                 $details = $sale->details ?? $sale->saleDetails ?? $sale->sale_details ?? SaleDetail::where('sale_id', $sale->id)->get();
-                $sale->notify(new PurchaseSummaryNotification($sale, $details));
-                Log::info('PaymentController - Email enviado exitosamente');
+                
+                // Usar el helper para enviar tanto al cliente como al administrador
+                NotificationHelper::sendToClientAndAdmin($sale, new PurchaseSummaryNotification($sale, $details));
+                
+                Log::info('PaymentController - Email enviado exitosamente al cliente y administrador');
             } catch (\Exception $emailException) {
                 Log::warning('PaymentController - Error enviando email (no crítico)', [
                     'error' => $emailException->getMessage()

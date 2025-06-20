@@ -6,6 +6,7 @@ use App\Models\Message;
 use App\Http\Requests\StoreMessageRequest;
 use App\Http\Requests\UpdateMessageRequest;
 use App\Notifications\MessageContactNotification;
+use App\Helpers\NotificationHelper;
 use Illuminate\Http\Request;
 
 class MessageController extends BasicController
@@ -41,7 +42,15 @@ class MessageController extends BasicController
 
     public function afterSave(Request $request, object $jpa, ?bool $isNew)
     {
-        //MailingController::notifyContact($jpa);
-        $jpa->notify(new MessageContactNotification($jpa));
+        try {
+            // Enviar notificación al cliente y al administrador
+            NotificationHelper::sendToClientAndAdmin($jpa, new MessageContactNotification($jpa));
+        } catch (\Exception $e) {
+            \Log::error('MessageController - Error enviando notificaciones', [
+                'error' => $e->getMessage(),
+                'message_id' => $jpa->id ?? 'unknown'
+            ]);
+            // No lanzamos la excepción para no interrumpir el flujo del guardado
+        }
     }
 }

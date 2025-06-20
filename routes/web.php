@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\GeneralController as AdminGeneralController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Test\PixelTestController;
+use App\Http\Controllers\Test\NotificationTestController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\AdController as AdminAdController;
@@ -58,6 +59,12 @@ Route::get('/', fn() => view('coming-soon'));
 // Ruta de test para píxeles (solo para desarrollo)
 Route::get('/test/pixels', [PixelTestController::class, 'index'])->name('test.pixels');
 Route::get('/test/product-tracking', fn() => view('examples.product-tracking'))->name('test.product-tracking');
+
+// Test de notificaciones
+Route::get('/test/notifications', [NotificationTestController::class, 'index'])->name('test.notifications');
+Route::post('/test/notifications/contact', [NotificationTestController::class, 'testContactNotification']);
+Route::post('/test/notifications/purchase', [NotificationTestController::class, 'testPurchaseNotification']);
+Route::get('/test/notifications/corporate-email', [NotificationTestController::class, 'checkCorporateEmail']);
 
 // Verificar si el archivo existe, si no, crear uno vacío
 $filePath = storage_path('app/pages.json');
