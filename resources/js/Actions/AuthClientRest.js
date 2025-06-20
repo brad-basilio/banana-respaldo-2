@@ -103,6 +103,7 @@ class AuthClientRest {
                     richColors: true,
                     action: {
                         label: "Crear cuenta",
+                        
                         onClick: () => {
                             window.location.href = "/crear-cuenta";
                         }
