@@ -50,7 +50,7 @@ export default function ForgotPasswordSimple() {
                         action: {
                             label: "Ir al login",
                             onClick: () => {
-                                window.location.href = "/login";
+                                window.location.href = "/iniciar-sesion";
                             }
                         },
                     });
@@ -67,14 +67,14 @@ export default function ForgotPasswordSimple() {
             action: {
                 label: "Ir al login",
                 onClick: () => {
-                    window.location.href = "/login";
+                    window.location.href = "/iniciar-sesion";
                 }
             },
         });
 
         // Redirigir automáticamente después de unos segundos
         setTimeout(() => {
-            window.location.href = "/login";
+            window.location.href = "/iniciar-sesion";
         }, 4000);
     };
     return (

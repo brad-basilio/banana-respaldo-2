@@ -104,7 +104,7 @@ class AuthClientRest {
                     action: {
                         label: "Crear cuenta",
                         onClick: () => {
-                            window.location.href = "/register";
+                            window.location.href = "/crear-cuenta";
                         }
                     },
                 });
