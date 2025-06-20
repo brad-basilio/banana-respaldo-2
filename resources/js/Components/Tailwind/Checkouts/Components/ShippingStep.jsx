@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import AsyncSelect from "react-select/async";
 import Number2Currency from "../../../../Utils/Number2Currency";
 import DeliveryPricesRest from "../../../../Actions/DeliveryPricesRest";
+import CouponsRest from "../../../../Actions/CouponsRest";
 import { processCulqiPayment } from "../../../../Actions/culqiPayment";
 import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
@@ -28,6 +29,8 @@ export default function ShippingStep({
     envio,
     ubigeos = [],
     openModal,
+    setCouponDiscount: setParentCouponDiscount,
+    setCouponCode: setParentCouponCode,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
@@ -71,6 +74,13 @@ export default function ShippingStep({
     const [costsGet, setCostsGet] = useState(null);
     const [errors, setErrors] = useState({});
     const [searchInput, setSearchInput] = useState("");
+    
+    // Estados para cupones
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState("");
 
     // Función de validación mejorada con alertas específicas
     const validateForm = () => {
@@ -421,10 +431,19 @@ export default function ShippingStep({
                 ...formData,
                 fullname: `${formData.name} ${formData.lastname}`,
                 country: "Perú",
-                amount: totalFinal,
-                delivery: envio,
+                amount: roundToTwoDecimals(finalTotalWithCoupon),
+                delivery: roundToTwoDecimals(envio),
                 cart: cart,
+                // Información del cupón - todos redondeados a 2 decimales
+                coupon_id: appliedCoupon?.id || null,
+                coupon_code: appliedCoupon?.code || null,
+                coupon_discount: roundToTwoDecimals(couponDiscount || 0),
             };
+
+            console.log("📦 Request completo a enviar:", request);
+            console.log("💰 Monto final con cupón:", finalTotalWithCoupon);
+            console.log("🎟️ Descuento del cupón:", couponDiscount);
+            console.log("🚚 Costo de envío:", envio);
 
             const response = await processCulqiPayment(request);
 
@@ -536,6 +555,116 @@ export default function ShippingStep({
             padding: '12px 16px',
         }),
     });
+
+    // Función para validar cupón
+    const validateCoupon = async () => {
+        if (!couponCode.trim()) {
+            setCouponError("Ingrese un código de cupón");
+            return;
+        }
+
+        setCouponLoading(true);
+        setCouponError("");
+
+        try {
+            // Obtener IDs de categorías y productos del carrito
+            const categoryIds = [...new Set(cart.map(item => item.category_id).filter(Boolean))];
+            const productIds = cart.map(item => item.id);
+
+            console.log("Validando cupón:", {
+                code: couponCode.trim(),
+                cart_total: subTotal,
+                category_ids: categoryIds,
+                product_ids: productIds
+            });
+
+            const response = await CouponsRest.validateCoupon({
+                code: couponCode.trim(),
+                cart_total: subTotal,
+                category_ids: categoryIds,
+                product_ids: productIds
+            });
+
+            console.log("Respuesta del cupón:", response);
+
+            // Manejar diferentes estructuras de respuesta
+            const data = response.data || response; // response.data para nueva estructura, response para estructura anterior
+            
+            if (data && data.valid) {
+                setAppliedCoupon(data.coupon);
+                // Redondear el descuento a 2 decimales para evitar problemas de precisión
+                const roundedDiscount = Math.round(data.discount * 100) / 100;
+                setCouponDiscount(roundedDiscount);
+                
+                // Actualizar el estado del componente padre
+                if (setParentCouponDiscount) {
+                    setParentCouponDiscount(roundedDiscount);
+                }
+                if (setParentCouponCode) {
+                    setParentCouponCode(data.coupon?.code || couponCode.trim());
+                }
+                
+                toast.success("Cupón aplicado", {
+                    description: data.message || "Cupón aplicado correctamente",
+                    duration: 3000,
+                    position: "top-center",
+                });
+            } else {
+                const errorMessage = data?.message || "Cupón no válido";
+                setCouponError(errorMessage);
+                toast.error("Cupón no válido", {
+                    description: errorMessage,
+                    icon: <XCircle className="h-5 w-5 text-red-500" />,
+                    duration: 3000,
+                    position: "top-center",
+                });
+            }
+        } catch (error) {
+            console.error("Error al validar cupón:", error);
+            setCouponError("Error al validar el cupón");
+            toast.error("Error", {
+                description: error.message || "No se pudo validar el cupón. Intente nuevamente.",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    // Función para remover cupón
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+        setCouponCode("");
+        setCouponError("");
+        
+        // Limpiar el estado del componente padre
+        if (setParentCouponDiscount) {
+            setParentCouponDiscount(0);
+        }
+        if (setParentCouponCode) {
+            setParentCouponCode("");
+        }
+        
+        toast.success("Cupón removido", {
+            description: "El cupón ha sido removido de su pedido",
+            duration: 2000,
+            position: "top-center",
+        });
+    };
+
+    // Función auxiliar para redondear valores monetarios con mayor precisión
+    const roundToTwoDecimals = (num) => {
+        // Convertir a número si es string
+        const number = typeof num === 'string' ? parseFloat(num) : num;
+        // Usar toFixed para evitar problemas de precisión de punto flotante
+        return parseFloat(number.toFixed(2));
+    };
+
+    // Calcular total final con descuento de cupón, redondeado correctamente
+    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal - couponDiscount);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
@@ -774,21 +903,109 @@ export default function ShippingStep({
                 <div className="space-y-4 mt-6">
                     <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>S/ {Number2Currency(subTotal)}</span>
+                        <span>S/ {Number2Currency(roundToTwoDecimals(subTotal))}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>IGV (18%):</span>
-                        <span>S/ {Number2Currency(igv)}</span>
+                        <span>S/ {Number2Currency(roundToTwoDecimals(igv))}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>Envío:</span>
-                        <span>S/ {Number2Currency(envio)}</span>
+                        <span>S/ {Number2Currency(roundToTwoDecimals(envio))}</span>
                     </div>
+
+                    {/* Sección de cupón */}
+                    <div className="space-y-4 border-t pt-4">
+                        <div className="space-y-3">
+                            <label className="block text-sm font-medium customtext-neutral-dark">
+                                ¿Tienes un cupón de descuento?
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Ingresa tu código de cupón"
+                                        value={couponCode}
+                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                        className={`w-full px-4 py-3 border customtext-neutral-dark  border-gray-100 rounded-xl focus:ring-0 focus:outline-0   transition-all duration-300 ${
+                                            couponError
+                                                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-200'
+                                                : appliedCoupon
+                                                ? 'border-gray-200 bg-white customtext-neutral-dark focus:ring-blue-200'
+                                                : ' bg-white border-neutral-light focus:ring-0 focus:outline-0'
+                                        } `}
+                                        disabled={!!appliedCoupon || couponLoading}
+                                    />
+                                    {couponLoading && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+                                </div>
+                                {!appliedCoupon ? (
+                                    <button
+                                        type="button"
+                                        onClick={validateCoupon}
+                                        disabled={couponLoading || !couponCode.trim()}
+                                        className="px-6 py-3 bg-primary text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 whitespace-nowrap"
+                                    >
+                                        {couponLoading ? "Validando..." : "Aplicar"}
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={removeCoupon}
+                                        className="px-4 py-3 bg-gray-200 customtext-neutral-dark text-sm rounded-xl hover:bg-gray-300 transition-colors duration-200"
+                                        title="Remover cupón"
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {couponError && (
+                                <div className="flex items-center gap-2 text-red-600 text-sm">
+                                    <XCircle className="h-4 w-4 flex-shrink-0" />
+                                    <span>{couponError}</span>
+                                </div>
+                            )}
+                            
+                            {appliedCoupon && (
+                                <div className="bg-gray-50 border-2  rounded-xl p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="customtext-primary font-semibold text-sm">
+                                                    Cupón aplicado: {appliedCoupon.code}
+                                                </p>
+                                              {/*  <p className="customtext-primary text-xs mt-1">
+                                                    {appliedCoupon.name}
+                                                </p> */}
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="customtext-primary font-bold text-lg">
+                                                -S/ {Number2Currency(roundToTwoDecimals(couponDiscount))}
+                                            </span>
+                                           {/* <p className="customtext-primary text-xs">Descuento aplicado</p> */}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                  
 
                     <div className="pt-4 border-t-2">
                         <div className="flex justify-between font-bold text-lg">
                             <span>Total:</span>
-                            <span>S/ {Number2Currency(totalFinal)}</span>
+                            <span>S/ {Number2Currency(roundToTwoDecimals(finalTotalWithCoupon))}</span>
                         </div>
                     </div>
 
@@ -798,7 +1015,7 @@ export default function ShippingStep({
                         disabled={paymentLoading}
                         loading={paymentLoading}
                     >
-                        {paymentLoading ? "Procesando..." : "Ir a Pagar"}
+                        {paymentLoading ? "Procesando..." : `Pagar S/ ${Number2Currency(roundToTwoDecimals(finalTotalWithCoupon))}`}
                     </ButtonPrimary>
 
                     <p className="text-xs md:text-sm customtext-neutral-dark">

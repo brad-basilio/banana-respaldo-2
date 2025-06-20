@@ -9,8 +9,6 @@ use App\Models\Category;
 use App\Models\Item;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response as HttpResponse;
-use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -37,12 +35,8 @@ class CouponController extends BasicController
     public function setPaginationInstance(Request $request, string $model)
     {
         return $model::query();
-    }
-
-    public function validateCoupon(Request $request): HttpResponse|ResponseFactory
+    }    public function validateCoupon(Request $request)
     {
-        $response = new \SoDe\Extend\Response();
-
         try {
             $request->validate([
                 'code' => 'required|string',
@@ -54,11 +48,14 @@ class CouponController extends BasicController
             $coupon = Coupon::where('code', strtoupper($request->code))->first();
 
             if (!$coupon) {
-                $response->data = [
-                    'valid' => false,
-                    'message' => 'Cupón no encontrado'
-                ];
-                return \response($response->toArray(), $response->status);
+                return response()->json([
+                    'status' => 422,
+                    'message' => 'Cupón no encontrado',
+                    'data' => [
+                        'valid' => false,
+                        'message' => 'Cupón no encontrado'
+                    ]
+                ], 422);
             }
 
             $validation = $coupon->canBeUsedBy(
@@ -70,36 +67,57 @@ class CouponController extends BasicController
 
             if ($validation['valid']) {
                 $discount = $coupon->calculateDiscount($request->get('cart_total', 0));
-                $response->data = [
-                    'valid' => true,
-                    'message' => $validation['message'],
-                    'coupon' => $coupon,
-                    'discount' => $discount
-                ];
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Cupón válido',
+                    'data' => [
+                        'valid' => true,
+                        'message' => $validation['message'],
+                        'coupon' => $coupon,
+                        'discount' => $discount
+                    ]
+                ], 200);
             } else {
-                $response->data = $validation;
+                return response()->json([
+                    'status' => 422,
+                    'message' => $validation['message'],
+                    'data' => $validation
+                ], 422);
             }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 422,
+                'message' => 'Datos de entrada inválidos',
+                'data' => [
+                    'valid' => false,
+                    'message' => 'Datos de entrada inválidos',
+                    'errors' => $e->errors()
+                ]
+            ], 422);
         } catch (\Exception $e) {
-            $response->message = $e->getMessage();
-            $response->status = 422;
+            return response()->json([
+                'status' => 500,
+                'message' => 'Error interno del servidor',
+                'data' => [
+                    'valid' => false,
+                    'message' => $e->getMessage()
+                ]
+            ], 500);
         }
-
-        return \response($response->toArray(), $response->status);
-    }    
-    
-      public function generateCode(): HttpResponse|ResponseFactory
+    }
+      public function generateCode()
     {
         try {
             $code = $this->generateCouponCode();
             
-            return \response([
+            return response()->json([
                 'status' => 200,
                 'message' => 'Código generado exitosamente',
                 'data' => ['code' => $code]
             ], 200);
             
         } catch (\Exception $e) {            
-            return \response([
+            return response()->json([
                 'status' => 422,
                 'message' => $e->getMessage(),
                 'data' => null

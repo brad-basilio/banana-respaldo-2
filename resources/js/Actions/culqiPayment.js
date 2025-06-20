@@ -24,11 +24,22 @@ export const processCulqiPayment = (request) => {
             
             // ✅ Configurar Culqi
             window.Culqi.publicKey = Global.CULQI_PUBLIC_KEY; // Reemplaza con tu clave pública
+            
+            // Convertir a céntimos de forma más precisa
+            const amountInSoles = parseFloat(request.amount.toFixed(2));
+            const amountInCents = Math.round(amountInSoles * 100);
+            
+            console.log("💰 Configurando Culqi:");
+            console.log("   - Monto original:", request.amount);
+            console.log("   - Monto redondeado (soles):", amountInSoles);
+            console.log("   - Monto en céntimos:", amountInCents);
+            console.log("   - Email:", request.email);
+            
             window.Culqi.settings({
                 title: Global.APP_NAME,
                 email: request.email,
                 currency: "PEN",
-                amount: request.amount * 100, // Convertir a céntimos
+                amount: amountInCents, // Monto en céntimos como entero
                 order: `${orderNumber}`,
             });
             console.log(window.Culqi.settings);

@@ -6,6 +6,7 @@ use App\Jobs\SendSaleEmail;
 use App\Jobs\SendSaleWhatsApp;
 use App\Models\Sale;
 use App\Models\Bundle;
+use App\Models\Coupon;
 use App\Models\DeliveryPrice;
 use App\Models\Item;
 use App\Models\Renewal;
@@ -129,11 +130,15 @@ class SaleController extends BasicController
                 if (!$couponStatus) throw new Exception($couponJpa);
 
                 $saleJpa->coupon_id = $couponJpa->id;
+                $saleJpa->coupon_code = $couponJpa->code;
                 if ($couponJpa->type == 'percentage') {
-                    $saleJpa->coupon_discount = ($totalPrice - $bundle - $renewal) * ($couponJpa->amount / 100);
+                    $saleJpa->coupon_discount = ($totalPrice - $bundle - $renewal) * ($couponJpa->value / 100);
                 } else {
-                    $saleJpa->coupon_discount = $couponJpa->amount;
+                    $saleJpa->coupon_discount = $couponJpa->value;
                 }
+                
+                // Incrementar el contador de uso del cupón
+                $couponJpa->incrementUsage();
             }
 
             $saleJpa->amount = Math::round($totalPrice * 10) / 10;
@@ -204,6 +209,19 @@ class SaleController extends BasicController
         //$body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
         $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
         $body['user_id'] = Auth::id();
+
+        // Manejar cupón si está presente
+        if (isset($body['coupon_code']) && $body['coupon_code']) {
+            $couponJpa = \App\Models\Coupon::where('code', $body['coupon_code'])->first();
+            if ($couponJpa && $couponJpa->isValid($tempTotal)) {
+                $body['coupon_id'] = $couponJpa->id;
+                $body['coupon_code'] = $couponJpa->code;
+                $body['coupon_discount'] = $couponJpa->calculateDiscount($tempTotal);
+                
+                // Incrementar el contador de uso del cupón
+                $couponJpa->incrementUsage();
+            }
+        }
 
         if (Auth::check()) {
             $userJpa = User::find(Auth::user()->id);

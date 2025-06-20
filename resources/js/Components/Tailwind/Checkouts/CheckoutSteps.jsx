@@ -20,6 +20,10 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
     const [sale, setSale] = useState([]);
     const [code, setCode] = useState([]);
     const [delivery, setDelivery] = useState([]);
+    
+    // Estados para el cupón
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponCode, setCouponCode] = useState(null);
 
     useEffect(() => {
         const script = document.createElement("script");
@@ -114,6 +118,8 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         user={user}
                         ubigeos={ubigeos}
                         openModal={openModal}
+                        setCouponDiscount={setCouponDiscount}
+                        setCouponCode={setCouponCode}
                     />
                 )}
 
@@ -126,6 +132,8 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         envio={envio}
                         igv={igv}
                         totalFinal={totalFinal}
+                        couponDiscount={couponDiscount}
+                        couponCode={couponCode}
                     />
                 )}
             </div>

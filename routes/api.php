@@ -95,6 +95,9 @@ Route::post('/signup-client', [AuthClientController::class, 'signup']);
 Route::post('/forgot-password-client', [AuthClientController::class, 'forgotPassword']);
 Route::post('/reset-password-client', [AuthClientController::class, 'resetPassword']);
 
+// Rutas públicas para cupones
+Route::post('/coupons/validate', [AdminCouponController::class, 'validateCoupon']);
+
 Route::post('/delivery-prices', [DeliveryPriceController::class, 'getDeliveryPrice']);
 Route::post('/prices-type', [DeliveryPriceController::class, 'getPrices']);
 
