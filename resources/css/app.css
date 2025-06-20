@@ -49,6 +49,18 @@
   top: 0;
 }
 
+.swiper-pagination-slider .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  border-radius: 100px;
+  background-color: #0082CA !important;     
+}
+
+.swiper-pagination-slider .swiper-pagination-bullet:not(.swiper-pagination-bullet-active) {
+  background-color: #ffffff!important;
+  opacity: 1;
+}
+
   /*  */
   
   /* @layer utilities {

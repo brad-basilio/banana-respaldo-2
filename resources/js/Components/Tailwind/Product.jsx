@@ -6,6 +6,8 @@ const ProductSlider = React.lazy(() => import("./Products/ProductSlider"));
 const ProductInfinite = React.lazy(() => import("./Products/ProductInfinite"));
 const ProductNavigation = React.lazy(() => import("./Products/ProductNavigation"));
 const ProductNavigationSwiper = React.lazy(() => import("./Products/ProductNavigationSwiper"));
+const ProductNavigationSwiperSimple = React.lazy(() => import("./Products/ProductNavigationSwiperSimple"));
+const ProductFeaturedSwiper = React.lazy(() => import("./Products/ProductFeaturedSwiper"));
 const ProductBananaLab = React.lazy(() => import("./Products/ProductBananaLab"));
 const ScrapingSimple = React.lazy(() => import("./Scraping/ScrapingSimple"));
 const ProductMakita = React.lazy(() => import("./Products/ProductMakita"));
@@ -71,6 +73,24 @@ const Product = ({
             case "ProductNavigationSwiper":
                 return (
                     <ProductNavigationSwiper
+                        data={data}
+                        items={items}
+                        cart={cart}
+                        setCart={setCart}
+                    />
+                );
+            case "ProductNavigationSwiperSimple":
+                return (
+                    <ProductNavigationSwiperSimple
+                        data={data}
+                        items={items}
+                        cart={cart}
+                        setCart={setCart}
+                    />
+                );
+            case "ProductFeaturedSwiper":
+                return (
+                    <ProductFeaturedSwiper
                         data={data}
                         items={items}
                         cart={cart}
