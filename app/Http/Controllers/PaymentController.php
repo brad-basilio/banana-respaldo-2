@@ -9,6 +9,7 @@ use App\Models\SaleStatus;
 use App\Models\User;
 use App\Models\Coupon;
 use App\Notifications\PurchaseSummaryNotification;
+use App\Helpers\PixelHelper;
 use Culqi\Culqi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -189,6 +190,25 @@ class PaymentController extends Controller
                 'coupon_discount' => $sale->coupon_discount
             ]);
 
+            // Generar scripts de tracking de conversión
+            $orderData = [
+                'order_id' => $sale->id,
+                'total' => $sale->amount,
+                'product_ids' => collect($request->cart)->pluck('id')->toArray(),
+                'user_id' => $sale->user_id,
+                'items' => collect($request->cart)->map(function($item) {
+                    return [
+                        'item_id' => is_array($item) ? $item['id'] : $item->id,
+                        'item_name' => is_array($item) ? $item['name'] : $item->name,
+                        'price' => is_array($item) ? $item['final_price'] : $item->final_price,
+                        'quantity' => is_array($item) ? $item['quantity'] : $item->quantity
+                    ];
+                })->toArray()
+            ];
+            
+            $conversionScripts = PixelHelper::trackPurchase($orderData);
+            Log::info('PaymentController - Scripts de conversión generados');
+
             // Enviar correo de resumen de compra
             try {
                 Log::info('PaymentController - Preparando notificación de email');
@@ -208,7 +228,9 @@ class PaymentController extends Controller
                 'culqi_response' => $charge,
                 'sale' => $request->cart,
                 'code' => $request->orderNumber,
-                'delivery' => $request->delivery
+                'delivery' => $request->delivery,
+                'conversion_scripts' => $conversionScripts,
+                'sale_id' => $sale->id
             ]);
             
         } catch (\Exception $e) {

@@ -31,6 +31,9 @@ export default function ShippingStep({
     openModal,
     setCouponDiscount: setParentCouponDiscount,
     setCouponCode: setParentCouponCode,
+    conversionScripts,
+    setConversionScripts,
+    onPurchaseComplete,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
@@ -451,6 +454,18 @@ export default function ShippingStep({
                 setSale(response.sale);
                 setDelivery(response.delivery);
                 setCode(response.code);
+                
+                // Capturar scripts de conversión si están disponibles
+                if (response.conversion_scripts) {
+                    console.log('Scripts de conversión recibidos:', response.conversion_scripts);
+                    setConversionScripts(response.conversion_scripts);
+                    
+                    // Llamar al callback de compra completada si está disponible
+                    if (onPurchaseComplete) {
+                        onPurchaseComplete(response.sale_id, response.conversion_scripts);
+                    }
+                }
+                
                 setCart([]);
                 onContinue();
             } else {

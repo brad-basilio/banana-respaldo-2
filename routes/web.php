@@ -57,6 +57,7 @@ Route::get('/', fn() => view('coming-soon'));
 
 // Ruta de test para píxeles (solo para desarrollo)
 Route::get('/test/pixels', [PixelTestController::class, 'index'])->name('test.pixels');
+Route::get('/test/product-tracking', fn() => view('examples.product-tracking'))->name('test.product-tracking');
 
 // Verificar si el archivo existe, si no, crear uno vacío
 $filePath = storage_path('app/pages.json');

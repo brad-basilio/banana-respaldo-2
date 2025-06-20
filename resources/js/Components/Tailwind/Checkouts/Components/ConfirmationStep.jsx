@@ -1,8 +1,9 @@
 import Number2Currency from "../../../../Utils/Number2Currency";
 import ButtonPrimary from "./ButtonPrimary";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 
-export default function ConfirmationStep({ cart, code, delivery, couponDiscount = 0, couponCode = null }) {
+export default function ConfirmationStep({ cart, code, delivery, couponDiscount = 0, couponCode = null, conversionScripts = null }) {
     const totalPrice = cart.reduce((acc, item) => {
         const finalPrice = item.final_price;
         return acc + finalPrice * item.quantity;
@@ -12,6 +13,32 @@ export default function ConfirmationStep({ cart, code, delivery, couponDiscount 
     const igv = (subTotal * 0.18).toFixed(2);
     const totalBeforeDiscount = parseFloat(subTotal) + parseFloat(igv) + parseFloat(delivery);
     const totalFinal = totalBeforeDiscount - couponDiscount;
+
+    // Execute conversion scripts when component mounts
+    useEffect(() => {
+        if (conversionScripts) {
+            console.log('Executing conversion scripts...');
+            try {
+                // Execute the scripts in the head
+                if (conversionScripts.head) {
+                    const headScript = document.createElement('script');
+                    headScript.innerHTML = conversionScripts.head;
+                    document.head.appendChild(headScript);
+                }
+                
+                // Execute the scripts in the body
+                if (conversionScripts.body) {
+                    const bodyScript = document.createElement('script');
+                    bodyScript.innerHTML = conversionScripts.body;
+                    document.body.appendChild(bodyScript);
+                }
+                
+                console.log('Conversion scripts executed successfully');
+            } catch (error) {
+                console.error('Error executing conversion scripts:', error);
+            }
+        }
+    }, [conversionScripts]);
 
     return (
         <motion.div

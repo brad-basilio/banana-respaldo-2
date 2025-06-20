@@ -199,13 +199,15 @@
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
 
-    <script src="/lte/assets/libs/select2/js/select2.full.min.js" defer></script>
-    <!-- App js -->
+    <script src="/lte/assets/libs/select2/js/select2.full.min.js" defer></script>    <!-- App js -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.js" defer></script>
     <script src="/lte/assets/libs/moment/min/moment.min.js" defer></script>
     <script src="/lte/assets/libs/moment/moment-timezone.js" defer></script>
     <script src="/lte/assets/libs/moment/locale/es.js" defer></script>
     <script src="/lte/assets/libs/quill/quill.min.js" defer></script>
+    
+    <!-- Ecommerce Tracking System -->
+    <script src="/assets/js/ecommerce-tracker.js" defer></script>
     <script>
         document.addEventListener('click', function(event) {
             const target = event.target;
