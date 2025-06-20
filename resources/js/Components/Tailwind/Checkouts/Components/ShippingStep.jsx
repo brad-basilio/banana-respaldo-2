@@ -981,11 +981,13 @@ export default function ShippingStep({
                                             </div>
                                             <div>
                                                 <p className="customtext-primary font-semibold text-sm">
-                                                    Cupón aplicado: {appliedCoupon.code}
+                                                    Descto. {appliedCoupon.type === 'percentage' 
+                                                        ? `${appliedCoupon.value}%` 
+                                                        : `S/${Number2Currency(appliedCoupon.value)}`}
                                                 </p>
-                                              {/*  <p className="customtext-primary text-xs mt-1">
-                                                    {appliedCoupon.name}
-                                                </p> */}
+                                                <p className="customtext-primary text-xs mt-1">
+                                                    {appliedCoupon.code}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="text-right w-4/12">
