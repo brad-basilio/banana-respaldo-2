@@ -72,13 +72,18 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
         $deliveryCost = $this->sale->delivery ?? 0;
         $couponDiscount = $this->sale->coupon_discount ?? 0;
         
-        // Para obtener subtotal e IGV, primero restamos el envío del total
+        // Para mostrar el desglose correcto, necesitamos calcular el subtotal ORIGINAL
+        // (antes del descuento del cupón) para que coincida con lo que se muestra en web
+        
+        // Paso 1: Obtener el total sin envío
         $totalSinEnvio = $totalAmount - $deliveryCost;
         
-        // Ahora separamos el subtotal (sin IGV) del IGV
-        // totalSinEnvio = subtotal + IGV = subtotal + (subtotal * 0.18) = subtotal * 1.18
-        $subtotalAmount = $totalSinEnvio / 1.18;
-        $igvAmount = $totalSinEnvio - $subtotalAmount;
+        // Paso 2: Agregar el descuento del cupón para obtener el total original (antes del cupón)
+        $totalOriginalSinEnvio = $totalSinEnvio + $couponDiscount;
+        
+        // Paso 3: Separar subtotal e IGV del total original
+        $subtotalAmount = $totalOriginalSinEnvio / 1.18;  // Subtotal sin IGV
+        $igvAmount = $totalOriginalSinEnvio - $subtotalAmount;  // IGV del subtotal
         
         // Armar array de productos para bloque repetible (con más detalles)
         $productos = [];
