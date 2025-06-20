@@ -18,13 +18,28 @@ export const processCulqiPayment = (request) => {
                 request.email
             );
             console.log(orderNumber);
+            
+            // Variable para rastrear si el pago se completó
+            let paymentCompleted = false;
+            
             // ✅ Configurar Culqi
             window.Culqi.publicKey = Global.CULQI_PUBLIC_KEY; // Reemplaza con tu clave pública
+            
+            // Convertir a céntimos de forma más precisa
+            const amountInSoles = parseFloat(request.amount.toFixed(2));
+            const amountInCents = Math.round(amountInSoles * 100);
+            
+            console.log("💰 Configurando Culqi:");
+            console.log("   - Monto original:", request.amount);
+            console.log("   - Monto redondeado (soles):", amountInSoles);
+            console.log("   - Monto en céntimos:", amountInCents);
+            console.log("   - Email:", request.email);
+            
             window.Culqi.settings({
                 title: Global.APP_NAME,
                 email: request.email,
                 currency: "PEN",
-                amount: request.amount * 100, // Convertir a céntimos
+                amount: amountInCents, // Monto en céntimos como entero
                 order: `${orderNumber}`,
             });
             console.log(window.Culqi.settings);
@@ -47,6 +62,19 @@ export const processCulqiPayment = (request) => {
                 },
             });
 
+            // ✅ Override del método close de Culqi para detectar cierre sin pago
+            const originalClose = window.Culqi?.close;
+            if (originalClose) {
+                window.Culqi.close = function() {
+                    // Si no hay token y el pago no se completó, significa que se cerró sin completar
+                    if (!window.Culqi.token && !paymentCompleted) {
+                        console.log("🚫 Modal de Culqi cerrado sin completar el pago");
+                        reject("Pago cancelado por el usuario");
+                    }
+                    return originalClose.apply(this, arguments);
+                };
+            }
+
             // ✅ Abrir el formulario de pago
             window.Culqi.open();
 
@@ -58,6 +86,9 @@ export const processCulqiPayment = (request) => {
                         return;
                     }
 
+                    // Marcar como pago completado
+                    paymentCompleted = true;
+                    
                     const token = window.Culqi.token.id;
                     console.log("✅ Token generado:", token);
 
@@ -97,6 +128,29 @@ export const processCulqiPayment = (request) => {
                     reject(error.message || "Error en el pago");
                 }
             };
+
+            // ✅ Manejar cierre manual de Culqi (cuando usuario cierra sin pagar)
+            window.addEventListener('message', function(event) {
+                if (event.data === 'culqi_closed') {
+                    reject("Pago cancelado por el usuario");
+                }
+            });
+
+            // ✅ Detectar cierre con ESC o cualquier otro método
+            const handleEscapeClose = (event) => {
+                if (event.key === 'Escape' && !paymentCompleted) {
+                    console.log("🚫 Modal de Culqi cerrado con Escape");
+                    reject("Pago cancelado por el usuario");
+                }
+            };
+            
+            // Agregar listener para la tecla Escape
+            document.addEventListener('keydown', handleEscapeClose);
+            
+            // Limpiar listener después de un tiempo o cuando se complete
+            setTimeout(() => {
+                document.removeEventListener('keydown', handleEscapeClose);
+            }, 300000); // 5 minutos
 
             // ✅ Manejar errores de Culqi
             document.addEventListener("culqi.error", function (event) {

@@ -167,7 +167,7 @@ const Items = ({ categories, brands, collections }) => {
         if (data?.images) {
             const existingImages = data.images.map((img) => ({
                 id: img.id, // ID de la imagen en la base de datos
-                url: `/api/items/gallery/media/${img.url}`, // Ruta de la imagen almacenada
+                url: `/storage/images/item/${img.url}`, // Ruta de la imagen almacenada
             }));
             setGallery(existingImages);
         } else {

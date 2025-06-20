@@ -47,6 +47,20 @@ const HeaderSearchB = ({
     const desktopSearchInputRef = useRef(null);
 
     const totalCount = cart.reduce((acc, item) => Number(acc) + Number(item.quantity), 0);
+    
+    // Función para verificar si estamos en rutas donde no queremos mostrar la búsqueda móvil
+    // Usando window.location directamente para máxima compatibilidad
+    const shouldHideMobileSearch = () => {
+        try {
+            const currentPath = window.location.pathname || '';
+            const hiddenRoutes = ['/cart', '/checkout'];
+            return hiddenRoutes.some(route => currentPath.includes(route));
+        } catch (error) {
+            // En caso de error, mostrar la búsqueda móvil por defecto
+            console.warn('Error checking path:', error);
+            return false;
+        }
+    };
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -502,10 +516,10 @@ const HeaderSearchB = ({
                 </div>
 
                 {/* NUEVA SECCIÓN MÓVIL*/}
-                   {data?.mobileSearch && (
+                {data?.mobileSearch && !shouldHideMobileSearch() && (
                 <div className="block md:hidden mt-6 space-y-4">
                   
-                    {/* Tercera fila móvil: Barra de búsqueda completa */}
+                   
                  
                         <div className="w-full ">
                             <form onSubmit={handleMobileSearch} role="search" className="relative w-full">

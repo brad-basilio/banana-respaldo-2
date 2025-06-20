@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import JSEncrypt from "jsencrypt";
 import Swal from "sweetalert2";
+import { toast } from "sonner";
 import { GET } from "sode-extend-react";
 import Global from "../../../Utils/Global";
 
@@ -77,27 +78,64 @@ export default function ForgotBananaLab() {
 
             const result = await AuthClientRest.forgotPassword(request);
 
-            if (!result) {
-                throw new Error("No se pudo procesar la solicitud");
+            setLoading(false);
+
+            if (!result || !result.success) {
+                // Si user_exists es false, el toast ya se mostró en AuthClientRest
+                if (result && result.user_exists === false) {
+                    // Opcional: agregar un botón para ir al login también
+                    setTimeout(() => {
+                        toast.info("¿Ya tienes cuenta?", {
+                            description: "Puedes intentar iniciar sesión aquí",
+                            duration: 4000,
+                            position: "top-right",
+                            action: {
+                                label: "Ir al login",
+                                onClick: () => {
+                                    window.location.href = "/login";
+                                }
+                            },
+                            actionButtonStyle: {
+                                backgroundColor: Global.APP_COLOR_PRIMARY || "#10b981",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "8px",
+                                padding: "8px 16px",
+                                fontWeight: "500",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease"
+                            },
+                        });
+                    }, 2000);
+                }
+                return;
             }
 
+            // Si el usuario existe y el correo se envió exitosamente
             setSuccess(true);
-            Swal.fire({
-                icon: "success",
-                title: "Éxito",
-                text: "Hemos enviado un enlace de recuperación a tu correo electrónico",
-                showConfirmButton: false,
-                timer: 3000,
+            toast.success("¡Revisa tu correo!", {
+                description: "Te hemos enviado las instrucciones para restablecer tu contraseña.",
+                duration: 4000,
+                position: "top-right",
+                action: {
+                    label: "Ir al login",
+                    onClick: () => {
+                        window.location.href = "/login";
+                    }
+                },
             });
+
+            // Redirigir automáticamente después de unos segundos
+            setTimeout(() => {
+                window.location.href = "/login";
+            }, 4000);
+
         } catch (error) {
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: error.message || "Ocurrió un error al enviar la solicitud",
-                showConfirmButton: false,
-                timer: 3000,
+            toast.error("Error inesperado", {
+                description: error.message || "Ocurrió un error al procesar tu solicitud",
+                duration: 3000,
+                position: "top-right",
             });
-        } finally {
             setLoading(false);
         }
     };

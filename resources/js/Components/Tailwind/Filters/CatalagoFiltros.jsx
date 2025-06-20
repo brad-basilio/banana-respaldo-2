@@ -82,7 +82,7 @@ const modernFilterStyles = {
     filterContent: "bg-gradient-to-b from-white/90 to-gray-50/50 rounded-xl border border-gray-200/40 backdrop-blur-sm",
     searchInput: "w-full pl-12 pr-4 py-3 bg-white/90 backdrop-blur-sm border border-gray-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all duration-300 placeholder:customtext-neutral-dark",
     checkbox: "min-h-5 min-w-5 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-blue-500/30 focus:ring-2 transition-all duration-200 hover:border-blue-400",
-    label: "flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/60 hover:to-indigo-50/40 cursor-pointer group",
+    label: "flex items-center gap-3 py-1 px-3 rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/60 hover:to-indigo-50/40 cursor-pointer group",
     activeFilter: "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25",
     badge: "inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 rounded-full text-sm font-medium text-blue-700",
     glowEffect: "shadow-lg shadow-blue-500/20 ring-1 ring-blue-500/20",
@@ -199,6 +199,18 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const [priceRanges, setPriceRanges] = useState([]);
     const [activeSection, setActiveSection] = useState(null);
 
+    // Rangos de precios estáticos
+    const staticPriceRanges = [
+        { min: 0, max: 50, label: "Hasta s/ 50" },
+        { min: 50, max: 100, label: "S/ 50 - s/ 100" },
+        { min: 100, max: 250, label: "S/ 100 - s/ 250" },
+        { min: 250, max: 500, label: "S/ 250 - s/ 500" },
+        { min: 500, max: 1000, label: "S/ 500 - s/ 1.000" },
+        { min: 1000, max: 2000, label: "S/ 1.000 - s/ 2.000" },
+        { min: 2000, max: 5000, label: "S/ 2.000 - s/ 5.000" },
+        { min: 5000, max: 999999, label: "Desde s/ 5.000" }
+    ];
+
     const [sections, setSections] = useState({
         marca: true,
         precio: true,
@@ -213,7 +225,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         category_id: GET.category ? GET.category.split(',') : [],
         brand_id: GET.brand ? GET.brand.split(',') : [],
         subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
-        price: null,
+        price: [],
         name: GET.search || null,
         sort_by: "created_at",
         order: "desc",
@@ -272,15 +284,16 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             transformedFilters.push([...brandConditions]);
         }
 
-        if (filters.price) {
-            transformedFilters.push([
-                "or",
+        if (filters.price && filters.price.length > 0) {
+            const priceConditions = filters.price.map((priceRange) => [
+                "and",
                 [
-                    ["final_price", ">=", filters.price.min],
+                    ["final_price", ">=", priceRange.min],
                     "and",
-                    ["final_price", "<=", filters.price.max],
+                    ["final_price", "<=", priceRange.max],
                 ],
             ]);
+            transformedFilters.push(ArrayJoin(priceConditions, 'or'));
         }
 
         if (filters.name) {
@@ -456,15 +469,26 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const handleFilterChange = (type, value) => {
         setSelectedFilters((prev) => {
             if (type === "price") {
-                // Si el mismo rango ya está seleccionado, lo deseleccionamos; de lo contrario, lo asignamos
+                // Manejar múltiples rangos de precio
+                const currentPrices = Array.isArray(prev.price) ? prev.price : [];
+                const isAlreadySelected = currentPrices.some(
+                    (range) => range.min === value.min && range.max === value.max
+                );
+                
+                let newPrices;
+                if (isAlreadySelected) {
+                    // Deseleccionar el rango
+                    newPrices = currentPrices.filter(
+                        (range) => !(range.min === value.min && range.max === value.max)
+                    );
+                } else {
+                    // Agregar el nuevo rango
+                    newPrices = [...currentPrices, value];
+                }
+                
                 return {
                     ...prev,
-                    price:
-                        prev.price &&
-                                prev.price.min === value.min &&
-                                prev.price.max === value.max
-                            ? null
-                            : value,
+                    price: newPrices,
                 };
             }
 
@@ -1091,7 +1115,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                             >
                                                 <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar">
                                                     <AnimatePresence>
-                                                        {priceRanges.map((range, index) => (
+                                                        {staticPriceRanges.map((range, index) => (
                                                             <motion.label
                                                                 key={`${range.min}-${range.max}`}
                                                                 className={modernFilterStyles.label}
@@ -1103,14 +1127,21 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                     className={modernFilterStyles.checkbox}
                                                                     onChange={() => handleFilterChange("price", range)}
                                                                     checked={
-                                                                        selectedFilters.price?.min === range.min &&
-                                                                        selectedFilters.price?.max === range.max
+                                                                        selectedFilters.price?.some(
+                                                                            (priceRange) => 
+                                                                                priceRange.min === range.min && 
+                                                                                priceRange.max === range.max
+                                                                        ) || false
                                                                     }
                                                                 />
                                                                 <span className="text-sm line-clamp-1 font-medium customtext-neutral-dark  transition-colors duration-200">
-                                                                    S/ {range.min} - S/ {range.max}
+                                                                    {range.label}
                                                                 </span>
-                                                                {(selectedFilters.price?.min === range.min && selectedFilters.price?.max === range.max) && (
+                                                                {selectedFilters.price?.some(
+                                                                    (priceRange) => 
+                                                                        priceRange.min === range.min && 
+                                                                        priceRange.max === range.max
+                                                                ) && (
                                                                     <motion.div
                                                                         className="ml-auto"
                                                                         initial={{ scale: 0 }}
@@ -1142,7 +1173,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                         {(selectedFilters.brand_id?.length > 0 || 
                                           selectedFilters.category_id?.length > 0 || 
                                           selectedFilters.subcategory_id?.length > 0 || 
-                                          selectedFilters.price) && (
+                                          (selectedFilters.price && selectedFilters.price.length > 0)) && (
                                             <motion.div
                                                 className="mb-4"
                                                 initial={{ opacity: 0, y: 10 }}
@@ -1220,23 +1251,31 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                         ) : null;
                                                     })}
 
-                                                    {/* Chip de precio con AnimatedBadge */}
-                                                    {selectedFilters.price && (
-                                                        <AnimatedBadge
-                                                           
-                                                            onClick={() => handleFilterChange("price", selectedFilters.price)}
-                                                        >
-                                                            <TrendingUp className="h-3 w-3" />
-                                                            <span>S/ {selectedFilters.price.min} - S/ {selectedFilters.price.max}</span>
-                                                            <motion.div
-                                                                className="ml-1  rounded-full p-0.5 transition-colors duration-200"
-                                                                whileHover={{ scale: 1.2 }}
-                                                                whileTap={{ scale: 0.9 }}
+                                                    {/* Chips de precio con AnimatedBadge */}
+                                                    {selectedFilters.price?.map((priceRange, index) => {
+                                                        const staticRange = staticPriceRanges.find(range => 
+                                                            range.min === priceRange.min && 
+                                                            range.max === priceRange.max
+                                                        );
+                                                        return (
+                                                            <AnimatedBadge
+                                                                key={`price-${priceRange.min}-${priceRange.max}`}
+                                                                onClick={() => handleFilterChange("price", priceRange)}
                                                             >
-                                                                <X className="h-3 w-3" />
-                                                            </motion.div>
-                                                        </AnimatedBadge>
-                                                    )}
+                                                                <TrendingUp className="h-3 w-3" />
+                                                                <span>
+                                                                    {staticRange?.label || `S/ ${priceRange.min} - S/ ${priceRange.max}`}
+                                                                </span>
+                                                                <motion.div
+                                                                    className="ml-1 rounded-full p-0.5 transition-colors duration-200"
+                                                                    whileHover={{ scale: 1.2 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </motion.div>
+                                                            </AnimatedBadge>
+                                                        );
+                                                    })}
                                                 </div>
                                             </motion.div>
                                         )}
@@ -1258,7 +1297,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 category_id: [],
                                                 brand_id: [],
                                                 subcategory_id: [],
-                                                price: null,
+                                                price: [],
                                                 name: null,
                                                 sort_by: "created_at",
                                                 order: "desc",
@@ -1376,7 +1415,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                     {Array.isArray(products) && products.length > 0 ? (
                                         products.map((product, index) => (
                                             <motion.div
-                                                className="w-1/2 lg:w-1/3 xl:w-1/4 lg:h-[460px] lg:max-h-[460px] xl:h-[400px] xl:max-h-[400px] 2xl:h-[430px] 2xl:max-h-[430px] flex items-center justify-center"
+                                                className="w-1/2 lg:w-1/3 xl:w-1/4 lg:h-[460px] lg:max-h-[500px] xl:h-[450px] xl:max-h-[450px] 2xl:h-[450px] 2xl:max-h-[450px] flex items-center justify-center"
                                                 key={product.id}
                                                 initial={{ opacity: 0, y: 20, scale: 0.9 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1425,7 +1464,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                 category_id: [],
                                                                 brand_id: [],
                                                                 subcategory_id: [],
-                                                                price: null,
+                                                                price: [],
                                                                 name: null,
                                                                 sort_by: "created_at",
                                                                 order: "desc",

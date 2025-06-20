@@ -11,13 +11,19 @@ import { X } from "lucide-react";
 export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items, generals }) {
     const [currentStep, setCurrentStep] = useState(1);
     const totalPrice = cart.reduce((acc, item) => acc + item.final_price * item.quantity, 0);
-    const subTotal = (totalPrice / 1.18).toFixed(2);
-    const igv = (subTotal * 0.18).toFixed(2);
+    
+    // Corregir cálculo del IGV y subtotal
+    const subTotal = parseFloat((totalPrice / 1.18).toFixed(2));
+    const igv = parseFloat((totalPrice - subTotal).toFixed(2));
     const [envio, setEnvio] = useState(0);
-    const totalFinal = parseFloat(subTotal) + parseFloat(igv) + parseFloat(envio);
+    const totalFinal = subTotal + igv + parseFloat(envio);
     const [sale, setSale] = useState([]);
     const [code, setCode] = useState([]);
     const [delivery, setDelivery] = useState([]);
+    
+    // Estados para el cupón
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponCode, setCouponCode] = useState(null);
 
     useEffect(() => {
         const script = document.createElement("script");
@@ -112,6 +118,8 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         user={user}
                         ubigeos={ubigeos}
                         openModal={openModal}
+                        setCouponDiscount={setCouponDiscount}
+                        setCouponCode={setCouponCode}
                     />
                 )}
 
@@ -124,6 +132,8 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         envio={envio}
                         igv={igv}
                         totalFinal={totalFinal}
+                        couponDiscount={couponDiscount}
+                        couponCode={couponCode}
                     />
                 )}
             </div>

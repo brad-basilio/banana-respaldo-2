@@ -19,8 +19,9 @@
                 "data": [
                     "background_color",
                     "color",
-                    "isCopyright"
-                    
+                    "isCopyright",
+                    "border_color"
+
                 ],
                 "using": {
                     "model": "Social"
@@ -958,7 +959,7 @@
                         "subcategory",
                         "brand"
                     ],
-                    "limit": 10
+                    "limit": 12
                 }
             },
               {

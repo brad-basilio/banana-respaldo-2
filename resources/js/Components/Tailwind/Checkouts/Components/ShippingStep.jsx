@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import AsyncSelect from "react-select/async";
 import Number2Currency from "../../../../Utils/Number2Currency";
 import DeliveryPricesRest from "../../../../Actions/DeliveryPricesRest";
+import CouponsRest from "../../../../Actions/CouponsRest";
 import { processCulqiPayment } from "../../../../Actions/culqiPayment";
 import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
 import OptionCard from "./OptionCard";
-import { InfoIcon, UserRoundX, XOctagonIcon } from "lucide-react";
+import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { debounce } from "lodash";
 import { toast } from "sonner";
@@ -28,6 +29,8 @@ export default function ShippingStep({
     envio,
     ubigeos = [],
     openModal,
+    setCouponDiscount: setParentCouponDiscount,
+    setCouponCode: setParentCouponCode,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
@@ -35,6 +38,7 @@ export default function ShippingStep({
         name: user?.name || "",
         lastname: user?.lastname || "",
         email: user?.email || "",
+        phone: user?.phone || "",
         department: user?.department || "",
         province: user?.province || "",
         district: user?.district || "",
@@ -64,30 +68,219 @@ export default function ShippingStep({
       }, [user]);
 
     const [loading, setLoading] = useState(false);
+    const [paymentLoading, setPaymentLoading] = useState(false);
     const [shippingOptions, setShippingOptions] = useState([]);
     const [selectedOption, setSelectedOption] = useState(null);
     const [costsGet, setCostsGet] = useState(null);
     const [errors, setErrors] = useState({});
     const [searchInput, setSearchInput] = useState("");
+    
+    // Estados para cupones
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState("");
 
-    // Función de validación mejorada
+    // Función de validación mejorada con alertas específicas
     const validateForm = () => {
         const newErrors = {};
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^[0-9]{9}$/; // Validar que sea exactamente 9 dígitos
 
-        if (!formData.name.trim()) newErrors.name = "Nombre es requerido";
-        if (!formData.lastname.trim()) newErrors.lastname = "Apellido es requerido";
+        if (!formData.name.trim()) {
+            newErrors.name = "Nombre es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor ingrese su nombre",
+                 icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!formData.lastname.trim()) {
+            newErrors.lastname = "Apellido es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor ingrese su apellido",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
         if (!formData.email.trim()) {
             newErrors.email = "Email es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor ingrese su correo electrónico",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
         } else if (!emailRegex.test(formData.email)) {
             newErrors.email = "Email inválido";
+            toast.error("Email inválido", {
+                description: "Por favor ingrese un correo electrónico válido",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
         }
-        if (!formData.ubigeo) newErrors.ubigeo = "Ubicación es requerida";
-        if (!formData.address) newErrors.address = "Dirección es requerida";
-        if (!selectedOption) newErrors.shipping = "Seleccione un método de envío";
+        if (!formData.phone.trim()) {
+            newErrors.phone = "Teléfono es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor ingrese su número de teléfono",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        } else if (!phoneRegex.test(formData.phone.trim())) {
+            newErrors.phone = "Teléfono debe tener exactamente 9 dígitos";
+            toast.error("Teléfono inválido", {
+                description: "El teléfono debe tener exactamente 9 dígitos",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!formData.ubigeo) {
+            newErrors.ubigeo = "Ubicación es requerida";
+            toast.error("Campo requerido", {
+                description: "Por favor seleccione su ubicación de entrega",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!formData.address) {
+            newErrors.address = "Dirección es requerida";
+            toast.error("Campo requerido", {
+                description: "Por favor ingrese su dirección de entrega",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!selectedOption) {
+            newErrors.shipping = "Seleccione un método de envío";
+            toast.error("Método de envío requerido", {
+                description: "Por favor seleccione un método de envío",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    // Función para enfocar el primer campo con error y hacer scroll suave
+    const focusFirstError = (errors) => {
+        const errorOrder = ['name', 'lastname', 'email', 'phone', 'ubigeo', 'address', 'shipping'];
+        
+        for (const fieldName of errorOrder) {
+            if (errors[fieldName]) {
+                let targetElement = null;
+                let shouldFocus = false;
+
+                if (fieldName === 'ubigeo') {
+                    // Para el select de ubicación, buscar el contenedor del react-select
+                    targetElement = document.querySelector('[name="ubigeo"]')?.parentElement?.parentElement || 
+                                   document.querySelector('.css-1s2u09g-control') || 
+                                   document.querySelector('[class*="react-select"]');
+                } else if (fieldName === 'shipping') {
+                    // Para la sección de métodos de envío, buscar el contenedor de radio buttons
+                    targetElement = document.querySelector('input[name="shipping"]')?.closest('.space-y-4') ||
+                                   document.querySelector('.space-y-4 h3') ||
+                                   document.querySelector('h3');
+                } else {
+                    // Para campos normales (input, textarea)
+                    targetElement = document.querySelector(`[name="${fieldName}"]`);
+                    shouldFocus = true;
+                }
+
+                if (targetElement) {
+                    // Hacer scroll suave al elemento
+                    targetElement.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                        inline: "nearest"
+                    });
+
+                    // Si es un campo que se puede enfocar, hacerlo después del scroll
+                    if (shouldFocus) {
+                        setTimeout(() => {
+                            try {
+                                targetElement.focus();
+                                // Opcional: seleccionar el texto si es un input
+                                if (targetElement.tagName === 'INPUT' && targetElement.type === 'text') {
+                                    targetElement.select();
+                                }
+                            } catch (error) {
+                                console.warn('No se pudo enfocar el elemento:', error);
+                            }
+                        }, 600); // Tiempo suficiente para completar el scroll
+                    }
+
+                    // Agregar efecto visual de resaltado
+                    highlightElement(targetElement);
+
+                    break; // Solo enfocar el primer error
+                }
+            }
+        }
+    };
+
+    // Función auxiliar para agregar efecto visual temporal a un elemento
+    const highlightElement = (element) => {
+        if (!element) return;
+        
+        // Crear un div de overlay temporal para el efecto de resaltado
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 1000;
+            animation: pulse 0.6s ease-in-out;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        `;
+        
+        // Agregar keyframes para la animación si no existen
+        if (!document.querySelector('#error-highlight-styles')) {
+            const style = document.createElement('style');
+            style.id = 'error-highlight-styles';
+            style.textContent = `
+                @keyframes pulse {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.02); opacity: 0.8; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Posicionar el elemento padre como relative si no lo está
+        const originalPosition = element.style.position;
+        if (!originalPosition || originalPosition === 'static') {
+            element.style.position = 'relative';
+        }
+        
+        element.appendChild(overlay);
+        
+        // Remover el overlay después de la animación
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+                // Restaurar posición original si fue cambiada
+                if (!originalPosition || originalPosition === 'static') {
+                    element.style.position = originalPosition;
+                }
+            }
+        }, 1200);
     };
 
     const handleUbigeoChange = async (selected) => {
@@ -151,7 +344,7 @@ export default function ShippingStep({
             setSelectedOption(options[0].type);
             setEnvio(options[0].price);
         } catch (error) {
-            console.error("Error al obtener precios de envío:", error);
+            //console.error("Error al obtener precios de envío:", error);
             toast.error("Sin cobertura", {
                 description: `No realizamos envíos a esta ubicación.`,
                 icon: <XOctagonIcon className="h-5 w-5 text-red-500" />,
@@ -169,6 +362,9 @@ export default function ShippingStep({
     const handlePayment = async (e) => {
         e.preventDefault();
 
+        // Prevenir múltiples clicks
+        if (paymentLoading) return;
+
         if (!user) {
             toast.error("Acceso requerido", {
                 description: `Debe iniciar sesión para continuar.`,
@@ -176,20 +372,58 @@ export default function ShippingStep({
                 duration: 3000,
                 position: "bottom-center",
             });
-          
             return;
         }
 
-        if (!validateForm()) {
-            const firstErrorKey = Object.keys(errors)[0];
-            if (firstErrorKey) {
-                document.querySelector(`[name="${firstErrorKey}"]`)?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
-            }
+        const currentErrors = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^[0-9]{9}$/;
+
+        // Validación sin mostrar toast aún
+        if (!formData.name.trim()) currentErrors.name = "Nombre es requerido";
+        if (!formData.lastname.trim()) currentErrors.lastname = "Apellido es requerido";
+        if (!formData.email.trim()) {
+            currentErrors.email = "Email es requerido";
+        } else if (!emailRegex.test(formData.email)) {
+            currentErrors.email = "Email inválido";
+        }
+        if (!formData.phone.trim()) {
+            currentErrors.phone = "Teléfono es requerido";
+        } else if (!phoneRegex.test(formData.phone.trim())) {
+            currentErrors.phone = "Teléfono debe tener exactamente 9 dígitos";
+        }
+        if (!formData.ubigeo) currentErrors.ubigeo = "Ubicación es requerida";
+        if (!formData.address) currentErrors.address = "Dirección es requerida";
+        if (!selectedOption) currentErrors.shipping = "Seleccione un método de envío";
+
+        if (Object.keys(currentErrors).length > 0) {
+            setErrors(currentErrors);
+            
+            // Mostrar toast específico para el primer error
+            const firstErrorKey = Object.keys(currentErrors)[0];
+            const errorMessages = {
+                name: "Por favor ingrese su nombre",
+                lastname: "Por favor ingrese su apellido", 
+                email: currentErrors.email?.includes("inválido") ? "Por favor ingrese un correo electrónico válido" : "Por favor ingrese su correo electrónico",
+                phone: currentErrors.phone?.includes("9 dígitos") ? "El teléfono debe tener exactamente 9 dígitos" : "Por favor ingrese su número de teléfono",
+                ubigeo: "Por favor seleccione su ubicación de entrega",
+                address: "Por favor ingrese su dirección de entrega",
+                shipping: "Por favor seleccione un método de envío"
+            };
+
+            toast.error("Complete el campo requerido", {
+                description: errorMessages[firstErrorKey],
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 4000,
+                position: "top-center",
+            });
+
+            // Enfocar el primer campo con error y hacer scroll suave
+            focusFirstError(currentErrors);
             return;
         }
+
+        setPaymentLoading(true);
 
         try {
             const request = {
@@ -197,10 +431,19 @@ export default function ShippingStep({
                 ...formData,
                 fullname: `${formData.name} ${formData.lastname}`,
                 country: "Perú",
-                amount: totalFinal,
-                delivery: envio,
+                amount: roundToTwoDecimals(finalTotalWithCoupon),
+                delivery: roundToTwoDecimals(envio),
                 cart: cart,
+                // Información del cupón - todos redondeados a 2 decimales
+                coupon_id: appliedCoupon?.id || null,
+                coupon_code: appliedCoupon?.code || null,
+                coupon_discount: roundToTwoDecimals(couponDiscount || 0),
             };
+
+            console.log("📦 Request completo a enviar:", request);
+            console.log("💰 Monto final con cupón:", finalTotalWithCoupon);
+            console.log("🎟️ Descuento del cupón:", couponDiscount);
+            console.log("🚚 Costo de envío:", envio);
 
             const response = await processCulqiPayment(request);
 
@@ -211,14 +454,12 @@ export default function ShippingStep({
                 setCart([]);
                 onContinue();
             } else {
-             
-            
                 toast.error("Error en el pago", {
                     description: response.message || "Pago rechazado",
-                    icon: <ShoppingCart className="h-5 w-5 text-red-500" />,
+                    icon: <XOctagonIcon className="h-5 w-5 text-red-500" />,
                     duration: 3000,
                     position: "bottom-center",
-                })
+                });
             }
         } catch (error) {
             toast.error("Lo sentimos, no puede continuar con la compra", {
@@ -227,7 +468,8 @@ export default function ShippingStep({
                 duration: 3000,
                 position: "bottom-center",
             });
-           
+        } finally {
+            setPaymentLoading(false);
         }
     };
 
@@ -258,7 +500,7 @@ export default function ShippingStep({
                     callback(options);
                 })
                 .catch((error) => {
-                    console.error("Error:", error);
+                   // console.error("Error:", error);
                     callback([]);
                 });
         }, 300),
@@ -266,15 +508,28 @@ export default function ShippingStep({
     );
 
     useEffect(() => {
-        // Limpiar errores cuando los campos son modificados
+        // Limpiar errores cuando los campos son modificados y validar en tiempo real
         setErrors(prev => {
             const newErrors = { ...prev };
-            Object.keys(formData).forEach(key => {
-                if (formData[key]) delete newErrors[key];
-            });
+            
+            // Limpiar errores de campos que ahora tienen valores válidos
+            if (formData.name.trim()) delete newErrors.name;
+            if (formData.lastname.trim()) delete newErrors.lastname;
+            if (formData.email.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (emailRegex.test(formData.email)) delete newErrors.email;
+            }
+            if (formData.phone.trim()) {
+                const phoneRegex = /^[0-9]{9}$/;
+                if (phoneRegex.test(formData.phone.trim())) delete newErrors.phone;
+            }
+            if (formData.address.trim()) delete newErrors.address;
+            if (formData.ubigeo) delete newErrors.ubigeo;
+            if (selectedOption) delete newErrors.shipping;
+            
             return newErrors;
         });
-    }, [formData]);
+    }, [formData, selectedOption]);
 
     const selectStyles = (hasError) => ({
         control: (base) => ({
@@ -301,6 +556,116 @@ export default function ShippingStep({
         }),
     });
 
+    // Función para validar cupón
+    const validateCoupon = async () => {
+        if (!couponCode.trim()) {
+            setCouponError("Ingrese un código de cupón");
+            return;
+        }
+
+        setCouponLoading(true);
+        setCouponError("");
+
+        try {
+            // Obtener IDs de categorías y productos del carrito
+            const categoryIds = [...new Set(cart.map(item => item.category_id).filter(Boolean))];
+            const productIds = cart.map(item => item.id);
+
+            console.log("Validando cupón:", {
+                code: couponCode.trim(),
+                cart_total: subTotal,
+                category_ids: categoryIds,
+                product_ids: productIds
+            });
+
+            const response = await CouponsRest.validateCoupon({
+                code: couponCode.trim(),
+                cart_total: subTotal,
+                category_ids: categoryIds,
+                product_ids: productIds
+            });
+
+            console.log("Respuesta del cupón:", response);
+
+            // Manejar diferentes estructuras de respuesta
+            const data = response.data || response; // response.data para nueva estructura, response para estructura anterior
+            
+            if (data && data.valid) {
+                setAppliedCoupon(data.coupon);
+                // Redondear el descuento a 2 decimales para evitar problemas de precisión
+                const roundedDiscount = Math.round(data.discount * 100) / 100;
+                setCouponDiscount(roundedDiscount);
+                
+                // Actualizar el estado del componente padre
+                if (setParentCouponDiscount) {
+                    setParentCouponDiscount(roundedDiscount);
+                }
+                if (setParentCouponCode) {
+                    setParentCouponCode(data.coupon?.code || couponCode.trim());
+                }
+                
+                toast.success("Cupón aplicado", {
+                    description: data.message || "Cupón aplicado correctamente",
+                    duration: 3000,
+                    position: "top-center",
+                });
+            } else {
+                const errorMessage = data?.message || "Cupón no válido";
+                setCouponError(errorMessage);
+                toast.error("Cupón no válido", {
+                    description: errorMessage,
+                    icon: <XCircle className="h-5 w-5 text-red-500" />,
+                    duration: 3000,
+                    position: "top-center",
+                });
+            }
+        } catch (error) {
+            console.error("Error al validar cupón:", error);
+            setCouponError("Error al validar el cupón");
+            toast.error("Error", {
+                description: error.message || "No se pudo validar el cupón. Intente nuevamente.",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    // Función para remover cupón
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+        setCouponCode("");
+        setCouponError("");
+        
+        // Limpiar el estado del componente padre
+        if (setParentCouponDiscount) {
+            setParentCouponDiscount(0);
+        }
+        if (setParentCouponCode) {
+            setParentCouponCode("");
+        }
+        
+        toast.success("Cupón removido", {
+            description: "El cupón ha sido removido de su pedido",
+            duration: 2000,
+            position: "top-center",
+        });
+    };
+
+    // Función auxiliar para redondear valores monetarios con mayor precisión
+    const roundToTwoDecimals = (num) => {
+        // Convertir a número si es string
+        const number = typeof num === 'string' ? parseFloat(num) : num;
+        // Usar toFixed para evitar problemas de precisión de punto flotante
+        return parseFloat(number.toFixed(2));
+    };
+
+    // Calcular total final con descuento de cupón, redondeado correctamente
+    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal - couponDiscount);
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
             <div className="lg:col-span-3">
@@ -311,18 +676,29 @@ export default function ShippingStep({
                             label="Nombres"
                             value={formData.name}
                             error={errors.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                            onChange={(e) => {
+                                setFormData(prev => ({ ...prev, name: e.target.value }));
+                                // Limpiar error inmediatamente si el campo ya no está vacío
+                                if (e.target.value.trim() && errors.name) {
+                                    setErrors(prev => ({ ...prev, name: '' }));
+                                }
+                            }}
                             required
-                            className="border-gray-200"
+                            className={`border-gray-200 ${errors.name ? 'border-red-500 bg-red-50' : ''}`}
                         />
                         <InputForm
                             name="lastname"
                             label="Apellidos"
                             value={formData.lastname}
                             error={errors.lastname}
-                            onChange={(e) => setFormData(prev => ({ ...prev, lastname: e.target.value }))}
+                            onChange={(e) => {
+                                setFormData(prev => ({ ...prev, lastname: e.target.value }));
+                                if (e.target.value.trim() && errors.lastname) {
+                                    setErrors(prev => ({ ...prev, lastname: '' }));
+                                }
+                            }}
                             required
-                            className="border-gray-200"
+                            className={`border-gray-200 ${errors.lastname ? 'border-red-500 bg-red-50' : ''}`}
                         />
                     </div>
 
@@ -332,14 +708,43 @@ export default function ShippingStep({
                         type="email"
                         value={formData.email}
                         error={errors.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) => {
+                            setFormData(prev => ({ ...prev, email: e.target.value }));
+                            if (e.target.value.trim() && errors.email) {
+                                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                if (emailRegex.test(e.target.value)) {
+                                    setErrors(prev => ({ ...prev, email: '' }));
+                                }
+                            }
+                        }}
                         required
-                        className="border-gray-200"
+                        className={`border-gray-200 ${errors.email ? 'border-red-500 bg-red-50' : ''}`}
+                    />
+
+                    <InputForm
+                        name="phone"
+                        label="Teléfono"
+                        type="tel"
+                        value={formData.phone}
+                        error={errors.phone}
+                        onChange={(e) => {
+                            // Solo permitir números
+                            const value = e.target.value.replace(/\D/g, '');
+                            setFormData(prev => ({ ...prev, phone: value }));
+                            // Validar inmediatamente
+                            if (value.length === 9 && errors.phone) {
+                                setErrors(prev => ({ ...prev, phone: '' }));
+                            }
+                        }}
+                        maxLength="9"
+                        placeholder="Ej: 987654321"
+                        required
+                        className={`border-gray-200 ${errors.phone ? 'border-red-500 bg-red-50' : ''}`}
                     />
 
                     <div className="form-group">
                         <label className="block text-sm 2xl:text-base mb-2 font-medium customtext-neutral-dark">
-                            Ubicación de entrega (Distrito)*
+                        Distrito / Provincia / Departamento (Ubicación de entrega)<span className="text-red-500 ml-1">*</span>
                         </label>
                         <AsyncSelect
                             name="ubigeo"
@@ -391,12 +796,17 @@ export default function ShippingStep({
 
                     <InputForm
                         name="address"
-                        label="Dirección *"
+                        label="Dirección "
                         value={formData.address}
                         error={errors.address}
-                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                        onChange={(e) => {
+                            setFormData(prev => ({ ...prev, address: e.target.value }));
+                            if (e.target.value.trim() && errors.address) {
+                                setErrors(prev => ({ ...prev, address: '' }));
+                            }
+                        }}
                         required
-                        className="border-gray-200"
+                        className={`border-gray-200 ${errors.address ? 'border-red-500 bg-red-50' : ''}`}
                     />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -476,11 +886,15 @@ export default function ShippingStep({
                                 src={`/storage/images/item/${item.image}`}
                                 alt={item.name}
                                 className="w-16 h-16 object-cover rounded-lg"
+                                onError={(e) =>
+                                    (e.target.src =
+                                        "/api/cover/thumbnail/null")
+                                }
                             />
                             <div>
                                 <h4 className="font-medium">{item.name}</h4>
                                 <p className="text-sm text-gray-600">Cantidad: {item.quantity}</p>
-                                <p className="text-sm text-gray-600">S/ {Number2Currency(item.price)}</p>
+                                <p className="text-sm text-gray-600">S/ {Number2Currency(item.final_price)}</p>
                             </div>
                         </div>
                     ))}
@@ -489,26 +903,119 @@ export default function ShippingStep({
                 <div className="space-y-4 mt-6">
                     <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>S/ {Number2Currency(subTotal)}</span>
+                        <span>S/ {Number2Currency(roundToTwoDecimals(subTotal))}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>IGV (18%):</span>
-                        <span>S/ {Number2Currency(igv)}</span>
+                        <span>S/ {Number2Currency(roundToTwoDecimals(igv))}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>Envío:</span>
-                        <span>S/ {Number2Currency(envio)}</span>
+                        <span>S/ {Number2Currency(roundToTwoDecimals(envio))}</span>
                     </div>
+
+                    {/* Sección de cupón */}
+                    <div className="space-y-4 border-t pt-4">
+                        <div className="space-y-3">
+                            <label className="block text-sm font-medium customtext-neutral-dark">
+                                ¿Tienes un cupón de descuento?
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Ingresa tu código de cupón"
+                                        value={couponCode}
+                                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                        className={`w-full px-4 py-3 border customtext-neutral-dark  border-gray-100 rounded-xl focus:ring-0 focus:outline-0   transition-all duration-300 ${
+                                            couponError
+                                                ? 'border-red-300 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-200'
+                                                : appliedCoupon
+                                                ? 'border-gray-200 bg-white customtext-neutral-dark focus:ring-blue-200'
+                                                : ' bg-white border-neutral-light focus:ring-0 focus:outline-0'
+                                        } `}
+                                        disabled={!!appliedCoupon || couponLoading}
+                                    />
+                                    {couponLoading && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+                                </div>
+                                {!appliedCoupon ? (
+                                    <button
+                                        type="button"
+                                        onClick={validateCoupon}
+                                        disabled={couponLoading || !couponCode.trim()}
+                                        className="px-6 py-3 bg-primary text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 whitespace-nowrap"
+                                    >
+                                        {couponLoading ? "Validando..." : "Aplicar"}
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={removeCoupon}
+                                        className="px-4 py-3 bg-gray-200 customtext-neutral-dark text-sm rounded-xl hover:bg-gray-300 transition-colors duration-200"
+                                        title="Remover cupón"
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {couponError && (
+                                <div className="flex items-center gap-2 text-red-600 text-sm">
+                                    <XCircle className="h-4 w-4 flex-shrink-0" />
+                                    <span>{couponError}</span>
+                                </div>
+                            )}
+                            
+                            {appliedCoupon && (
+                                <div className="bg-gray-50 border-2  rounded-xl p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3 w-8/12">
+                                            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="customtext-primary font-semibold text-sm">
+                                                    Cupón aplicado: {appliedCoupon.code}
+                                                </p>
+                                              {/*  <p className="customtext-primary text-xs mt-1">
+                                                    {appliedCoupon.name}
+                                                </p> */}
+                                            </div>
+                                        </div>
+                                        <div className="text-right w-4/12">
+                                            <span className="customtext-primary font-bold text-base">
+                                                -S/ {Number2Currency(roundToTwoDecimals(couponDiscount))}
+                                            </span>
+                                           {/* <p className="customtext-primary text-xs">Descuento aplicado</p> */}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                  
 
                     <div className="pt-4 border-t-2">
                         <div className="flex justify-between font-bold text-lg">
                             <span>Total:</span>
-                            <span>S/ {Number2Currency(totalFinal)}</span>
+                            <span>S/ {Number2Currency(roundToTwoDecimals(finalTotalWithCoupon))}</span>
                         </div>
                     </div>
 
-                    <ButtonPrimary onClick={handlePayment} className="w-full mt-6">
-                        Ir a Pagar
+                    <ButtonPrimary 
+                        onClick={handlePayment} 
+                        className="w-full mt-6"
+                        disabled={paymentLoading}
+                        loading={paymentLoading}
+                    >
+                        {paymentLoading ? "Procesando..." : `Pagar S/ ${Number2Currency(roundToTwoDecimals(finalTotalWithCoupon))}`}
                     </ButtonPrimary>
 
                     <p className="text-xs md:text-sm customtext-neutral-dark">
