@@ -1,8 +1,13 @@
 @php
-    $component = Route::currentRouteName();
-@endphp
-
-<!DOCTYPE html>
+    $component = Route::currentRouteName()    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+    
+    @php
+        $pixelScripts = App\Helpers\PixelHelper::getPixelScripts();
+    @endphp
+    
+    {!! $pixelScripts['head'] !!}
+<DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -45,12 +50,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
-    
-    @php
-        $pixelScripts = App\Helpers\PixelHelper::getPixelScripts();
-    @endphp
-    
-    {!! $pixelScripts['head'] !!}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RF5XHT4BR6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-RF5XHT4BR6');
+    </script>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-M3KCKSQP');
+    </script>
+    <!-- End Google Tag Manager -->
 
     @if ($data['fonts']['title']['url'] && $data['fonts']['title']['source'] !== 'true')
         <link rel="stylesheet" href="{{ $data['fonts']['title']['url'] }}">
@@ -188,11 +202,10 @@
 </head>
 
 <body class="font-general">
-    @php
-        $pixelScripts = App\Helpers\PixelHelper::getPixelScripts();
-    @endphp
-    
     {!! $pixelScripts['body'] !!}
+    <noscript>
+        <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M3KCKSQP" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
 
     @inertia
 

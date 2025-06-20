@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\ComboController as AdminComboController;
 use App\Http\Controllers\Admin\DeliveryZoneController as AdminDeliveryZoneController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\NotificationVariableController;
+use App\Http\Controllers\Api\NotificationVariablesController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\AuthClientController;
@@ -90,6 +91,7 @@ Route::post('/unified-import/preview', [UnifiedImportController::class, 'preview
 Route::get('/unified-import/field-mappings', [UnifiedImportController::class, 'getFieldMappings']);
 
 Route::post('/complaints', [ComplaintController::class, 'saveComplaint']);
+Route::get('/notification-variables/{type}', [NotificationVariablesController::class, 'getVariables']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/signup', [AuthController::class, 'signup']);
 

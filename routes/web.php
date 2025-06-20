@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\CertificationController as AdminCertificationCont
 use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\GeneralController as AdminGeneralController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
+use App\Http\Controllers\Test\PixelTestController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\AdController as AdminAdController;
@@ -53,6 +54,9 @@ use SoDe\Extend\File;
 */
 
 Route::get('/', fn() => view('coming-soon'));
+
+// Ruta de test para píxeles (solo para desarrollo)
+Route::get('/test/pixels', [PixelTestController::class, 'index'])->name('test.pixels');
 
 // Verificar si el archivo existe, si no, crear uno vacío
 $filePath = storage_path('app/pages.json');
