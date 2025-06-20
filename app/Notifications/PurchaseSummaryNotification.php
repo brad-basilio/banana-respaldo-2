@@ -36,15 +36,20 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
             'email'          => 'Correo electrónico del cliente',
             'year'           => 'Año actual',
             'total'          => 'Total de la compra',
-            'subtotal'       => 'Subtotal de la compra',
+            'subtotal'       => 'Subtotal de la compra (sin IGV)',
+            'igv'            => 'Impuesto General a las Ventas (18%)',
             'costo_envio'    => 'Costo de envío',
             'direccion_envio' => 'Dirección de envío',
             'distrito'       => 'Distrito de envío',
             'provincia'      => 'Provincia de envío',
             'departamento'   => 'Departamento de envío',
             'telefono'       => 'Teléfono del cliente',
-
-
+            'referencia'      => 'Referencia del cliente',
+            
+            // Variables del cupón
+            'cupon_codigo'   => 'Código del cupón aplicado',
+            'cupon_descuento' => 'Monto del descuento del cupón',
+            'cupon_aplicado' => 'Indica si se aplicó un cupón (true/false)',
 
             'productos'      => 'Bloque repetible de productos: {{#productos}}...{{/productos}}. Variables: nombre, cantidad, sku, precio_unitario, precio_total, categoria, imagen',
         ];
@@ -60,6 +65,17 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
     public function toMail($notifiable)
     {
         $template = \App\Models\General::where('correlative', 'purchase_summary_email')->first();
+        
+        // Calcular valores monetarios
+        $totalAmount = $this->sale->amount ?? 0;
+        $deliveryCost = $this->sale->delivery ?? 0;
+        $couponDiscount = $this->sale->coupon_discount ?? 0;
+        
+        // Calcular subtotal e IGV (18%)
+        // El total incluye IGV, por lo que calculamos el subtotal sin IGV
+        $subtotalWithoutIgv = $totalAmount / 1.18;
+        $igvAmount = $totalAmount - $subtotalWithoutIgv;
+        
         // Armar array de productos para bloque repetible (con más detalles)
         $productos = [];
         foreach ($this->details as $detail) {
@@ -83,23 +99,32 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
                 'imagen'          =>  url(Storage::url("images/item/" . $detail->item->image ?? '')),
             ];
         }
+        
         $body = $template
             ? \App\Helpers\Text::replaceData($template->description, [
                 'orderId'        => $this->sale->code,
                 'fecha_pedido'   => $this->sale->created_at ? $this->sale->created_at->format('d/m/Y H:i') : '',
                 'status'         => $this->sale->status->name ?? '',
                 'status_color'   => optional(\App\Models\SaleStatus::where('name', $this->sale->status->name ?? '')->first())->color ?? '#6c757d',
-                'nombre'           => $this->sale->name ?? ($this->sale->user->name ?? ''),
+                'nombre'         => $this->sale->name ?? ($this->sale->user->name ?? ''),
                 'email'          => $this->sale->email ?? ($this->sale->user->email ?? ''),
                 'telefono'       => $this->sale->phone ?? ($this->sale->user->phone ?? ''),
-                'departamento'     => $this->sale->department ?? $this->sale->user->department ?? '',
-                'provincia'       => $this->sale->province ?? $this->sale->user->province ?? '',
+                'departamento'   => $this->sale->department ?? $this->sale->user->department ?? '',
+                'provincia'      => $this->sale->province ?? $this->sale->user->province ?? '',
                 'distrito'       => $this->sale->district ?? $this->sale->user->district ?? '',
                 'direccion_envio' => $this->sale->address ?? $this->sale->user->address ?? '',
-                'total'          => number_format($this->sale->amount ?? 0, 2),
-                'subtotal'       => number_format($this->sale->amount - $this->sale->delivery ?? 0, 2),
-                'costo_envio'    => number_format($this->sale->delivery ?? 0, 2),
+                'referencia'     => $this->sale->reference ?? $this->sale->user->reference ?? '',
+                'total'          => number_format($totalAmount, 2),
+                'subtotal'       => number_format($subtotalWithoutIgv, 2),
+                'igv'            => number_format($igvAmount, 2),
+                'costo_envio'    => number_format($deliveryCost, 2),
                 'year'           => date('Y'),
+                
+                // Variables del cupón
+                'cupon_codigo'    => $this->sale->coupon_code ?? '',
+                'cupon_descuento' => number_format($couponDiscount, 2),
+                'cupon_aplicado'  => !empty($this->sale->coupon_code),
+                
                 'productos'      => $productos,
             ])
             : 'Plantilla no encontrada';
