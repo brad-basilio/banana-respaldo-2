@@ -67,14 +67,18 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
         $template = \App\Models\General::where('correlative', 'purchase_summary_email')->first();
         
         // Calcular valores monetarios
+        // amount ya es el total final (con IGV, envío y descuento de cupón aplicado)
         $totalAmount = $this->sale->amount ?? 0;
         $deliveryCost = $this->sale->delivery ?? 0;
         $couponDiscount = $this->sale->coupon_discount ?? 0;
         
-        // Calcular subtotal e IGV (18%)
-        // El total incluye IGV, por lo que calculamos el subtotal sin IGV
-        $subtotalWithoutIgv = $totalAmount / 1.18;
-        $igvAmount = $totalAmount - $subtotalWithoutIgv;
+        // Para obtener subtotal e IGV, primero restamos el envío del total
+        $totalSinEnvio = $totalAmount - $deliveryCost;
+        
+        // Ahora separamos el subtotal (sin IGV) del IGV
+        // totalSinEnvio = subtotal + IGV = subtotal + (subtotal * 0.18) = subtotal * 1.18
+        $subtotalAmount = $totalSinEnvio / 1.18;
+        $igvAmount = $totalSinEnvio - $subtotalAmount;
         
         // Armar array de productos para bloque repetible (con más detalles)
         $productos = [];
@@ -115,7 +119,7 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
                 'direccion_envio' => $this->sale->address ?? $this->sale->user->address ?? '',
                 'referencia'     => $this->sale->reference ?? $this->sale->user->reference ?? '',
                 'total'          => number_format($totalAmount, 2),
-                'subtotal'       => number_format($subtotalWithoutIgv, 2),
+                'subtotal'       => number_format($subtotalAmount, 2),
                 'igv'            => number_format($igvAmount, 2),
                 'costo_envio'    => number_format($deliveryCost, 2),
                 'year'           => date('Y'),
