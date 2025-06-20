@@ -7,8 +7,8 @@
     "file": "assets/ArrayJoin-2k6ba35P.js",
     "name": "ArrayJoin"
   },
-  "_AuthClientRest-Cja4zR9k.js": {
-    "file": "assets/AuthClientRest-Cja4zR9k.js",
+  "_AuthClientRest-BabVKkyK.js": {
+    "file": "assets/AuthClientRest-BabVKkyK.js",
     "name": "AuthClientRest",
     "imports": [
       "_main-BvVILmTO.js",
@@ -5581,7 +5581,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ForgotPassword.jsx": {
-    "file": "assets/ForgotPassword-DRNnXtAc.js",
+    "file": "assets/ForgotPassword-BHVHzFyi.js",
     "name": "ForgotPassword",
     "src": "resources/js/Components/Tailwind/ForgotPassword.jsx",
     "isDynamicEntry": true,
@@ -5597,13 +5597,13 @@
     ]
   },
   "resources/js/Components/Tailwind/ForgotPassword/ForgotBananaLab.jsx": {
-    "file": "assets/ForgotBananaLab-DCWmi1Ze.js",
+    "file": "assets/ForgotBananaLab-h2F7Vmw3.js",
     "name": "ForgotBananaLab",
     "src": "resources/js/Components/Tailwind/ForgotPassword/ForgotBananaLab.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
-      "_AuthClientRest-Cja4zR9k.js",
+      "_AuthClientRest-BabVKkyK.js",
       "_index-BH53Isel.js",
       "_JSEncrypt-BF8AmNNu.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
@@ -6010,7 +6010,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Login.jsx": {
-    "file": "assets/Login-BfudleOe.js",
+    "file": "assets/Login-Cm9y7Gdl.js",
     "name": "Login",
     "src": "resources/js/Components/Tailwind/Login.jsx",
     "isDynamicEntry": true,
@@ -6731,7 +6731,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ResetPassword.jsx": {
-    "file": "assets/ResetPassword-BADoHVRR.js",
+    "file": "assets/ResetPassword-DhL2AzKP.js",
     "name": "ResetPassword",
     "src": "resources/js/Components/Tailwind/ResetPassword.jsx",
     "isDynamicEntry": true,
@@ -6942,7 +6942,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Signup.jsx": {
-    "file": "assets/Signup-BWjYpTLx.js",
+    "file": "assets/Signup-DlMPEiIy.js",
     "name": "Signup",
     "src": "resources/js/Components/Tailwind/Signup.jsx",
     "isDynamicEntry": true,
@@ -7753,7 +7753,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-y9rdP5BU.js",
+    "file": "assets/System-BEyeI99F.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

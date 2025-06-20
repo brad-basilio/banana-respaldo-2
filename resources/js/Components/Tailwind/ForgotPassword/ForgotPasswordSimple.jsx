@@ -53,6 +53,16 @@ export default function ForgotPasswordSimple() {
                                 window.location.href = "/iniciar-sesion";
                             }
                         },
+                        actionButtonStyle: {
+                            backgroundColor: Global.APP_COLOR_PRIMARY || "#10b981",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 16px",
+                            fontWeight: "500",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease"
+                        },
                     });
                 }, 2000);
             }
@@ -69,6 +79,16 @@ export default function ForgotPasswordSimple() {
                 onClick: () => {
                     window.location.href = "/iniciar-sesion";
                 }
+            },
+            actionButtonStyle: {
+                backgroundColor: Global.APP_COLOR_PRIMARY || "#10b981",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                fontWeight: "500",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
             },
         });
 

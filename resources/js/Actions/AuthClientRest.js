@@ -103,10 +103,19 @@ class AuthClientRest {
                     richColors: true,
                     action: {
                         label: "Crear cuenta",
-                        
                         onClick: () => {
                             window.location.href = "/crear-cuenta";
                         }
+                    },
+                    actionButtonStyle: {
+                        backgroundColor: Global.APP_COLOR_PRIMARY || "#10b981",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "8px 16px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease"
                     },
                 });
                 
