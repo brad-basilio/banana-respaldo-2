@@ -107,6 +107,10 @@ const Menu = ({ session, hasRole }) => {
                    <MenuItem href="/admin/coupons" icon="mdi mdi-bookshelf">
                       Cupones
                   </MenuItem>
+                    <MenuItem href="/admin/discount-rules" icon="mdi mdi-bookshelf">
+                      Reglas de Descuento
+                  </MenuItem>
+                 
 
                   <MenuItemContainer title="Características" icon="mdi mdi-view-dashboard">
                     <MenuItem href="/admin/collections" icon="mdi mdi-view-carousel-outline">Colecciones</MenuItem>

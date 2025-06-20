@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\AdController as AdminAdController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
+use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
 
 use App\Http\Controllers\Admin\DeliveryPriceController as AdminDeliveryPriceController;
 use App\Http\Controllers\Admin\TypesDeliveryController as AdminTypesDeliveryController;
@@ -213,6 +214,18 @@ Route::middleware('auth')->group(function () {
     Route::delete('/coupons/{id}', [AdminCouponController::class, 'delete']);
     Route::post('/coupons/validate', [AdminCouponController::class, 'validateCoupon']);
     Route::get('/coupons/generate-code', [AdminCouponController::class, 'generateCode']);
+
+    // Reglas de Descuento
+    Route::post('/discount-rules', [AdminDiscountRulesController::class, 'save']);
+    Route::post('/discount-rules/paginate', [AdminDiscountRulesController::class, 'paginate']);
+    Route::patch('/discount-rules/{field}', [AdminDiscountRulesController::class, 'boolean']);
+    Route::delete('/discount-rules/{id}', [AdminDiscountRulesController::class, 'delete']);
+    Route::patch('/discount-rules/{id}/toggle-active', [AdminDiscountRulesController::class, 'toggleActive']);
+    Route::post('/discount-rules/{id}/duplicate', [AdminDiscountRulesController::class, 'duplicate']);
+    Route::get('/discount-rules/products', [AdminDiscountRulesController::class, 'getProducts']);
+    Route::get('/discount-rules/categories', [AdminDiscountRulesController::class, 'getCategories']);
+    Route::get('/discount-rules/rule-types', [AdminDiscountRulesController::class, 'getRuleTypes']);
+    Route::get('/discount-rules/{id}/usage-stats', [AdminDiscountRulesController::class, 'getUsageStats']);
 
     Route::post('/ads', [AdminAdController::class, 'save']);
     Route::post('/ads/paginate', [AdminAdController::class, 'paginate']);
