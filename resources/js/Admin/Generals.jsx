@@ -22,7 +22,7 @@ const Generals = ({ generals }) => {
 
   // First add these to your formData state
   // Filtrar solo los generales que son plantillas de email (excluyendo correo de soporte)
-  const emailTemplates = generals.filter(g => g.correlative.endsWith('_email') && g.correlative !== 'support_email');
+  const emailTemplates = generals.filter(g => g.correlative.endsWith('_email') && g.correlative !== 'support_email'&& g.correlative !== 'coorporative_email');
   const [showPreview, setShowPreview] = useState(false);
   const [selectedEmailCorrelative, setSelectedEmailCorrelative] = useState(emailTemplates[0]?.correlative || "");
   const [templateVariables, setTemplateVariables] = useState({});
