@@ -223,7 +223,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/discount-rules/{id}/toggle-active', [AdminDiscountRulesController::class, 'toggleActive']);
     Route::post('/discount-rules/{id}/duplicate', [AdminDiscountRulesController::class, 'duplicate']);
     Route::get('/discount-rules/products', [AdminDiscountRulesController::class, 'getProducts']);
+    Route::post('/discount-rules/products/by-ids', [AdminDiscountRulesController::class, 'getProductsByIds']);
     Route::get('/discount-rules/categories', [AdminDiscountRulesController::class, 'getCategories']);
+    Route::post('/discount-rules/categories/by-ids', [AdminDiscountRulesController::class, 'getCategoriesByIds']);
     Route::get('/discount-rules/rule-types', [AdminDiscountRulesController::class, 'getRuleTypes']);
     Route::get('/discount-rules/{id}/usage-stats', [AdminDiscountRulesController::class, 'getUsageStats']);
 

@@ -173,9 +173,7 @@ class DiscountRulesController extends BasicController
             'message' => 'Regla duplicada exitosamente',
             'data' => $newRule
         ]);
-    }
-
-    // Endpoints auxiliares para el formulario
+    }    // Endpoints auxiliares para el formulario
     public function getProducts()
     {
         $products = Item::select('id', 'name', 'sku', 'price')
@@ -190,9 +188,58 @@ class DiscountRulesController extends BasicController
         ]);
     }
 
+    public function getProductsByIds(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        
+        if (empty($ids)) {
+            return response()->json([
+                'status' => 200,
+                'message' => 'No hay IDs proporcionados',
+                'data' => []
+            ]);
+        }
+
+        $products = Item::select('id', 'name', 'sku', 'price')
+                       ->whereIn('id', $ids)
+                       ->where('visible', true)
+                       ->orderBy('name')
+                       ->get();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Productos obtenidos exitosamente',
+            'data' => $products
+        ]);
+    }
+
     public function getCategories()
     {
         $categories = Category::select('id', 'name')
+                             ->orderBy('name')
+                             ->get();
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Categorías obtenidas exitosamente',
+            'data' => $categories
+        ]);
+    }
+
+    public function getCategoriesByIds(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        
+        if (empty($ids)) {
+            return response()->json([
+                'status' => 200,
+                'message' => 'No hay IDs proporcionados',
+                'data' => []
+            ]);
+        }
+
+        $categories = Category::select('id', 'name')
+                             ->whereIn('id', $ids)
                              ->orderBy('name')
                              ->get();
 
