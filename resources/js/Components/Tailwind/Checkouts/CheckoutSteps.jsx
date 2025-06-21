@@ -25,14 +25,23 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
     const subTotal = parseFloat((totalPrice / 1.18).toFixed(2));
     const igv = parseFloat((totalPrice - subTotal).toFixed(2));
     const [envio, setEnvio] = useState(0);
-    const totalFinal = subTotal + igv + parseFloat(envio);
-    const [sale, setSale] = useState([]);
-    const [code, setCode] = useState([]);
-    const [delivery, setDelivery] = useState([]);
     
     // Estados para el cupón
     const [couponDiscount, setCouponDiscount] = useState(0);
     const [couponCode, setCouponCode] = useState(null);
+    
+    // Estados para descuentos automáticos
+    const [automaticDiscounts, setAutomaticDiscounts] = useState([]);
+    const [automaticDiscountTotal, setAutomaticDiscountTotal] = useState(0);
+    
+    // Calcular total final con todos los descuentos
+    const totalWithoutDiscounts = subTotal + igv + parseFloat(envio);
+    const totalAllDiscounts = couponDiscount + automaticDiscountTotal;
+    const totalFinal = Math.max(0, totalWithoutDiscounts - totalAllDiscounts);
+    
+    const [sale, setSale] = useState([]);
+    const [code, setCode] = useState([]);
+    const [delivery, setDelivery] = useState([]);
 
     // Estado para tracking de conversión
     const [conversionScripts, setConversionScripts] = useState(null);
@@ -128,6 +137,11 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         igv={igv}
                         totalFinal={totalFinal}
                         openModal={openModal}
+                        automaticDiscounts={automaticDiscounts}
+                        setAutomaticDiscounts={setAutomaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        setAutomaticDiscountTotal={setAutomaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
                     />
                 )}
 
@@ -151,6 +165,9 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         openModal={openModal}
                         setCouponDiscount={setCouponDiscount}
                         setCouponCode={setCouponCode}
+                        automaticDiscounts={automaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
                     />
                 )}
 
@@ -165,6 +182,9 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         totalFinal={totalFinal}
                         couponDiscount={couponDiscount}
                         couponCode={couponCode}
+                        automaticDiscounts={automaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
                         conversionScripts={conversionScripts}
                         setConversionScripts={setConversionScripts}
                         onPurchaseComplete={(orderId, scripts) => {

@@ -177,6 +177,9 @@ Route::post('/sales', [SaleController::class, 'save']);
 
 Route::get('/person/{dni}', [PersonController::class, 'find']);
 
+// Ruta pública para aplicar reglas de descuento al carrito
+Route::post('/discount-rules/apply-to-cart', [AdminDiscountRulesController::class, 'applyToCart']);
+
 Route::middleware('auth')->group(function () {
   Route::get('/notification-variables/{type}', [NotificationVariableController::class, 'variables']);
   Route::post('/upload-image', [ImageUploadController::class, 'store']);

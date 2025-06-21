@@ -12,12 +12,12 @@ class DiscountRuleService
 {
     /**
      * Evalúa y aplica reglas de descuento a un carrito
-     */
-    public function evaluateCart($cartItems, $customerEmail = null, $totalAmount = 0)
+     */    public function evaluateCart($cartItems, $customerEmail = null, $totalAmount = 0)
     {
         $appliedDiscounts = [];
         $totalDiscount = 0;
         $modifiedCart = collect($cartItems);
+        $freeItems = [];
 
         // Obtener reglas válidas ordenadas por prioridad
         $rules = DiscountRule::valid()
@@ -28,24 +28,30 @@ class DiscountRuleService
             // Verificar si la regla puede ser usada por el cliente
             if ($customerEmail && !$rule->canBeUsedByCustomer($customerEmail)) {
                 continue;
-            }
-
-            // Evaluar si la regla aplica al carrito
+            }            // Evaluar si la regla aplica al carrito
             if ($this->evaluateRuleConditions($rule, $modifiedCart, $totalAmount, $customerEmail)) {
                 // Aplicar la regla
                 $discount = $this->applyRule($rule, $modifiedCart, $totalAmount);
                 
-                if ($discount['amount'] > 0) {
+                if ($discount['amount'] > 0 || !empty($discount['suggested_items'])) {
                     $appliedDiscounts[] = [
                         'rule_id' => $rule->id,
                         'rule_name' => $rule->name,
                         'rule_type' => $rule->rule_type,
                         'discount_amount' => $discount['amount'],
                         'applied_items' => $discount['applied_items'] ?? [],
-                        'description' => $discount['description'] ?? $rule->getReadableDescription()
+                        'suggested_items' => $discount['suggested_items'] ?? [],
+                        'description' => $discount['description'] ?? $rule->getReadableDescription(),
+                        'promotion_type' => $discount['promotion_type'] ?? null,
+                        'free_items' => $discount['free_items'] ?? []
                     ];
                     
                     $totalDiscount += $discount['amount'];
+                    
+                    // Agregar items gratuitos si existen
+                    if (isset($discount['free_items']) && !empty($discount['free_items'])) {
+                        $freeItems = array_merge($freeItems, $discount['free_items']);
+                    }
                     
                     // Si la regla modifica el carrito (productos gratis, etc.)
                     if (isset($discount['modified_cart'])) {
@@ -63,7 +69,8 @@ class DiscountRuleService
         return [
             'applied_discounts' => $appliedDiscounts,
             'total_discount' => $totalDiscount,
-            'modified_cart' => $modifiedCart->toArray()
+            'modified_cart' => $modifiedCart->toArray(),
+            'free_items' => $freeItems
         ];
     }
 
@@ -178,7 +185,7 @@ class DiscountRuleService
                 $itemDiscount = 0;
                 
                 if ($actions['discount_type'] === 'percentage') {
-                    $itemDiscount = ($item['price'] * $item['quantity']) * ($actions['discount_value'] / 100);
+                    $itemDiscount = ($item['final_price'] * $item['quantity']) * ($actions['discount_value'] / 100);
                 } else if ($actions['discount_type'] === 'fixed') {
                     $itemDiscount = $actions['discount_value'] * $item['quantity'];
                 }
@@ -229,51 +236,76 @@ class DiscountRuleService
             'description' => "Descuento en carrito: {$actions['discount_value']}" . 
                            ($actions['discount_type'] === 'percentage' ? '%' : ' soles')
         ];
-    }
-
-    /**
+    }    /**
      * Aplica promoción compra X lleva Y
      */
     private function applyBuyXGetY(DiscountRule $rule, Collection $cartItems, $actions, $conditions)
     {
         $modifiedCart = $cartItems->toArray();
         $freeItems = [];
+        $suggestedItems = [];
         $discountAmount = 0;
 
         $buyQuantity = $conditions['buy_quantity'] ?? 1;
         $getQuantity = $actions['get_quantity'] ?? 1;
+        $totalRequired = $buyQuantity + $getQuantity; // Total necesario para aplicar descuento
         
         // Productos aplicables
-        $targetProducts = $conditions['products'] ?? [];
+        $targetProducts = $conditions['product_ids'] ?? [];
         
         if (!empty($targetProducts)) {
             foreach ($targetProducts as $productId) {
                 $cartItem = $cartItems->firstWhere('item_id', $productId);
-                if ($cartItem && $cartItem['quantity'] >= $buyQuantity) {
-                    // Calcular cuántos productos gratis puede obtener
-                    $freeItemsEligible = floor($cartItem['quantity'] / $buyQuantity) * $getQuantity;
+                $product = Item::find($productId);
+                
+                if ($cartItem && $product) {
+                    $currentQuantity = $cartItem['quantity'];
                     
-                    // Obtener el producto para el precio
-                    $product = Item::find($productId);
-                    if ($product) {
-                        $freeItemsValue = $freeItemsEligible * $product->price;
+                    // Caso 1: Ya tiene suficientes productos para aplicar descuento
+                    if ($currentQuantity >= $totalRequired) {
+                        $freeItemsEligible = floor($currentQuantity / $totalRequired) * $getQuantity;
+                        $freeItemsValue = $freeItemsEligible * $product->final_price;
                         $discountAmount += $freeItemsValue;
                         
                         $freeItems[] = [
                             'item_id' => $productId,
+                            'item_name' => $product->name,
+                            'item_image' => $product->image,
+                            'item_price' => $product->final_price,
                             'quantity' => $freeItemsEligible,
-                            'discount' => $freeItemsValue
+                            'discount' => $freeItemsValue,
+                            'buy_quantity' => $buyQuantity,
+                            'get_quantity' => $getQuantity,
+                            'status' => 'applied' // Descuento ya aplicado
+                        ];
+                    }
+                    // Caso 2: Tiene suficientes para comprar pero no el gratis
+                    else if ($currentQuantity >= $buyQuantity) {
+                        $missingQuantity = $getQuantity; // Cantidad que falta para completar la promo
+                        
+                        $suggestedItems[] = [
+                            'item_id' => $productId,
+                            'item_name' => $product->name,
+                            'item_image' => $product->image,
+                            'item_price' => $product->final_price,
+                            'current_quantity' => $currentQuantity,
+                            'suggested_quantity' => $missingQuantity,
+                            'buy_quantity' => $buyQuantity,
+                            'get_quantity' => $getQuantity,
+                            'status' => 'suggestion', // Sugerencia para agregar más
+                            'savings' => $missingQuantity * $product->final_price // Cuánto se ahorraría
                         ];
                     }
                 }
             }
-        }
-
-        return [
+        }        return [
             'amount' => $discountAmount,
             'applied_items' => $freeItems,
+            'suggested_items' => $suggestedItems,
             'modified_cart' => $modifiedCart,
-            'description' => "Compra {$buyQuantity} lleva {$getQuantity} gratis"
+            'description' => "Compra {$buyQuantity} lleva {$getQuantity} gratis",
+            'promotion_type' => 'buy_x_get_y',
+            'free_items' => $freeItems
         ];
     }
 
@@ -292,7 +324,7 @@ class DiscountRuleService
                 $itemDiscount = 0;
                 
                 if ($actions['discount_type'] === 'percentage') {
-                    $itemDiscount = ($item['price'] * $item['quantity']) * ($actions['discount_value'] / 100);
+                    $itemDiscount = ($item['final_price'] * $item['quantity']) * ($actions['discount_value'] / 100);
                 } else if ($actions['discount_type'] === 'fixed') {
                     $itemDiscount = $actions['discount_value'] * $item['quantity'];
                 }
@@ -336,7 +368,7 @@ class DiscountRuleService
         if ($appliedTier) {
             if ($appliedTier['discount_type'] === 'percentage') {
                 $totalCartValue = $cartItems->sum(function($item) {
-                    return $item['price'] * $item['quantity'];
+                    return $item['final_price'] * $item['quantity'];
                 });
                 $discountAmount = $totalCartValue * ($appliedTier['discount_value'] / 100);
             } else if ($appliedTier['discount_type'] === 'fixed') {

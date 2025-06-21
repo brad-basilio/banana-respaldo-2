@@ -8,6 +8,7 @@ import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
 import OptionCard from "./OptionCard";
+import FreeItemsDisplay from "./FreeItemsDisplay";
 import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { debounce } from "lodash";
@@ -31,12 +32,24 @@ export default function ShippingStep({
     openModal,
     setCouponDiscount: setParentCouponDiscount,
     setCouponCode: setParentCouponCode,
+    automaticDiscounts = [],
+    automaticDiscountTotal = 0,
+    totalWithoutDiscounts,
     conversionScripts,
     setConversionScripts,
     onPurchaseComplete,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
+    
+    // Get free items from automatic discounts
+    const freeItems = automaticDiscounts.reduce((items, discount) => {
+        if (discount.free_items && Array.isArray(discount.free_items)) {
+            return [...items, ...discount.free_items];
+        }
+        return items;
+    }, []);
+    
     const [formData, setFormData] = useState({
         name: user?.name || "",
         lastname: user?.lastname || "",
@@ -1017,6 +1030,60 @@ export default function ShippingStep({
                         </div>
                     </div>
 
+                    {/* Sección de descuentos automáticos */}
+                    {automaticDiscounts && automaticDiscounts.length > 0 && (
+                        <div className="space-y-4 border-t pt-4">
+                            <div className="space-y-3">
+                                <div className="text-sm font-medium text-green-600 mb-2">
+                                    🎉 Descuentos automáticos aplicados:
+                                </div>
+                                {automaticDiscounts.map((discount, index) => (
+                                    <div key={index} className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 w-8/12">
+                                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="text-green-700 font-semibold text-sm">
+                                                        {discount.name}
+                                                    </p>
+                                                    {discount.description && (
+                                                        <p className="text-green-600 text-xs mt-1">
+                                                            {discount.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="text-right w-4/12">
+                                                <span className="text-green-700 font-bold text-base">
+                                                    -S/ {Number2Currency(discount.amount)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {automaticDiscountTotal > 0 && (
+                                    <div className="bg-green-50 border-2 border-green-300 rounded-xl p-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-green-700 font-semibold">Total descuentos automáticos:</span>
+                                            <span className="text-green-700 font-bold text-lg">
+                                                -S/ {Number2Currency(automaticDiscountTotal)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Productos gratuitos */}
+                    {freeItems.length > 0 && (
+                        <FreeItemsDisplay freeItems={freeItems} />
+                    )}
                   
 
                     <div className="pt-4 border-t-2">

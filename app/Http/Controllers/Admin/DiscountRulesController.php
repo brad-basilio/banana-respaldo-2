@@ -9,6 +9,8 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use App\Services\DiscountRuleService;
+use Illuminate\Support\Facades\Log;
 
 class DiscountRulesController extends BasicController
 {
@@ -310,5 +312,61 @@ class DiscountRulesController extends BasicController
             'message' => 'Estadísticas obtenidas exitosamente',
             'data' => $stats
         ]);
+    }
+
+    /**
+     * Apply discount rules to a cart
+     */
+    public function applyToCart(Request $request)
+    {        try {
+            $request->validate([
+                'cart_items' => 'required|array',
+                'cart_items.*.item_id' => 'required|string', // Changed from integer to string for UUID
+                'cart_items.*.quantity' => 'required|integer|min:1',
+                'cart_items.*.price' => 'required|numeric|min:0',
+                'cart_items.*.name' => 'required|string',
+                'cart_items.*.category_id' => 'nullable|string', // Changed from integer to string for UUID
+                'total_amount' => 'required|numeric|min:0',
+                'customer_email' => 'nullable|email'
+            ]);
+
+            $cartItems = $request->cart_items;
+            $totalAmount = $request->total_amount;
+            $customerEmail = $request->customer_email ?? auth()->user()?->email;
+
+            $discountService = new DiscountRuleService();
+            $result = $discountService->evaluateCart($cartItems, $customerEmail, $totalAmount);
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Reglas de descuento aplicadas correctamente',
+                'data' => [
+                    'applied_discounts' => $result['applied_discounts'],
+                    'total_discount' => $result['total_discount'],
+                    'original_total' => $totalAmount,
+                    'final_total' => $totalAmount - $result['total_discount'],
+                    'cart_items' => $result['cart_items'] ?? $cartItems
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 422,
+                'message' => 'Datos de entrada inválidos',
+                'data' => [
+                    'errors' => $e->errors()
+                ]
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error applying discount rules to cart: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 500,
+                'message' => 'Error interno del servidor',
+                'data' => [
+                    'error' => $e->getMessage()
+                ]
+            ], 500);
+        }
     }
 }
