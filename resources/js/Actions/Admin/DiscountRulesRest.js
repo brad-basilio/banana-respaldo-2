@@ -5,23 +5,10 @@ export default class DiscountRulesRest extends BasicRest {
     constructor() {
         super();
         this.path = 'admin/discount-rules';
-    }    async toggleActive(id, active) {
-        try {
-            const { status, result } = await Fetch(`/api/${this.path}/${id}/toggle-active`, {
-                method: 'PATCH',
-                body: JSON.stringify({ active })
-            });
-            
-            if (!status) {
-                throw new Error(result?.message || 'Error toggling active status');
-            }
-            
-            return result;
-        } catch (error) {
-            console.error('Error toggling active status:', error);
-            return false;
-        }
-    }    async duplicate(id) {
+    }
+
+   
+    async duplicate(id) {
         try {
             const { status, result } = await Fetch(`/api/${this.path}/${id}/duplicate`, {
                 method: 'POST'
@@ -36,7 +23,9 @@ export default class DiscountRulesRest extends BasicRest {
             console.error('Error duplicating rule:', error);
             return false;
         }
-    }async getProducts() {
+    }
+    
+    async getProducts() {
         try {
             const result = await this.simpleGet(`/api/${this.path}/products`);
             return result?.data || result || [];
@@ -44,7 +33,9 @@ export default class DiscountRulesRest extends BasicRest {
             console.error('Error fetching products:', error);
             return [];
         }
-    }    async getCategories() {
+    }    
+    
+    async getCategories() {
         try {
             const result = await this.simpleGet(`/api/${this.path}/categories`);
             return result?.data || result || [];
@@ -52,7 +43,9 @@ export default class DiscountRulesRest extends BasicRest {
             console.error('Error fetching categories:', error);
             return [];
         }
-    }    async getProductsByIds(ids) {
+    }    
+    
+    async getProductsByIds(ids) {
         try {
             if (!ids || ids.length === 0) return [];
             console.log('Fetching products by IDs:', ids);
@@ -70,7 +63,9 @@ export default class DiscountRulesRest extends BasicRest {
             // Return empty array if the endpoint fails, no fallback
             return [];
         }
-    }    async getCategoriesByIds(ids) {
+    }    
+    
+    async getCategoriesByIds(ids) {
         try {
             if (!ids || ids.length === 0) return [];
             console.log('Fetching categories by IDs:', ids);

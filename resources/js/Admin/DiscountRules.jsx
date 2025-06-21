@@ -258,12 +258,11 @@ const DiscountRules = ({ }) => {
       showConfirmButton: false
     });
   }
-
-  const onActiveChange = async ({ id, value }) => {
-    const result = await discountRulesRest.toggleActive(id, value)
-    if (!result) return
-    $(gridRef.current).dxDataGrid('instance').refresh()
-  }
+  const onBooleanChange = async ({ id, field, value }) => {
+        const result = await discountRulesRest.boolean({ id, field, value });
+        if (!result) return;
+        $(gridRef.current).dxDataGrid("instance").refresh();
+    };
 
   const onDuplicateClicked = async (id) => {
     const result = await discountRulesRest.duplicate(id)
@@ -1141,13 +1140,21 @@ const DiscountRules = ({ }) => {
           caption: 'Activa',
           width: '80px',
           cellTemplate: (container, { data }) => {
-            ReactAppend(container, 
-              <SwitchFormGroup 
-                checked={data.active} 
-                onChange={(e) => onActiveChange({ id: data.id, value: e.target.checked })} 
-              />
-            )
-          }
+                            const is_newValue = data.active === 1 || data.active === '1' || data.active === true;
+                            ReactAppend(
+                                container,
+                                <SwitchFormGroup
+                                    checked={is_newValue}
+                                    onChange={(e) =>
+                                        onBooleanChange({
+                                            id: data.id,
+                                            field: "active",
+                                            value: e.target.checked ? 1 : 0,
+                                        })
+                                    }
+                                />
+                            );
+                        },
         },
         {
           caption: 'Acciones',

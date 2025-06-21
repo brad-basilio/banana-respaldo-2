@@ -5,11 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class DiscountRule extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
     protected $fillable = [
         'name',
         'description',
@@ -57,13 +60,13 @@ class DiscountRule extends Model
     {
         $now = Carbon::now();
         return $query->where('active', true)
-            ->where(function($q) use ($now) {
+            ->where(function ($q) use ($now) {
                 $q->where('starts_at', '<=', $now)
-                  ->orWhereNull('starts_at');
+                    ->orWhereNull('starts_at');
             })
-            ->where(function($q) use ($now) {
+            ->where(function ($q) use ($now) {
                 $q->where('ends_at', '>=', $now)
-                  ->orWhereNull('ends_at');
+                    ->orWhereNull('ends_at');
             });
     }
 
@@ -76,25 +79,25 @@ class DiscountRule extends Model
     public function isValid()
     {
         if (!$this->active) return false;
-        
+
         $now = Carbon::now();
-        
+
         if ($this->starts_at && $this->starts_at > $now) return false;
         if ($this->ends_at && $this->ends_at < $now) return false;
-        
+
         if ($this->usage_limit && $this->used_count >= $this->usage_limit) return false;
-        
+
         return true;
     }
 
     public function canBeUsedByCustomer($customerEmail)
     {
         if (!$this->usage_limit_per_customer) return true;
-        
+
         $customerUsages = $this->usages()
             ->where('customer_email', $customerEmail)
             ->count();
-            
+
         return $customerUsages < $this->usage_limit_per_customer;
     }
 
@@ -106,13 +109,13 @@ class DiscountRule extends Model
     public function getStatusAttribute()
     {
         if (!$this->active) return 'Inactiva';
-        
+
         $now = Carbon::now();
-        
+
         if ($this->starts_at && $this->starts_at > $now) return 'Programada';
         if ($this->ends_at && $this->ends_at < $now) return 'Expirada';
         if ($this->usage_limit && $this->used_count >= $this->usage_limit) return 'Agotada';
-        
+
         return 'Activa';
     }
 
@@ -126,7 +129,7 @@ class DiscountRule extends Model
             'buy_x_get_y' => 'Compra X Lleva Y',
             'bundle_discount' => 'Descuento por Paquete'
         ];
-        
+
         return $types[$this->rule_type] ?? $this->rule_type;
     }
 
@@ -135,9 +138,9 @@ class DiscountRule extends Model
     {
         $conditions = $this->conditions;
         $actions = $this->actions;
-        
+
         $description = "";
-        
+
         // Construir descripción basada en el tipo
         switch ($this->rule_type) {
             case 'quantity_discount':
@@ -148,13 +151,13 @@ class DiscountRule extends Model
                     }
                 }
                 break;
-                
+
             case 'buy_x_get_y':
                 if (isset($conditions['buy_quantity']) && isset($actions['get_quantity'])) {
                     $description = "Compra {$conditions['buy_quantity']} y lleva {$actions['get_quantity']}";
                 }
                 break;
-                
+
             case 'cart_discount':
                 if (isset($conditions['min_amount'])) {
                     $description = "Compras desde S/ {$conditions['min_amount']}";
@@ -165,7 +168,7 @@ class DiscountRule extends Model
                 }
                 break;
         }
-        
+
         return $description ?: $this->description;
     }
 }
