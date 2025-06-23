@@ -50,6 +50,9 @@
                 "image": "top-bar-copyright.png",
                 "generals": [
                     "copyright"
+                ],
+                "data": [
+                    "background"
                 ]
             }
         ]
@@ -213,7 +216,8 @@
                 },
                 "generals": [
                     "phone_whatsapp",
-                    "message_whatsapp"
+                    "message_whatsapp",
+                    "email_contact"
                 ]
             }
         ]
@@ -491,6 +495,70 @@
             {
                 "id": "CatalagoFiltros",
                 "name": "Producto Catalogo Filtro",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "CatalagoFiltrosAko",
+                "name": "Producto Catalogo Filtro - Ako",
                 "image": "products-list.png",
                 "data": [
                     "path",
@@ -1425,6 +1493,28 @@
                 }
             },
             {
+                "id": "ProductDetailAko",
+                "name": "ProductDetailAko",
+                "data": [
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Item",
+                    "field": "slug",
+                    "with": [
+                        "variants",
+                        "images",
+                        "specifications",
+                        "features"
+                    ],
+                    "relations": [
+                        "category",
+                        "brand",
+                        "subcategory"
+                    ]
+                }
+            },
+            {
                 "id": "ProductDetailBananaLab",
                 "name": "ProductDetailBananaLab",
                 "using": {
@@ -1566,6 +1656,15 @@
                 "data": [
                     "redirect"
                 ]
+            },
+            {
+                "id": "ContactAko",
+                "name": "ContactAko",
+                "data": [
+                    "redirect",
+                    "title",
+                    "description"
+                ]
             }
         ]
     },
@@ -1598,6 +1697,14 @@
                 "name": "Simple",
                 "data": [
                     "title"
+                ]
+            },
+            {
+                "id": "FaqAko",
+                "name": "Faqs Ako",
+                "data": [
+                    "title",
+                    "description"
                 ]
             }
         ]
@@ -1771,6 +1878,19 @@
                     "description",
                     "about_url"
                 ]
+            },
+            {
+                "id": "AboutAko",
+                "name": "AboutAko",
+                "data": [
+                    "url_imagen",
+                    "title",
+                    "description",
+                    "about_url"
+                ],
+                "using": {
+                    "model": "Aboutus"
+                }
             }
         ]
     },

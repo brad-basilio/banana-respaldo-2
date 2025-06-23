@@ -26,20 +26,23 @@ const ProductNavigationSwiperSimple = ({ items, data, setCart, cart }) => {
     }, []);
     
     return (
-        <section className="py-12 lg:py-20">
+        <section className="py-12 lg:py-16">
             <div className="px-primary w-full font-title">
                 {/* Header */}
                 {data?.title && (
                     <div className="flex flex-wrap gap-4 justify-between items-center pb-4">
                         <h2 className="text-3xl sm:text-4xl lg:text-[40px] 2xl:text-5xl text-center font-medium tracking-normal customtext-neutral-dark leading-tight font-title">
-                           <TextWithHighlight text={data?.title} ></TextWithHighlight>
+                            <TextWithHighlight text={data?.title} />
                         </h2>
-                        <a
-                            href={data?.link_catalog}
-                            className="bg-accent transition-all duration-300 text-white border-none items-center px-10 py-3 text-base rounded-lg font-medium cursor-pointer hover:opacity-90"
-                        >
-                            Ver más productos
-                        </a>
+                    
+                        {data?.link_catalog && (
+                            <a
+                                href={data.link_catalog}
+                                className="bg-accent transition-all duration-300 text-white border-none items-center px-10 py-3 text-base rounded-lg font-medium cursor-pointer hover:opacity-90"
+                            >
+                                Ver más productos
+                            </a>
+                        )}
                     </div>
                 )}
 

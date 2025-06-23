@@ -9,7 +9,6 @@ const subscriptionsRest = new SubscriptionsRest()
 const BlogHeader = ({ categories }) => {
 
   const emailRef = useRef()
-
   const [saving, setSaving] = useState()
 
   const onEmailSubmit = async (e) => {

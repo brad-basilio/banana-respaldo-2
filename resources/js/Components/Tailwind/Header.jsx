@@ -141,6 +141,7 @@ const Header = ({
                         setCart={setCart}
                         pages={pages}
                         isUser={isUser}
+                        generals={generals}
                     />
                 );
             default:

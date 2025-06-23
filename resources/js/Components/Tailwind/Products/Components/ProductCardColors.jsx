@@ -96,7 +96,7 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
                     </p>
 
                     <a href={`/item/${product.slug}`}>
-                        <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-2 line-clamp-2 leading-tight">
+                        <h3 className="text-base sm:text-lg lg:text-xl font-semibold mb-2 line-clamp-2 !leading-normal">
                             {product.name}
                         </h3>
                         
@@ -178,11 +178,11 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
 
                         {/* Precio */}
                         <div className="flex items-baseline gap-4 mt-4">
-                            <span className="text-lg sm:text-xl md:text-2xl font-bold">
+                            <span className="text-lg sm:text-xl md:text-2xl font-semibold">
                                 S/ {product.final_price}
                             </span>
                             {product.discount != null && !isNaN(product.discount) && (
-                                <span className="text-xs sm:text-base font-bold line-through opacity-60">
+                                <span className="text-xs sm:text-base font-semibold line-through opacity-60">
                                     S/ {product.price}
                                 </span>
                             )}
