@@ -84,7 +84,7 @@ const System = ({
     headerPosts,
     postsLatest,
     textstatic,
-    hasRole
+    hasRole = () => {}
 }) => {
 
     const getItems = (itemsId) => {
