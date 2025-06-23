@@ -10,7 +10,8 @@ export function getLuminance(color) {
             parseInt(hex.slice(4, 6), 16),
         ];
     } else {
-        return 0;
+        // return black
+        rgb = [0, 0, 0];
         // throw new Error("Formato de color no soportado");
     }
 
