@@ -40,6 +40,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
             const response = await itemsRest.getVariations(request);
 
             if (!response) {
+                setVariationsItems([]);
                 return;
             }
 
@@ -48,6 +49,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
             setVariationsItems(variations.variants);
 
         } catch (error) {
+            setVariationsItems([]);
             return;
         }
     };
