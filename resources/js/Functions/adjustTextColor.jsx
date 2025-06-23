@@ -10,7 +10,8 @@ export function getLuminance(color) {
             parseInt(hex.slice(4, 6), 16),
         ];
     } else {
-        throw new Error("Formato de color no soportado");
+        return 
+        // throw new Error("Formato de color no soportado");
     }
 
     // Si hay canal alfa, mezclar con blanco
@@ -39,6 +40,4 @@ export function adjustTextColor(element) {
         element.classList.remove("text-black");
     } else if (!useWhiteText && !element.classList.contains("text-black")) {
         element.classList.add("text-black");
-        element.classList.remove("text-white");
-    }
-}
+        element.classList.remove("text-w
