@@ -117,7 +117,7 @@ const ProductCardFull = ({ product, setCart, cart }) => {
                                                     src={`/storage/images${spec.title}`}
                                                     alt={spec.description}
                                                     className="w-14 h-14 object-contain p-2" 
-                                                    // onError={e => e.target.src = '/assets/img/noimage/no_img.jpg'}
+                                                    onError={e => e.target.src = '/assets/img/noimage/noicon.png'}
                                                 />
                                             </div>
                                             <h2>{spec.description}</h2>

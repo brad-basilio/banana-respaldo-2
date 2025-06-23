@@ -61,7 +61,7 @@ const FooterSalaFabulosa = ({ socials = [], pages, generals, contacts }) => {
         <div className="max-w-xs">
           <div className="h-14 ">
             <img src="/assets/resources/logo.png" alt="Sala Fabulosa"
-              className=" object-cover  h-14 w-auto grayscale brightness-0 invert" onError={(e) => {
+              className=" object-cover  h-14 w-auto" onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = '/assets/img/logo-bk.svg';
               }} />

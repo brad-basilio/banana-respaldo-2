@@ -28,6 +28,7 @@ const TopBar = ({ data, which, items, setCart, cart, isUser }) => {
             case "TopBarCopyright":
                 return (
                     <TopBarCopyright
+                        data={data}
                         items={items}
                         cart={cart}
                         setCart={setCart}
