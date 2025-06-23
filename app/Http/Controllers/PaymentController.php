@@ -97,7 +97,9 @@ class PaymentController extends Controller
                 'code' => $request->orderNumber,
                 'amount' => $request->amount,
                 'coupon_code' => $request->coupon_code,
-                'coupon_discount' => $request->coupon_discount
+                'coupon_discount' => $request->coupon_discount,
+                'applied_promotions' => $request->applied_promotions,
+                'promotion_discount' => $request->promotion_discount
             ]);
             
             $sale = Sale::create([
@@ -122,6 +124,8 @@ class PaymentController extends Controller
                 'coupon_id' => $request->coupon_id,
                 'coupon_code' => $request->coupon_code,
                 'coupon_discount' => $request->coupon_discount ?? 0,
+                'applied_promotions' => $request->applied_promotions ? json_encode($request->applied_promotions) : null,
+                'promotion_discount' => $request->promotion_discount ?? 0,
                 'culqi_charge_id' => $charge->id,
                 'payment_status' => 'pagado',
                 'status_id' => $saleStatusPagado ? $saleStatusPagado->id : null,

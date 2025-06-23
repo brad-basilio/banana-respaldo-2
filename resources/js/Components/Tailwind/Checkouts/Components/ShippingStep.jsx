@@ -454,6 +454,9 @@ export default function ShippingStep({
                 coupon_id: appliedCoupon?.id || null,
                 coupon_code: appliedCoupon?.code || null,
                 coupon_discount: roundToTwoDecimals(couponDiscount || 0),
+                // Información de promociones automáticas
+                applied_promotions: automaticDiscounts || [],
+                promotion_discount: roundToTwoDecimals(automaticDiscountTotal || 0),
             };
 
             console.log("📦 Request completo a enviar:", request);
@@ -691,8 +694,8 @@ export default function ShippingStep({
         return parseFloat(number.toFixed(2));
     };
 
-    // Calcular total final con descuento de cupón, redondeado correctamente
-    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal - couponDiscount);
+    // El totalFinal ya incluye todos los descuentos (cupón + automáticos), solo aplicar redondeo
+    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
