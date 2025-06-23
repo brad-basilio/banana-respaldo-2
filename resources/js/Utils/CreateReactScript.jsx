@@ -62,15 +62,15 @@ const CreateReactScript = (render) => {
       }
       render(el, { ...properties, can, hasRole })
 
-      if (Global.APP_ENV === 'local') {
-        const modalBackdrops = document.querySelectorAll('.modal-backdrop');
-        modalBackdrops.forEach(backdrop => {
-          console.log(backdrop);
-          if (!backdrop.textContent) {
-            backdrop.remove();
-          }
-        });
-      }
+      // if (Global.APP_ENV === 'local') {
+      //   const modalBackdrops = document.querySelectorAll('.modal-backdrop');
+      //   modalBackdrops.forEach(backdrop => {
+      //     console.log(backdrop);
+      //     if (!backdrop.textContent) {
+      //       backdrop.remove();
+      //     }
+      //   });
+      // }
     },
   });
 }
