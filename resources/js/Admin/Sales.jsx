@@ -68,8 +68,9 @@ const Sales = ({ statuses = [] }) => {
         Number(saleLoaded?.delivery || 0) -
         Number(saleLoaded?.bundle_discount || 0) -
         Number(saleLoaded?.renewal_discount || 0) -
-        Number(saleLoaded?.coupon_discount || 0) -
-        Number(saleLoaded?.promotion_discount || 0);
+        Number(saleLoaded?.coupon_discount || 0) 
+     // -Number(saleLoaded?.promotion_discount || 0)
+        ;
 
     return (
         <>  
@@ -310,31 +311,7 @@ const Sales = ({ statuses = [] }) => {
                                             </tr>
                                         )}
 
-                                        {saleLoaded?.applied_promotions && saleLoaded.applied_promotions !== '[]' && (
-                                            <tr>
-                                                <th>Promociones aplicadas:</th>
-                                                <td>
-                                                    {JSON.parse(saleLoaded.applied_promotions).map((promo, index) => (
-                                                        <div key={index} className="mb-2">
-                                                            <span className="badge bg-info me-2">
-                                                                {promo.rule_name}
-                                                            </span>
-                                                            <small className="text-info d-block">
-                                                                {promo.description}
-                                                            </small>
-                                                            <small className="text-success d-block">
-                                                                Descuento: S/ {Number2Currency(promo.discount_amount || 0)}
-                                                            </small>
-                                                        </div>
-                                                    ))}
-                                                    <div className="mt-2">
-                                                        <strong className="text-info">
-                                                            Total descuentos: S/ {Number2Currency(saleLoaded?.promotion_discount || 0)}
-                                                        </strong>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
+                                   
 
                                         {saleLoaded?.invoiceType && (
                                             <tr>
@@ -468,66 +445,58 @@ const Sales = ({ statuses = [] }) => {
                                     </span>
                                 </div>
                                 
-                                {/* Mostrar descuentos si existen */}
-                                {(saleLoaded?.bundle_discount > 0 || 
-                                  saleLoaded?.renewal_discount > 0 || 
-                                  saleLoaded?.coupon_discount > 0) && (
-                                    <>
-                                        <hr className="my-2" />
-                                        {saleLoaded?.bundle_discount > 0 && (
-                                            <div className="d-flex justify-content-between text-success">
-                                                <span>Descuento por paquete:</span>
-                                                <span>
-                                                    -S/ {Number2Currency(saleLoaded?.bundle_discount)}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {saleLoaded?.renewal_discount > 0 && (
-                                            <div className="d-flex justify-content-between text-success">
-                                                <span>Descuento por renovación:</span>
-                                                <span>
-                                                    -S/ {Number2Currency(saleLoaded?.renewal_discount)}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {saleLoaded?.coupon_discount > 0 && (
-                                            <div className="d-flex justify-content-between text-success">
-                                                <span>
-                                                    Descuento con cupón
-                                                    {saleLoaded?.coupon_code && (
-                                                        <small className="text-muted d-block">
-                                                            Código: {saleLoaded?.coupon_code}
-                                                        </small>
-                                                    )}
-                                                </span>
-                                                <span>
-                                                    -S/ {Number2Currency(saleLoaded?.coupon_discount)}
-                                                </span>
-                                            </div>
-                                        )}
-                                        
-                                        {saleLoaded?.promotion_discount > 0 && (
-                                            <div className="d-flex justify-content-between text-info">
-                                                <span>
-                                                    Descuentos por promociones
-                                                    {saleLoaded?.applied_promotions && (
-                                                        <small className="text-muted d-block">
-                                                            {JSON.parse(saleLoaded.applied_promotions).map((promo, index) => (
-                                                                <div key={index}>
-                                                                    • {promo.rule_name}: {promo.description}
-                                                                </div>
-                                                            ))}
-                                                        </small>
-                                                    )}
-                                                </span>
-                                                <span>
-                                                    -S/ {Number2Currency(saleLoaded?.promotion_discount)}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </>
+                                {/* Mostrar descuentos solo como información debajo de Envío */}
+                                {saleLoaded?.bundle_discount > 0 && (
+                                    <div className="d-flex justify-content-between text-success">
+                                        <span>Descuento por paquete:</span>
+                                        <span>
+                                            -S/ {Number2Currency(saleLoaded?.bundle_discount)}
+                                        </span>
+                                    </div>
                                 )}
-                                
+                                {saleLoaded?.renewal_discount > 0 && (
+                                    <div className="d-flex justify-content-between text-success">
+                                        <span>Descuento por renovación:</span>
+                                        <span>
+                                            -S/ {Number2Currency(saleLoaded?.renewal_discount)}
+                                        </span>
+                                    </div>
+                                )}
+                                {saleLoaded?.coupon_discount > 0 && (
+                                    <div className="d-flex justify-content-between text-success">
+                                        <span>
+                                            Descuento con cupón
+                                            {saleLoaded?.coupon_code && (
+                                                <small className="text-muted d-block">
+                                                    Código: {saleLoaded?.coupon_code}
+                                                </small>
+                                            )}
+                                        </span>
+                                        <span>
+                                            -S/ {Number2Currency(saleLoaded?.coupon_discount)}
+                                        </span>
+                                    </div>
+                                )}
+                                {saleLoaded?.promotion_discount > 0 && (
+                                    <div className="d-flex justify-content-between text-info">
+                                        <span>
+                                            {console.log(saleLoaded?.promotion_discount)    }
+                                            Descuentos por promociones
+                                            {saleLoaded?.applied_promotions && (
+                                                <small className="text-muted d-block">
+                                                    {JSON.parse(saleLoaded.applied_promotions).map((promo, index) => (
+                                                        <div key={index}>
+                                                            • {promo.name}: {promo.description}
+                                                        </div>
+                                                    ))}
+                                                </small>
+                                            )}
+                                        </span>
+                                        <span>
+                                            -S/ {Number2Currency(saleLoaded?.promotion_discount)}
+                                        </span>
+                                    </div>
+                                )}
                                 <hr className="my-2" />
                                 <div className="d-flex justify-content-between">
                                     <b>Total:</b>
