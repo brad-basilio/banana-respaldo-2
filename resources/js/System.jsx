@@ -66,7 +66,7 @@ import { Toaster } from "sonner";
 
 const itemsRest = new ItemsRest();
 
-export const SystemContext = createContext();
+export const SystemContext = createContext({});
 
 const System = ({
     session,

@@ -8,7 +8,9 @@ import { SystemContext } from "../../../System";
 
 const TopBarCart = ({ data, cart, setCart, isUser, items }) => {
     const sectionRef = useRef(null);
-    console.log(data);
+
+    const { hasRole } = useContext(SystemContext)
+
     useEffect(() => {
         if (sectionRef.current) {
             adjustTextColor(sectionRef.current); // Llama a la función
@@ -36,8 +38,6 @@ const TopBarCart = ({ data, cart, setCart, isUser, items }) => {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
     const [search, setSearch] = useState("");
-
-    const { hasRole } = useContext(SystemContext)
 
     return (
         <section
