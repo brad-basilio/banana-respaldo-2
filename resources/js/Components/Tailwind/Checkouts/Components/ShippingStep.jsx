@@ -1034,31 +1034,31 @@ export default function ShippingStep({
                     {automaticDiscounts && automaticDiscounts.length > 0 && (
                         <div className="space-y-4 border-t pt-4">
                             <div className="space-y-3">
-                                <div className="text-sm font-medium text-green-600 mb-2">
+                                <div className="text-sm font-medium customtext-neutral-dark mb-2">
                                     🎉 Descuentos automáticos aplicados:
                                 </div>
                                 {automaticDiscounts.map((discount, index) => (
-                                    <div key={index} className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                                    <div key={index} className=" border-2  rounded-xl p-4">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3 w-8/12">
-                                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                                                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                     </svg>
                                                 </div>
                                                 <div>
-                                                    <p className="text-green-700 font-semibold text-sm">
+                                                    <p className="customtext-neutral-dark font-semibold text-sm">
                                                         {discount.name}
                                                     </p>
                                                     {discount.description && (
-                                                        <p className="text-green-600 text-xs mt-1">
+                                                        <p className="customtext-neutral-dark text-xs mt-1">
                                                             {discount.description}
                                                         </p>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="text-right w-4/12">
-                                                <span className="text-green-700 font-bold text-base">
+                                                <span className="customtext-neutral-dark font-bold text-base">
                                                     -S/ {Number2Currency(discount.amount)}
                                                 </span>
                                             </div>
@@ -1067,10 +1067,10 @@ export default function ShippingStep({
                                 ))}
                                 
                                 {automaticDiscountTotal > 0 && (
-                                    <div className="bg-green-50 border-2 border-green-300 rounded-xl p-3">
+                                    <div className="l p-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-green-700 font-semibold">Total descuentos automáticos:</span>
-                                            <span className="text-green-700 font-bold text-lg">
+                                            <span className="customtext-neutral-dark font-semibold">Total descuentos automáticos:</span>
+                                            <span className="customtext-neutral-dark font-bold text-lg">
                                                 -S/ {Number2Currency(automaticDiscountTotal)}
                                             </span>
                                         </div>
@@ -1080,10 +1080,10 @@ export default function ShippingStep({
                         </div>
                     )}
 
-                    {/* Productos gratuitos */}
-                    {freeItems.length > 0 && (
+                    {/* Productos gratuitos {freeItems.length > 0 && (
                         <FreeItemsDisplay freeItems={freeItems} />
-                    )}
+                    )} */}
+                    
                   
 
                     <div className="pt-4 border-t-2">
