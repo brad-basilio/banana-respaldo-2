@@ -1,5 +1,5 @@
 import React, { useEffect, useState, Suspense, createContext } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot } from 'react-dom/client';
 import CreateReactScript from "./Utils/CreateReactScript";
 
 // Componente de carga para usar con Suspense
@@ -84,7 +84,7 @@ const System = ({
     headerPosts,
     postsLatest,
     textstatic,
-    hasRole = () => {}
+    hasRole = () => { }
 }) => {
 
     const getItems = (itemsId) => {
@@ -255,15 +255,8 @@ const System = ({
 
 CreateReactScript((el, properties) => {
     createRoot(el).render(
-
-
-        <Suspense fallback={<LoadingFallback />}>
-            <System {...properties} />
-        </Suspense>
-
-
+        // <Suspense fallback={<LoadingFallback />}>
+        <System {...properties} />
+        // </Suspense>
     );
 });
-/* <Suspense fallback={<LoadingFallback />}>
-            <System {...properties} />
-        </Suspense> */
