@@ -9,7 +9,7 @@ import "tippy.js/dist/tippy.css";
 const ProductCardColors = ({ product, setCart, cart }) => {
 
     const itemsRest = new ItemsRest();
-    const [variationsItems, setVariationsItems] = useState([]);
+    const [variationsItems, setVariationsItems] = useState(product.variants);
 
     const onAddClicked = (product) => {
         const newCart = structuredClone(cart)
@@ -56,9 +56,9 @@ const ProductCardColors = ({ product, setCart, cart }) => {
 
 
     useEffect(() => {
-        if (product?.id) {
-            handleVariations(product);
-        }
+        // if (product?.id) {
+        //     handleVariations(product);
+        // }
     }, [product]);
 
     const inCart = cart?.find(x => x.id == product?.id)

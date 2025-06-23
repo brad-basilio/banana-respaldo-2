@@ -137,7 +137,8 @@
                         "category",
                         "subcategory",
                         "brand",
-                        "collection"
+                        "collection",
+                        "variants"
                     ]
                 },
                 "generals": [
@@ -483,7 +484,9 @@
                             "with": [
                                 "category",
                                 "subcategory",
-                                "brand"
+                                "brand",
+                                "collection",
+                                "variants"
                             ],
                             "relations": [
                                 "category",
@@ -1037,7 +1040,7 @@
                         "is_new",
                         "views"
                     ],
-                    "with": ["category", "subcategory", "brand"],
+                    "with": ["category", "subcategory", "brand", "variants"],
                     "limit": 20
                 }
             },

@@ -186,7 +186,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/gallery', [AdminGalleryController::class, 'save']);
 
     Route::post('/items', [AdminItemController::class, 'save']);
-    Route::post('/items/paginate', [AdminItemController::class, 'paginate']);
+    Route::post('/items/paginate', [AdminItemController::class, 'paginate'])->withoutMiddleware('throttle');
     Route::patch('/items/status', [AdminItemController::class, 'status']);
     Route::patch('/items/{field}', [AdminItemController::class, 'boolean']);
     Route::delete('/items/{id}', [AdminItemController::class, 'delete']);
