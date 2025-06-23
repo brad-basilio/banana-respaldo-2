@@ -121,7 +121,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
                                 </Tippy>
                             ))}
 
-                            {variationsItems.length > 4 && (
+                            {variationsItems?.length > 4 && (
                                 <Tippy content={`+${variationsItems.length - 4} colores más`}>
                                     <a
                                         key={product.slug}
@@ -157,7 +157,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
                                 </Tippy>
                             ))}
 
-                            {variationsItems.length > 3 && (
+                            {variationsItems?.length > 3 && (
                                 <Tippy content={`+${variationsItems.length - 3} colores más`}>
                                     <a
                                         key={product.slug}
