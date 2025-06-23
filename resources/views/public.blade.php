@@ -204,7 +204,7 @@
 
     @inertia
 
-    <div id="page-loader" class="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
+    {{-- <div id="page-loader" class="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
 
         <div class="animate-bounce">
             <img
@@ -216,7 +216,7 @@
                 class=" w-64 lg:w-96 transition-all duration-300 transform hover:scale-105"
             />
         </div>
-    </div>
+    </div> --}}
 
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
@@ -264,7 +264,7 @@
                 });
             }
 
-            document.body.removeChild(document.getElementById('page-loader'))
+            // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
 

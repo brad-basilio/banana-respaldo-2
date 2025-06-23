@@ -204,19 +204,7 @@
 
     <?php if (!isset($__inertiaSsrDispatched)) { $__inertiaSsrDispatched = true; $__inertiaSsrResponse = app(\Inertia\Ssr\Gateway::class)->dispatch($page); }  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->body; } else { ?><div id="app" data-page="<?php echo e(json_encode($page)); ?>"></div><?php } ?>
 
-    <div id="page-loader" class="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
-
-        <div class="animate-bounce">
-            <img
-
-                src='/assets/resources/logo.png?v=<?php echo e(uniqid()); ?>'
-                alt={Global.APP_NAME}
-                onError="(e) => { e.target.onerror = null; e.target.src = '/assets/img/logo-bk.svg';}"
-
-                class=" w-64 lg:w-96 transition-all duration-300 transform hover:scale-105"
-            />
-        </div>
-    </div>
+    
 
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
@@ -264,7 +252,7 @@
                 });
             }
 
-            document.body.removeChild(document.getElementById('page-loader'))
+            // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
 

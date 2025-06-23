@@ -4,12 +4,10 @@ import { adjustTextColor } from "../../../Functions/adjustTextColor";
 import { CircleUser, DoorClosed, ShoppingCart } from "lucide-react";
 import Logout from "../../../Actions/Logout";
 import CartModal from "../Components/CartModal";
-import { SystemContext } from "../../../System";
+import { hasRole } from "../../../Utils/CreateReactScript";
 
 const TopBarCart = ({ data, cart, setCart, isUser, items }) => {
     const sectionRef = useRef(null);
-
-    const { hasRole } = useContext(SystemContext)
 
     useEffect(() => {
         if (sectionRef.current) {

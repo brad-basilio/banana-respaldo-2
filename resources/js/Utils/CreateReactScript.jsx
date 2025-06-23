@@ -6,6 +6,17 @@ import 'tippy.js/dist/tippy.css'
 import General from './General';
 import LaravelSession from './LaravelSession';
 
+let roles = [];
+export const hasRole = (...rolesIn) => {
+  const roles2validate = []
+  if (Array.isArray(rolesIn)) {
+    roles2validate.push(...rolesIn)
+  } else {
+    roles2validate.push(rolesIn)
+  }
+  return Boolean(roles.find(x => roles2validate.includes(x.name)))
+}
+
 const CreateReactScript = (render) => {
 
   createInertiaApp({
@@ -44,16 +55,18 @@ const CreateReactScript = (render) => {
         return false
       }
 
-      const hasRole = (...rolesIn) => {
-        const roles2validate = []
-        if (Array.isArray(rolesIn)) {
-          roles2validate.push(...rolesIn)
-        } else {
-          roles2validate.push(rolesIn)
-        }
-        const roles = properties?.session?.roles ?? []
-        return Boolean(roles.find(x => roles2validate.includes(x.name)))
-      }
+      roles = properties?.session?.roles ?? []
+
+      // const hasRole = (...rolesIn) => {
+      //   const roles2validate = []
+      //   if (Array.isArray(rolesIn)) {
+      //     roles2validate.push(...rolesIn)
+      //   } else {
+      //     roles2validate.push(rolesIn)
+      //   }
+      //   const roles = properties?.session?.roles ?? []
+      //   return Boolean(roles.find(x => roles2validate.includes(x.name)))
+      // }
 
       FetchParams.headers = {
         Accept: 'application/json',
@@ -62,15 +75,15 @@ const CreateReactScript = (render) => {
       }
       render(el, { ...properties, can, hasRole })
 
-      // if (Global.APP_ENV === 'local') {
-      //   const modalBackdrops = document.querySelectorAll('.modal-backdrop');
-      //   modalBackdrops.forEach(backdrop => {
-      //     console.log(backdrop);
-      //     if (!backdrop.textContent) {
-      //       backdrop.remove();
-      //     }
-      //   });
-      // }
+      if (Global.APP_ENV === 'local') {
+        const modalBackdrops = document.querySelectorAll('.modal-backdrop');
+        modalBackdrops.forEach(backdrop => {
+          console.log(backdrop);
+          if (!backdrop.textContent) {
+            backdrop.remove();
+          }
+        });
+      }
     },
   });
 }
