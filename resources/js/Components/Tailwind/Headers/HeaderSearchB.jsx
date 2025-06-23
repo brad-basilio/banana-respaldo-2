@@ -9,6 +9,7 @@ import {
     User,
     Settings,
     CreditCard,
+    Home,
 } from "lucide-react";
 import CartModal from "../Components/CartModal";
 import Logout from "../../../Actions/Logout";
@@ -47,7 +48,7 @@ const HeaderSearchB = ({
     const desktopSearchInputRef = useRef(null);
 
     const totalCount = cart.reduce((acc, item) => Number(acc) + Number(item.quantity), 0);
-    
+
     // Función para verificar si estamos en rutas donde no queremos mostrar la búsqueda móvil
     // Usando window.location directamente para máxima compatibilidad
     const shouldHideMobileSearch = () => {
@@ -196,6 +197,12 @@ const HeaderSearchB = ({
         }
     };
 
+    // Utilidad para saber si el usuario es Customer
+    const isCustomer = isUser && Array.isArray(isUser.roles) && isUser.roles.some(role => role.name === 'Customer');
+    console.log("isUser:", isUser);
+    console.log("roles:", isUser?.roles);
+    console.log("isCustomer:", isCustomer);
+
     return (
         <header className={`w-full top-0 left-0 z-50 transition-all duration-300 ${isFixed ? "fixed bg-white shadow-lg" : "relative bg-white"}`}>
             <div className="px-primary  bg-white 2xl:px-0 2xl:max-w-7xl mx-auto py-4 font-font-secondary text-base font-semibold">
@@ -236,28 +243,53 @@ const HeaderSearchB = ({
                                                 >
                                                     <div className="p-4">
                                                         <ul className="space-y-3">
-                                                            {menuItems.map((item, index) => (
-                                                                <li key={index}>
-                                                                    {item.onClick ? (
-                                                                        <button
-                                                                            aria-label="menu-items"
-                                                                            onClick={item.onClick}
-                                                                            className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
-                                                                        >
-                                                                            {item.icon}
-                                                                            <span>{item.label}</span>
-                                                                        </button>
-                                                                    ) : (
+                                                            {isCustomer ? (
+                                                                menuItems.map((item, index) => (
+                                                                    <li key={index}>
+                                                                        {item.onClick ? (
+                                                                            <button
+                                                                                aria-label="menu-items"
+                                                                                onClick={item.onClick}
+                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </button>
+                                                                        ) : (
+                                                                            <a
+                                                                                href={item.href}
+                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </a>
+                                                                        )}
+                                                                    </li>
+                                                                ))
+                                                            ) : (
+                                                                <>
+                                                                    <li>
                                                                         <a
-                                                                            href={item.href}
+                                                                            href="/admin/home"
                                                                             className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
                                                                         >
-                                                                            {item.icon}
-                                                                            <span>{item.label}</span>
+                                                                            <Home size={16} />
+                                                                            <span>Dashboard</span>
                                                                         </a>
-                                                                    )}
-                                                                </li>
-                                                            ))}
+                                                                    </li>
+                                                                    <li>
+                                                                        <a
+                                                                            href="#"
+                                                                            onClick={Logout}
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        >
+                                                                            <Home />
+                                                                            <DoorClosed size={16} />
+                                                                            <span>Cerrar Sesión</span>
+                                                                        </a>
+                                                                    </li>
+                                                                </>
+                                                            )}
                                                         </ul>
                                                     </div>
                                                 </motion.div>
@@ -383,28 +415,52 @@ const HeaderSearchB = ({
                                         >
                                             <div className="p-4">
                                                 <ul className="space-y-3">
-                                                    {menuItems.map((item, index) => (
-                                                        <li key={index}>
-                                                            {item.onClick ? (
-                                                                <button
-                                                                    aria-label="menu-items"
-                                                                    onClick={item.onClick}
-                                                                    className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
-                                                                >
-                                                                    {item.icon}
-                                                                    <span>{item.label}</span>
-                                                                </button>
+                                                {isCustomer ? (
+                                                                menuItems.map((item, index) => (
+                                                                    <li key={index}>
+                                                                        {item.onClick ? (
+                                                                            <button
+                                                                                aria-label="menu-items"
+                                                                                onClick={item.onClick}
+                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </button>
+                                                                        ) : (
+                                                                            <a
+                                                                                href={item.href}
+                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </a>
+                                                                        )}
+                                                                    </li>
+                                                                ))
                                                             ) : (
-                                                                <a
-                                                                    href={item.href}
-                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
-                                                                >
-                                                                    {item.icon}
-                                                                    <span>{item.label}</span>
-                                                                </a>
+                                                                <>
+                                                                    <li>
+                                                                        <a
+                                                                            href="/admin/home"
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        >
+                                                                            <Home size={16} />
+                                                                            <span>Dashboard</span>
+                                                                        </a>
+                                                                    </li>
+                                                                    <li>
+                                                                        <a
+                                                                            href="#"
+                                                                            onClick={Logout}
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        >
+                                                                            <DoorClosed size={16} />
+                                                                            <span>Cerrar Sesión</span>
+                                                                        </a>
+                                                                    </li>
+                                                                </>
                                                             )}
-                                                        </li>
-                                                    ))}
                                                 </ul>
                                             </div>
                                         </motion.div>
@@ -517,10 +573,10 @@ const HeaderSearchB = ({
 
                 {/* NUEVA SECCIÓN MÓVIL*/}
                 {data?.mobileSearch && !shouldHideMobileSearch() && (
-                <div className="block md:hidden mt-6 space-y-4">
-                  
-                   
-                 
+                    <div className="block md:hidden mt-6 space-y-4">
+
+
+
                         <div className="w-full ">
                             <form onSubmit={handleMobileSearch} role="search" className="relative w-full">
                                 <input
@@ -546,9 +602,9 @@ const HeaderSearchB = ({
                                 </button>
                             </form>
                         </div>
-                   
-                </div>
-                )} 
+
+                    </div>
+                )}
             </div>
 
             <AnimatePresence>

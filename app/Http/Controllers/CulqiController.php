@@ -51,6 +51,7 @@ class CulqiController extends Controller
       if (isset($sale['bundle_discount'])) $amount -= $sale['bundle_discount'];
       if (isset($sale['renewal_discount'])) $amount -= $sale['renewal_discount'];
       if (isset($sale['coupon_discount'])) $amount -= $sale['coupon_discount'];
+      if (isset($sale['promotion_discount'])) $amount -= $sale['promotion_discount'];
 
       $amount = Math::round($amount * 10) / 10;
 

@@ -8,6 +8,7 @@ import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
 import OptionCard from "./OptionCard";
+import FreeItemsDisplay from "./FreeItemsDisplay";
 import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { debounce } from "lodash";
@@ -31,9 +32,24 @@ export default function ShippingStep({
     openModal,
     setCouponDiscount: setParentCouponDiscount,
     setCouponCode: setParentCouponCode,
+    automaticDiscounts = [],
+    automaticDiscountTotal = 0,
+    totalWithoutDiscounts,
+    conversionScripts,
+    setConversionScripts,
+    onPurchaseComplete,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
+    
+    // Get free items from automatic discounts
+    const freeItems = automaticDiscounts.reduce((items, discount) => {
+        if (discount.free_items && Array.isArray(discount.free_items)) {
+            return [...items, ...discount.free_items];
+        }
+        return items;
+    }, []);
+    
     const [formData, setFormData] = useState({
         name: user?.name || "",
         lastname: user?.lastname || "",
@@ -438,6 +454,9 @@ export default function ShippingStep({
                 coupon_id: appliedCoupon?.id || null,
                 coupon_code: appliedCoupon?.code || null,
                 coupon_discount: roundToTwoDecimals(couponDiscount || 0),
+                // Información de promociones automáticas
+                applied_promotions: automaticDiscounts || [],
+                promotion_discount: roundToTwoDecimals(automaticDiscountTotal || 0),
             };
 
             console.log("📦 Request completo a enviar:", request);
@@ -451,6 +470,18 @@ export default function ShippingStep({
                 setSale(response.sale);
                 setDelivery(response.delivery);
                 setCode(response.code);
+                
+                // Capturar scripts de conversión si están disponibles
+                if (response.conversion_scripts) {
+                    console.log('Scripts de conversión recibidos:', response.conversion_scripts);
+                    setConversionScripts(response.conversion_scripts);
+                    
+                    // Llamar al callback de compra completada si está disponible
+                    if (onPurchaseComplete) {
+                        onPurchaseComplete(response.sale_id, response.conversion_scripts);
+                    }
+                }
+                
                 setCart([]);
                 onContinue();
             } else {
@@ -663,8 +694,8 @@ export default function ShippingStep({
         return parseFloat(number.toFixed(2));
     };
 
-    // Calcular total final con descuento de cupón, redondeado correctamente
-    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal - couponDiscount);
+    // El totalFinal ya incluye todos los descuentos (cupón + automáticos), solo aplicar redondeo
+    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
@@ -981,11 +1012,13 @@ export default function ShippingStep({
                                             </div>
                                             <div>
                                                 <p className="customtext-primary font-semibold text-sm">
-                                                    Cupón aplicado: {appliedCoupon.code}
+                                                    Descto. {appliedCoupon.type === 'percentage' 
+                                                        ? `${appliedCoupon.value}%` 
+                                                        : `S/${Number2Currency(appliedCoupon.value)}`}
                                                 </p>
-                                              {/*  <p className="customtext-primary text-xs mt-1">
-                                                    {appliedCoupon.name}
-                                                </p> */}
+                                                <p className="customtext-primary text-xs mt-1">
+                                                    {appliedCoupon.code}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="text-right w-4/12">
@@ -1000,6 +1033,60 @@ export default function ShippingStep({
                         </div>
                     </div>
 
+                    {/* Sección de descuentos automáticos */}
+                    {automaticDiscounts && automaticDiscounts.length > 0 && (
+                        <div className="space-y-4 border-t pt-4">
+                            <div className="space-y-3">
+                                <div className="text-sm font-medium customtext-neutral-dark mb-2">
+                                    🎉 Descuentos automáticos aplicados:
+                                </div>
+                                {automaticDiscounts.map((discount, index) => (
+                                    <div key={index} className=" border-2  rounded-xl p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 w-8/12">
+                                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="customtext-neutral-dark font-semibold text-sm">
+                                                        {discount.name}
+                                                    </p>
+                                                    {discount.description && (
+                                                        <p className="customtext-neutral-dark text-xs mt-1">
+                                                            {discount.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="text-right w-4/12">
+                                                <span className="customtext-neutral-dark font-bold text-base">
+                                                    -S/ {Number2Currency(discount.amount)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {automaticDiscountTotal > 0 && (
+                                    <div className="l p-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="customtext-neutral-dark font-semibold">Total descuentos automáticos:</span>
+                                            <span className="customtext-neutral-dark font-bold text-lg">
+                                                -S/ {Number2Currency(automaticDiscountTotal)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Productos gratuitos {freeItems.length > 0 && (
+                        <FreeItemsDisplay freeItems={freeItems} />
+                    )} */}
+                    
                   
 
                     <div className="pt-4 border-t-2">

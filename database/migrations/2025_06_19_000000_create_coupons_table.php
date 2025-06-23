@@ -11,18 +11,7 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {   
-        Schema::table('sales', function (Blueprint $table) {
-            if (Schema::hasColumn('sales', 'coupon_id')) {
-                $table->dropForeign(['coupon_id']);
-                $table->dropColumn('coupon_id');
-            }
-        });
-
-        // Eliminar la tabla si existe
-        Schema::dropIfExists('coupons');
-        
-        // Crear la tabla
+    {
         Schema::create('coupons', function (Blueprint $table) {
             $table->uuid('id')->default(DB::raw('(UUID())'))->primary();
             $table->string('code')->nullable(); // Código del cupón

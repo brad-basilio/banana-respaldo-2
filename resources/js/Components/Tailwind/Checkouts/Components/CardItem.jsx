@@ -1,6 +1,7 @@
 import { Minus, Plus, PlusCircle, Trash2 } from "lucide-react";
+import AnimatedGiftBox from "./AnimatedGiftBox";
 
-const CardItem = ({ setCart, ...item }) => {
+const CardItem = ({ setCart, hasPromotion, onPromotionClick, ...item }) => {
 
     const onDeleteClicked = () => {
         setCart(old => old.filter(x => x.id !== item.id));
@@ -34,15 +35,26 @@ const CardItem = ({ setCart, ...item }) => {
         <div key={item.id} className="w-full bg-white rounded-lg shadow p-4">
             <div className="flex flex-col md:flex-row md:items-center  justify-between gap-4 w-full">
                 <div className="flex items-center gap-4 flex-grow">
-                    <img
-                        src={`/storage/images/item/${item.image}`}
-                        alt={item.name}
-                        className="w-20 h-20 object-cover rounded flex-shrink-0"
-                        onError={(e) =>
-                            (e.target.src =
-                                "/api/cover/thumbnail/null")
-                        }
-                    />
+                    <div className="relative">
+                        <img
+                            src={`/storage/images/item/${item.image}`}
+                            alt={item.name}
+                            className="w-20 h-20 object-cover rounded flex-shrink-0"
+                            onError={(e) =>
+                                (e.target.src =
+                                    "/api/cover/thumbnail/null")
+                            }
+                        />
+                        {/* Animated gift box for products with promotions */}
+                        {hasPromotion && (
+                            <div className="absolute -top-2 -right-2">
+                                <AnimatedGiftBox 
+                                    onClick={() => onPromotionClick(item)}
+                                    className="group"
+                                />
+                            </div>
+                        )}
+                    </div>
                     <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-lg mb-2 line-clamp-2">{item.name}</h3>
                         <p className="text-sm customtext-neutral-light">Marca: <span className="customtext-neutral-dark">{item.brand.name}</span></p>

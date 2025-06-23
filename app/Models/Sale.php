@@ -58,7 +58,17 @@ class Sale extends Model
         'payment_proof',
         'coupon_id',
         'coupon_discount',
+        'applied_promotions',
+        'promotion_discount',
         'total_amount',
+    ];
+
+    protected $casts = [
+        'applied_promotions' => 'array',
+        'promotion_discount' => 'decimal:2',
+        'coupon_discount' => 'decimal:2',
+        'amount' => 'decimal:2',
+        'delivery' => 'decimal:2',
     ];
 
     public function details()

@@ -9,6 +9,8 @@ use App\Models\SaleStatus;
 use App\Models\User;
 use App\Models\Coupon;
 use App\Notifications\PurchaseSummaryNotification;
+use App\Helpers\PixelHelper;
+use App\Helpers\NotificationHelper;
 use Culqi\Culqi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -95,7 +97,9 @@ class PaymentController extends Controller
                 'code' => $request->orderNumber,
                 'amount' => $request->amount,
                 'coupon_code' => $request->coupon_code,
-                'coupon_discount' => $request->coupon_discount
+                'coupon_discount' => $request->coupon_discount,
+                'applied_promotions' => $request->applied_promotions,
+                'promotion_discount' => $request->promotion_discount
             ]);
             
             $sale = Sale::create([
@@ -120,6 +124,8 @@ class PaymentController extends Controller
                 'coupon_id' => $request->coupon_id,
                 'coupon_code' => $request->coupon_code,
                 'coupon_discount' => $request->coupon_discount ?? 0,
+                'applied_promotions' => $request->applied_promotions ? json_encode($request->applied_promotions) : null,
+                'promotion_discount' => $request->promotion_discount ?? 0,
                 'culqi_charge_id' => $charge->id,
                 'payment_status' => 'pagado',
                 'status_id' => $saleStatusPagado ? $saleStatusPagado->id : null,
@@ -189,12 +195,34 @@ class PaymentController extends Controller
                 'coupon_discount' => $sale->coupon_discount
             ]);
 
-            // Enviar correo de resumen de compra
+            // Generar scripts de tracking de conversión
+            $orderData = [
+                'order_id' => $sale->id,
+                'total' => $sale->amount,
+                'product_ids' => collect($request->cart)->pluck('id')->toArray(),
+                'user_id' => $sale->user_id,
+                'items' => collect($request->cart)->map(function($item) {
+                    return [
+                        'item_id' => is_array($item) ? $item['id'] : $item->id,
+                        'item_name' => is_array($item) ? $item['name'] : $item->name,
+                        'price' => is_array($item) ? $item['final_price'] : $item->final_price,
+                        'quantity' => is_array($item) ? $item['quantity'] : $item->quantity
+                    ];
+                })->toArray()
+            ];
+            
+            $conversionScripts = PixelHelper::trackPurchase($orderData);
+            Log::info('PaymentController - Scripts de conversión generados');
+
+            // Enviar correo de resumen de compra al cliente y administrador
             try {
                 Log::info('PaymentController - Preparando notificación de email');
                 $details = $sale->details ?? $sale->saleDetails ?? $sale->sale_details ?? SaleDetail::where('sale_id', $sale->id)->get();
-                $sale->notify(new PurchaseSummaryNotification($sale, $details));
-                Log::info('PaymentController - Email enviado exitosamente');
+                
+                // Usar el helper para enviar tanto al cliente como al administrador
+                NotificationHelper::sendToClientAndAdmin($sale, new PurchaseSummaryNotification($sale, $details));
+                
+                Log::info('PaymentController - Email enviado exitosamente al cliente y administrador');
             } catch (\Exception $emailException) {
                 Log::warning('PaymentController - Error enviando email (no crítico)', [
                     'error' => $emailException->getMessage()
@@ -208,7 +236,9 @@ class PaymentController extends Controller
                 'culqi_response' => $charge,
                 'sale' => $request->cart,
                 'code' => $request->orderNumber,
-                'delivery' => $request->delivery
+                'delivery' => $request->delivery,
+                'conversion_scripts' => $conversionScripts,
+                'sale_id' => $sale->id
             ]);
             
         } catch (\Exception $e) {

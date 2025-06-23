@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\AdController as AdminAdController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
+use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
 
 use App\Http\Controllers\Admin\DeliveryPriceController as AdminDeliveryPriceController;
 use App\Http\Controllers\Admin\TypesDeliveryController as AdminTypesDeliveryController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\Admin\ComboController as AdminComboController;
 use App\Http\Controllers\Admin\DeliveryZoneController as AdminDeliveryZoneController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\NotificationVariableController;
+use App\Http\Controllers\Api\NotificationVariablesController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\AuthClientController;
@@ -90,6 +92,13 @@ Route::post('/unified-import/preview', [UnifiedImportController::class, 'preview
 Route::get('/unified-import/field-mappings', [UnifiedImportController::class, 'getFieldMappings']);
 
 Route::post('/complaints', [ComplaintController::class, 'saveComplaint']);
+Route::get('/notification-variables/{type}', [NotificationVariablesController::class, 'getVariables']);
+
+// Tracking de ecommerce
+Route::post('/tracking/add-to-cart', [App\Http\Controllers\Ecommerce\EcommerceTrackingController::class, 'trackAddToCart']);
+Route::post('/tracking/initiate-checkout', [App\Http\Controllers\Ecommerce\EcommerceTrackingController::class, 'trackInitiateCheckout']);
+Route::get('/tracking/purchase/{orderId}', [App\Http\Controllers\Ecommerce\EcommerceTrackingController::class, 'trackPurchase']);
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/signup', [AuthController::class, 'signup']);
 
@@ -168,6 +177,9 @@ Route::post('/sales', [SaleController::class, 'save']);
 
 Route::get('/person/{dni}', [PersonController::class, 'find']);
 
+// Ruta pública para aplicar reglas de descuento al carrito
+Route::post('/discount-rules/apply-to-cart', [AdminDiscountRulesController::class, 'applyToCart']);
+
 Route::middleware('auth')->group(function () {
   Route::get('/notification-variables/{type}', [NotificationVariableController::class, 'variables']);
   Route::post('/upload-image', [ImageUploadController::class, 'store']);
@@ -205,6 +217,20 @@ Route::middleware('auth')->group(function () {
     Route::delete('/coupons/{id}', [AdminCouponController::class, 'delete']);
     Route::post('/coupons/validate', [AdminCouponController::class, 'validateCoupon']);
     Route::get('/coupons/generate-code', [AdminCouponController::class, 'generateCode']);
+
+    // Reglas de Descuento
+    Route::post('/discount-rules', [AdminDiscountRulesController::class, 'save']);
+    Route::post('/discount-rules/paginate', [AdminDiscountRulesController::class, 'paginate']);
+    Route::patch('/discount-rules/{field}', [AdminDiscountRulesController::class, 'boolean']);
+    Route::delete('/discount-rules/{id}', [AdminDiscountRulesController::class, 'delete']);
+    Route::patch('/discount-rules/{id}/toggle-active', [AdminDiscountRulesController::class, 'toggleActive']);
+    Route::post('/discount-rules/{id}/duplicate', [AdminDiscountRulesController::class, 'duplicate']);
+    Route::get('/discount-rules/products', [AdminDiscountRulesController::class, 'getProducts']);
+    Route::post('/discount-rules/products/by-ids', [AdminDiscountRulesController::class, 'getProductsByIds']);
+    Route::get('/discount-rules/categories', [AdminDiscountRulesController::class, 'getCategories']);
+    Route::post('/discount-rules/categories/by-ids', [AdminDiscountRulesController::class, 'getCategoriesByIds']);
+    Route::get('/discount-rules/rule-types', [AdminDiscountRulesController::class, 'getRuleTypes']);
+    Route::get('/discount-rules/{id}/usage-stats', [AdminDiscountRulesController::class, 'getUsageStats']);
 
     Route::post('/ads', [AdminAdController::class, 'save']);
     Route::post('/ads/paginate', [AdminAdController::class, 'paginate']);

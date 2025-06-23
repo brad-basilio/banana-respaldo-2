@@ -2,7 +2,6 @@
     $component = Route::currentRouteName();
 ?>
 
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -46,21 +45,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RF5XHT4BR6"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-RF5XHT4BR6');
-    </script>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-        })(window,document,'script','dataLayer','GTM-M3KCKSQP');
-    </script>
-    <!-- End Google Tag Manager -->
+    
+    <?php
+        $pixelScripts = App\Helpers\PixelHelper::getPixelScripts();
+    ?>
+    
+    <?php echo $pixelScripts['head']; ?>
+
 
     <?php if($data['fonts']['title']['url'] && $data['fonts']['title']['source'] !== 'true'): ?>
         <link rel="stylesheet" href="<?php echo e($data['fonts']['title']['url']); ?>">
@@ -198,22 +189,27 @@
 </head>
 
 <body class="font-general">
-    <noscript>
-        <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M3KCKSQP" height="0" width="0" style="display:none;visibility:hidden"></iframe>
-    </noscript>
+    <?php
+        $pixelScripts = App\Helpers\PixelHelper::getPixelScripts();
+    ?>
+    
+    <?php echo $pixelScripts['body']; ?>
+
 
     <?php if (!isset($__inertiaSsrDispatched)) { $__inertiaSsrDispatched = true; $__inertiaSsrResponse = app(\Inertia\Ssr\Gateway::class)->dispatch($page); }  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->body; } else { ?><div id="app" data-page="<?php echo e(json_encode($page)); ?>"></div><?php } ?>
 
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
 
-    <script src="/lte/assets/libs/select2/js/select2.full.min.js" defer></script>
-    <!-- App js -->
+    <script src="/lte/assets/libs/select2/js/select2.full.min.js" defer></script>    <!-- App js -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.js" defer></script>
     <script src="/lte/assets/libs/moment/min/moment.min.js" defer></script>
     <script src="/lte/assets/libs/moment/moment-timezone.js" defer></script>
     <script src="/lte/assets/libs/moment/locale/es.js" defer></script>
     <script src="/lte/assets/libs/quill/quill.min.js" defer></script>
+    
+    <!-- Ecommerce Tracking System -->
+    <script src="/assets/js/ecommerce-tracker.js" defer></script>
     <script>
         document.addEventListener('click', function(event) {
             const target = event.target;

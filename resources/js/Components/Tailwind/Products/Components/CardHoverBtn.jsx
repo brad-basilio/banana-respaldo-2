@@ -90,7 +90,7 @@ const CardHoverBtn = ({
                                 alt={product.name}
                                 className="w-full h-full object-cover bg-slate-100"
                                 loading="lazy"
-                                whileHover={{ scale: 1.1 }}
+                               
                                 transition={{ duration: 0.3 }}
                             />
                         </motion.div>

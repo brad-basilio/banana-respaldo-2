@@ -1,17 +1,46 @@
 import Number2Currency from "../../../../Utils/Number2Currency";
 import ButtonPrimary from "./ButtonPrimary";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 
-export default function ConfirmationStep({ cart, code, delivery, couponDiscount = 0, couponCode = null }) {
+export default function ConfirmationStep({ cart, code, delivery, couponDiscount = 0, couponCode = null, conversionScripts = null, automaticDiscounts = [], automaticDiscountTotal = 0 }) {
     const totalPrice = cart.reduce((acc, item) => {
         const finalPrice = item.final_price;
         return acc + finalPrice * item.quantity;
     }, 0);
 
-    const subTotal = (totalPrice / 1.18).toFixed(2);
-    const igv = (subTotal * 0.18).toFixed(2);
+   
+    const subTotal = parseFloat((totalPrice / 1.18).toFixed(2));
+    const igv = parseFloat((totalPrice - subTotal).toFixed(2));
+
     const totalBeforeDiscount = parseFloat(subTotal) + parseFloat(igv) + parseFloat(delivery);
-    const totalFinal = totalBeforeDiscount - couponDiscount;
+    const totalFinal = totalBeforeDiscount - couponDiscount - automaticDiscountTotal;
+
+    // Execute conversion scripts when component mounts
+    useEffect(() => {
+        if (conversionScripts) {
+            console.log('Executing conversion scripts...');
+            try {
+                // Execute the scripts in the head
+                if (conversionScripts.head) {
+                    const headScript = document.createElement('script');
+                    headScript.innerHTML = conversionScripts.head;
+                    document.head.appendChild(headScript);
+                }
+                
+                // Execute the scripts in the body
+                if (conversionScripts.body) {
+                    const bodyScript = document.createElement('script');
+                    bodyScript.innerHTML = conversionScripts.body;
+                    document.body.appendChild(bodyScript);
+                }
+                
+                console.log('Conversion scripts executed successfully');
+            } catch (error) {
+                console.error('Error executing conversion scripts:', error);
+            }
+        }
+    }, [conversionScripts]);
 
     return (
         <motion.div
@@ -103,7 +132,6 @@ export default function ConfirmationStep({ cart, code, delivery, couponDiscount 
                                 { label: "Subtotal", value: subTotal },
                                 { label: "IGV", value: igv },
                                 { label: "Envío", value: delivery }
-
                             ].map((item, index) => (
                                 <div key={index} className="flex justify-between items-center py-2">
                                     <span className="customtext-neutral-dark">{item.label}</span>
@@ -114,15 +142,40 @@ export default function ConfirmationStep({ cart, code, delivery, couponDiscount 
                             {/* Mostrar descuento del cupón si existe */}
                             {couponDiscount > 0 && couponCode && (
                                 <div className="flex justify-between items-center py-2">
-
                                     <span className="customtext-neutral-dark text-start">
                                         Cupón: <br className="lg:hidden"/>
                                         <span className="font-semibold text-xs lg:text-base">({couponCode})</span>
                                     </span>
-
-
                                     <span className="font-semibold">-S/ {Number2Currency(couponDiscount)}</span>
                                 </div>
+                            )}
+
+                            {/* Mostrar descuentos automáticos si existen */}
+                            {automaticDiscountTotal > 0 && automaticDiscounts.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="text-xl md:text-2xl font-bold pb-4 md:pb-6 customtext-neutral-dark mb-2">
+                                  🎉 Descuentos aplicados:
+                                </div>
+                                {automaticDiscounts.map((discount, index) => (
+                                  <div key={index} className="flex justify-between text-sm">
+                                    <span className="customtext-neutral-dark">
+                                      {discount.name}
+                                      {discount.description && (
+                                        <span className="text-xs font-semibold block">
+                                          {discount.description}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span className="customtext-neutral-dark font-semibold">
+                                      -S/ {Number2Currency(discount.amount)}
+                                    </span>
+                                  </div>
+                                ))}
+                                <div className="flex justify-between text-sm font-semibold customtext-neutral-dark pt-1">
+                                  <span>Total descuentos:</span>
+                                  <span>-S/ {Number2Currency(automaticDiscountTotal)}</span>
+                                </div>
+                              </div>
                             )}
 
                             <div className="py-4 border-y-2 mt-6">
