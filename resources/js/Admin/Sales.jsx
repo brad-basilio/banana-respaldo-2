@@ -29,7 +29,8 @@ const Sales = ({ statuses = [] }) => {
             status_id: e.target.value,
         });
         if (!result) return;
-        setSaleLoaded(result);
+        const newSale = await salesRest.get(saleId);
+        setSaleLoaded(newSale);
         $(gridRef.current).dxDataGrid("instance").refresh();
     };
 
