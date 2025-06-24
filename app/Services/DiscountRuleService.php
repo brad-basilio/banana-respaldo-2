@@ -26,7 +26,7 @@ class DiscountRuleService
 
         \Log::info('🔄 Starting discount evaluation', [
             'valid_rules_count' => $rules->count(),
-            'cart_items_count' => $cartItems->count(),
+            'cart_items_count' => count($cartItems),
             'total_amount' => $totalAmount,
             'customer_email' => $customerEmail
         ]);
@@ -109,7 +109,7 @@ class DiscountRuleService
             'rule_id' => $rule->id,
             'rule_type' => $rule->rule_type,
             'conditions' => $conditions,
-            'cart_items_count' => $cartItems->count(),
+            'cart_items_count' => count($cartItems),
             'total_amount' => $totalAmount
         ]);
 
@@ -146,9 +146,11 @@ class DiscountRuleService
         if (isset($conditions['products']) || isset($conditions['product_ids'])) {
             $requiredProducts = $conditions['products'] ?? $conditions['product_ids'] ?? [];
             $cartProductIds = $cartItems->pluck('item_id')->unique()->toArray();
-            
-            if (!array_intersect($requiredProducts, $cartProductIds)) {
-                return false;
+            // Si requiredProducts está vacío, no filtrar por productos (aplica a todos)
+            if (is_array($requiredProducts) && count($requiredProducts) > 0) {
+                if (!array_intersect($requiredProducts, $cartProductIds)) {
+                    return false;
+                }
             }
         }
 
@@ -156,16 +158,17 @@ class DiscountRuleService
         if (isset($conditions['categories']) || isset($conditions['category_ids'])) {
             $requiredCategories = $conditions['categories'] ?? $conditions['category_ids'] ?? [];
             $cartCategoryIds = [];
-            
             foreach ($cartItems as $item) {
                 $product = Item::find($item['item_id']);
                 if ($product && $product->category_id) {
                     $cartCategoryIds[] = $product->category_id;
                 }
             }
-            
-            if (!array_intersect($requiredCategories, array_unique($cartCategoryIds))) {
-                return false;
+            // Si requiredCategories está vacío, no filtrar por categorías (aplica a todas)
+            if (is_array($requiredCategories) && count($requiredCategories) > 0) {
+                if (!array_intersect($requiredCategories, array_unique($cartCategoryIds))) {
+                    return false;
+                }
             }
         }
 
@@ -246,7 +249,7 @@ class DiscountRuleService
             'rule_name' => $rule->name,
             'conditions' => $conditions,
             'actions' => $actions,
-            'cart_items_count' => $cartItems->count(),
+            'cart_items_count' =>count($cartItems),
             'cart_items' => $cartItems->toArray()
         ]);
         
