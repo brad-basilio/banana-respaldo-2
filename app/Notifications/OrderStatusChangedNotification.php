@@ -7,6 +7,8 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use App\Mail\RawHtmlMail;
+use App\Models\General;
+use App\Models\SaleStatus;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -46,18 +48,18 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
-        \Log::info('Enviando a: ' . $notifiable->email);
-        $template = \App\Models\General::where('correlative', 'order_status_changed_email')->first();
+        // \Log::info('Enviando a: ' . $notifiable->email);
+        $template = General::where('correlative', 'order_status_changed_email')->first();
         $content = $template ? $template->description : '';
 
         // Construir array de productos para el bloque repetible
         $productos = [];
-        Log::info('Detalles recibidos:', (array) $this->details);
-        Log::info('Entrando al foreach de detalles...');
+        // Log::info('Detalles recibidos:', (array) $this->details);
+        // Log::info('Entrando al foreach de detalles...');
         foreach ($this->details as $detail) {
 
 
-            Log::info('Productos array generado:', $productos);
+            // Log::info('Productos array generado:', $productos);
             $productos[] = [
                 'nombre'    => $detail->name ?? '',
                 'cantidad'  => $detail->quantity ?? '',
@@ -71,7 +73,7 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
             ? \App\Helpers\Text::replaceData($content, [
                 'orderId'      => $this->sale->code,
                 'status'       => $this->sale->status->name,
-                'status_color' => optional(\App\Models\SaleStatus::where('name', $this->sale->status->name)->first())->color ?? '#6c757d',
+                'status_color' => optional(SaleStatus::where('name', $this->sale->status->name)->first())->color ?? '#6c757d',
                 'name'         => $this->sale->user->name ?? $this->sale->name ?? '',
                 'year'         => date('Y'),
                 'fecha_pedido' => $this->sale->created_at
@@ -81,7 +83,7 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
             ])
             : 'Plantilla no encontrada';
 
-        \Log::info('Cuerpo: ' . $body);
+        // \Log::info('Cuerpo: ' . $body);
         $toEmail = $notifiable->email ?? $this->sale->email ?? $this->sale->user->email;
         dump('Dentro de notifier');
         return (new RawHtmlMail(
