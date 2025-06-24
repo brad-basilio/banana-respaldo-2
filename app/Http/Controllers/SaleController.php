@@ -27,6 +27,18 @@ class SaleController extends BasicController
     public $model = Sale::class;
     public $imageFields = ['payment_proof'];
 
+    public function track(Request $request, string $code) {
+        $response = Response::simpleTryCatch(function () use ($code) {
+            $sale = Sale::select(['id', 'code', 'status_id', 'created_at', 'updated_at'])
+            ->with(['status', 'tracking'])
+            ->where('code', $code)
+            ->first();
+            if (!$sale) throw new Exception('El código de seguimiento no es válido');
+            return $sale->toArray();
+        });
+        return response($response->toArray(), $response->status);
+    }
+
     static function create(array $sale, array $details): array
     {
         try {

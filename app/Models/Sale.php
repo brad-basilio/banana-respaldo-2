@@ -65,7 +65,18 @@ class Sale extends Model
 
     public function status()
     {
-        return $this->belongsTo(SaleStatus::class);
+        return $this->belongsTo(SaleStatus::class, 'status_id');
+    }
+
+    public function tracking()
+    {
+        return $this->hasManyThrough(SaleStatus::class, SaleStatusTrace::class, 'sale_id', 'id', 'id', 'status_id')
+            ->select([
+                'sale_statuses.id',
+                'sale_statuses.name',
+                'sale_statuses.color',
+                'sale_status_traces.created_at'
+            ]);
     }
 
     public function user()

@@ -1587,6 +1587,16 @@
         ]
     },
     {
+        "id": "track",
+        "name": "Tracking",
+        "options": [
+            {
+                "id": "TrackSimple",
+                "name": "Simple"
+            }
+        ]
+    },
+    {
         "id": "post-detail",
         "name": "Post Detalle",
         "options": [

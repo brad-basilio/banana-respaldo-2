@@ -38,6 +38,7 @@ const Complaint = React.lazy(() => import("./Components/Tailwind/Complaint"));
 const Indicator = React.lazy(() => import("./Components/Tailwind/Indicator"));
 const ThankSimple = React.lazy(() => import("./Components/Tailwind/Thanks/ThankSimple"));
 const Image = React.lazy(() => import("./Components/Tailwind/Image"));
+const Track = React.lazy(() => import("./Components/Tailwind/Track"));
 const BananaLab = React.lazy(() => import("./Components/Tailwind/BananaLab"));
 const Floating = React.lazy(() => import("./Components/Tailwind/Floating"));
 const DeliveryZone = React.lazy(() => import("./Components/Tailwind/DeliveryZone"));
@@ -203,6 +204,8 @@ const System = ({
                 return <Faq which={value} data={data} faqs={faqs} />
             case "thank":
                 return <ThankSimple which={value} data={data} item={filteredData.Sale} />
+            case "track":
+                return <Track which={value} data={data} />
             case "blog":
                 return <Blog which={value} data={data} items={getItems(itemsId)} headerPosts={headerPosts} postsLatest={postsLatest} filteredData={filteredData} />
             case "post-detail":
@@ -231,7 +234,7 @@ const System = ({
                 return <Brands which={value} data={data} items={getItems(itemsId)} />
 
             default:
-                return <NoComponent />
+                return <NoComponent which={value} />
         }
     };
 

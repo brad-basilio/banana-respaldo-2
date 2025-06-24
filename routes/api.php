@@ -158,6 +158,7 @@ Route::post('/coupons/is-first', [CouponController::class, 'isFirst']);
 Route::post('/orders', [MercadoPagoController::class, 'getOrder']);
 
 Route::post('/sales', [SaleController::class, 'save']);
+Route::get('/sales/track/{code}', [SaleController::class, 'track']);
 
 Route::get('/person/{dni}', [PersonController::class, 'find']);
 
