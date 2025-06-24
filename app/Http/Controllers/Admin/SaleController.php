@@ -12,7 +12,7 @@ class SaleController extends BasicController
 {
     public $model = Sale::class;
     public $reactView = 'Admin/Sales';
-    public $with4get = ['status', 'details'];
+    public $with4get = ['status', 'details', 'tracking'];
 
     public function setReactViewProperties(Request $request)
     {

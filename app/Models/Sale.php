@@ -75,8 +75,11 @@ class Sale extends Model
                 'sale_statuses.id',
                 'sale_statuses.name',
                 'sale_statuses.color',
-                'sale_status_traces.created_at'
-            ]);
+                'sale_status_traces.created_at',
+                'users.id as user_id',
+                'users.name as user_name',
+                'users.lastname as user_lastname',
+            ])->join('users', 'users.id', 'sale_status_traces.user_id');
     }
 
     public function user()

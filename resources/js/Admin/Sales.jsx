@@ -28,7 +28,6 @@ const Sales = ({ statuses = [] }) => {
             id: saleLoaded.id,
             status_id: e.target.value,
         });
-        console.log("onStatusChange", result);
         if (!result) return;
         setSaleLoaded(result);
         $(gridRef.current).dxDataGrid("instance").refresh();
@@ -52,6 +51,7 @@ const Sales = ({ statuses = [] }) => {
     const onModalOpen = async (saleId) => {
         const newSale = await salesRest.get(saleId);
         setSaleLoaded(newSale.data);
+        setSaleStatuses(newSale.data.tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
         $(modalRef.current).modal("show");
     };
 
@@ -142,7 +142,6 @@ const Sales = ({ statuses = [] }) => {
                         dataField: "status.name",
                         caption: "Estado",
                         cellTemplate: (container, { data }) => {
-                            console.log(data);
                             ReactAppend(
                                 container,
                                 <span
@@ -477,7 +476,7 @@ const Sales = ({ statuses = [] }) => {
                             </div>
                         </div>
 
-                        <div className="card" hidden>
+                        <div className="card">
                             <div className="card-header p-2">
                                 <h5 className="card-title mb-0">
                                     Cambios de Estado
@@ -493,8 +492,8 @@ const Sales = ({ statuses = [] }) => {
                                                 position: "relative",
                                                 borderRadius:
                                                     "16px 4px 4px 16px",
-                                                backgroundColor: ss.status.color
-                                                    ? `${ss.status.color}2e`
+                                                backgroundColor: ss.color
+                                                    ? `${ss.color}2e`
                                                     : "#3333332e",
                                             }}
                                         >
@@ -502,7 +501,7 @@ const Sales = ({ statuses = [] }) => {
                                                 className="mdi mdi-circle left-2"
                                                 style={{
                                                     color:
-                                                        ss.status.color ||
+                                                        ss.color ||
                                                         "#333",
                                                     position: "absolute",
                                                     left: "-25px",
@@ -514,15 +513,15 @@ const Sales = ({ statuses = [] }) => {
                                             <b
                                                 style={{
                                                     color:
-                                                        ss.status.color ||
+                                                        ss.color ||
                                                         "#333",
                                                 }}
                                             >
-                                                {ss?.status?.name}
+                                                {ss?.name}
                                             </b>
                                             <small className="d-block text-truncate">
-                                                {ss?.user?.name}{" "}
-                                                {ss?.user?.lastname}
+                                                {ss?.user_name}{" "}
+                                                {ss?.user_lastname}
                                             </small>
                                             <small className="d-block text-muted">
                                                 {moment(ss.created_at).format(

@@ -129,7 +129,6 @@ const TrackSimple = () => {
 
                                 <div className="space-y-6">
                                     {statusTracking.map((status) => {
-                                        console.log(status.created_at)
                                         return (
                                             <div key={status.id} className="relative flex items-start">
                                                 {/* Círculo del estado */}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-const Modal = ({ modalRef, title = 'Modal', isStatic = false, size = 'md', children, bodyClass = '', btnCancelText, btnSubmitText, hideFooter, hideButtonSubmit, onSubmit = (e) => { e.preventDefault(); $(modalRef.current).modal('hide') }, onClose }) => {
+const Modal = ({ modalRef, title = 'Modal', isStatic = false, size = 'md', children, bodyClass = '', bodyStyle, btnCancelText, btnSubmitText, hideFooter, hideButtonSubmit, onSubmit = (e) => { e.preventDefault(); $(modalRef.current).modal('hide') }, onClose }) => {
   if (!modalRef) modalRef = useRef()
   const staticProp = isStatic ? { 'data-bs-backdrop': 'static' } : {}
 
@@ -28,7 +28,7 @@ const Modal = ({ modalRef, title = 'Modal', isStatic = false, size = 'md', child
           <h4 className='modal-title'>{title}</h4>
           <button type='button' className='btn-close' data-bs-dismiss='modal' aria-label='Close'></button>
         </div>
-        <div className={`modal-body ${bodyClass ?? ''}`} >
+        <div className={`modal-body ${bodyClass ?? ''}`}  style={bodyStyle}>
           {children}
         </div>
         {
