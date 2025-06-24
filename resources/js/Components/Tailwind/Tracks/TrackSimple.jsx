@@ -128,12 +128,12 @@ const TrackSimple = () => {
                                 <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
 
                                 <div className="space-y-6">
-                                    {statusTracking.map((status) => {
+                                    {statusTracking.map((status, index) => {
                                         return (
                                             <div key={status.id} className="relative flex items-start">
                                                 {/* Círculo del estado */}
                                                 <div
-                                                    className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-4 border-white shadow-lg ${status.id == currentStatus.id ? "ring-4 ring-opacity-20" : ""} `} style={{ backgroundColor: status.color, '--tw-ring-color': getStatusBGColor(status.color, 0.5) }}
+                                                    className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-4 border-white shadow-lg ${index == 0 ? "ring-4 ring-opacity-20" : ""} `} style={{ backgroundColor: status.color, '--tw-ring-color': getStatusBGColor(status.color, 0.5) }}
                                                 >
                                                     <div className="text-white">{getStatusIcon(status.name)}</div>
                                                 </div>
