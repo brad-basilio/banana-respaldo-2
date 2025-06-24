@@ -27,6 +27,12 @@ class StatusSeeder extends Seeder
                 'editable' => false
             ],
             [
+                'id' => 'bd60fc99-c0c0-463d-b738-1c72d7b085f5',
+                'name' => 'Pagado - Por verificar',
+                'color' => '#71b6f9',
+                'editable' => false
+            ],
+            [
                 'id' => 'd3a77651-15df-4fdc-a3db-91d6a8f4247c',
                 'name' => 'Rechazado',
                 'color' => '#ff5b5b',
