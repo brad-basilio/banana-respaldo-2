@@ -27,7 +27,6 @@ class SaleStatusObserver
                 'status_id' => $sale->status_id,
                 'user_id' => Auth::id() ?? null,
             ]);
-            $sale->notify(new OrderStatusChangedNotification($sale));
         }
     }
 }
