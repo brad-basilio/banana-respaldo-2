@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Sale;
 use App\Models\SaleStatusTrace;
+use App\Notifications\OrderStatusChangedNotification;
 use Illuminate\Support\Facades\Auth;
 
 class SaleStatusObserver
@@ -26,6 +27,7 @@ class SaleStatusObserver
                 'status_id' => $sale->status_id,
                 'user_id' => Auth::id() ?? null,
             ]);
+            $sale->notify(new OrderStatusChangedNotification($sale));
         }
     }
 }

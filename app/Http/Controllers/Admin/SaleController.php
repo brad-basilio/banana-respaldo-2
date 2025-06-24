@@ -30,10 +30,10 @@ class SaleController extends BasicController
     {
         $saleJpa = Sale::with($this->with4get)->find($jpa->id);
 
-        // Notificar al cliente sobre el cambio de estado
-        if ($saleJpa && $saleJpa->email && $saleJpa->status) {
-            $saleJpa->notify(new OrderStatusChangedNotification($saleJpa));
-        }
+        // // Notificar al cliente sobre el cambio de estado
+        // if ($saleJpa && $saleJpa->email && $saleJpa->status) {
+        //     $saleJpa->notify(new OrderStatusChangedNotification($saleJpa));
+        // }
 
         return $saleJpa;
     }
