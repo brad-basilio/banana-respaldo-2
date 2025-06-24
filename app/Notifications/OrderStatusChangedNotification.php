@@ -55,15 +55,15 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
         Log::info('Detalles recibidos:', (array) $this->details);
         Log::info('Entrando al foreach de detalles...');
         foreach ($this->details as $detail) {
-           
-           
+
+
             Log::info('Productos array generado:', $productos);
             $productos[] = [
                 'nombre'    => $detail->name ?? '',
                 'cantidad'  => $detail->quantity ?? '',
                 'precio'    => isset($detail->price) ? number_format($detail->price, 2) : '',
                 'categoria' => isset($detail->item) && isset($detail->item->category) && isset($detail->item->category->name) ? $detail->item->category->name : '',
-                'imagen'    => url(Storage::url("images/item/".$detail->item->image ?? '')), // SOLO "imagen"
+                'imagen'    => url(Storage::url("images/item/" . $detail->item->image ?? '')), // SOLO "imagen"
             ];
         }
 
@@ -74,15 +74,15 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
                 'status_color' => optional(\App\Models\SaleStatus::where('name', $this->sale->status->name)->first())->color ?? '#6c757d',
                 'name'         => $this->sale->user->name ?? $this->sale->name ?? '',
                 'year'         => date('Y'),
-                'fecha_pedido' => $this->sale->created_at 
-                    ? $this->sale->created_at->translatedFormat('d \d\e F \d\e\l Y') 
+                'fecha_pedido' => $this->sale->created_at
+                    ? $this->sale->created_at->translatedFormat('d \d\e F \d\e\l Y')
                     : '',
                 'productos'    => $productos,
             ])
             : 'Plantilla no encontrada';
-        
+
         \Log::info('Cuerpo: ' . $body);
-        $toEmail = $notifiable->email ?? $this->sale->user->email ?? $this->sale->email;
+        $toEmail = $notifiable->email ?? $this->sale->email ?? $this->sale->user->email;
         dump('Dentro de notifier');
         return (new RawHtmlMail(
             $body,

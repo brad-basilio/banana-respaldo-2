@@ -53,6 +53,7 @@ const Sales = ({ statuses = [] }) => {
     };
 
     const onModalOpen = async (saleId) => {
+        notifyClientRef.current.checked = true
         const newSale = await salesRest.get(saleId);
         setSaleLoaded(newSale.data);
         setSaleStatuses(newSale.data.tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));

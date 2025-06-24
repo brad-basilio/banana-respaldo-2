@@ -30,7 +30,6 @@ class SaleController extends BasicController
     {
         $saleJpa = Sale::with($this->with4get)->find($jpa->id);
         if ($request->notify_client) {
-            dump('Notificando aqui');
             $saleJpa->notify(new OrderStatusChangedNotification($saleJpa));
         }
         return $saleJpa;
