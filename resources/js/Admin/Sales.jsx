@@ -18,6 +18,7 @@ const saleStatusesRest = new SaleStatusesRest();
 
 const Sales = ({ statuses = [] }) => {
     const gridRef = useRef();
+    const notifyClientRef = useRef()
     const modalRef = useRef();
 
     const [saleLoaded, setSaleLoaded] = useState(null);
@@ -27,6 +28,7 @@ const Sales = ({ statuses = [] }) => {
         const result = await salesRest.save({
             id: saleLoaded.id,
             status_id: e.target.value,
+            notify_client: notifyClientRef.current.checked
         });
         if (!result) return;
         const newSale = await salesRest.get(saleLoaded.id);
@@ -452,7 +454,7 @@ const Sales = ({ statuses = [] }) => {
                                 <h5 className="card-title mb-0">Estado</h5>
                             </div>
                             <div className="card-body p-2">
-                                <div className="">
+                                <div className="mb-2">
                                     <label
                                         htmlFor="statusSelect"
                                         className="form-label"
@@ -475,6 +477,18 @@ const Sales = ({ statuses = [] }) => {
                                         })}
                                     </select>
                                 </div>
+                                <div className="form-check">
+                                    <input 
+                                        ref={notifyClientRef}
+                                        className="form-check-input" 
+                                        type="checkbox" 
+                                        id="notifyClient"
+                                        defaultChecked
+                                    />
+                                    <label className="form-check-label" htmlFor="notifyClient">
+                                        Notificar al cliente
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -489,7 +503,7 @@ const Sales = ({ statuses = [] }) => {
                                     return (
                                         <article
                                             key={index}
-                                            class="border py-1 px-2 ms-3"
+                                            className="border py-1 px-2 ms-3"
                                             style={{
                                                 position: "relative",
                                                 borderRadius:

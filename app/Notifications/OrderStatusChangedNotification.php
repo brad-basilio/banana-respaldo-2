@@ -82,7 +82,8 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
             : 'Plantilla no encontrada';
         
         \Log::info('Cuerpo: ' . $body);
-        $toEmail = $this->sale->user->email ?? $this->sale->email ?? $notifiable->email;
+        $toEmail = $notifiable->email ?? $this->sale->user->email ?? $this->sale->email;
+        dump('Dentro de notifier');
         return (new RawHtmlMail(
             $body,
             'Estado de tu pedido actualizado',
