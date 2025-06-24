@@ -630,13 +630,6 @@
       "_createLucideIcon-Cy5Ya80P.js"
     ]
   },
-  "_clock-BTrEpQej.js": {
-    "file": "assets/clock-BTrEpQej.js",
-    "name": "clock",
-    "imports": [
-      "_createLucideIcon-Cy5Ya80P.js"
-    ]
-  },
   "_cookies-bFkouajj.js": {
     "file": "assets/cookies-bFkouajj.js",
     "name": "cookies",
@@ -7369,7 +7362,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Track.jsx": {
-    "file": "assets/Track-Bn8IkDMQ.js",
+    "file": "assets/Track-DE_FbgES.js",
     "name": "Track",
     "src": "resources/js/Components/Tailwind/Track.jsx",
     "isDynamicEntry": true,
@@ -7384,7 +7377,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Tracks/TrackSimple.jsx": {
-    "file": "assets/TrackSimple-D8u7X5UX.js",
+    "file": "assets/TrackSimple-CKBDhsZ1.js",
     "name": "TrackSimple",
     "src": "resources/js/Components/Tailwind/Tracks/TrackSimple.jsx",
     "isDynamicEntry": true,
@@ -7396,7 +7389,6 @@
       "_search-TwiiKGP5.js",
       "_createLucideIcon-Cy5Ya80P.js",
       "_circle-check-big-D6DM3vPb.js",
-      "_clock-BTrEpQej.js",
       "_index-yBjzXJbu.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "_BasicRest-B3rfI5GY.js",
@@ -7497,7 +7489,7 @@
     ]
   },
   "resources/js/Contact.jsx": {
-    "file": "assets/Contact-eSD1m08M.js",
+    "file": "assets/Contact-BLCemYQT.js",
     "name": "Contact",
     "src": "resources/js/Contact.jsx",
     "isEntry": true,
@@ -7510,7 +7502,6 @@
       "_Global-ErywZRdd.js",
       "_createLucideIcon-Cy5Ya80P.js",
       "_phone-BZ94M50k.js",
-      "_clock-BTrEpQej.js",
       "_MessagesRest-CFTDG4sK.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "_user-BvYmyGTY.js",
@@ -7840,7 +7831,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-D8HrA7Ln.js",
+    "file": "assets/System-B1nR56nP.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

@@ -29,7 +29,7 @@ class SaleController extends BasicController
 
     public function track(Request $request, string $code) {
         $response = Response::simpleTryCatch(function () use ($code) {
-            $sale = Sale::select(['id', 'code', 'status_id', 'created_at', 'updated_at'])
+            $sale = Sale::select(['id', 'code', 'status_id', 'updated_at'])
             ->with(['status', 'tracking'])
             ->where('code', $code)
             ->first();

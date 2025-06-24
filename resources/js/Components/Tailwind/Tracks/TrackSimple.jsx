@@ -1,5 +1,5 @@
 import React, { useEffect } from "react"
-import { Search, Package, Truck, CheckCircle, Clock, AlertCircle, Clock1 } from "lucide-react"
+import { Search, CheckCircle, AlertCircle } from "lucide-react"
 import { useState } from "react"
 import { GET } from "sode-extend-react"
 import SalesRest from "../../../Actions/SalesRest"
@@ -7,30 +7,7 @@ import SalesRest from "../../../Actions/SalesRest"
 const salesRest = new SalesRest()
 
 const getStatusIcon = (status) => {
-    switch (String(status).toLowerCase()) {
-        case "recibido":
-            return <Clock className="w-4 h-4" />
-        case "procesando":
-            return <Package className="w-4 h-4" />
-        case "en tránsito":
-            return <Truck className="w-4 h-4" />
-        case "entregado":
-            return <CheckCircle className="w-4 h-4" />
-        default:
-            return <CheckCircle className="w-4 h-4" />
-    }
-}
-
-const getStatusColor = (status, isActive) => {
-    const baseColors = {
-        recibido: "bg-blue-500",
-        procesando: "bg-yellow-500",
-        "en tránsito": "bg-orange-500",
-        entregado: "bg-green-500",
-    }
-
-    const color = baseColors[String(status).toLowerCase()] || "bg-gray-500"
-    return isActive ? color : color.replace("500", "300")
+    return <CheckCircle className="w-4 h-4" />
 }
 
 const getStatusBGColor = (color = '#111111', percent = 0.1) => {
@@ -39,7 +16,6 @@ const getStatusBGColor = (color = '#111111', percent = 0.1) => {
 
 const TrackSimple = () => {
     const [orderCode, setOrderCode] = useState(GET?.code ?? '')
-    const [currentStatus, setCurrentStatus] = useState(null)
     const [statusTracking, setStatusTracking] = useState(null)
     const [isLoading, setIsLoading] = useState(false)
     const [notFound, setNotFound] = useState(false)
@@ -51,16 +27,13 @@ const TrackSimple = () => {
 
         setIsLoading(true)
         setNotFound(false)
-        setCurrentStatus(null)
         setStatusTracking(null)
         try {
             const { status, tracking } = await salesRest.track(orderCode)
             if (!status) throw new Error("Pedido no encontrado")
-            setCurrentStatus(status)
             setStatusTracking(tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
         } catch (error) {
             setNotFound(true)
-            setCurrentStatus(null)
             setStatusTracking(null)
         } finally {
             setIsLoading(false)
@@ -71,6 +44,7 @@ const TrackSimple = () => {
             handleSearch()
         }
     }, [null])
+    const currentStatus = statusTracking?.[0] ?? null
 
     return (
         <div className="min-h-screen bg-gray-50 p-[5%]">
@@ -122,7 +96,7 @@ const TrackSimple = () => {
                                 <div className="text-right">
                                     <p className="text-sm text-gray-500">Última actualización</p>
                                     <p className="font-semibold">{moment(currentStatus.created_at).format('YYYY-MM-DD')}</p>
-                                    <p className="text-sm text-gray-600">{moment(currentStatus.time).format('hh:mm a')}</p>
+                                    <p className="text-sm text-gray-600">{moment(currentStatus.created_at).format('hh:mm a')}</p>
                                 </div>
                             </div>
                         </div>
