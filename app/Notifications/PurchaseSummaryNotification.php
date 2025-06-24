@@ -5,8 +5,9 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use App\Mail\RawHtmlMail;
+use App\Models\General;
+use App\Models\SaleStatus;
 use Illuminate\Support\Facades\Storage;
 
 class PurchaseSummaryNotification extends Notification implements ShouldQueue
@@ -59,7 +60,7 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
-        $template = \App\Models\General::where('correlative', 'purchase_summary_email')->first();
+        $template = General::where('correlative', 'purchase_summary_email')->first();
         // Armar array de productos para bloque repetible (con más detalles)
         $productos = [];
         foreach ($this->details as $detail) {
@@ -88,7 +89,7 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
                 'orderId'        => $this->sale->code,
                 'fecha_pedido'   => $this->sale->created_at ? $this->sale->created_at->format('d/m/Y H:i') : '',
                 'status'         => $this->sale->status->name ?? '',
-                'status_color'   => optional(\App\Models\SaleStatus::where('name', $this->sale->status->name ?? '')->first())->color ?? '#6c757d',
+                'status_color'   => optional(SaleStatus::where('name', $this->sale->status->name ?? '')->first())->color ?? '#6c757d',
                 'nombre'           => $this->sale->name ?? ($this->sale->user->name ?? ''),
                 'email'          => $this->sale->email ?? ($this->sale->user->email ?? ''),
                 'telefono'       => $this->sale->phone ?? ($this->sale->user->phone ?? ''),
@@ -104,6 +105,10 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
             ])
             : 'Plantilla no encontrada';
 
-        return (new RawHtmlMail($body, '¡Gracias por tu compra!', $this->sale->email ?? ($this->sale->user->email ?? '')));
+        $corporateEmail = General::where('correlative', 'corporative_email')->first();
+
+        // return (new RawHtmlMail($body, '¡Gracias por tu compra!', $this->sale->email ?? ($this->sale->user->email ?? '')));
+        return (new RawHtmlMail($body, '¡Gracias por tu compra!', $this->sale->email ?? ($this->sale->user->email ?? '')))
+            ->bcc($corporateEmail->description ?? '');
     }
 }

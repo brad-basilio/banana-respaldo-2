@@ -89,6 +89,9 @@ const Generals = ({ generals }) => {
     supportEmail:
       generals.find((x) => x.correlative == "support_email")
         ?.description ?? "",
+    corporativeEmail:
+      generals.find((x) => x.correlative == "corporative_email")
+        ?.description ?? "",
     privacyPolicy:
       generals.find((x) => x.correlative == "privacy_policy")
         ?.description ?? "",
@@ -229,6 +232,11 @@ const Generals = ({ generals }) => {
           correlative: "support_phone",
           name: "Número de soporte",
           description: formData.supportPhone,
+        },
+        {
+          correlative: "corporative_email",
+          name: "Correo corporativo",
+          description: formData.corporativeEmail,
         },
         {
           correlative: "support_email",
@@ -727,6 +735,27 @@ const Generals = ({ generals }) => {
                   setFormData({
                     ...formData,
                     supportPhone: e.target.value,
+                  })
+                }
+                required
+              />
+            </div>
+            <div className="mb-2">
+              <label
+                htmlFor="corporativeEmail"
+                className="form-label"
+              >
+                Correo corporativo
+              </label>
+              <input
+                type="email"
+                className="form-control"
+                id="corporativeEmail"
+                value={formData.corporativeEmail}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    corporativeEmail: e.target.value,
                   })
                 }
                 required
