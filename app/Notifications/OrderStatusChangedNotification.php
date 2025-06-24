@@ -85,7 +85,6 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
 
         // \Log::info('Cuerpo: ' . $body);
         $toEmail = $notifiable->email ?? $this->sale->email ?? $this->sale->user->email;
-        dump('Dentro de notifier');
         return (new RawHtmlMail(
             $body,
             'Estado de tu pedido actualizado',
