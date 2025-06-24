@@ -30,7 +30,8 @@ const Sales = ({ statuses = [] }) => {
         });
         if (!result) return;
         const newSale = await salesRest.get(saleLoaded.id);
-        setSaleLoaded(newSale);
+        setSaleLoaded(newSale.data);
+        setSaleStatuses(newSale.data.tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
         $(gridRef.current).dxDataGrid("instance").refresh();
     };
 
