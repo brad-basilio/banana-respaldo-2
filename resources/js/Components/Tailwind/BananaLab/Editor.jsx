@@ -61,7 +61,7 @@ export default function EditorLibro() {
                 // Obtener el parámetro project de la URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const projectId = urlParams.get('project');
-                
+
                 if (!projectId) {
                     setLoadError('No se encontró el ID del proyecto en la URL');
                     setIsLoading(false);
@@ -69,30 +69,30 @@ export default function EditorLibro() {
                 }
 
                 console.log('� Cargando proyecto con ID:', projectId);
-                
+
                 // Realizar fetch al backend para obtener los datos del proyecto
                 const response = await fetch(`/api/canvas/projects/${projectId}`, {
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                     }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Error al cargar el proyecto');
                 }
-                
+
                 const data = await response.json();
-                
+
                 console.log('✅ Datos del proyecto cargados:', data);
-                
+
                 // Establecer los datos en el estado
                 setProjectData(data.project);
                 setItemData(data.item);
                 setPresetData(data.canvasPreset);
                 setInitialProject(data.initialProject);
-                
+
                 setIsLoading(false);
-                
+
             } catch (error) {
                 console.error('❌ Error cargando proyecto:', error);
                 setLoadError(error.message);
@@ -116,28 +116,74 @@ export default function EditorLibro() {
 
     // Actualizar estados del editor cuando se cargan los datos del proyecto
     useEffect(() => {
-        if (initialProject) {
+        if (initialProject && itemData && presetData) {
             console.log('🔄 Actualizando estados del editor con datos del proyecto');
-            
+
+            // En lugar de usar directamente initialProject.pages, recreamos las páginas
+            // para asegurar que tengan las propiedades backgroundImage y backgroundColor correctas
             if (initialProject.pages && Array.isArray(initialProject.pages)) {
-                setPages(initialProject.pages);
+                console.log('🔧 Recreando páginas con backgrounds actualizados...');
+
+                // Si ya hay páginas en initialProject, las usamos como base pero actualizamos los backgrounds
+                const updatedPages = initialProject.pages.map(page => {
+                    let backgroundImage = null;
+                    let backgroundColor = presetData.background_color || '#ffffff';
+
+                    // Aplicar la lógica de background según el tipo de página
+                    if (page.type === 'cover') {
+                        if (itemData.cover_image) {
+                            backgroundImage = `/storage/images/item/${itemData.cover_image}`;
+                            console.log('🖼️ [UPDATE] Cover page - usando cover_image:', backgroundImage);
+                        } else {
+                            console.log('🎨 [UPDATE] Cover page - usando background_color:', backgroundColor);
+                        }
+                    } else if (page.type === 'content') {
+                        if (itemData.content_image) {
+                            backgroundImage = `/storage/images/item/${itemData.content_image}`;
+                            console.log('🖼️ [UPDATE] Content page - usando content_image:', backgroundImage);
+                        } else {
+                            console.log('🎨 [UPDATE] Content page - usando background_color:', backgroundColor);
+                        }
+                    } else if (page.type === 'final' || page.type === 'contraportada') {
+                        if (itemData.back_cover_image) {
+                            backgroundImage = `/storage/images/item/${itemData.back_cover_image}`;
+                            console.log('🖼️ [UPDATE] Final page - usando back_cover_image:', backgroundImage);
+                        } else {
+                            console.log('🎨 [UPDATE] Final page - usando background_color:', backgroundColor);
+                        }
+                    }
+
+                    return {
+                        ...page,
+                        backgroundImage,
+                        backgroundColor
+                    };
+                });
+
+                console.log('✅ Páginas actualizadas con backgrounds:', updatedPages);
+                setPages(updatedPages);
+
+                // Inicializar historial con las páginas actualizadas
+                setHistory([JSON.stringify(updatedPages)]);
+                setHistoryIndex(0);
+            } else {
+                // Si no hay páginas, crear páginas nuevas usando createPagesFromPreset
+                console.log('🆕 No hay páginas existentes, creando nuevas...');
+                const newPages = createPagesFromPreset(presetData, itemData);
+                setPages(newPages);
+                setHistory([JSON.stringify(newPages)]);
+                setHistoryIndex(0);
             }
-            
+
             if (typeof initialProject.currentPage === 'number') {
                 setCurrentPage(initialProject.currentPage);
             }
-            
+
             if (initialProject.workspaceSize) {
                 setWorkspaceSize(initialProject.workspaceSize);
             }
-            
-            // Inicializar historial con las páginas cargadas
-            if (initialProject.pages && Array.isArray(initialProject.pages)) {
-                setHistory([JSON.stringify(initialProject.pages)]);
-                setHistoryIndex(0);
-            }
         }
-    }, [initialProject]);
+    }, [initialProject, itemData, presetData]);
 
     // Estado del carrito - igual que en System.jsx
     const [cart, setCart] = useState(
@@ -180,7 +226,7 @@ export default function EditorLibro() {
     useEffect(() => {
         if (projectData && itemData && presetData) {
             console.log('✅ Todos los datos están disponibles, inicializando editor...');
-            
+            console.log('📦 projectData:', presetData, projectData, itemData);
             // Si no hay páginas iniciales o initialProject, crear desde el preset
             if (!initialProject?.pages || initialProject.pages.length === 0) {
                 console.log('📝 No hay páginas iniciales, creando desde preset...');
@@ -198,16 +244,32 @@ export default function EditorLibro() {
             console.log('Creating pages from preset:', preset);
             console.log('Item data:', item);
 
+            // Debug: Mostrar las imágenes disponibles
+            console.log('🖼️ Imágenes disponibles:');
+            console.log('   - Portada (cover_image):', item.cover_image);
+            console.log('   - Contenido (content_image):', item.content_image);
+            console.log('   - Contraportada (back_cover_image):', item.back_cover_image);
+            console.log('   - Color de fondo del preset:', preset.background_color);
+
             const newPages = [];
             const totalPages = preset.pages || item.pages || 20; // Usar páginas del preset primero
 
             console.log('📄 Total pages to create:', totalPages);
 
             // 1. PÁGINA DE PORTADA
+            const coverBackgroundImage = item.cover_image ? `/storage/images/item/${item.cover_image}` : null;
+            const coverBackgroundColor = !item.cover_image ? (preset.background_color || "#ffffff") : null;
+
+            console.log('🖼️ [COVER] cover_image:', item.cover_image);
+            console.log('🖼️ [COVER] backgroundImage construida:', coverBackgroundImage);
+            console.log('🎨 [COVER] backgroundColor:', coverBackgroundColor);
+
             const coverPage = {
                 id: "page-cover",
                 type: "cover",
                 layout: "layout-1",
+                backgroundImage: coverBackgroundImage,
+                backgroundColor: coverBackgroundColor,
                 cells: [{
                     id: "cell-cover-1",
                     elements: [
@@ -247,12 +309,21 @@ export default function EditorLibro() {
             newPages.push(coverPage);
 
             // 2. PÁGINAS DE CONTENIDO
+            const contentBackgroundImage = item.content_image ? `/storage/images/item/${item.content_image}` : null;
+            const contentBackgroundColor = !item.content_image ? (preset.background_color || "#ffffff") : null;
+
+            console.log('🖼️ [CONTENT] content_image:', item.content_image);
+            console.log('🖼️ [CONTENT] backgroundImage construida:', contentBackgroundImage);
+            console.log('🎨 [CONTENT] backgroundColor:', contentBackgroundColor);
+
             for (let i = 1; i <= totalPages; i++) {
                 const contentPage = {
                     id: `page-content-${i}`,
                     type: "content",
                     pageNumber: i,
                     layout: "layout-1",
+                    backgroundImage: contentBackgroundImage,
+                    backgroundColor: contentBackgroundColor,
                     cells: [{
                         id: `cell-content-${i}-1`,
                         elements: [
@@ -294,15 +365,24 @@ export default function EditorLibro() {
             }
 
             // 3. PÁGINA FINAL/CONTRAPORTADA
+            const finalBackgroundImage = item.back_cover_image ? `/storage/images/item/${item.back_cover_image}` : null;
+            const finalBackgroundColor = !item.back_cover_image ? (preset.background_color || "#ffffff") : null;
+
+            console.log('🖼️ [FINAL] back_cover_image:', item.back_cover_image);
+            console.log('🖼️ [FINAL] backgroundImage construida:', finalBackgroundImage);
+            console.log('🎨 [FINAL] backgroundColor:', finalBackgroundColor);
+
             const finalPage = {
                 id: "page-final",
                 type: "final",
                 layout: "layout-1",
+                backgroundImage: finalBackgroundImage,
+                backgroundColor: finalBackgroundColor,
                 cells: [{
                     id: "cell-final-1",
                     elements: [
                         // Texto de cierre
-                        {
+                        /*{
                             id: "final-text",
                             type: "text",
                             content: "Fin del Álbum",
@@ -316,7 +396,7 @@ export default function EditorLibro() {
                                 textAlign: "center"
                             },
                             zIndex: 1
-                        }
+                        }*/
                     ]
                 }]
             };
@@ -534,6 +614,8 @@ export default function EditorLibro() {
             type: "content",
             pageNumber: newPageNumber,
             layout: "layout-1",
+            backgroundImage: itemData?.content_image ? `/storage/images/item/${itemData.content_image}` : null,
+            backgroundColor: !itemData?.content_image ? (presetData?.background_color || "#ffffff") : null,
             cells: [{
                 id: `cell-content-${newPageNumber}-1`,
                 elements: [
@@ -925,10 +1007,10 @@ export default function EditorLibro() {
         const generateThumbnails = async () => {
             try {
                 console.log('🔄 Iniciando generación de miniaturas...');
-                
+
                 // Crear una copia profunda de las páginas para evitar mutaciones
                 const pagesToProcess = JSON.parse(JSON.stringify(pages));
-                
+
                 // Procesar cada página para asegurar el orden correcto de celdas y elementos
                 const processedPages = pagesToProcess.map(page => ({
                     ...page,
@@ -958,15 +1040,15 @@ export default function EditorLibro() {
                 }));
 
                 console.log('📝 Procesando miniaturas con páginas procesadas:', processedPages);
-                
+
                 const thumbnails = await generateHighQualityThumbnails({
                     pages: processedPages,
                     workspaceDimensions,
                     presetData
                 });
-                
+
                 console.log('🖼️ Miniaturas generadas:', thumbnails);
-                
+
                 // Actualizar solo las miniaturas para las páginas que han cambiado
                 setPageThumbnails(prev => {
                     const updated = {
@@ -981,7 +1063,7 @@ export default function EditorLibro() {
                     console.log('🔄 Miniaturas actualizadas:', updated);
                     return updated;
                 });
-                
+
             } catch (error) {
                 console.error("❌ Error generando miniatura:", error);
             }
@@ -990,7 +1072,7 @@ export default function EditorLibro() {
         const debouncedGenerate = setTimeout(() => {
             generateThumbnails();
         }, 500);
-        
+
         return () => clearTimeout(debouncedGenerate);
     }, [pages, currentPage, workspaceDimensions, presetData]);
 
@@ -999,11 +1081,11 @@ export default function EditorLibro() {
     // --- Función para agregar álbum al carrito ---
     const addAlbumToCart = () => {
         console.log('🛒 === INICIO addAlbumToCart ===');
-        
+
         try {
-            console.log('📊 Estado actual:', { 
-                itemData: itemData, 
-                presetData: presetData, 
+            console.log('📊 Estado actual:', {
+                itemData: itemData,
+                presetData: presetData,
                 cartLength: cart?.length,
                 hasItemData: !!itemData,
                 hasPresetData: !!presetData,
@@ -1017,7 +1099,7 @@ export default function EditorLibro() {
             console.log('Global type:', typeof Global);
             console.log('Local object:', Local);
             console.log('Global object:', Global);
-            
+
             if (typeof Local === 'undefined') {
                 console.error('❌ Local no está definido');
                 toast.error("Error del sistema", {
@@ -1027,7 +1109,7 @@ export default function EditorLibro() {
                 });
                 return false;
             }
-            
+
             if (typeof Global === 'undefined') {
                 console.error('❌ Global no está definido');
                 toast.error("Error del sistema", {
@@ -1040,7 +1122,7 @@ export default function EditorLibro() {
 
             // Verificar APP_CORRELATIVE
             console.log('Global.APP_CORRELATIVE:', Global.APP_CORRELATIVE);
-            
+
             if (!Global.APP_CORRELATIVE) {
                 console.error('❌ Global.APP_CORRELATIVE no está definido');
                 toast.error("Error del sistema", {
@@ -1062,7 +1144,7 @@ export default function EditorLibro() {
                 });
                 return false;
             }
-            
+
             if (!presetData) {
                 console.error('❌ presetData no está disponible');
                 console.log('presetData actual:', presetData);
@@ -1087,11 +1169,11 @@ export default function EditorLibro() {
                     }
                 }
                 console.log('📊 Tamaño actual del localStorage:', (totalSize / 1024 / 1024).toFixed(2), 'MB');
-                
+
                 // Si el localStorage está muy lleno (más de 8MB), limpiar datos innecesarios
                 if (totalSize > 8 * 1024 * 1024) {
                     console.log('⚠️ localStorage lleno, limpiando datos innecesarios...');
-                    
+
                     // Limpiar thumbnails viejos y datos temporales
                     for (let key in localStorage) {
                         if (key.includes('thumbnail') || key.includes('temp') || key.includes('cache')) {
@@ -1118,7 +1200,7 @@ export default function EditorLibro() {
 
             // Crear el producto del álbum para el carrito
             console.log('📦 Creando producto del álbum...');
-            
+
             // Optimizar los datos del álbum para reducir el tamaño del carrito
             const optimizedItemData = {
                 item_id: itemData.id,
@@ -1170,7 +1252,7 @@ export default function EditorLibro() {
             console.log('🛒 Obteniendo carrito actual...');
             const cartKey = `${Global.APP_CORRELATIVE}_cart`;
             console.log('🔑 Clave del carrito:', cartKey);
-            
+
             const currentCart = Local.get(cartKey) || [];
             console.log('🛒 Carrito actual desde localStorage:', currentCart);
             console.log('🛒 Longitud del carrito actual:', currentCart.length);
@@ -1183,9 +1265,9 @@ export default function EditorLibro() {
 
             // Actualizar tanto el estado local como localStorage
             console.log('💾 Guardando en estado y localStorage...');
-            
+
             let storageError = null;
-            
+
             try {
                 setCart(newCart);
                 Local.set(cartKey, newCart);
@@ -1194,34 +1276,34 @@ export default function EditorLibro() {
                 storageError = error;
                 if (error.name === 'QuotaExceededError') {
                     console.error('❌ Error de cuota de localStorage excedida');
-                    
+
                     // Intentar liberar espacio eliminando elementos del carrito antiguos
                     console.log('🧹 Intentando liberar espacio del carrito...');
-                    
+
                     try {
                         // Mantener solo los últimos 3 elementos del carrito
                         const reducedCart = currentCart.slice(-2); // Solo los últimos 2
                         const finalCart = [...reducedCart, albumProduct]; // Más el nuevo
-                        
+
                         console.log('📦 Carrito reducido:', finalCart);
-                        
+
                         setCart(finalCart);
                         Local.set(cartKey, finalCart);
-                        
+
                         console.log('✅ Carrito guardado con espacio reducido');
-                        
+
                         // Actualizar la referencia del carrito para las verificaciones
                         newCart = finalCart;
-                        
+
                         toast.success("Álbum agregado al carrito", {
                             description: "Se liberó espacio eliminando productos antiguos.",
                             duration: 4000,
                             position: "bottom-center",
                         });
-                        
+
                     } catch (secondError) {
                         console.error('❌ No se pudo liberar espacio suficiente:', secondError);
-                        
+
                         // Como último recurso, guardar solo la información esencial
                         try {
                             const minimalProduct = {
@@ -1237,20 +1319,20 @@ export default function EditorLibro() {
                                     title: itemData.title
                                 }
                             };
-                            
+
                             const minimalCart = [minimalProduct];
                             setCart(minimalCart);
                             Local.set(cartKey, minimalCart);
-                            
+
                             console.log('✅ Guardado con datos mínimos');
                             newCart = minimalCart;
-                            
+
                             toast.success("Álbum agregado al carrito", {
                                 description: "Guardado con información esencial.",
                                 duration: 3000,
                                 position: "bottom-center",
                             });
-                            
+
                         } catch (finalError) {
                             console.error('❌ Error final al guardar:', finalError);
                             throw new Error('No se pudo guardar en el carrito por falta de espacio');
@@ -1271,7 +1353,7 @@ export default function EditorLibro() {
             const albumInCart = verifyCart?.find(item => item.id === albumId);
             console.log('📦 Álbum encontrado en carrito:', albumInCart ? 'SÍ' : 'NO');
             console.log('📦 Datos del álbum en carrito:', albumInCart);
-            
+
             if (!albumInCart) {
                 console.error('❌ ERROR: El álbum no se encontró en el carrito después de guardarlo');
                 toast.error("Error al verificar carrito", {
@@ -1296,19 +1378,19 @@ export default function EditorLibro() {
 
             // Disparar evento personalizado para notificar otros componentes
             console.log('📡 Disparando evento cartUpdated...');
-            window.dispatchEvent(new CustomEvent('cartUpdated', { 
+            window.dispatchEvent(new CustomEvent('cartUpdated', {
                 detail: { cart: newCart, action: 'add', product: albumProduct }
             }));
 
             console.log('🛒 === FIN addAlbumToCart EXITOSO ===');
             return true;
-            
+
         } catch (error) {
             console.error('❌ === ERROR EN addAlbumToCart ===');
             console.error('Error completo:', error);
             console.error('Stack trace:', error.stack);
             console.error('Mensaje del error:', error.message);
-            
+
             toast.error("Error al agregar al carrito", {
                 description: `Error específico: ${error.message}`,
                 duration: 5000,
@@ -1356,7 +1438,7 @@ export default function EditorLibro() {
                                 } else {
                                     optimizedElement.content = element.content;
                                 }
-                                
+
                                 // Solo incluir filtros no vacíos
                                 if (element.filters) {
                                     const activeFilters = Object.entries(element.filters)
@@ -1365,12 +1447,12 @@ export default function EditorLibro() {
                                             acc[key] = value;
                                             return acc;
                                         }, {});
-                                    
+
                                     if (Object.keys(activeFilters).length > 0) {
                                         optimizedElement.filters = activeFilters;
                                     }
                                 }
-                                
+
                                 if (element.mask && element.mask !== 'none') {
                                     optimizedElement.mask = element.mask;
                                 }
@@ -1396,7 +1478,7 @@ export default function EditorLibro() {
                                             acc[key] = value;
                                             return acc;
                                         }, {});
-                                    
+
                                     if (Object.keys(nonDefaultStyles).length > 0) {
                                         optimizedElement.style = nonDefaultStyles;
                                     }
@@ -1440,13 +1522,13 @@ export default function EditorLibro() {
             const dataString = JSON.stringify({ design_data: designData });
             const dataSizeKB = Math.round(dataString.length / 1024);
             const dataSizeMB = Math.round(dataSizeKB / 1024 * 100) / 100;
-            
+
             console.log(`Tamaño del payload: ${dataSizeKB} KB (${dataSizeMB} MB)`);
-            
+
             // Mostrar información detallada sobre el contenido
             let base64Images = 0;
             let totalBase64Size = 0;
-            
+
             pages.forEach(page => {
                 page.cells?.forEach(cell => {
                     cell.elements?.forEach(element => {
@@ -1457,10 +1539,10 @@ export default function EditorLibro() {
                     });
                 });
             });
-            
+
             const base64SizeMB = Math.round(totalBase64Size / (1024 * 1024) * 100) / 100;
             console.log(`Imágenes base64 encontradas: ${base64Images}, Tamaño total: ${base64SizeMB} MB`);
-            
+
             // Advertir si el payload es muy grande
             if (dataSizeKB > 1024) { // Más de 1MB
                 const proceed = confirm(
@@ -1507,23 +1589,23 @@ export default function EditorLibro() {
             }
 
             const result = await response.json();
-            
+
             console.log('✅ Diseño finalizado exitosamente en el servidor');
             console.log('📄 Respuesta del servidor:', result);
-            
+
             return true;
 
         } catch (error) {
             console.error('Error al finalizar diseño:', error);
             let userMessage = error.message;
-            
+
             // Mejorar mensajes de error específicos
             if (error.message.includes('Failed to fetch')) {
                 userMessage = 'Error de conexión. Verifique su conexión a internet e intente nuevamente.';
             } else if (error.message.includes('NetworkError') || error.message.includes('net::')) {
                 userMessage = 'Error de red. Intente nuevamente más tarde.';
             }
-            
+
             alert('Error al finalizar el diseño: ' + userMessage);
             return false;
         }
@@ -1777,19 +1859,19 @@ export default function EditorLibro() {
                                 {isCurrentPageEditable() ? (
                                     <span className="bg-white/10 text-white/80 px-2 py-2 rounded-md text-xs font-medium flex items-center gap-1">
                                         <Pencil className="h-3 w-3" />
-                                      
+
                                     </span>
                                 ) : (
                                     <span className="bg-white/10 text-white/80 px-2 py-2 rounded-md text-xs font-medium flex items-center gap-1">
                                         <Lock className="h-3 w-3" />
-                                      
+
                                     </span>
                                 )}
                             </div>
 
                             {/* Action buttons */}
                             <div className="flex gap-3 items-center">
-                               
+
                                 <Button
                                     variant="secondary"
                                     size="sm"
@@ -1798,7 +1880,7 @@ export default function EditorLibro() {
                                 >
                                     Vista de Álbum
                                 </Button>
-                              {/*  <Button
+                                {/*  <Button
                                     variant="primary"
                                     size="sm"
                                     onClick={addAlbumToCart}
@@ -2322,46 +2404,79 @@ export default function EditorLibro() {
                                 ) : (
                                     <div
                                         id={`page-${pages[currentPage].id}`}
-                                        className="bg-white rounded-lg shadow-xl"
+                                        className=" shadow-xl overflow-hidden"
                                         style={{
                                             width: workspaceDimensions.width,
                                             height: workspaceDimensions.height,
-                                            position: 'relative'
+                                            position: 'relative',
+                                            backgroundColor: pages[currentPage]?.backgroundImage ? 'transparent' : (pages[currentPage]?.backgroundColor || '#ffffff')
                                         }}
-                                    >
-                                        {/* Background layer */}
+                                    >                                        {/* Background layer */}
                                         {(() => {
                                             const page = pages[currentPage];
-                                            let bgUrl = null;
-                                            if (page.type === 'cover' && presetData?.cover_image) {
-                                                bgUrl = presetData.cover_image.startsWith('http')
-                                                    ? presetData.cover_image
-                                                    : `/storage/images/item_preset/${presetData.cover_image}`;
-                                            } else if (page.type === 'content' && presetData?.content_layer_image) {
-                                                bgUrl = presetData.content_layer_image.startsWith('http')
-                                                    ? presetData.content_layer_image
-                                                    : `/storage/images/item_preset/${presetData.content_layer_image}`;
-                                            } else if (page.type === 'final' && presetData?.final_layer_image) {
-                                                bgUrl = presetData.final_layer_image.startsWith('http')
-                                                    ? presetData.final_layer_image
-                                                    : `/storage/images/item_preset/${presetData.final_layer_image}`;
+
+                                            // Debug log para verificar los datos de la página
+                                            console.log('🖼️ [WORKSPACE] Renderizando background para página:', page?.type);
+                                            console.log('🖼️ [WORKSPACE] backgroundImage:', page?.backgroundImage);
+                                            console.log('🖼️ [WORKSPACE] backgroundColor:', page?.backgroundColor);
+
+                                            // Debug adicional para verificar la URL completa
+                                            if (page?.backgroundImage) {
+                                                const fullUrl = window.location.origin + page.backgroundImage;
+                                                console.log('🔗 [WORKSPACE] URL completa de la imagen:', fullUrl);
+                                                console.log('🔗 [WORKSPACE] URL relativa:', page.backgroundImage);
+
+                                                // Verificar si la imagen existe mediante fetch
+                                                fetch(page.backgroundImage, { method: 'HEAD' })
+                                                    .then(response => {
+                                                        if (response.ok) {
+                                                            console.log('✅ [WORKSPACE] Imagen existe en el servidor');
+                                                        } else {
+                                                            console.error('❌ [WORKSPACE] Imagen NO existe en el servidor. Status:', response.status);
+                                                        }
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('❌ [WORKSPACE] Error verificando imagen:', error);
+                                                    });
                                             }
-                                            return bgUrl ? (
-                                                <img
-                                                    src={bgUrl}
-                                                    alt="background"
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: 0,
-                                                        left: 0,
-                                                        width: '100%',
-                                                        height: '100%',
-                                                        objectFit: 'cover',
-                                                        zIndex: 0,
-                                                        pointerEvents: 'none',
-                                                    }}
-                                                />
-                                            ) : null;
+
+                                            // Usar las propiedades backgroundImage y backgroundColor que ya están configuradas en la página
+                                            if (page?.backgroundImage) {
+                                                console.log('🎨 [WORKSPACE] Aplicando imagen de fondo:', page.backgroundImage);
+                                                return (
+                                                    <img
+                                                        src={page.backgroundImage}
+                                                        alt="background"
+                                                        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                                                        style={{
+                                                            zIndex: 1,
+                                                        }}
+                                                        onLoad={() => {
+                                                            console.log('✅ [WORKSPACE] Imagen de fondo cargada exitosamente');
+                                                            console.log('📐 [WORKSPACE] Dimensiones de la imagen cargada:', arguments[0]?.target?.naturalWidth, 'x', arguments[0]?.target?.naturalHeight);
+                                                        }}
+                                                        onError={(e) => {
+                                                            console.error('❌ [WORKSPACE] Error cargando imagen de fondo:', e);
+                                                            console.error('❌ [WORKSPACE] URL que falló:', e.target.src);
+                                                            console.error('❌ [WORKSPACE] Error details:', e.target.error);
+                                                        }}
+                                                    />
+                                                );
+                                            } else if (page?.backgroundColor) {
+                                                console.log('🎨 [WORKSPACE] Aplicando color de fondo:', page.backgroundColor);
+                                                return (
+                                                    <div
+                                                        className="absolute inset-0 w-full h-full pointer-events-none"
+                                                        style={{
+                                                            backgroundColor: page.backgroundColor,
+                                                            zIndex: 1,
+                                                        }}
+                                                    />
+                                                );
+                                            }
+
+                                            console.log('⚪ [WORKSPACE] Sin fondo personalizado, usando fondo por defecto');
+                                            return null;
                                         })()}
 
                                         {/* Editable cells layer */}
@@ -2369,7 +2484,7 @@ export default function EditorLibro() {
                                             className={`grid ${getCurrentLayout().template}`}
                                             style={{
                                                 position: 'relative',
-                                                zIndex: 1,
+                                                zIndex: 10,
                                                 width: '100%',
                                                 height: '100%',
                                                 boxSizing: 'border-box',
@@ -2412,7 +2527,7 @@ export default function EditorLibro() {
                                     </span>
                                 </div>
 
-                          {/*      <div className="flex gap-1.5 mt-3">
+                                {/*      <div className="flex gap-1.5 mt-3">
                                     <Button
                                         variant="ghost"
                                         size="icon"
@@ -2569,7 +2684,7 @@ export default function EditorLibro() {
                                                                 </div>
                                                             </div>
                                                         </div>*/}
-                                                      
+
                                                     </div>
                                                 </div>
                                             ))}
@@ -2623,7 +2738,7 @@ export default function EditorLibro() {
                     </div>
                 </div>
             )}
-            
+
             {/* Toaster para notificaciones */}
             <Toaster />
         </DndProvider>
