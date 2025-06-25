@@ -39,6 +39,24 @@ const TrackSimple = () => {
             setIsLoading(false)
         }
     }
+
+    const handleRefresh = async () => {
+        setIsLoading(true)
+        try {
+            const { status, tracking } = await salesRest.track(orderCode)
+            if (!status) throw new Error("Pedido no encontrado")
+            setStatusTracking(null)
+            setTimeout(() => {
+                setStatusTracking(tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+            }, 100);
+        } catch (error) {
+            setNotFound(true)
+            setStatusTracking(null)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     useEffect(() => {
         if (orderCode) {
             handleSearch()
@@ -121,7 +139,19 @@ const TrackSimple = () => {
                 {statusTracking && (
                     <div>
                         <div className="py-6">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-6">Tracking de estados</h3>
+                            <div className="flex items-center justify-between mb-8 border-b pb-4">
+                                <h3 className="text-xl font-semibold text-gray-900">
+                                    Tracking de estados
+                                </h3>
+                                <button
+                                    onClick={handleRefresh}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                                    disabled={isLoading}
+                                >
+                                    <i className={`mdi ${isLoading ? 'mdi-spin mdi-loading' : 'mdi-refresh'} text-gray-600 me-2`} />
+                                    Refrescar
+                                </button>
+                            </div>
 
                             <div className="relative">
                                 {/* Línea vertical */}

@@ -89,6 +89,7 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
                 'orderId'        => $this->sale->code,
                 'fecha_pedido'   => $this->sale->created_at ? $this->sale->created_at->format('d/m/Y H:i') : '',
                 'status'         => $this->sale->status->name ?? '',
+                'status_description' => $this->sale->status->description ?? '',
                 'status_color'   => optional(SaleStatus::where('name', $this->sale->status->name ?? '')->first())->color ?? '#6c757d',
                 'nombre'           => $this->sale->name ?? ($this->sale->user->name ?? ''),
                 'email'          => $this->sale->email ?? ($this->sale->user->email ?? ''),
