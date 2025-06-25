@@ -2,6 +2,39 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useDrag } from "react-dnd";
 import { Trash2, Type, Copy, CircleDot, Move } from "lucide-react";
 import ContextMenu from "../UI/ContextMenu";
+import FontFaceObserver from "fontfaceobserver";
+
+// Función compartida para convertir estilos a formato canvas
+export const getCanvasTextStyle = (style, scale = 1) => {
+    return {
+        fontFamily: style?.fontFamily || "Arial",
+        fontSize: `${(parseInt(style?.fontSize) || 16) * scale}px`,
+        fontWeight: style?.fontWeight || "normal",
+        fontStyle: style?.fontStyle || "normal",
+        textDecoration: style?.textDecoration || "none",
+        textAlign: style?.textAlign || "left",
+        color: style?.color || "#000000",
+        backgroundColor: style?.backgroundColor || "transparent",
+        padding: parseInt(style?.padding) || 0,
+        lineHeight: style?.lineHeight || "1.4",
+    };
+};
+
+// Función para precargar una fuente específica
+export const loadFont = async (fontFamily) => {
+    if (fontFamily === "Arial" || fontFamily === "sans-serif" || fontFamily === "serif") {
+        return Promise.resolve(); // Fuentes del sistema no necesitan precarga
+    }
+
+    try {
+        const font = new FontFaceObserver(fontFamily);
+        await font.load(null, 10000); // timeout de 10 segundos
+        return Promise.resolve();
+    } catch (error) {
+        console.warn(`No se pudo cargar la fuente: ${fontFamily}`, error);
+        return Promise.resolve(); // Continuar con fuente por defecto
+    }
+};
 
 export default function TextElement({
     element,

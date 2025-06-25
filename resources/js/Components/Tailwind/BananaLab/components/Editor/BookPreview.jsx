@@ -4,6 +4,7 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import HTMLFlipBook from "react-pageflip";
 import Global from "../../../../../Utils/Global";
 import { layouts } from '../../constants/layouts';
+import { getCanvasTextStyle, loadFont } from "../Elements/TextElement";
 
 // Estilos para el modal
 const customStyles = {
@@ -195,28 +196,10 @@ const BookPreviewModal = ({
         
         const newThumbnails = {};
         const scale = 4; // Factor de escala para alta resolución
-        
-        // Función auxiliar para dibujar elementos en la posición correcta
-        const drawElementInCell = (ctx, element, cellPosition, scale) => {
-            if (!element || !element.image) return;
-            
-            const img = new Image();
-            img.src = element.image;
-            
-            img.onload = () => {
-                // Calcular posición y tamaño del elemento dentro de la celda
-                const elementX = cellPosition.x + element.x * scale;
-                const elementY = cellPosition.y + element.y * scale;
-                const elementWidth = element.width * scale;
-                const elementHeight = element.height * scale;
-                
-                // Dibujar imagen usando la función drawImageCover
-                drawImageCover(ctx, img, elementX, elementY, elementWidth, elementHeight);
-            };
-        };
 
-        // Función para generar thumbnail de una página
-        const generatePageThumbnail = async (page, index) => {
+        // Procesar cada página
+        for (let index = 0; index < pages.length; index++) {
+            const page = pages[index];
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
@@ -224,44 +207,221 @@ const BookPreviewModal = ({
             canvas.width = workspaceDimensions.width * scale;
             canvas.height = workspaceDimensions.height * scale;
             
+            console.log(`🔧 [THUMBNAIL] Generando thumbnail para página ${index} (${page.type})`);
+            
             // Dibujar fondo de la página
-            if (presetData && presetData.final_layer_image) {
-                const bgImg = new Image();
-                bgImg.src = presetData.final_layer_image;
-                bgImg.onload = () => {
-                    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-                };
+            if (page.backgroundImage) {
+                try {
+                    const bgImg = new Image();
+                    bgImg.crossOrigin = 'anonymous';
+                    await new Promise((resolve, reject) => {
+                        bgImg.onload = () => {
+                            drawImageCover(ctx, bgImg, 0, 0, canvas.width, canvas.height);
+                            resolve();
+                        };
+                        bgImg.onerror = () => {
+                            ctx.fillStyle = page.backgroundColor || '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            resolve();
+                        };
+                        bgImg.src = page.backgroundImage;
+                    });
+                } catch (error) {
+                    ctx.fillStyle = page.backgroundColor || '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            } else {
+                ctx.fillStyle = page.backgroundColor || '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
             // Obtener posiciones de las celdas
-            const layout = layouts.find(l => l.id === page.layoutId);
-            if (!layout) return;
+            const layout = layouts.find(l => l.id === page.layout);
+            console.log(`🔧 [THUMBNAIL] Looking for layout: ${page.layout}, found:`, !!layout);
             
-            const cellPositions = getLayoutCellPositions(layout, workspaceDimensions, page.cells);
+            let cellPositions = {};
+            if (!layout) {
+                console.warn(`⚠️ [THUMBNAIL] Layout not found for page ${index}:`, page.layout);
+                for (const cell of page.cells) {
+                    cellPositions[cell.id] = {
+                        x: 0,
+                        y: 0,
+                        width: workspaceDimensions.width * scale,
+                        height: workspaceDimensions.height * scale
+                    };
+                }
+            } else {
+                cellPositions = getLayoutCellPositions(layout, { 
+                    width: workspaceDimensions.width * scale, 
+                    height: workspaceDimensions.height * scale 
+                }, page.cells);
+            }
             
             // Dibujar elementos en sus celdas correspondientes
-            page.cells.forEach(cell => {
+            for (const cell of page.cells) {
                 const cellPosition = cellPositions[cell.id];
-                if (cellPosition) {
-                    cell.elements.forEach(element => {
-                        drawElementInCell(ctx, element, cellPosition, scale);
-                    });
+                if (!cellPosition) {
+                    console.warn(`⚠️ [THUMBNAIL] Cell position not found for cell: ${cell.id}`);
+                    continue;
                 }
-            });
+                
+                console.log(`🔧 [THUMBNAIL] Processing cell ${cell.id} with ${cell.elements.length} elements`);
+                
+                for (const element of cell.elements) {
+                    console.log(`🔧 [THUMBNAIL] Drawing element ${element.id} (${element.type}): "${element.content}"`);
+                    
+                    // Asegurar que position existe
+                    const position = element.position || { x: 0, y: 0 };
+                    const size = element.size || {};
+                    
+                    // Calculate element position and size correctly (sin escala extra en este paso)
+                    const elementX = (position.x || 0) * (cellPosition.width / scale);
+                    const elementY = (position.y || 0) * (cellPosition.height / scale);
+                    
+                    // Handle size calculation with fallbacks
+                    let elementWidth, elementHeight;
+                    if (size.width && size.height) {
+                        // Size exists, use it (values might be in percentage 0-100 or decimal 0-1)
+                        const sizeWidth = size.width > 1 ? size.width / 100 : size.width;
+                        const sizeHeight = size.height > 1 ? size.height / 100 : size.height;
+                        elementWidth = (cellPosition.width / scale) * sizeWidth;
+                        elementHeight = (cellPosition.height / scale) * sizeHeight;
+                    } else {
+                        // No size property, use defaults based on element type
+                        if (element.type === 'text') {
+                            elementWidth = (cellPosition.width / scale) * 0.8; // 80% of cell width
+                            elementHeight = (cellPosition.height / scale) * 0.3; // 30% of cell height
+                        } else {
+                            elementWidth = (cellPosition.width / scale) * 0.5; // 50% of cell width
+                            elementHeight = (cellPosition.height / scale) * 0.5; // 50% of cell height
+                        }
+                    }
+                    
+                    // Scale back for canvas drawing
+                    const canvasElementX = (cellPosition.x / scale + elementX) * scale;
+                    const canvasElementY = (cellPosition.y / scale + elementY) * scale;
+                    const canvasElementWidth = elementWidth * scale;
+                    const canvasElementHeight = elementHeight * scale;
+                    
+                    console.log(`🔧 [THUMBNAIL] Element absolute: x=${canvasElementX}, y=${canvasElementY}, w=${canvasElementWidth}, h=${canvasElementHeight}`);
+                    
+                    if (element.type === 'image' && element.content) {
+                        try {
+                            const img = new Image();
+                            img.crossOrigin = 'anonymous';
+                            await new Promise((resolve, reject) => {
+                                img.onload = () => {
+                                    drawImageCover(ctx, img, canvasElementX, canvasElementY, canvasElementWidth, canvasElementHeight);
+                                    console.log(`✅ [THUMBNAIL] Image element drawn: ${element.id}`);
+                                    resolve();
+                                };
+                                img.onerror = () => {
+                                    console.error(`❌ [THUMBNAIL] Failed to load image element:`, element.content);
+                                    resolve(); // Continue even if image fails to load
+                                };
+                                img.src = element.content;
+                            });
+                        } catch (error) {
+                            console.error(`❌ [THUMBNAIL] Error loading image element:`, error);
+                        }
+                    } else if (element.type === 'text' && element.content) {
+                        console.log(`🔧 [THUMBNAIL] Drawing text element: "${element.content}"`);
+                        
+                        // Precargar fuente personalizada si es necesario
+                        const style = element.style || {};
+                        if (style.fontFamily) {
+                            await loadFont(style.fontFamily);
+                        }
+                        
+                        // Usar función compartida para obtener estilos canvas
+                        const canvasStyle = getCanvasTextStyle(style, scale);
+                        ctx.save();
+                        
+                        // DEBUG: Dibujar borde del área de texto para depuración
+                        ctx.strokeStyle = '#ff0000';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(canvasElementX, canvasElementY, canvasElementWidth, canvasElementHeight);
+                        
+                        // Configurar fuente y estilo
+                        ctx.font = `${canvasStyle.fontWeight} ${canvasStyle.fontStyle} ${canvasStyle.fontSize} ${canvasStyle.fontFamily}`;
+                        ctx.fillStyle = canvasStyle.color;
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'top';
+                        
+                        // Fondo si corresponde
+                        if (canvasStyle.backgroundColor && canvasStyle.backgroundColor !== 'transparent') {
+                            ctx.fillStyle = canvasStyle.backgroundColor;
+                            ctx.fillRect(canvasElementX, canvasElementY, canvasElementWidth, canvasElementHeight);
+                            ctx.fillStyle = canvasStyle.color;
+                        }
+                        
+                        // Padding escalado
+                        const scaledPadding = canvasStyle.padding;
+                        
+                        // Posición de texto según alineación
+                        let textX = canvasElementX + scaledPadding;
+                        const textY = canvasElementY + scaledPadding;
+                        const availableWidth = canvasElementWidth - (scaledPadding * 2);
+                        
+                        if (canvasStyle.textAlign === 'center') {
+                            textX = canvasElementX + canvasElementWidth / 2;
+                            ctx.textAlign = 'center';
+                        } else if (canvasStyle.textAlign === 'right') {
+                            textX = canvasElementX + canvasElementWidth - scaledPadding;
+                            ctx.textAlign = 'right';
+                        } else {
+                            ctx.textAlign = 'left';
+                        }
+                        
+                        // Saltos de línea y wrapping
+                        const lines = element.content.split('\n');
+                        const lineHeight = parseInt(canvasStyle.fontSize) * parseFloat(canvasStyle.lineHeight);
+                        let currentY = textY;
+                        
+                        console.log(`🔧 [THUMBNAIL] Text details: font=${ctx.font}, color=${ctx.fillStyle}, x=${textX}, y=${textY}`);
+                        
+                        lines.forEach((line, lineIndex) => {
+                            if (!line.trim()) {
+                                currentY += lineHeight;
+                                return;
+                            }
+                            
+                            // Wrapping manual si la línea es muy larga
+                            let words = line.split(' ');
+                            let currentLine = '';
+                            
+                            for (let n = 0; n < words.length; n++) {
+                                let testLine = currentLine ? currentLine + ' ' + words[n] : words[n];
+                                let metrics = ctx.measureText(testLine);
+                                
+                                if (metrics.width > availableWidth && currentLine) {
+                                    ctx.fillText(currentLine, textX, currentY);
+                                    console.log(`🔧 [THUMBNAIL] Drew line: "${currentLine}" at y=${currentY}`);
+                                    currentLine = words[n];
+                                    currentY += lineHeight;
+                                } else {
+                                    currentLine = testLine;
+                                }
+                            }
+                            
+                            if (currentLine) {
+                                ctx.fillText(currentLine, textX, currentY);
+                                console.log(`🔧 [THUMBNAIL] Drew final line: "${currentLine}" at y=${currentY}`);
+                                currentY += lineHeight;
+                            }
+                        });
+                        
+                        ctx.restore();
+                        console.log(`✅ [THUMBNAIL] Text element drawn: ${element.id}`);
+                    }
+                }
+            }
 
             // Generar thumbnail
             const thumbnail = canvas.toDataURL('image/jpeg', 0.9);
-            return { [index]: thumbnail };
-        };
-
-        // Generar thumbnails para todas las páginas
-        const promises = pages.map((page, index) => generatePageThumbnail(page, index));
-        const thumbnails = await Promise.all(promises);
-        
-        // Combinar todos los thumbnails
-        thumbnails.forEach(thumb => {
-            Object.assign(newThumbnails, thumb);
-        });
+            console.log(`🎯 [THUMBNAIL] Generated thumbnail for page ${index}`);
+            newThumbnails[index] = thumbnail;
+        }
 
         // Actualizar estado
         setGeneratedThumbnails(newThumbnails);

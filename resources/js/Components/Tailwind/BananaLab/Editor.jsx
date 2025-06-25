@@ -846,6 +846,7 @@ export default function EditorLibro() {
             type: "text",
             content: "Haz clic para editar",
             position: { x: 0.05, y: 0.05 }, // Posición en porcentajes para responsividad
+            size: { width: 40, height: 15 }, // Tamaño en porcentajes para consistencia
             style: {
                 fontSize: "16px",
                 fontFamily: "Arial",
@@ -2380,7 +2381,6 @@ export default function EditorLibro() {
                                                 style={{ width: '100%', height: '100%' }}
                                             >
                                                 {pages[currentPage].cells.map((cell, idx) => {
-                                                    console.log('[WORKSPACE] cell', cell.id, 'elements:', cell.elements.map(e => e.id));
                                                     return (
                                                         <EditableCell
                                                             key={cell.id}
