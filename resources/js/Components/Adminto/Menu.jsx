@@ -101,16 +101,16 @@ const Menu = ({ session, hasRole }) => {
                   <MenuItem href="/admin/items" icon="mdi mdi-bookshelf">Items</MenuItem>
 
                   <MenuItem href="/admin/combos" icon="mdi mdi-bookshelf">
-                      Combos
+                    Combos
                   </MenuItem>
 
-                   <MenuItem href="/admin/coupons" icon="mdi mdi-bookshelf">
-                      Cupones
+                  <MenuItem href="/admin/coupons" icon="mdi mdi-bookshelf">
+                    Cupones
                   </MenuItem>
-                    <MenuItem href="/admin/discount-rules" icon="mdi mdi-bookshelf">
-                      Reglas de Descuento
+                  <MenuItem href="/admin/discount-rules" icon="mdi mdi-bookshelf">
+                    Reglas de Descuento
                   </MenuItem>
-                 
+
 
                   <MenuItemContainer title="Características" icon="mdi mdi-view-dashboard">
                     <MenuItem href="/admin/collections" icon="mdi mdi-view-carousel-outline">Colecciones</MenuItem>
@@ -144,6 +144,10 @@ const Menu = ({ session, hasRole }) => {
 
                   {/* Configuraciones */}
                   <li className="menu-title">Configuraciones</li>
+                  <MenuItemContainer title="Usuarios" icon="mdi mdi-account-multiple">
+                    <MenuItem href="/admin/users" icon="mdi mdi-account-box-multiple">Sistema</MenuItem>
+                    <MenuItem href="/admin/clients" icon="mdi mdi-account-group">Clientes</MenuItem>
+                  </MenuItemContainer>
                   {hasRole("Root") && (
                     <MenuItem href="/admin/system" icon="mdi mdi-cog" target="_blank">
                       Configuraciones
