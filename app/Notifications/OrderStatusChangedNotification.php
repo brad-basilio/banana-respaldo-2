@@ -73,6 +73,7 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
             ? \App\Helpers\Text::replaceData($content, [
                 'orderId'      => $this->sale->code,
                 'status'       => $this->sale->status->name,
+                'status_description' => $this->sale->status->description,
                 'status_color' => optional(SaleStatus::where('name', $this->sale->status->name)->first())->color ?? '#6c757d',
                 'name'         => $this->sale->user->name ?? $this->sale->name ?? '',
                 'year'         => date('Y'),

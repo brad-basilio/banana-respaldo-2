@@ -26,10 +26,21 @@ const Sales = ({ statuses = [] }) => {
     const [statusLoading, setStatusLoading] = useState(false);
 
     const onStatusChange = async (e) => {
+        const status = statuses.find((s) => s.id == e.target.value)
+        if (status.reversible == 0) {
+            const { isConfirmed } = await Swal.fire({
+                title: "Cambiar estado",
+                text: `¿Estas seguro de cambiar el estado a ${status.name}?\nEsta acción no se puede revertir`,
+                icon: "warning",
+                showCancelButton: true,
+            })
+            if (!isConfirmed) return;
+        }
+
         setStatusLoading(true)
         const result = await salesRest.save({
             id: saleLoaded.id,
-            status_id: e.target.value,
+            status_id: status.id,
             notify_client: notifyClientRef.current.checked
         });
         setStatusLoading(false)
