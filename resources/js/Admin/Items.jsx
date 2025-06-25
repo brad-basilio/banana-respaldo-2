@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import Swal from "sweetalert2";
 import ItemsRest from "../Actions/Admin/ItemsRest";
+import CanvasPresetsRest from "../Actions/Admin/CanvasPresetsRest";
 import Modal from "../Components/Adminto/Modal";
 import Table from "../Components/Adminto/Table";
 import ImageFormGroup from "../Components/Adminto/form/ImageFormGroup";
@@ -23,11 +24,14 @@ import DynamicField from "../Components/Adminto/form/DynamicField";
 import ModalImportItem from "./Components/ModalImportItem";
 
 const itemsRest = new ItemsRest();
+const canvasPresetsRest = new CanvasPresetsRest();
 
 const Items = ({ categories, brands, collections }) => {
     //!FALTA EDIT AND DELETEDE GALERIA
     
     const [itemData, setItemData] = useState([]);
+    const [presets, setPresets] = useState([]);
+    const [selectedPreset, setSelectedPreset] = useState(null);
 
     const gridRef = useRef();
     const modalRef = useRef();
@@ -51,7 +55,11 @@ const Items = ({ categories, brands, collections }) => {
     const descriptionRef = useRef();
     const skuRef = useRef();
     // Nuevos campos
-
+    const canvasPresetRef = useRef();
+    const pagesRef = useRef();
+    const coverImageRef = useRef();
+    const contentImageRef = useRef();
+    const backCoverImageRef = useRef();
     const stockRef = useRef();
 
     const featuresRef = useRef([]);
@@ -107,6 +115,21 @@ const Items = ({ categories, brands, collections }) => {
     /*************************/
 
     useEffect(() => {
+        // Cargar presets disponibles
+        const loadPresets = async () => {
+            try {
+                const response = await canvasPresetsRest.paginate({ take: 100, skip: 0 });
+                if (response?.data) {
+                    setPresets(response.data);
+                }
+            } catch (error) {
+                console.error('Error cargando presets:', error);
+            }
+        };
+        loadPresets();
+    }, []);
+
+    useEffect(() => {
         if (itemData && itemData.images) {
             const existingImages = itemData.images.map((img) => ({
                 id: img.id, // ID de la imagen en la BD
@@ -144,10 +167,18 @@ const Items = ({ categories, brands, collections }) => {
         priceRef.current.value = data?.price || 0;
         discountRef.current.value = data?.discount || 0;
 
+        // Campos de presets y páginas
+        $(canvasPresetRef.current).val(data?.canvas_preset_id || null).trigger("change");
+        pagesRef.current.value = data?.pages || 1;
+
         SetSelectValue(tagsRef.current, data?.tags ?? [], "id", "name");
 
         bannerRef.current.value = null;
         imageRef.current.value = null;
+        coverImageRef.current.value = null;
+        contentImageRef.current.value = null;
+        backCoverImageRef.current.value = null;
+        
         bannerRef.image.src = `/storage/images/item/${
             data?.banner ?? "undefined"
         }`;
@@ -156,6 +187,15 @@ const Items = ({ categories, brands, collections }) => {
         }`;
         textureRef.image.src = `/storage/images/item/${
             data?.texture ?? "undefined"
+        }`;
+        coverImageRef.image.src = `/storage/images/item/${
+            data?.cover_image ?? "undefined"
+        }`;
+        contentImageRef.image.src = `/storage/images/item/${
+            data?.content_image ?? "undefined"
+        }`;
+        backCoverImageRef.image.src = `/storage/images/item/${
+            data?.back_cover_image ?? "undefined"
         }`;
 
         descriptionRef.editor.root.innerHTML = data?.description ?? "";
@@ -221,6 +261,8 @@ const Items = ({ categories, brands, collections }) => {
             tags: $(tagsRef.current).val(),
             description: descriptionRef.current.value,
             stock: stockRef.current.value,
+            canvas_preset_id: canvasPresetRef.current.value || null,
+            pages: pagesRef.current.value,
             features: cleanFeatures,
             specifications: cleanSpecs,
         };
@@ -248,6 +290,18 @@ const Items = ({ categories, brands, collections }) => {
         const banner = bannerRef.current.files[0];
         if (banner) {
             formData.append("banner", banner);
+        }
+        const coverImage = coverImageRef.current.files[0];
+        if (coverImage) {
+            formData.append("cover_image", coverImage);
+        }
+        const contentImage = contentImageRef.current.files[0];
+        if (contentImage) {
+            formData.append("content_image", contentImage);
+        }
+        const backCoverImage = backCoverImageRef.current.files[0];
+        if (backCoverImage) {
+            formData.append("back_cover_image", backCoverImage);
         }
 
         //TODO: Preparar los datos de la galería
@@ -313,6 +367,16 @@ const Items = ({ categories, brands, collections }) => {
     const typeOptions = ["Principal", "General", "Icono"];
     const [showImportModal, setShowImportModal] = useState(false);
     const modalImportRef = useRef();
+
+    // Función para manejar el cambio de preset
+    const handlePresetChange = (presetId) => {
+        const preset = presets.find(p => p.id === presetId);
+        setSelectedPreset(preset);
+        if (preset && pagesRef.current) {
+            pagesRef.current.value = preset.pages || 1;
+        }
+    };
+
     const onModalImportOpen = () => {
         $(modalImportRef.current).modal("show");
     };
@@ -397,6 +461,32 @@ const Items = ({ categories, brands, collections }) => {
                         width: "120px",
                     },
                     {
+                        dataField: "canvas_preset.name",
+                        caption: "Preset",
+                        width: "140px",
+                        cellTemplate: (container, { data }) => {
+                            if (data.canvas_preset) {
+                                container.html(
+                                    renderToString(
+                                        <>
+                                            <b className="d-block">{data.canvas_preset.name}</b>
+                                            <small className="text-muted">
+                                                {data.canvas_preset.width}x{data.canvas_preset.height}cm
+                                                {data.pages && ` • ${data.pages}p`}
+                                            </small>
+                                        </>
+                                    )
+                                );
+                            } else {
+                                container.html(
+                                    renderToString(
+                                        <i className="text-muted">Sin preset</i>
+                                    )
+                                );
+                            }
+                        },
+                    },
+                    {
                         dataField: "name",
                         caption: "Nombre",
                         minWidth: "300px",
@@ -465,6 +555,7 @@ const Items = ({ categories, brands, collections }) => {
                         width: "90px",
                         allowFiltering: false,
                         cellTemplate: (container, { data }) => {
+                            console.log('data.image', data.image);
                             ReactAppend(
                                 container,
                                 <img
@@ -690,6 +781,28 @@ const Items = ({ categories, brands, collections }) => {
                             type="number"
                         />
 
+                        <SelectFormGroup
+                            eRef={canvasPresetRef}
+                            label="Preset de Canvas"
+                            dropdownParent="#principal-container"
+                            onChange={(e) => handlePresetChange(e.target.value)}
+                        >
+                            <option value="">Seleccionar preset...</option>
+                            {presets.map((preset) => (
+                                <option key={preset.id} value={preset.id}>
+                                    {preset.name} ({preset.width}x{preset.height}cm, {preset.pages}p)
+                                </option>
+                            ))}
+                        </SelectFormGroup>
+
+                        <InputFormGroup
+                            eRef={pagesRef}
+                            label="Número de Páginas"
+                            type="number"
+                            min="1"
+                            defaultValue="1"
+                        />
+
                         <InputFormGroup
                             eRef={priceRef}
                             label="Precio"
@@ -768,11 +881,44 @@ const Items = ({ categories, brands, collections }) => {
                             />
                             <ImageFormGroup
                                 eRef={imageRef}
-                                label="Imagen"
+                                label="Imagen Principal"
                                 aspect={1}
                                 col="col-lg-6 col-md-12 col-sm-6"
                             />
+                            <ImageFormGroup
+                                eRef={textureRef}
+                                label="Textura"
+                                aspect={1}
+                                col="col-lg-6 col-md-12 col-sm-6"
+                            />
+                        </div>
+                        
+                        {/* Sección de imágenes específicas para productos con páginas */}
+                        <div className="row">
+                            <div className="col-12">
+                                <h6 className="text-muted mb-2">Imágenes de Producto</h6>
+                            </div>
+                            <ImageFormGroup
+                                eRef={coverImageRef}
+                                label="Imagen de Portada"
+                                aspect={3 / 4}
+                                col="col-lg-4 col-md-6 col-sm-4"
+                            />
+                            <ImageFormGroup
+                                eRef={contentImageRef}
+                                label="Imagen de Contenido"
+                                aspect={3 / 4}
+                                col="col-lg-4 col-md-6 col-sm-4"
+                            />
+                            <ImageFormGroup
+                                eRef={backCoverImageRef}
+                                label="Imagen de Contraportada"
+                                aspect={3 / 4}
+                                col="col-lg-4 col-md-6 col-sm-4"
+                            />
+                        </div>
 
+                        <div className="row">
                             <div className="col-lg-6 col-md-12 col-sm-6">
                                 <label className="form-label">Galeria</label>
                                 <input
@@ -810,8 +956,8 @@ const Items = ({ categories, brands, collections }) => {
                                     </span>
                                 </div>
                             </div>
-                            <div className="col-md-12 col-sm-6">
-                                <div className="d-flex flex-wrap gap-1  mt-2">
+                            <div className="col-lg-6 col-md-12 col-sm-6">
+                                <div className="d-flex flex-wrap gap-1 mt-2">
                                     {gallery.map((image, index) => (
                                         <div
                                             key={index}

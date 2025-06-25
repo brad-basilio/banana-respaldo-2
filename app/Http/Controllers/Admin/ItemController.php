@@ -24,7 +24,7 @@ class ItemController extends BasicController
 {
     public $model = Item::class;
     public $reactView = 'Admin/Items';
-    public $imageFields = ['image', 'banner', 'texture'];
+    public $imageFields = ['image', 'banner', 'texture', 'cover_image', 'content_image', 'back_cover_image'];
     public $prefix4filter = 'items';
 
     public function mediaGallery(Request $request, string $uuid)
@@ -64,6 +64,8 @@ class ItemController extends BasicController
                 'category_id' => 'required|exists:categories,id',
                 'subcategory_id' => 'nullable|exists:sub_categories,id',
                 'brand_id' => 'nullable|exists:brands,id',
+                'canvas_preset_id' => 'nullable|exists:canvas_presets,id',
+                'pages' => 'nullable|integer|min:1',
                 'name' => 'required|string|max:255',
                 'summary' => 'nullable|string',
                 'price' => 'required|numeric',
@@ -72,6 +74,9 @@ class ItemController extends BasicController
                 'description' => 'nullable|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'content_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'back_cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'gallery' => 'nullable|array',
                 'gallery.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'gallery_ids' => 'nullable|array',
@@ -87,6 +92,8 @@ class ItemController extends BasicController
                     'category_id' => $request->input('category_id'),
                     'subcategory_id' => $request->input('subcategory_id'),
                     'brand_id' => $request->input('brand_id'),
+                    'canvas_preset_id' => $request->input('canvas_preset_id'),
+                    'pages' => $request->input('pages', 1),
                     'name' => $request->input('name'),
                     'summary' => $request->input('summary'),
                     'price' => $request->input('price'),
@@ -116,6 +123,42 @@ class ItemController extends BasicController
                 $path = "images/{$snake_case}/{$uuid}.{$ext}";
                 Storage::put($path, file_get_contents($full));
                 $item->banner = "{$uuid}.{$ext}";
+                $item->save();
+            }
+
+            // Guardar la imagen de portada
+            if ($request->hasFile('cover_image')) {
+                $snake_case = Text::camelToSnakeCase(str_replace('App\\Models\\', '', $this->model));
+                $full = $request->file("cover_image");
+                $uuid = Crypto::randomUUID();
+                $ext = $full->getClientOriginalExtension();
+                $path = "images/{$snake_case}/{$uuid}.{$ext}";
+                Storage::put($path, file_get_contents($full));
+                $item->cover_image = "{$uuid}.{$ext}";
+                $item->save();
+            }
+
+            // Guardar la imagen de contenido
+            if ($request->hasFile('content_image')) {
+                $snake_case = Text::camelToSnakeCase(str_replace('App\\Models\\', '', $this->model));
+                $full = $request->file("content_image");
+                $uuid = Crypto::randomUUID();
+                $ext = $full->getClientOriginalExtension();
+                $path = "images/{$snake_case}/{$uuid}.{$ext}";
+                Storage::put($path, file_get_contents($full));
+                $item->content_image = "{$uuid}.{$ext}";
+                $item->save();
+            }
+
+            // Guardar la imagen de contraportada
+            if ($request->hasFile('back_cover_image')) {
+                $snake_case = Text::camelToSnakeCase(str_replace('App\\Models\\', '', $this->model));
+                $full = $request->file("back_cover_image");
+                $uuid = Crypto::randomUUID();
+                $ext = $full->getClientOriginalExtension();
+                $path = "images/{$snake_case}/{$uuid}.{$ext}";
+                Storage::put($path, file_get_contents($full));
+                $item->back_cover_image = "{$uuid}.{$ext}";
                 $item->save();
             }
 
@@ -160,18 +203,20 @@ class ItemController extends BasicController
         $categories = Category::where('status', 1)->get();
         $brands = Brand::where('status', 1)->get();
         $collections = Collection::where('status', 1)->get();
+        $canvasPresets = \App\Models\CanvasPreset::where('active', 1)->get();
 
         return [
             'categories' => $categories,
             'brands' => $brands,
-            'collections' => $collections
+            'collections' => $collections,
+            'canvasPresets' => $canvasPresets
         ];
     }
 
     public function setPaginationInstance(Request $request, string $model)
     {
         return $model::select(['items.*'])
-            ->with(['category', 'subcategory', 'brand', 'images', 'collection', 'specifications', 'features'])
+            ->with(['category', 'subcategory', 'brand', 'images', 'collection', 'specifications', 'features', 'canvasPreset'])
             ->leftJoin('categories AS category', 'category.id', 'items.category_id');
     }
 

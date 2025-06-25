@@ -1,224 +1,303 @@
-import { useState } from 'react';
-import TabPanel from '../UI/TabPanel';
-import Slider from '../UI/Slider';
-import Button from '../UI/Button';
-import { 
-  FlipHorizontal, 
-  FlipVertical, 
-  RotateCw,
-  Layers,
-  Blend,
-  Sliders,
-  Palette
-} from "lucide-react";
-import MaskSelector from '../Elements/MaskSelector';
-import { filterPresets } from '../../constants/filters';
-import { blendModes } from '../../constants/blendModes';
+import { useState, useEffect } from "react";
+import { Sliders, Palette, Layers, Settings, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import Button from "../UI/Button";
+import Slider from "../UI/Slider";
+import { FilterPresets } from "./FilterPresets";
+import { AdvancedSettings } from "./AdvancedSettings";
 
-export default function FilterControls({
-  element,
-  filterTab,
-  onFilterTabChange,
-  onFilterChange,
-  availableMasks = []
-}) {
-  const applyFilterPreset = (preset) => {
-    onFilterChange({ filters: { ...element.filters, ...preset } });
-  };
+export const FilterControls = ({ filters = {}, onFilterChange, selectedElement }) => {
+    const [activeFilterTab, setActiveFilterTab] = useState("basic");
+    const [expandedSections, setExpandedSections] = useState({
+        basic: true,
+        color: true,
+        transform: false,
+        advanced: false
+    });
 
-  return (
-    <div className="space-y-6">
-      <TabPanel
-        tabs={[
-          { id: 'basic', label: 'Básicos', icon: <Sliders size={16} /> },
-          { id: 'transform', label: 'Transformar', icon: <RotateCw size={16} /> },
-          { id: 'advanced', label: 'Avanzados', icon: <Layers size={16} /> }
-        ]}
-        activeTab={filterTab}
-        onChange={onFilterTabChange}
-      />
+    const toggleSection = (section) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    };
 
-      {filterTab === 'basic' && (
-        <>
-          <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Filtros predefinidos
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {filterPresets.map(preset => (
-                <Button
-                  key={preset.name}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => applyFilterPreset(preset.filters)}
-                >
-                  {preset.name}
-                </Button>
-              ))}
+    // Default filter values
+    const defaultFilters = {
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        tint: 0,
+        hue: 0,
+        blur: 0,
+        scale: 1,
+        rotate: 0,
+        opacity: 100,
+        blendMode: "normal",
+        flipHorizontal: false,
+        flipVertical: false,
+        ...filters
+    };
+
+    const updateFilter = (key, value) => {
+        const newFilters = {
+            ...defaultFilters,
+            [key]: value
+        };
+        onFilterChange(newFilters);
+    };
+
+    const resetFilters = () => {
+        const resetValues = {
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            tint: 0,
+            hue: 0,
+            blur: 0,
+            scale: 1,
+            rotate: 0,
+            opacity: 100,
+            blendMode: "normal",
+            flipHorizontal: false,
+            flipVertical: false
+        };
+        onFilterChange(resetValues);
+    };    const filterTabs = [
+        { id: "basic", label: "Básico", icon: Sliders },
+        ...(selectedElement?.type === "image" ? [{ id: "presets", label: "Presets", icon: Palette }] : []),
+        { id: "advanced", label: "Avanzado", icon: Settings }
+    ];
+
+    // Reset to basic tab if presets are not available and current tab is presets
+    useEffect(() => {
+        if (activeFilterTab === "presets" && selectedElement?.type !== "image") {
+            setActiveFilterTab("basic");
+        }
+    }, [selectedElement?.type, activeFilterTab]);
+
+    return (
+        <div className="space-y-3">
+            {/* Filter tabs - formato vertical compacto */}
+            <div className="grid grid-cols-1 gap-1 bg-gray-100 rounded-lg p-1">
+                {filterTabs.map(tab => {
+                    const Icon = tab.icon;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveFilterTab(tab.id)}
+                            className={`flex items-center gap-2 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
+                                activeFilterTab === tab.id
+                                    ? 'bg-white text-purple-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                        >
+                            <Icon className="h-3.5 w-3.5" />
+                            {tab.label}
+                        </button>
+                    );
+                })}
             </div>
-          </div>
 
-          <div className="space-y-4">
-            <h3 className="font-medium">Ajustes básicos</h3>
-            <Slider
-              label="Brillo"
-              value={[element.filters?.brightness || 100]}
-              min={0}
-              max={200}
-              onValueChange={(value) => 
-                onFilterChange({ filters: { ...element.filters, brightness: value[0] } })
-              }
-            />
-            <Slider
-              label="Contraste"
-              value={[element.filters?.contrast || 100]}
-              min={0}
-              max={200}
-              onValueChange={(value) => 
-                onFilterChange({ filters: { ...element.filters, contrast: value[0] } })
-              }
-            />
-            <Slider
-              label="Saturación"
-              value={[element.filters?.saturation || 100]}
-              min={0}
-              max={200}
-              onValueChange={(value) => 
-                onFilterChange({ filters: { ...element.filters, saturation: value[0] } })
-              }
-            />
-            <Slider
-              label="Tono"
-              value={[element.filters?.hue || 0]}
-              min={0}
-              max={360}
-              unit="°"
-              onValueChange={(value) => 
-                onFilterChange({ filters: { ...element.filters, hue: value[0] } })
-              }
-            />
-            <Slider
-              label="Sepia"
-              value={[element.filters?.tint || 0]}
-              min={0}
-              max={100}
-              onValueChange={(value) => 
-                onFilterChange({ filters: { ...element.filters, tint: value[0] } })
-              }
-            />
-            <Slider
-              label="Desenfoque"
-              value={[element.filters?.blur || 0]}
-              min={0}
-              max={20}
-              unit="px"
-              onValueChange={(value) => 
-                onFilterChange({ filters: { ...element.filters, blur: value[0] } })
-              }
-            />
-          </div>
-        </>
-      )}
+            {/* Reset button - más compacto */}
+            <div className="flex justify-between items-center">
+                <div className="flex flex-col">
+                    <span className="text-xs font-medium text-gray-700">
+                        {activeFilterTab === "basic" && "Básico"}
+                        {activeFilterTab === "presets" && "Presets"}
+                        {activeFilterTab === "advanced" && "Avanzado"}
+                    </span>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="text-xs h-6 px-2"
+                    icon={<RotateCcw className="h-3 w-3" />}
+                >
+                    Reset
+                </Button>
+            </div>
 
-      {filterTab === 'transform' && (
-        <div className="space-y-4">
-          <h3 className="font-medium">Transformación</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant={element.filters?.flipHorizontal ? "secondary" : "outline"}
-              size="sm"
-              icon={<FlipHorizontal className="h-4 w-4" />}
-              onClick={() => onFilterChange({ 
-                filters: { 
-                  ...element.filters, 
-                  flipHorizontal: !element.filters?.flipHorizontal 
-                } 
-              })}
-            >
-              Voltear H
-            </Button>
-            <Button
-              variant={element.filters?.flipVertical ? "secondary" : "outline"}
-              size="sm"
-              icon={<FlipVertical className="h-4 w-4" />}
-              onClick={() => onFilterChange({ 
-                filters: { 
-                  ...element.filters, 
-                  flipVertical: !element.filters?.flipVertical 
-                } 
-              })}
-            >
-              Voltear V
-            </Button>
-          </div>
-          <Slider
-            label="Rotación"
-            value={[element.filters?.rotate || 0]}
-            min={0}
-            max={360}
-            unit="°"
-            onValueChange={(value) => 
-              onFilterChange({ filters: { ...element.filters, rotate: value[0] } })
-            }
-          />
-          <Slider
-            label="Escala"
-            value={[(element.filters?.scale || 1) * 100]}
-            min={10}
-            max={200}
-            onValueChange={(value) => 
-              onFilterChange({ filters: { ...element.filters, scale: value[0] / 100 } })
-            }
-          />
+            {/* Filter content */}
+            <div className="space-y-3">
+                {activeFilterTab === "basic" && (
+                    <div className="space-y-3">
+                        {/* Basic adjustments */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-medium text-gray-700">Ajustes básicos</span>
+                                <button
+                                    onClick={() => toggleSection("basic")}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    {expandedSections.basic ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </button>
+                            </div>
+                            
+                            {expandedSections.basic && (
+                                <div className="space-y-2">
+                                    <Slider
+                                        label="Brillo"
+                                        value={defaultFilters.brightness}
+                                        onChange={(value) => updateFilter("brightness", value)}
+                                        min={0}
+                                        max={200}
+                                        step={1}
+                                        unit="%"
+                                    />
+                                    <Slider
+                                        label="Contraste"
+                                        value={defaultFilters.contrast}
+                                        onChange={(value) => updateFilter("contrast", value)}
+                                        min={0}
+                                        max={200}
+                                        step={1}
+                                        unit="%"
+                                    />
+                                    <Slider
+                                        label="Saturación"
+                                        value={defaultFilters.saturation}
+                                        onChange={(value) => updateFilter("saturation", value)}
+                                        min={0}
+                                        max={200}
+                                        step={1}
+                                        unit="%"
+                                    />
+                                    <Slider
+                                        label="Opacidad"
+                                        value={defaultFilters.opacity}
+                                        onChange={(value) => updateFilter("opacity", value)}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        unit="%"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Color adjustments */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-medium text-gray-700">Color</span>
+                                <button
+                                    onClick={() => toggleSection("color")}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    {expandedSections.color ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </button>
+                            </div>
+                            
+                            {expandedSections.color && (
+                                <div className="space-y-2">
+                                    <Slider
+                                        label="Matiz"
+                                        value={defaultFilters.hue}
+                                        onChange={(value) => updateFilter("hue", value)}
+                                        min={-180}
+                                        max={180}
+                                        step={1}
+                                        unit="°"
+                                    />
+                                    <Slider
+                                        label="Tinte sepia"
+                                        value={defaultFilters.tint}
+                                        onChange={(value) => updateFilter("tint", value)}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        unit="%"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Transform */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-medium text-gray-700">Transformar</span>
+                                <button
+                                    onClick={() => toggleSection("transform")}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    {expandedSections.transform ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </button>
+                            </div>
+                            
+                            {expandedSections.transform && (
+                                <div className="space-y-2">
+                                    <Slider
+                                        label="Escala"
+                                        value={defaultFilters.scale}
+                                        onChange={(value) => updateFilter("scale", value)}
+                                        min={0.1}
+                                        max={3}
+                                        step={0.1}
+                                        unit="x"
+                                    />
+                                    <Slider
+                                        label="Rotación"
+                                        value={defaultFilters.rotate}
+                                        onChange={(value) => updateFilter("rotate", value)}
+                                        min={-180}
+                                        max={180}
+                                        step={1}
+                                        unit="°"
+                                    />
+                                    <Slider
+                                        label="Desenfoque"
+                                        value={defaultFilters.blur}
+                                        onChange={(value) => updateFilter("blur", value)}
+                                        min={0}
+                                        max={20}
+                                        step={0.5}
+                                        unit="px"
+                                    />
+                                    
+                                    {/* Flip controls */}
+                                    <div className="grid grid-cols-2 gap-1">
+                                        <Button
+                                            variant={defaultFilters.flipHorizontal ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => updateFilter("flipHorizontal", !defaultFilters.flipHorizontal)}
+                                            className="text-xs h-7"
+                                        >
+                                            Voltear H
+                                        </Button>
+                                        <Button
+                                            variant={defaultFilters.flipVertical ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => updateFilter("flipVertical", !defaultFilters.flipVertical)}
+                                            className="text-xs h-7"
+                                        >
+                                            Voltear V
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeFilterTab === "presets" && (
+                    <FilterPresets
+                        onSelectPreset={(presetFilters) => {
+                            onFilterChange({ ...defaultFilters, ...presetFilters });
+                        }}
+                        selectedImage={selectedElement || null}
+                    />
+                )}
+
+                {activeFilterTab === "advanced" && (
+                    <AdvancedSettings
+                        filters={defaultFilters}
+                        onFilterChange={onFilterChange}
+                        selectedElement={selectedElement}
+                    />
+                )}
+            </div>
         </div>
-      )}
+    );
+};
 
-      {filterTab === 'advanced' && (
-        <div className="space-y-4">
-          <h3 className="font-medium flex items-center gap-2">
-            <Blend className="h-4 w-4" />
-            Ajustes avanzados
-          </h3>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Modo de mezcla
-            </label>
-            <select
-              className="w-full border rounded-md p-2 text-sm"
-              value={element.filters?.blendMode || "normal"}
-              onChange={(e) => onFilterChange({ 
-                filters: { ...element.filters, blendMode: e.target.value }
-              })}
-            >
-              {blendModes.map(mode => (
-                <option key={mode.value} value={mode.value}>
-                  {mode.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <Slider
-            label="Opacidad"
-            value={[element.filters?.opacity || 100]}
-            min={0}
-            max={100}
-            onValueChange={(value) => onFilterChange({ 
-              filters: { ...element.filters, opacity: value[0] }
-            })}
-          />
-        </div>
-      )}
-
-      {element.type === 'image' && (
-        <MaskSelector
-          selectedMask={element.mask || "none"}
-          onSelect={(mask) => onFilterChange({ mask })}
-          availableMasks={availableMasks}
-        />
-      )}
-    </div>
-  );
-}
+export default FilterControls;

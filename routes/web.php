@@ -44,6 +44,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RepositoryController;
 use App\Http\Controllers\SystemController;
 use SoDe\Extend\File;
+use App\Http\Controllers\CanvasController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +76,22 @@ if (!file_exists($filePath)) {
 }
 
 $pages = json_decode(File::get($filePath), true);
+
+// Test route for ProductDetailBananaLab component
+Route::get('/test/product/{id}', function ($id) {
+    // Mock product data for testing
+    $product = (object) [
+        'id' => $id,
+        'name' => 'Test Product ' . $id,
+        'price' => 99.99,
+        'description' => 'This is a test product',
+        'image' => '/path/to/test-image.jpg'
+    ];
+    
+    return inertia('Test/ProductDetail', [
+        'item' => $product
+    ]);
+})->name('test.product.detail');
 
 // Public routes
 foreach ($pages as $page) {
@@ -139,6 +156,14 @@ Route::middleware(['can:Customer', 'auth'])->prefix('customer')->group(function 
     Route::get('/orders', [CustomerSaleController::class, 'reactView'])->name('Customer/Sales.jsx');
 });
 
+// Canvas Routes - Authentication required
+Route::middleware(['auth'])->prefix('canvas')->group(function () {
+    Route::get('/editor/{project}', [CanvasController::class, 'editor'])->name('canvas.editor');
+    Route::post('/save', [CanvasController::class, 'save'])->name('canvas.save');
+    Route::get('/projects', [CanvasController::class, 'getUserProjects'])->name('canvas.projects');
+    Route::post('/export/{project}', [CanvasController::class, 'export'])->name('canvas.export');
+    Route::delete('/project/{project}', [CanvasController::class, 'deleteProject'])->name('canvas.delete');
+});
 
 if (env('APP_ENV') === 'local') {
     Route::get('/cloud/{uuid}', [RepositoryController::class, 'media']);

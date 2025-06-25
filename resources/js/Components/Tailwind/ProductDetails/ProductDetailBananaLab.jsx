@@ -25,8 +25,9 @@ import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 import ProductNavigation from "../Products/ProductNavigation";
 import ProductBananaLab from "../Products/ProductBananaLab";
+import { set } from "lodash";
 
-export default function ProductDetailBananaLab({ item, data, setCart, cart }) {
+export default function ProductDetailBananaLab({session, item, data, setCart, cart, setFavorites, favorites }) {
     const itemsRest = new ItemsRest();
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState({
@@ -436,20 +437,116 @@ export default function ProductDetailBananaLab({ item, data, setCart, cart }) {
                             </div>
                         </motion.div>
 
-                        {/* Add to Cart */}
+                        {/* Create and Edit Buttons */}
                         <motion.div 
                             variants={slideUp}
                             className="flex flex-col"
                         >
-                            <motion.a
-                                href="/canva1"
+                            <motion.button
+                                onClick={async () => {
+                                    // Check if user is authenticated
+                                    if (!session) {
+                                        Swal.fire({
+                                            icon: 'info',
+                                            title: 'Inicia sesión',
+                                            text: 'Necesitas iniciar sesión para usar el editor de diseño',
+                                            confirmButtonText: 'Iniciar sesión',
+                                            showCancelButton: true,
+                                            cancelButtonText: 'Cancelar'
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                window.location.href = '/login';
+                                            }
+                                        });
+                                    } else {
+                                        // Validar que el item tenga canvas_preset_id
+                                        if (!item.canvas_preset_id) {
+                                            Swal.fire({
+                                                icon: 'warning',
+                                                title: 'Producto no compatible',
+                                                text: 'Este producto no tiene editor de diseño disponible.'
+                                            });
+                                            return;
+                                        }
+
+                                        // Crear el álbum/proyecto antes de ir al editor
+                                        try {
+                                            Swal.fire({
+                                                title: 'Creando proyecto...',
+                                                text: 'Preparando tu editor personalizado',
+                                                allowOutsideClick: false,
+                                                didOpen: () => {
+                                                    Swal.showLoading();
+                                                }
+                                            });
+
+                                            // Verificar que el CSRF token existe
+                                            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                                            if (!csrfToken) {
+                                                throw new Error('CSRF token no encontrado');
+                                            }
+
+                                            console.log('📦 Enviando datos:', {
+                                                item_id: item.id,
+                                                canvas_preset_id: item.canvas_preset_id,
+                                                name: `Proyecto ${item.name}`
+                                            });
+
+                                            const response = await fetch('/api/canvas/create-project', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Accept': 'application/json',
+                                                    'X-CSRF-TOKEN': csrfToken.content,
+                                                },
+                                                credentials: 'same-origin',
+                                                body: JSON.stringify({
+                                                    item_id: item.id,
+                                                    canvas_preset_id: item.canvas_preset_id,
+                                                    name: `Proyecto ${item.name}`
+                                                })
+                                            });
+
+                                            console.log('📡 Respuesta del servidor:', response.status, response.statusText);
+
+                                            if (response.ok) {
+                                                const project = await response.json();
+                                                console.log('✅ Proyecto creado exitosamente:', project);
+                                                Swal.close();
+                                                
+                                                // Redirigir al editor con el ID del proyecto
+                                                window.location.href = `/canvas/editor?project=${project.id}`;
+                                            } else {
+                                                // Intentar obtener el mensaje de error del servidor
+                                                let errorMessage = 'Error al crear el proyecto';
+                                                try {
+                                                    const errorData = await response.json();
+                                                    errorMessage = errorData.error || errorData.message || errorMessage;
+                                                    console.error('❌ Error del servidor:', errorData);
+                                                } catch (e) {
+                                                    console.error('❌ Error al parsear respuesta de error:', e);
+                                                }
+                                                
+                                                throw new Error(`${errorMessage} (Código: ${response.status})`);
+                                            }
+                                        } catch (error) {
+                                            console.error('❌ Error completo:', error);
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Error',
+                                                text: error.message || 'No se pudo crear el proyecto. Inténtalo de nuevo.',
+                                                footer: 'Si el problema persiste, contacta con soporte.'
+                                            });
+                                        }
+                                    }
+                                }}
                                 className="w-full flex gap-4 items-center justify-center font-paragraph text-base 2xl:text-lg bg-primary text-white py-3 font-semibold rounded-3xl hover:opacity-90 transition-all duration-300 mt-3"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                             >
                                 Crea y edita tu regalo
                                 <Brush width={20} />
-                            </motion.a>
+                            </motion.button>
                             <motion.button
                                 onClick={() => {
                                     onAddClicked(item);
@@ -596,6 +693,8 @@ export default function ProductDetailBananaLab({ item, data, setCart, cart }) {
                         items={relationsItems}
                         cart={cart}
                         setCart={setCart}
+                        setFavorites={setFavorites}
+                        favorites={favorites}
                     />      
                 </motion.div>
             )}             

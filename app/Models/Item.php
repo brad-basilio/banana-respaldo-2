@@ -31,6 +31,11 @@ class Item extends Model
         'collection_id',
         'subcategory_id',
         'brand_id',
+        'canvas_preset_id',
+        'pages',
+        'cover_image',
+        'content_image',
+        'back_cover_image',
         'is_new',
         'offering',
         'recommended',
@@ -96,6 +101,11 @@ class Item extends Model
     public function brand()
     {
         return $this->hasOne(Brand::class, 'id', 'brand_id');
+    }
+
+    public function canvasPreset()
+    {
+        return $this->hasOne(CanvasPreset::class, 'id', 'canvas_preset_id');
     }
 
     public function tags()

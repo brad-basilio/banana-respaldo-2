@@ -8,6 +8,7 @@ const Canva2 = React.lazy(() => import('./BananaLab/Canva2'))
 const Canva3 = React.lazy(() => import('./BananaLab/Canva3'))
 const EditorLayout = React.lazy(() => import('./BananaLab/components/Editor/EditorLayout'))
 const Editor = React.lazy(() => import('./BananaLab/Editor'))
+const Canvas = React.lazy(() => import('./Canvas/Canvas'))
 const BananaLab = ({ data, which, filteredData }) => {
     const getBananaLab = () => {
         switch (which) {
@@ -18,8 +19,10 @@ const BananaLab = ({ data, which, filteredData }) => {
                 return <Canva2 data={data} filteredData={filteredData} />
             case 'Canva3':
                 return <Canva3 data={data} filteredData={filteredData} />
-                case 'Editor':
-                    return <Editor data={data} filteredData={filteredData} />
+            case 'Editor':
+                return <Editor data={data} filteredData={filteredData} />
+            case 'Canvas':
+                return <Canvas data={data} filteredData={filteredData} />
 
 
 

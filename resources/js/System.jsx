@@ -186,7 +186,7 @@ const System = ({
             case 'delivery-zones':
                 return <DeliveryZone which={value} data={data} items={getItems(itemsId)} />
             case "product-detail":
-                return <ProductDetail which={value} item={filteredData.Item} cart={cart} setCart={setCart} data={data} generals={generals} favorites={favorites} setFavorites={setFavorites} textstatic={textstatic} contacts={contacts} />
+                return <ProductDetail which={value} item={filteredData.Item} cart={cart} setCart={setCart} data={data} generals={generals} favorites={favorites} setFavorites={setFavorites} textstatic={textstatic} contacts={contacts} session={session} />
             case "cart":
                 return <Cart which={value} data={data} cart={cart} setCart={setCart} />
             case "checkout":
@@ -225,7 +225,17 @@ const System = ({
                 return <Brands which={value} data={data} items={getItems(itemsId)} />
             case "partner":
                 return <Partner which={value} data={data} items={getItems(itemsId)} />
-            default:
+            case "bananalab":
+                return (
+                    <BananaLab
+                        data={data}
+                        which={value}
+                        filteredData={filteredData}
+                        systems={systems}
+                        systemItems={systemItems}
+                    />
+                );
+                default:
                 return (
                     <div className="w-full px-[5%] replace-max-w-here p-4 mx-auto">
                         - No Hay componente <b>{value}</b> -

@@ -2133,6 +2133,14 @@
         "id": "bananalab",
         "name": "BananaLab",
         "options": [
+             {
+                "id": "Canvas",
+                "name": "Canvas",
+                "data": [
+                    "steps",
+                    "selected"
+                ]
+            },
             {
                 "id": "Canva1",
                 "name": "Canva1",
