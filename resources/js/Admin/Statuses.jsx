@@ -13,7 +13,6 @@ import DxButton from '../Components/dx/DxButton';
 import CreateReactScript from '../Utils/CreateReactScript';
 import ReactAppend from '../Utils/ReactAppend';
 import StatusesRest from '../Actions/Admin/StatusesRest';
-import CheckboxFormGroup from '../Components/Adminto/form/CheckboxFormGroup';
 
 const statusesRest = new StatusesRest()
 
@@ -27,7 +26,7 @@ const Statuses = ({ icons }) => {
   const nameRef = useRef()
   const descriptionRef = useRef()
   const colorRef = useRef()
-  const visibleRef = useRef()
+  const reversibleRef = useRef()
 
   const [isEditing, setIsEditing] = useState(false)
 
@@ -36,11 +35,11 @@ const Statuses = ({ icons }) => {
     else setIsEditing(false)
 
     idRef.current.value = data?.id ?? ''
-    $(iconRef.current).val(data?.icon ?? null);
+    $(iconRef.current).val(data?.icon ?? null).trigger('change');
     nameRef.current.value = data?.name ?? ''
     descriptionRef.current.value = data?.description ?? ''
     colorRef.current.value = data?.color ?? ''
-    visibleRef.current.checked = data?.visible ?? false
+    $(reversibleRef.current).prop('checked', data?.reversible == 0).trigger('click')
 
     $(modalRef.current).modal('show')
   }
@@ -54,7 +53,7 @@ const Statuses = ({ icons }) => {
       name: nameRef.current.value,
       description: descriptionRef.current.value,
       color: colorRef.current.value,
-      visible: visibleRef.current.checked,
+      reversible: reversibleRef.current.checked,
     }
 
     const result = await statusesRest.save(request)
@@ -133,7 +132,7 @@ const Statuses = ({ icons }) => {
         {
           dataField: 'name',
           caption: 'Estado',
-          width: '200px' 
+          width: '200px'
         },
         {
           dataField: 'description',
@@ -148,10 +147,10 @@ const Statuses = ({ icons }) => {
         {
           dataField: 'color',
           caption: 'Color',
-          width: '100px', 
+          width: '100px',
           cellTemplate: (container, { data }) => {
             container.html(renderToString(<>
-              <i className={`mdi mdi-checkbox-blank-circle me-1`} style={{color: data.color}}/>
+              <i className={`mdi mdi-checkbox-blank-circle me-1`} style={{ color: data.color }} />
               {data.color}
             </>))
           }
@@ -202,7 +201,7 @@ const Statuses = ({ icons }) => {
         <InputFormGroup eRef={nameRef} label='Estado' col='col-md-8' required />
         <TextareaFormGroup eRef={descriptionRef} label='Descripción' col='col-12' />
         <InputFormGroup eRef={colorRef} label='Color (#000000)' type="color" col='col-md-6' rows={2} required />
-        <CheckboxFormGroup eRef={visibleRef} label='Reversible' info="Sirve para controlar si el estado se puede revertir o no" col='col-md-6' />
+        <SwitchFormGroup eRef={reversibleRef} label='Reversible' info="Sirve para controlar si el estado se puede revertir o no" col='col-md-6' />
       </div>
     </Modal>
   </>

@@ -2132,7 +2132,7 @@
     ]
   },
   "resources/js/Admin/Statuses.jsx": {
-    "file": "assets/Statuses-DGTC1n3o.js",
+    "file": "assets/Statuses-CsjKNI5Y.js",
     "name": "Statuses",
     "src": "resources/js/Admin/Statuses.jsx",
     "isEntry": true,
@@ -2153,19 +2153,19 @@
       "_CreateReactScript-DprzhEtl.js",
       "_ReactAppend-D7S498fx.js",
       "_BasicRest-B3rfI5GY.js",
-      "_tippy-react.esm-BWiGTO87.js",
       "_index-yBjzXJbu.js",
       "_Global-ErywZRdd.js",
+      "_tippy-react.esm-BWiGTO87.js",
+      "_index-rimy3MAc.js",
+      "_index-fNjTmf9T.js",
       "_Logout-7s5dsuEK.js",
       "_main-BvVILmTO.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "_MenuItemContainer-BwGvRAHs.js",
       "_index.esm-CveLAcri.js",
-      "_index-fNjTmf9T.js",
       "_General-BmbBKdsB.js",
       "_LaravelSession-Dz9cpV3l.js",
-      "_index-CMHsc23u.js",
-      "_index-rimy3MAc.js"
+      "_index-CMHsc23u.js"
     ],
     "css": [
       "tippy.css",
