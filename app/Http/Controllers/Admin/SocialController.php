@@ -14,6 +14,11 @@ class SocialController extends BasicController
     public $model = Social::class;
     public $reactView = 'Admin/Socials';
 
+    public function setPaginationInstance(Request $request, string $model)
+    {
+        return $model->where('status', true);
+    }
+
     public function setReactViewProperties(Request $request)
     {
         $icons = JSON::parse(File::get('../storage/app/utils/icons.json'));
