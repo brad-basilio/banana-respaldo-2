@@ -99,6 +99,7 @@ const Menu = ({ session, hasRole }) => {
                   <MenuItem href="/admin/home" icon="mdi mdi-home">Dashboard</MenuItem>
                   <MenuItem href="/admin/sales" icon="mdi mdi-cart-outline">Pedidos</MenuItem>
                   <MenuItem href="/admin/items" icon="mdi mdi-bookshelf">Items</MenuItem>
+                  <MenuItem href="/admin/canvas-presets" icon="mdi mdi-bookshelf">Presets de Items</MenuItem>
 
                   <MenuItem href="/admin/combos" icon="mdi mdi-bookshelf">
                       Combos

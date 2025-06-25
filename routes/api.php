@@ -48,6 +48,7 @@ use App\Http\Controllers\Admin\NotificationVariableController;
 use App\Http\Controllers\Api\NotificationVariablesController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Admin\CanvasPresetController as AdminCanvasPresetController;
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
@@ -412,9 +413,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/generals/paginate', [AdminGeneralController::class, 'paginate']);
     Route::patch('/generals/status', [AdminGeneralController::class, 'status']);
     Route::patch('/generals/{field}', [AdminGeneralController::class, 'boolean']);
-    Route::delete('/generals/{id}', [AdminGeneralController::class, 'delete']);
 
-
+    // Canvas Presets
+    Route::post('/canvas-presets/paginate', [AdminCanvasPresetController::class, 'paginate']);
+    Route::post('/canvas-presets', [AdminCanvasPresetController::class, 'save']);
+    Route::patch('/canvas-presets/{field}', [AdminCanvasPresetController::class, 'boolean']);
+    Route::delete('/canvas-presets/{id}', [AdminCanvasPresetController::class, 'delete']);
+    Route::get('/canvas-presets/types', [AdminCanvasPresetController::class, 'getTypes']);
+    Route::get('/canvas-presets/{id}', [AdminCanvasPresetController::class, 'get']);
 
     Route::patch('/account/email', [AdminAccountController::class, 'email']);
     Route::patch('/account/password', [AdminAccountController::class, 'password']);
