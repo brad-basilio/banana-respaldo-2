@@ -1036,40 +1036,52 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
             customCtx.msImageSmoothingEnabled = true;
             
             // --- Renderizar background layer igual que en el workspace ---
-            let bgUrl = null;
-            if (page.type === 'cover' && presetData?.cover_image) {
-                bgUrl = presetData.cover_image.startsWith('http')
-                    ? presetData.cover_image
-                    : `/storage/images/item_preset/${presetData.cover_image}`;
-            } else if (page.type === 'content' && presetData?.content_layer_image) {
-                bgUrl = presetData.content_layer_image.startsWith('http')
-                    ? presetData.content_layer_image
-                    : `/storage/images/item_preset/${presetData.content_layer_image}`;
-            } else if (page.type === 'final' && presetData?.final_layer_image) {
-                bgUrl = presetData.final_layer_image.startsWith('http')
-                    ? presetData.final_layer_image
-                    : `/storage/images/item_preset/${presetData.final_layer_image}`;
-            }
+            // Debug log para verificar los datos de la página en miniatura
+            console.log('🖼️ [THUMBNAIL] Generando miniatura para página:', page?.type);
+            console.log('🖼️ [THUMBNAIL] backgroundImage:', page?.backgroundImage);
+            console.log('🖼️ [THUMBNAIL] backgroundColor:', page?.backgroundColor);
             
-            // Si no hay fondo, usar blanco
-            if (!bgUrl) {
-                customCtx.fillStyle = '#ffffff';
-                customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
-            }
+            // Usar las propiedades backgroundImage y backgroundColor de la página (igual que el workspace)
+            let bgUrl = page.backgroundImage; // Directamente usar la propiedad de la página
+            let bgColor = page.backgroundColor || '#ffffff';
+            
+            console.log('🖼️ [THUMBNAIL] URL final:', bgUrl);
+            console.log('🎨 [THUMBNAIL] Color final:', bgColor);
+            
+            // Aplicar color de fondo
+            customCtx.fillStyle = bgColor;
+            customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
+            
+            // Si hay imagen de fondo, cargarla y dibujarla encima del color de fondo
             if (bgUrl) {
-                const bgImg = new window.Image();
-                bgImg.crossOrigin = 'anonymous';
-                bgImg.src = bgUrl;
-                await new Promise((resolve, reject) => {
-                    if (bgImg.complete) return resolve();
-                    bgImg.onload = resolve;
-                    bgImg.onerror = reject;
-                });
-                drawImageCover(customCtx, bgImg, 0, 0, workspaceDimensions.width, workspaceDimensions.height);
+                console.log('🖼️ [THUMBNAIL] Cargando imagen de fondo:', bgUrl);
+                try {
+                    const bgImg = new window.Image();
+                    bgImg.crossOrigin = 'anonymous';
+                    bgImg.src = bgUrl;
+                    
+                    await new Promise((resolve, reject) => {
+                        if (bgImg.complete) {
+                            console.log('✅ [THUMBNAIL] Imagen ya cargada');
+                            return resolve();
+                        }
+                        bgImg.onload = () => {
+                            console.log('✅ [THUMBNAIL] Imagen cargada exitosamente');
+                            resolve();
+                        };
+                        bgImg.onerror = (error) => {
+                            console.error('❌ [THUMBNAIL] Error cargando imagen:', error);
+                            reject(error);
+                        };
+                    });
+                    
+                    drawImageCover(customCtx, bgImg, 0, 0, workspaceDimensions.width, workspaceDimensions.height);
+                    console.log('✅ [THUMBNAIL] Imagen de fondo dibujada');
+                } catch (error) {
+                    console.error('❌ [THUMBNAIL] Error procesando imagen de fondo:', error);
+                }
             } else {
-                // Si no hay background, fondo blanco
-                customCtx.fillStyle = '#ffffff';
-                customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
+                console.log('ℹ️ [THUMBNAIL] Sin imagen de fondo, usando solo color');
             }
             // --- Fin background layer ---
             if (page.cells && Array.isArray(page.cells)) {
