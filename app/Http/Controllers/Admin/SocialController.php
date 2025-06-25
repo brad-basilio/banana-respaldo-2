@@ -16,7 +16,7 @@ class SocialController extends BasicController
 
     public function setPaginationInstance(Request $request, string $model)
     {
-        return $model->where('status', true);
+        return $model::where('status', true);
     }
 
     public function setReactViewProperties(Request $request)
