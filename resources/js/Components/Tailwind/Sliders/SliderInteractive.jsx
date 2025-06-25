@@ -47,8 +47,20 @@ const SliderInteractive = ({ items, data }) => {
         );
     };
 
+
+    // Helper para saber si el evento fue sobre un botón o enlace
+    const isEventOnButtonOrLink = (e) => {
+        let el = e.target;
+        while (el) {
+            if (el.tagName === 'A' || el.tagName === 'BUTTON') return true;
+            el = el.parentElement;
+        }
+        return false;
+    };
+
     // Handle touch events for mobile
     const handleTouchStart = (e) => {
+        if (isEventOnButtonOrLink(e)) return;
         isDragging.current = true;
         startX.current = e.touches[0].pageX;
         sliderRef.current.style.transition = "none";
@@ -56,25 +68,21 @@ const SliderInteractive = ({ items, data }) => {
 
     const handleTouchMove = (e) => {
         if (!isDragging.current) return;
-
         const deltaX = e.touches[0].pageX - startX.current;
         currentTranslate.current =
             -currentIndex * 100 + (deltaX / window.innerWidth) * 100;
         sliderRef.current.style.transform = `translateX(${currentTranslate.current}%)`;
     };
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = (e) => {
         if (!isDragging.current) return;
-
         isDragging.current = false;
         sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-
         const threshold = 20;
         const deltaX = Math.abs(
             (currentTranslate.current + currentIndex * 100) *
                 (window.innerWidth / 100)
         );
-
         if (deltaX > threshold) {
             if (currentTranslate.current > -currentIndex * 100) {
                 prevSlide();
@@ -84,12 +92,12 @@ const SliderInteractive = ({ items, data }) => {
         } else {
             setCurrentIndex(currentIndex);
         }
-
         sliderRef.current.style.transform = `translateX(-${currentIndex * 100}%)`;
     };
 
     // Mouse events for desktop
     const handleMouseDown = (e) => {
+        if (isEventOnButtonOrLink(e)) return;
         isDragging.current = true;
         startX.current = e.pageX;
         sliderRef.current.style.transition = "none";
@@ -97,25 +105,21 @@ const SliderInteractive = ({ items, data }) => {
 
     const handleMouseMove = (e) => {
         if (!isDragging.current) return;
-
         const deltaX = e.pageX - startX.current;
         currentTranslate.current =
             -currentIndex * 100 + (deltaX / window.innerWidth) * 100;
         sliderRef.current.style.transform = `translateX(${currentTranslate.current}%)`;
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e) => {
         if (!isDragging.current) return;
-
         isDragging.current = false;
         sliderRef.current.style.transition = "transform 0.5s ease-in-out";
-
         const threshold = 20;
         const deltaX = Math.abs(
             (currentTranslate.current + currentIndex * 100) *
                 (window.innerWidth / 100)
         );
-
         if (deltaX > threshold) {
             if (currentTranslate.current > -currentIndex * 100) {
                 prevSlide();
@@ -125,7 +129,6 @@ const SliderInteractive = ({ items, data }) => {
         } else {
             setCurrentIndex(currentIndex);
         }
-
         sliderRef.current.style.transform = `translateX(-${currentIndex * 100}%)`;
     };
 
@@ -279,21 +282,26 @@ const SliderInteractive = ({ items, data }) => {
                                     >
                                         {item.description}
                                     </p>
-                                    {item.button_text && item.button_link && (  <div className="flex flex-row gap-5 md:gap-10 justify-center items-start">
+                                    {item.button_text && item.button_link && (
+                                      <div className="flex flex-row gap-5 md:gap-10 justify-center items-start">
                                         <a
-                                            href={item.button_link}
-                                            ref={(el) =>
-                                                (buttonsRef.current[index] = el)
-                                            }
-                                            className="bg-primary border-none flex flex-row items-center gap-3 px-10 py-4 text-base rounded-xl tracking-wide font-bold hover:opacity-90 transition-all duration-300"
+                                          href={item.button_link}
+                                          ref={(el) => (buttonsRef.current[index] = el)}
+                                          className="bg-primary border-none flex flex-row items-center gap-3 px-10 py-4 text-base rounded-xl tracking-wide font-bold hover:opacity-90 transition-all duration-300"
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                          }}
+                                          onMouseDown={e => e.stopPropagation()}
+                                          onTouchStart={e => e.stopPropagation()}
                                         >
-                                            {item.button_text}
-                                            <Tag
-                                                width={"1.25rem"}
-                                                className="transform rotate-90"
-                                            />
+                                          {item.button_text}
+                                          <Tag
+                                            width={"1.25rem"}
+                                            className="transform rotate-90"
+                                          />
                                         </a>
-                                    </div>)}
+                                      </div>
+                                    )}
                                   
                                 </div>
                             </div>
