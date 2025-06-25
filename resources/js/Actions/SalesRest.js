@@ -4,7 +4,7 @@ class SalesRest extends BasicRest {
     path = "sales";
     hasFiles = true;
 
-    track = async (code) => await this.simpleGet(`/api/${this.path}/track/${code}`)
+    track = async (code, notify) => await this.simpleGet(`/api/${this.path}/track/${code}`, undefined, notify)
 }
 
 export default SalesRest;

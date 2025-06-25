@@ -29,7 +29,7 @@ const TrackSimple = () => {
         setNotFound(false)
         setStatusTracking(null)
         try {
-            const { status, tracking } = await salesRest.track(orderCode)
+            const { status, tracking } = await salesRest.track(orderCode, false)
             if (!status) throw new Error("Pedido no encontrado")
             setStatusTracking(tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
         } catch (error) {
@@ -43,7 +43,7 @@ const TrackSimple = () => {
     const handleRefresh = async () => {
         setIsLoading(true)
         try {
-            const { status, tracking } = await salesRest.track(orderCode)
+            const { status, tracking } = await salesRest.track(orderCode, false)
             if (!status) throw new Error("Pedido no encontrado")
             setStatusTracking(null)
             setTimeout(() => {
