@@ -335,6 +335,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             };
             const response = await itemsRest.paginate(params);
             setProducts(response.data);
+            console.log('🔍 DEBUG - Response:', response.data);
             setPagination({
                 currentPage: page,
                 totalPages: Math.ceil(
