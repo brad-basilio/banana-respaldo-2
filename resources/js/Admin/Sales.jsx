@@ -12,6 +12,8 @@ import Number2Currency from "../Utils/Number2Currency";
 import Modal from "../Components/Adminto/Modal";
 import Tippy from "@tippyjs/react";
 import SaleStatusesRest from "../Actions/Admin/SaleStatusesRest";
+import SelectFormGroup from "../Components/Adminto/form/SelectFormGroup";
+import { renderToString } from "react-dom/server";
 
 const salesRest = new SalesRest();
 const saleStatusesRest = new SaleStatusesRest();
@@ -25,7 +27,8 @@ const Sales = ({ statuses = [] }) => {
     const [saleStatuses, setSaleStatuses] = useState([]);
     const [statusLoading, setStatusLoading] = useState(false);
 
-    const onStatusChange = async (e) => {
+    const onStatusChange = async (e, sale) => {
+        console.log({sale, saleLoaded})
         const status = statuses.find((s) => s.id == e.target.value)
         if (status.reversible == 0) {
             const { isConfirmed } = await Swal.fire({
@@ -39,13 +42,13 @@ const Sales = ({ statuses = [] }) => {
 
         setStatusLoading(true)
         const result = await salesRest.save({
-            id: saleLoaded.id,
+            id: sale.id,
             status_id: status.id,
             notify_client: notifyClientRef.current.checked
         });
         setStatusLoading(false)
         if (!result) return;
-        const newSale = await salesRest.get(saleLoaded.id);
+        const newSale = await salesRest.get(sale.id);
         setSaleLoaded(newSale.data);
         setSaleStatuses(newSale.data.tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
         $(gridRef.current).dxDataGrid("instance").refresh();
@@ -81,6 +84,15 @@ const Sales = ({ statuses = [] }) => {
         //   else setSaleStatuses([])
         // })
     }, [saleLoaded]);
+
+    const statusTemplate = (e) => {
+        const data = $(e.element).data('status')
+        if (!e.id) return
+        return $(renderToString(<span title={data.description}>
+            <i className={`${data?.icon || 'mdi mdi-circle'} me-1`}></i>
+            {e.text}
+        </span>))
+    }
 
     const totalAmount =
         Number(saleLoaded?.amount) +
@@ -468,10 +480,11 @@ const Sales = ({ statuses = [] }) => {
                             <div className="card-header p-2">
                                 <h5 className="card-title mb-0">Estado</h5>
                             </div>
-                            <div className="card-body p-2 position-relative">
+                            <div className="card-body p-2 position-relative" id="statusSelectContainer">
                                 {statusLoading && (
                                     <div className="position-absolute d-flex align-items-center justify-content-center" style={{
                                         top: 0, left: 0, right: 0, bottom: 0,
+                                        zIndex: 1,
                                         backgroundColor: 'rgba(255, 255, 255, 0.125)',
                                         backdropFilter: 'blur(2px)',
                                         cursor: 'not-allowed'
@@ -481,7 +494,18 @@ const Sales = ({ statuses = [] }) => {
                                         </div>
                                     </div>
                                 )}
-                                <div className="mb-2">
+                                <div>
+                                <SelectFormGroup label='Estado actual' dropdownParent='#statusSelectContainer' minimumResultsForSearch={-1} templateResult={statusTemplate} templateSelection={statusTemplate} onChange={(e) => onStatusChange(e, saleLoaded)} value={saleLoaded?.status_id} changeWith={[saleLoaded]} disabled={statusLoading || saleLoaded?.status?.reversible == 0}>
+                                    {statuses.map((status, index) => {
+                                        return (
+                                            <option key={index} value={status.id} data-status={JSON.stringify(status)}>
+                                                {status.name}
+                                            </option>
+                                        );
+                                    })}
+                                </SelectFormGroup>
+                                </div>
+                                {/* <div className="mb-2">
                                     <label
                                         htmlFor="statusSelect"
                                         className="form-label"
@@ -503,7 +527,7 @@ const Sales = ({ statuses = [] }) => {
                                             );
                                         })}
                                     </select>
-                                </div>
+                                </div> */}
                                 <div className="form-check" style={{
                                     cursor: saleLoaded?.status?.reversible == 0 ? 'not-allowed' : 'pointer'
                                 }}>
