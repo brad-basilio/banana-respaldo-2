@@ -493,7 +493,7 @@ const Sales = ({ statuses = [] }) => {
                                         id="statusSelect"
                                         value={saleLoaded?.status_id}
                                         onChange={onStatusChange}
-                                    //  disabled={!saleLoaded?.status?.reversible}
+                                        disabled={saleLoaded?.status?.reversible == 0}
                                     >
                                         {statuses.map((status, index) => {
                                             return (
@@ -504,15 +504,23 @@ const Sales = ({ statuses = [] }) => {
                                         })}
                                     </select>
                                 </div>
-                                <div className="form-check">
+                                <div className="form-check" style={{
+                                    cursor: saleLoaded?.status?.reversible == 0 ? 'not-allowed' : 'pointer'
+                                }}>
                                     <input
                                         ref={notifyClientRef}
                                         className="form-check-input"
                                         type="checkbox"
                                         id="notifyClient"
                                         defaultChecked
+                                        disabled={saleLoaded?.status?.reversible == 0}
+                                        style={{
+                                            cursor: saleLoaded?.status?.reversible == 0 ? 'not-allowed' : 'pointer'
+                                        }}
                                     />
-                                    <label className="form-check-label" htmlFor="notifyClient">
+                                    <label className="form-check-label" htmlFor="notifyClient" style={{
+                                        cursor: saleLoaded?.status?.reversible == 0 ? 'not-allowed' : 'pointer'
+                                    }}>
                                         Notificar al cliente
                                     </label>
                                 </div>
