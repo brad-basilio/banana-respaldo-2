@@ -74,7 +74,9 @@ class Sale extends Model
             ->select([
                 'sale_statuses.id',
                 'sale_statuses.name',
+                'sale_statuses.description',
                 'sale_statuses.color',
+                'sale_statuses.icon',
                 'sale_status_traces.created_at',
                 'users.id as user_id',
                 'users.name as user_name',

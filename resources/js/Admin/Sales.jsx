@@ -23,13 +23,16 @@ const Sales = ({ statuses = [] }) => {
 
     const [saleLoaded, setSaleLoaded] = useState(null);
     const [saleStatuses, setSaleStatuses] = useState([]);
+    const [statusLoading, setStatusLoading] = useState(false);
 
     const onStatusChange = async (e) => {
+        setStatusLoading(true)
         const result = await salesRest.save({
             id: saleLoaded.id,
             status_id: e.target.value,
             notify_client: notifyClientRef.current.checked
         });
+        setStatusLoading(false)
         if (!result) return;
         const newSale = await salesRest.get(saleLoaded.id);
         setSaleLoaded(newSale.data);
@@ -454,7 +457,19 @@ const Sales = ({ statuses = [] }) => {
                             <div className="card-header p-2">
                                 <h5 className="card-title mb-0">Estado</h5>
                             </div>
-                            <div className="card-body p-2">
+                            <div className="card-body p-2 position-relative">
+                                {statusLoading && (
+                                    <div className="position-absolute d-flex align-items-center justify-content-center" style={{
+                                        top: 0, left: 0, right: 0, bottom: 0,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.125)',
+                                        backdropFilter: 'blur(2px)',
+                                        cursor: 'not-allowed'
+                                    }}>
+                                        <div className="spinner-border spinner-border-sm" role="status">
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="mb-2">
                                     <label
                                         htmlFor="statusSelect"
@@ -479,10 +494,10 @@ const Sales = ({ statuses = [] }) => {
                                     </select>
                                 </div>
                                 <div className="form-check">
-                                    <input 
+                                    <input
                                         ref={notifyClientRef}
-                                        className="form-check-input" 
-                                        type="checkbox" 
+                                        className="form-check-input"
+                                        type="checkbox"
                                         id="notifyClient"
                                         defaultChecked
                                     />
@@ -515,7 +530,7 @@ const Sales = ({ statuses = [] }) => {
                                             }}
                                         >
                                             <i
-                                                className="mdi mdi-circle left-2"
+                                                className={`${ss.icon || 'mdi mdi-circle'} left-2`}
                                                 style={{
                                                     color:
                                                         ss.color ||

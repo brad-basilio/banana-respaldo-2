@@ -135,7 +135,10 @@ const TrackSimple = () => {
                                                 <div
                                                     className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full border-4 border-white shadow-lg ${index == 0 ? "ring-4 ring-opacity-20" : ""} `} style={{ backgroundColor: status.color, '--tw-ring-color': getStatusBGColor(status.color, 0.5) }}
                                                 >
-                                                    <div className="text-white">{getStatusIcon(status.name)}</div>
+                                                    <div className="text-white">
+                                                        <i className={status.icon || 'mdi mdi-circle'}></i>
+                                                        {/* {getStatusIcon(status.name)} */}
+                                                    </div>
                                                 </div>
 
                                                 {/* Contenido del estado */}

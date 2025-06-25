@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\NotificationVariableController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\SaleStatusController as AdminSaleStatusController;
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
@@ -328,6 +329,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/socials/status', [AdminSocialController::class, 'status']);
     Route::patch('/socials/{field}', [AdminSocialController::class, 'boolean']);
     Route::delete('/socials/{id}', [AdminSocialController::class, 'delete']);
+
+    Route::post('/statuses', [AdminSaleStatusController::class, 'save']);
+    Route::post('/statuses/paginate', [AdminSaleStatusController::class, 'paginate']);
+    Route::patch('/statuses/status', [AdminSaleStatusController::class, 'status']);
+    Route::patch('/statuses/{field}', [AdminSaleStatusController::class, 'boolean']);
+    Route::delete('/statuses/{id}', [AdminSaleStatusController::class, 'delete']);
 
     Route::middleware(['can:Root'])->group(function () {
       Route::post('/system', [AdminSystemController::class, 'save']);
