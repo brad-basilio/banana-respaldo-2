@@ -120,14 +120,16 @@ class HomeController extends BasicController
             ->limit(5)
             ->get();
 
-        // Ventas últimos 30 días (para gráfica)
+        // Ventas y pedidos últimos 30 días (para gráfica compuesta)
         $salesLast30Days = [];
         for ($i = 29; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
             $sales = Sale::whereDate('created_at', $date)->sum('amount');
+            $orders = Sale::whereDate('created_at', $date)->count();
             $salesLast30Days[] = [
                 'date' => $date->format('Y-m-d'),
-                'amount' => $sales
+                'amount' => $sales,
+                'orders' => $orders
             ];
         }
 

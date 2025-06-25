@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { createRoot } from 'react-dom/client';
 import CreateReactScript from '../Utils/CreateReactScript';
 import BaseAdminto from '../Components/Adminto/Base';
 import Chart from 'react-apexcharts';
 
 const Home = ({ session, totalProducts, totalStock, salesToday, salesMonth, salesYear, incomeToday, incomeMonth, incomeYear, topProducts, newFeatured, ordersByStatus, salesByLocation, topCoupons, topDiscountRules, brands, topClients, salesLast30Days, usersToday, usersMonth, usersYear, customerSatisfaction }) => {
-  const [dateRange, setDateRange] = useState('30');
+  const [startDate, setStartDate] = useState(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000));
+  const [endDate, setEndDate] = useState(new Date());
   const formatIncome = (value) => {
     const numValue = Number(value) || 0;
     return numValue.toFixed(2);
@@ -105,32 +108,101 @@ const Home = ({ session, totalProducts, totalStock, salesToday, salesMonth, sale
               <button className="btn btn-sm btn-light border"><i className="fas fa-ellipsis-v"></i></button>
             </div>
             <div className="card-body">
-              <Chart
-                options={{
-                  chart: { id: 'ventas30dias' },
-                  xaxis: {
-                    categories: salesLast30Days.map(d => d.date)
-                  },
-                  dataLabels: { enabled: false },
-                  stroke: { curve: 'smooth' },
-                  colors: ['#3b82f6'],
-                  tooltip: { enabled: true }
-                }}
-                series={[{
-                  name: 'Ventas',
-                  data: salesLast30Days.map(d => d.amount)
-                }]}
-                type="bar"
-                height={220}
-              />
-              <div className="mt-2 d-flex align-items-center gap-2">
-                <select className="form-select form-select-sm w-auto d-inline" value={dateRange} onChange={e => setDateRange(e.target.value)}>
-                  <option value="7">7 días</option>
-                  <option value="15">15 días</option>
-                  <option value="30">30 días</option>
-                </select>
-                <span className="text-muted small">Rango de fechas</span>
-              </div>
+              {(() => {
+                // Filtrar datos por rango de fechas
+                const filteredData = salesLast30Days.filter(d => {
+                  const date = new Date(d.date);
+                  return date >= startDate && date <= endDate;
+                });
+                return (
+                  <>
+                    <Chart
+                      options={{
+                        chart: {
+                          id: 'ventas30dias',
+                          toolbar: { show: false },
+                          stacked: false,
+                        },
+                        xaxis: {
+                          categories: filteredData.map(d => d.date),
+                          labels: { rotate: -35 }
+                        },
+                        yaxis: [
+                          {
+                            title: { text: 'Pedidos' },
+                            labels: { style: { colors: '#3b82f6' } },
+                            min: 0,
+                          },
+                          {
+                            opposite: true,
+                            title: { text: 'Ventas (S/)' },
+                            labels: { style: { colors: '#10b981' } },
+                            min: 0,
+                          }
+                        ],
+                        dataLabels: { enabled: false },
+                        stroke: { curve: 'smooth', width: [0, 3] },
+                        colors: ['#3b82f6', '#10b981'],
+                        tooltip: {
+                          enabled: true,
+                          shared: true,
+                          intersect: false,
+                          y: [
+                            {
+                              formatter: val => `${val} pedidos`
+                            },
+                            {
+                              formatter: val => `S/ ${Number(val).toFixed(2)}`
+                            }
+                          ]
+                        },
+                        legend: { show: true, position: 'top', fontWeight: 600 }
+                      }}
+                      series={[
+                        {
+                          name: 'Pedidos',
+                          type: 'column',
+                          data: filteredData.map(d => d.orders || 0),
+                          yAxisIndex: 0
+                        },
+                        {
+                          name: 'Ventas',
+                          type: 'line',
+                          data: filteredData.map(d => d.amount),
+                          yAxisIndex: 1
+                        }
+                      ]}
+                      type="line"
+                      height={260}
+                    />
+                    <div className="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                      <span className="text-muted small">Rango de fechas:</span>
+                      <DatePicker
+                        selected={startDate}
+                        onChange={date => setStartDate(date)}
+                        selectsStart
+                        startDate={startDate}
+                        endDate={endDate}
+                        dateFormat="yyyy-MM-dd"
+                        className="form-control form-control-sm"
+                        maxDate={endDate}
+                      />
+                      <span className="mx-1">a</span>
+                      <DatePicker
+                        selected={endDate}
+                        onChange={date => setEndDate(date)}
+                        selectsEnd
+                        startDate={startDate}
+                        endDate={endDate}
+                        dateFormat="yyyy-MM-dd"
+                        className="form-control form-control-sm"
+                        minDate={startDate}
+                        maxDate={new Date()}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -146,70 +218,48 @@ const Home = ({ session, totalProducts, totalStock, salesToday, salesMonth, sale
             <div className="card-body">
               <Chart
                 options={{
+                  chart: {
+                    type: 'pie',
+                    toolbar: { show: false },
+                  },
                   labels: ordersByStatus.map(s => s.name),
                   colors: ordersByStatus.map(s => s.color),
-                  legend: { position: 'bottom', fontSize: '15px', fontWeight: 500 },
-                  tooltip: { enabled: true, style: { fontSize: '15px' } },
-                  plotOptions: {
-                    pie: {
-                      donut: {
-                        size: '75%',
-                        labels: {
-                          show: true,
-                          name: {
-                            show: true,
-                            fontSize: '18px',
-                            fontWeight: 600,
-                            color: '#22223b',
-                            offsetY: -10
-                          },
-                          value: {
-                            show: true,
-                            fontSize: '22px',
-                            fontWeight: 700,
-                            color: '#3b82f6',
-                            offsetY: 10,
-                            formatter: (val) => val
-                          },
-                          total: {
-                            show: true,
-                            label: 'Total',
-                            fontSize: '16px',
-                            fontWeight: 500,
-                            color: '#64748b',
-                            formatter: () => ordersByStatus.reduce((a, b) => a + b.count, 0)
-                          }
-                        }
-                      }
-                    }
+                  legend: {
+                    position: 'bottom',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    markers: { width: 16, height: 16, radius: 8 },
+                    itemMargin: { horizontal: 10, vertical: 4 }
                   },
-                  dataLabels: { enabled: true, style: { fontSize: '15px', fontWeight: 500 } },
-                  stroke: { width: 0 },
+                  tooltip: {
+                    enabled: true,
+                    style: { fontSize: '15px', fontWeight: 500 },
+                    fillSeriesColor: false,
+                  },
+                  dataLabels: {
+                    enabled: false
+                  },
+                  stroke: { width: 2, colors: ['#fff'] },
+                  fill: {
+                    type: 'solid',
+                  },
                   states: {
-                    hover: { filter: { type: 'lighten', value: 0.1 } },
-                    active: { filter: { type: 'darken', value: 0.15 } }
+                    hover: { filter: { type: 'lighten', value: 0.08 } },
+                    active: { filter: { type: 'darken', value: 0.12 } }
                   },
                   animations: {
                     enabled: true,
                     easing: 'easeinout',
-                    speed: 800,
-                    animateGradually: { enabled: true, delay: 150 },
-                    dynamicAnimation: { enabled: true, speed: 350 }
+                    speed: 700,
+                    animateGradually: { enabled: true, delay: 100 },
+                    dynamicAnimation: { enabled: true, speed: 300 }
                   }
                 }}
                 series={ordersByStatus.map(s => s.count)}
-                type="donut"
-                height={240}
+                type="pie"
+                height={300}
               />
-              <div className="mt-3 d-flex flex-wrap gap-3 justify-content-center">
-                {ordersByStatus.map((s, i) => (
-                  <span key={i} className="d-flex align-items-center gap-1">
-                    <span className="badge rounded-pill" style={{background: s.color, color: '#fff', minWidth: 18, height: 18}}>&nbsp;</span>
-                    <span className="text-muted small">{s.name}:</span>
-                    <b className="text-dark">{s.count}</b>
-                  </span>
-                ))}
-              </div>
+              
             </div>
           </div>
         </div>
@@ -218,28 +268,47 @@ const Home = ({ session, totalProducts, totalStock, salesToday, salesMonth, sale
           <div className="card border-0 shadow-sm h-100">
             <div className="card-header bg-white border-0 d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center gap-2">
-                <i className="fas fa-chart-line text-success"></i>
-                <span className="fw-bold">Total Revenue</span>
+                <i className="fas fa-th-large text-success"></i>
+                <span className="fw-bold">Ventas por Ubicación (TreeMap)</span>
               </div>
               <button className="btn btn-sm btn-light border"><i className="fas fa-ellipsis-v"></i></button>
             </div>
             <div className="card-body">
               <Chart
                 options={{
-                  xaxis: {
-                    categories: salesByLocation.map(l => `${l.department}/${l.province}`)
+                  chart: { type: 'treemap', toolbar: { show: false } },
+                  legend: { show: false },
+                  dataLabels: {
+                    enabled: true,
+                    style: { fontSize: '14px', fontWeight: 500 },
+                    formatter: function(text, op) {
+                      // Muestra solo el nombre de la ubicación, no el valor
+                      return text.length > 18 ? text.slice(0, 15) + '...' : text;
+                    }
                   },
-                  plotOptions: { bar: { horizontal: true } },
-                  colors: ['#10b981'],
-                  tooltip: { enabled: true }
+                  colors: ['#10b981', '#3b82f6', '#f59e42', '#f43f5e', '#6366f1', '#06b6d4', '#fbbf24'],
+                  tooltip: {
+                    enabled: true,
+                    y: {
+                      formatter: val => `Ventas: ${val}`
+                    }
+                  },
+                  grid: { show: false }
                 }}
-                series={[{
-                  name: 'Ventas',
-                  data: salesByLocation.map(l => l.count)
-                }]}
-                type="bar"
-                height={220}
+                series={[
+                  {
+                    data: salesByLocation.slice(0, 12).map(l => ({
+                      x: `${l.department}/${l.province}/${l.district}`,
+                      y: l.count
+                    }))
+                  }
+                ]}
+                type="treemap"
+                height={300}
               />
+              <div className="text-muted small mt-2">
+                Mostrando top {Math.min(salesByLocation.length, 12)} ubicaciones
+              </div>
             </div>
           </div>
         </div>
