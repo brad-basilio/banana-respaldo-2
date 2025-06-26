@@ -455,7 +455,13 @@ const HeaderSearchB = ({
             </motion.div>
         );
     };
-
+    console.log(isUser);
+    // Determinar si el usuario es cliente (no admin ni superadmin, usando roles array)
+    let isCustomer = false;
+    if (isUser && Array.isArray(isUser.roles)) {
+        const roleNames = isUser.roles.map(r => r.name?.toLowerCase());
+        isCustomer = !roleNames.includes('admin') && !roleNames.includes('root');
+    }
     return (
         <header className={`w-full top-0 left-0 z-50 transition-all duration-300 ${isFixed ? "fixed bg-white shadow-lg" : "relative bg-white"}`}>
             <div className="px-primary  bg-white 2xl:px-0 2xl:max-w-7xl mx-auto py-4 font-font-secondary text-base font-semibold">
