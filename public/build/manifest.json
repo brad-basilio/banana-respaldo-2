@@ -3797,7 +3797,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-ClSEEXC-.js",
+    "file": "assets/BananaLab-CufbarcX.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4315,6 +4315,17 @@
     "isEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-yBjzXJbu.js"
+    ]
+  },
+  "resources/js/Components/Tailwind/BananaLab/components/UI/SaveIndicator.jsx": {
+    "file": "assets/SaveIndicator-Co_3lRRe.js",
+    "name": "SaveIndicator",
+    "src": "resources/js/Components/Tailwind/BananaLab/components/UI/SaveIndicator.jsx",
+    "isEntry": true,
+    "imports": [
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
       "_index-yBjzXJbu.js"
     ]
   },
@@ -9096,7 +9107,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-BcZgtsm-.js",
+    "file": "assets/System-CbzZDSsP.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

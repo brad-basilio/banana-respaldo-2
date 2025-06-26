@@ -50,6 +50,7 @@ use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\CanvasPresetController as AdminCanvasPresetController;
 use App\Http\Controllers\CanvasController;
+use App\Http\Controllers\Api\Canvas\ProjectSaveController;
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
@@ -433,6 +434,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/canvas/export/{id}', [CanvasController::class, 'export']);
     Route::get('/canvas/projects', [CanvasController::class, 'list']);
     Route::delete('/canvas/projects/{id}', [CanvasController::class, 'delete']);
+
+    // New project save system routes
+    Route::post('/canvas/upload-image', [ProjectSaveController::class, 'uploadImage']);
+    Route::post('/canvas/auto-save', [ProjectSaveController::class, 'autoSave']);
+    Route::post('/canvas/manual-save', [ProjectSaveController::class, 'manualSave']);
 
     Route::patch('/account/email', [AdminAccountController::class, 'email']);
     Route::patch('/account/password', [AdminAccountController::class, 'password']);

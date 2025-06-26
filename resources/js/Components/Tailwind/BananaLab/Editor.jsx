@@ -43,6 +43,8 @@ import WorkspaceControls from "./components/Elements/WorkspaceControls";
 import BookPreviewModal from "./components/Editor/BookPreview";
 import Global from "../../../Utils/Global";
 import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
+import { useSaveProject } from "./utils/useSaveProject";
+import SaveIndicator from "./components/UI/SaveIndicator";
 
 // Componente principal del editor
 export default function EditorLibro() {
@@ -216,6 +218,16 @@ export default function EditorLibro() {
         cellId: null,
     });
     const [isBookPreviewOpen, setIsBookPreviewOpen] = useState(false);
+
+    // Save system integration
+    const saveHook = useSaveProject(
+        pages,
+        projectData,
+        itemData,
+        presetData,
+        { width: 800, height: 600 }, // workspaceDimensions
+        pageThumbnails
+    );
 
     // Función para obtener el storage key único basado en el proyecto
     const getStorageKey = () => {
@@ -1870,6 +1882,12 @@ export default function EditorLibro() {
 
                             {/* Action buttons */}
                             <div className="flex gap-3 items-center">
+                                {/* Save indicator */}
+                                <SaveIndicator
+                                    saveStatus={saveHook.saveStatus}
+                                    lastSaved={saveHook.lastSaved}
+                                    onManualSave={saveHook.manualSave}
+                                />
 
                                 <Button
                                     variant="secondary"

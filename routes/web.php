@@ -165,6 +165,10 @@ Route::middleware(['auth'])->prefix('canvas')->group(function () {
     Route::delete('/project/{project}', [CanvasController::class, 'deleteProject'])->name('canvas.delete');
 });
 
+// Test route for development
 if (env('APP_ENV') === 'local') {
+    Route::get('/canvas-test', function () {
+        return view('canvas-test');
+    })->middleware('auth');
     Route::get('/cloud/{uuid}', [RepositoryController::class, 'media']);
 }
