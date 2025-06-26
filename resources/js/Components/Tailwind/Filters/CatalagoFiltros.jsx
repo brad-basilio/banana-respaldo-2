@@ -211,13 +211,27 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         { min: 5000, max: 999999, label: "Desde s/ 5.000" }
     ];
 
-    const [sections, setSections] = useState({
-        marca: true,
-        precio: true,
-        categoria: true,
-        subcategoria: true,
-        colores: false,
-        coleccion: true,
+    const [sections, setSections] = useState(() => {
+        // Por defecto, todos los filtros cerrados en desktop
+        if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+            return {
+                marca: false,
+                precio: false,
+                categoria: false,
+                subcategoria: false,
+                colores: false,
+                coleccion: false,
+            };
+        }
+        // En mobile/tablet puedes mantener el comportamiento anterior
+        return {
+            marca: true,
+            precio: true,
+            categoria: true,
+            subcategoria: true,
+            colores: false,
+            coleccion: true,
+        };
     });
 
     const [selectedFilters, setSelectedFilters] = useState({
