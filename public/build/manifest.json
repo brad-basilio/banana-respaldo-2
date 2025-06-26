@@ -4221,7 +4221,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Carrusel.jsx": {
-    "file": "assets/Carrusel-D5wVivzs.js",
+    "file": "assets/Carrusel-xN6mCOt8.js",
     "name": "Carrusel",
     "src": "resources/js/Components/Tailwind/Carrusel.jsx",
     "isDynamicEntry": true,
@@ -7622,7 +7622,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Slider.jsx": {
-    "file": "assets/Slider-yGtzFvsI.js",
+    "file": "assets/Slider-C00UY3tM.js",
     "name": "Slider",
     "src": "resources/js/Components/Tailwind/Slider.jsx",
     "isDynamicEntry": true,
@@ -8406,7 +8406,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CCJ9KR_W.js",
+    "file": "assets/System-DoDhWk73.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

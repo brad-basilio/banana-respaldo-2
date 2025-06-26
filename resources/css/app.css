@@ -5,20 +5,6 @@
 @tailwind utilities;
 
 /* Colores personalizados para compatibilidad */
-@layer utilities {
-    .bg-primary {
-        @apply bg-primary-600;
-    }
-    .text-primary {
-        @apply text-primary-600;
-    }
-    .customtext-primary {
-        @apply text-primary-600;
-    }
-    .customtext-neutral-dark {
-        @apply text-neutral-dark;
-    }
-}
 
 .text-shadow {
     /* o el color que prefieras */

@@ -13,10 +13,10 @@ const CarruselBenefitsInifinite = ({ items }) => {
   });
 
   return (
-    <div ref={benefitsRef} className="bg-primary py-6 overflow-hidden">
+    <div ref={benefitsRef} className="bg-primary py-4 lg:py-6 overflow-hidden">
       <div className="px-primary 2xl:px-0 2xl:max-w-7xl mx-auto relative">
         <Swiper
-          slidesPerView={1}
+          slidesPerView={1.5}
           spaceBetween={32}
           loop={true}
           breakpoints={{
@@ -51,10 +51,10 @@ const CarruselBenefitsInifinite = ({ items }) => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">
+                  <h3 className="font-bold text-sm lg:text-lg">
                     {benefit.name}
                   </h3>
-                  <p className="text-sm">{benefit.description}</p>
+                  <p className="text-[10px] lg:text-sm">{benefit.description}</p>
                 </div>
               </div>
             </SwiperSlide>

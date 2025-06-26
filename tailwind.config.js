@@ -14,26 +14,7 @@ export default {
                 "font-secondary": ["Open Sans", "serif"],
                 "roboto": ["Roboto", "sans-serif"], // usado para Xcleretor
             },
-            colors: {
-                primary: {
-                    DEFAULT: "#0f62fe", // Color azul moderno
-                    50: "#eff6ff",
-                    100: "#dbeafe", 
-                    200: "#bfdbfe",
-                    300: "#93c5fd",
-                    400: "#60a5fa",
-                    500: "#3b82f6",
-                    600: "#0f62fe", // Primary
-                    700: "#1d4ed8",
-                    800: "#1e40af",
-                    900: "#1e3a8a",
-                },
-                accent: "#10b981", // Color verde para acentos
-                neutral: {
-                    dark: "#1f2937",
-                    light: "#f9fafb"
-                }
-            },
+           
             margin: {
                 primary: "5%",
             },
