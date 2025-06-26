@@ -155,8 +155,8 @@
     "file": "assets/DxButton-DV0H-ZcL.js",
     "name": "DxButton"
   },
-  "_EditableCell-CQUmTvkz.js": {
-    "file": "assets/EditableCell-CQUmTvkz.js",
+  "_EditableCell-QW6XkU6A.js": {
+    "file": "assets/EditableCell-QW6XkU6A.js",
     "name": "EditableCell",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js",
@@ -3797,7 +3797,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-CcIUhKaS.js",
+    "file": "assets/BananaLab-ClSEEXC-.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -3856,7 +3856,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-W57aZITq.js",
+    "file": "assets/Editor-BQxsfOOe.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isEntry": true,
@@ -3894,7 +3894,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx": {
-    "file": "assets/V1Edit-pNNgPToz.js",
+    "file": "assets/V1Edit-Byl8Zu3k.js",
     "name": "V1Edit",
     "src": "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
     "isEntry": true,
@@ -8907,7 +8907,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-V86577ip.js",
+    "file": "assets/Editor-BG1XLI2x.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9096,7 +9096,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-O3D3Nkgn.js",
+    "file": "assets/System-BcZgtsm-.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

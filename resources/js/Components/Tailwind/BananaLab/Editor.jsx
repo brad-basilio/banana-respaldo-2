@@ -42,7 +42,7 @@ import TextToolbar from "./components/Elements/TextToolbar";
 import WorkspaceControls from "./components/Elements/WorkspaceControls";
 import BookPreviewModal from "./components/Editor/BookPreview";
 import Global from "../../../Utils/Global";
-import { generateHighQualityThumbnails } from "./components/Editor/BookPreview";
+import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
 
 // Componente principal del editor
 export default function EditorLibro() {
@@ -1040,7 +1040,7 @@ export default function EditorLibro() {
                     })
                 }));
 
-                const thumbnails = await generateHighQualityThumbnails({
+                const thumbnails = await generateAccurateThumbnails({
                     pages: processedPages,
                     workspaceDimensions,
                     presetData

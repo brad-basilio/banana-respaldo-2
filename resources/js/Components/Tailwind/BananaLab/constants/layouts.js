@@ -1,5 +1,97 @@
 // Definimos los layouts con estilos avanzados y tendencias modernas para álbumes de fotos
 export const layouts = [
+    // LAYOUTS BÁSICOS PARA COMPATIBILIDAD
+    {
+        id: "layout-1",
+        name: "Básico - Una Celda",
+        description: "Layout básico con una sola celda que ocupa toda la página",
+        category: "basic",
+        template: "grid-cols-1 grid-rows-1",
+        cells: 1,
+        style: {
+            gap: "0px",
+            padding: "16px"
+        },
+        cellStyles: {
+            0: "rounded-lg overflow-hidden shadow-lg"
+        },
+        maskCategories: [
+            {
+                name: "Básico",
+                masks: ["none", "rounded", "soft-rounded"]
+            }
+        ]
+    },
+    {
+        id: "layout-2",
+        name: "Básico - Dos Celdas",
+        description: "Layout básico con dos celdas horizontales",
+        category: "basic",
+        template: "grid-cols-2 grid-rows-1",
+        cells: 2,
+        style: {
+            gap: "16px",
+            padding: "16px"
+        },
+        cellStyles: {
+            0: "rounded-lg overflow-hidden shadow-lg",
+            1: "rounded-lg overflow-hidden shadow-lg"
+        },
+        maskCategories: [
+            {
+                name: "Básico",
+                masks: ["none", "rounded", "soft-rounded"]
+            }
+        ]
+    },
+    {
+        id: "layout-3",
+        name: "Básico - Tres Celdas",
+        description: "Layout básico con tres celdas",
+        category: "basic",
+        template: "grid-cols-3 grid-rows-1",
+        cells: 3,
+        style: {
+            gap: "12px",
+            padding: "16px"
+        },
+        cellStyles: {
+            0: "rounded-lg overflow-hidden shadow-lg",
+            1: "rounded-lg overflow-hidden shadow-lg",
+            2: "rounded-lg overflow-hidden shadow-lg"
+        },
+        maskCategories: [
+            {
+                name: "Básico",
+                masks: ["none", "rounded", "soft-rounded"]
+            }
+        ]
+    },
+    {
+        id: "layout-4",
+        name: "Básico - Cuatro Celdas",
+        description: "Layout básico con cuatro celdas en cuadrícula",
+        category: "basic",
+        template: "grid-cols-2 grid-rows-2",
+        cells: 4,
+        style: {
+            gap: "12px",
+            padding: "16px"
+        },
+        cellStyles: {
+            0: "rounded-lg overflow-hidden shadow-lg",
+            1: "rounded-lg overflow-hidden shadow-lg",
+            2: "rounded-lg overflow-hidden shadow-lg",
+            3: "rounded-lg overflow-hidden shadow-lg"
+        },
+        maskCategories: [
+            {
+                name: "Básico",
+                masks: ["none", "rounded", "soft-rounded"]
+            }
+        ]
+    },
+
     // LAYOUTS HERO/DESTACADOS
     {
         id: "hero-fullpage",
@@ -31,14 +123,14 @@ export const layouts = [
         name: "Hero - División Dramática",
         description: "Dos imágenes grandes con división vertical elegante",
         category: "hero",
-        template: "grid-cols-2 grid-rows-1 gap-1",
+        template: "grid-cols-2 grid-rows-1 gap-4",
         cells: 2,
         style: {
-            gap: "4px"
+            gap: "10px"
         },
         cellStyles: {
-            0: "rounded-l-lg overflow-hidden shadow-xl",
-            1: "rounded-r-lg overflow-hidden shadow-xl"
+            0: "rounded-lg overflow-hidden",
+            1: "rounded-lg overflow-hidden"
         },
         maskCategories: [
             {
