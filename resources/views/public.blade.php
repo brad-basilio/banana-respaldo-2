@@ -136,6 +136,10 @@
     @endif
     @foreach ($data['colors'] as $color)
         <style>
+            .background-{{ $color->name }} {
+                background-color: {{ $color->description }};
+            }
+
             .bg-{{ $color->name }} {
                 background-color: {{ $color->description }};
             }
@@ -184,6 +188,7 @@
             }
         </style>
     @endforeach
+
     <style>
         .font-emoji {
             font-family: "Noto Color Emoji", sans-serif;
@@ -194,7 +199,7 @@
             transform: translateY(-50%);
         }
     </style>
-
+    
 </head>
 
 <body class="font-general">

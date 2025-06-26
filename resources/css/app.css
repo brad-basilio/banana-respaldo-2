@@ -5,9 +5,13 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
 
 /* Colores personalizados para compatibilidad */
-@layer utilities {
+
+/* @layer utilities {
     .bg-primary {
         @apply bg-primary-600;
+    }
+    .bg-accent {
+      @apply bg-accent;
     }
     .text-primary {
         @apply text-primary-600;
@@ -18,7 +22,7 @@
     .customtext-neutral-dark {
         @apply text-neutral-dark;
     }
-}
+} */
 
 .text-shadow {
     /* o el color que prefieras */
@@ -64,6 +68,8 @@
   position: sticky;
   top: 0;
 }
+
+
 
   /*  */
   

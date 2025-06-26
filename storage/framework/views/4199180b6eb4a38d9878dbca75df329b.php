@@ -136,6 +136,10 @@
     <?php endif; ?>
     <?php $__currentLoopData = $data['colors']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $color): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <style>
+            .background-<?php echo e($color->name); ?> {
+                background-color: <?php echo e($color->description); ?>;
+            }
+
             .bg-<?php echo e($color->name); ?> {
                 background-color: <?php echo e($color->description); ?>;
             }
@@ -184,6 +188,7 @@
             }
         </style>
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
     <style>
         .font-emoji {
             font-family: "Noto Color Emoji", sans-serif;
@@ -194,7 +199,7 @@
             transform: translateY(-50%);
         }
     </style>
-
+    
 </head>
 
 <body class="font-general">
@@ -259,4 +264,4 @@
 </body>
 
 </html>
-<?php /**PATH C:\laragon\www\build\resources\views/public.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\laragon\www\2DEN1\resources\views/public.blade.php ENDPATH**/ ?>

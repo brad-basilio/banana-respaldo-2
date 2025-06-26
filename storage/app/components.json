@@ -834,6 +834,7 @@
                 "image": "categories-simple.png",
                 "data": [
                     "title",
+                    "centrado",
                     "path"
                 ],
                 "using": {
