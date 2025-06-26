@@ -229,7 +229,8 @@ export default function ShippingStep({
     // Estados para cupones
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState(null);
-    const [couponDiscount, setCouponDiscount] = useState(0);
+    // El descuento del cupón se calcula sobre el total real, no solo el subtotal
+    const [couponDiscount, setCouponDiscount] = useState(0); // solo para compatibilidad visual
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState("");
 
@@ -829,10 +830,25 @@ export default function ShippingStep({
         return parseFloat(number.toFixed(2));
     };
 
-    // El totalFinal ya incluye todos los descuentos (cupón + automáticos), solo aplicar redondeo
-    // Si quieres recalcular el total aquí, puedes hacerlo así:
-    // const finalTotalWithCoupon = roundToTwoDecimals(subTotal + igv + envio - couponDiscount - autoDiscountTotal);
-    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal);
+    // Calcular el total base antes de cupón
+    const totalBase = roundToTwoDecimals(subTotal) + roundToTwoDecimals(igv) + roundToTwoDecimals(envio) - roundToTwoDecimals(autoDiscountTotal);
+
+    // Calcular el descuento del cupón sobre el total base
+    let calculatedCouponDiscount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage' || appliedCoupon.type === 'percent') {
+            calculatedCouponDiscount = (totalBase * Number(appliedCoupon.value)) / 100;
+        } else if (appliedCoupon.type === 'fixed') {
+            calculatedCouponDiscount = Number(appliedCoupon.value);
+        }
+    }
+    // Sincronizar el estado para mantener compatibilidad visual
+    useEffect(() => {
+        setCouponDiscount(roundToTwoDecimals(calculatedCouponDiscount));
+        if (setParentCouponDiscount) setParentCouponDiscount(roundToTwoDecimals(calculatedCouponDiscount));
+    }, [appliedCoupon, subTotal, igv, envio, autoDiscountTotal]);
+
+    const finalTotalWithCoupon = Math.max(0, roundToTwoDecimals(totalBase - calculatedCouponDiscount));
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
