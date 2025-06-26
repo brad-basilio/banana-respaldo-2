@@ -846,7 +846,7 @@ export default function EditorLibro() {
             type: "text",
             content: "Haz clic para editar",
             position: { x: 0.05, y: 0.05 }, // Posición en porcentajes para responsividad
-            size: { width: 40, height: 15 }, // Tamaño en porcentajes para consistencia
+            size: { width: 0.4, height: 0.15 }, // Tamaño en porcentajes para consistencia (40% y 15% de la celda)
             style: {
                 fontSize: "16px",
                 fontFamily: "Arial",
@@ -1039,8 +1039,6 @@ export default function EditorLibro() {
                         return (a.position?.x || 0) - (b.position?.x || 0);
                     })
                 }));
-
-                console.log('📝 Procesando miniaturas con páginas procesadas:', processedPages);
 
                 const thumbnails = await generateHighQualityThumbnails({
                     pages: processedPages,

@@ -267,52 +267,46 @@ const BookPreviewModal = ({
                 
                 console.log(`🔧 [THUMBNAIL] Processing cell ${cell.id} with ${cell.elements.length} elements`);
                 
-                for (const element of cell.elements) {
+                // Crear elementos ordenados por zIndex para renderizado correcto
+                const sortedElements = cell.elements.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+                
+                for (const element of sortedElements) {
                     console.log(`🔧 [THUMBNAIL] Drawing element ${element.id} (${element.type}): "${element.content}"`);
                     
-                    // Asegurar que position existe
+                    // Calcular posición del elemento dentro de la celda
                     const position = element.position || { x: 0, y: 0 };
-                    const size = element.size || {};
+                    const cellX = cellPosition.x / scale;
+                    const cellY = cellPosition.y / scale;
+                    const cellWidth = cellPosition.width / scale;
+                    const cellHeight = cellPosition.height / scale;
                     
-                    // Calculate element position and size correctly (sin escala extra en este paso)
-                    const elementX = (position.x || 0) * (cellPosition.width / scale);
-                    const elementY = (position.y || 0) * (cellPosition.height / scale);
+                    // Determinar si las posiciones son relativas (0-1) o absolutas (píxeles)
+                    const isRelativeX = position.x !== undefined && Math.abs(position.x) <= 1;
+                    const isRelativeY = position.y !== undefined && Math.abs(position.y) <= 1;
                     
-                    // Handle size calculation with fallbacks
-                    let elementWidth, elementHeight;
-                    if (size.width && size.height) {
-                        // Size exists, use it (values might be in percentage 0-100 or decimal 0-1)
-                        const sizeWidth = size.width > 1 ? size.width / 100 : size.width;
-                        const sizeHeight = size.height > 1 ? size.height / 100 : size.height;
-                        elementWidth = (cellPosition.width / scale) * sizeWidth;
-                        elementHeight = (cellPosition.height / scale) * sizeHeight;
-                    } else {
-                        // No size property, use defaults based on element type
-                        if (element.type === 'text') {
-                            elementWidth = (cellPosition.width / scale) * 0.8; // 80% of cell width
-                            elementHeight = (cellPosition.height / scale) * 0.3; // 30% of cell height
-                        } else {
-                            elementWidth = (cellPosition.width / scale) * 0.5; // 50% of cell width
-                            elementHeight = (cellPosition.height / scale) * 0.5; // 50% of cell height
-                        }
-                    }
+                    // Calcular posición absoluta del elemento
+                    const elX = isRelativeX ? position.x * cellWidth : (position.x || 0);
+                    const elY = isRelativeY ? position.y * cellHeight : (position.y || 0);
+                    const posX = cellX + elX;
+                    const posY = cellY + elY;
                     
-                    // Scale back for canvas drawing
-                    const canvasElementX = (cellPosition.x / scale + elementX) * scale;
-                    const canvasElementY = (cellPosition.y / scale + elementY) * scale;
-                    const canvasElementWidth = elementWidth * scale;
-                    const canvasElementHeight = elementHeight * scale;
-                    
-                    console.log(`🔧 [THUMBNAIL] Element absolute: x=${canvasElementX}, y=${canvasElementY}, w=${canvasElementWidth}, h=${canvasElementHeight}`);
-                    
+                    // Procesar según tipo de elemento
                     if (element.type === 'image' && element.content) {
                         try {
                             const img = new Image();
                             img.crossOrigin = 'anonymous';
                             await new Promise((resolve, reject) => {
                                 img.onload = () => {
-                                    drawImageCover(ctx, img, canvasElementX, canvasElementY, canvasElementWidth, canvasElementHeight);
-                                    console.log(`✅ [THUMBNAIL] Image element drawn: ${element.id}`);
+                                    // Calcular tamaño de imagen
+                                    const size = element.size || {};
+                                    const isRelativeWidth = size.width !== undefined && size.width <= 1;
+                                    const isRelativeHeight = size.height !== undefined && size.height <= 1;
+                                    
+                                    const imgWidth = isRelativeWidth ? size.width * cellWidth : (size.width || cellWidth * 0.8);
+                                    const imgHeight = isRelativeHeight ? size.height * cellHeight : (size.height || cellHeight * 0.8);
+                                    
+                                    drawImageCover(ctx, img, posX * scale, posY * scale, imgWidth * scale, imgHeight * scale);
+                                    console.log(`✅ [THUMBNAIL] Image element drawn: ${element.id} at (${posX}, ${posY}) size (${imgWidth}, ${imgHeight})`);
                                     resolve();
                                 };
                                 img.onerror = () => {
@@ -325,94 +319,60 @@ const BookPreviewModal = ({
                             console.error(`❌ [THUMBNAIL] Error loading image element:`, error);
                         }
                     } else if (element.type === 'text' && element.content) {
-                        console.log(`🔧 [THUMBNAIL] Drawing text element: "${element.content}"`);
+                        console.log(`🔧 [THUMBNAIL] Drawing text element: "${element.content}" at relative pos (${position.x}, ${position.y})`);
                         
-                        // Precargar fuente personalizada si es necesario
+                        // Precargar fuente si es necesario
                         const style = element.style || {};
                         if (style.fontFamily) {
                             await loadFont(style.fontFamily);
                         }
                         
-                        // Usar función compartida para obtener estilos canvas
+                        // Obtener estilos para canvas
                         const canvasStyle = getCanvasTextStyle(style, scale);
                         ctx.save();
+                        
+                        // Configurar contexto
+                        ctx.font = `${canvasStyle.fontWeight} ${canvasStyle.fontStyle} ${canvasStyle.fontSize} ${canvasStyle.fontFamily}`;
+                        ctx.fillStyle = canvasStyle.color;
+                        ctx.textAlign = canvasStyle.textAlign || 'left';
+                        ctx.textBaseline = 'top';
+                        
+                        // Calcular tamaño del área de texto
+                        const size = element.size || {};
+                        const isRelativeWidth = size.width !== undefined && size.width <= 1;
+                        const isRelativeHeight = size.height !== undefined && size.height <= 1;
+                        
+                        const textWidth = isRelativeWidth ? size.width * cellWidth : (size.width || cellWidth * 0.8);
+                        const textHeight = isRelativeHeight ? size.height * cellHeight : (size.height || cellHeight * 0.3);
                         
                         // DEBUG: Dibujar borde del área de texto para depuración
                         ctx.strokeStyle = '#ff0000';
                         ctx.lineWidth = 2;
-                        ctx.strokeRect(canvasElementX, canvasElementY, canvasElementWidth, canvasElementHeight);
+                        ctx.strokeRect(posX * scale, posY * scale, textWidth * scale, textHeight * scale);
                         
-                        // Configurar fuente y estilo
-                        ctx.font = `${canvasStyle.fontWeight} ${canvasStyle.fontStyle} ${canvasStyle.fontSize} ${canvasStyle.fontFamily}`;
-                        ctx.fillStyle = canvasStyle.color;
-                        ctx.textAlign = 'left';
-                        ctx.textBaseline = 'top';
-                        
-                        // Fondo si corresponde
+                        // Dibujar fondo si existe
                         if (canvasStyle.backgroundColor && canvasStyle.backgroundColor !== 'transparent') {
                             ctx.fillStyle = canvasStyle.backgroundColor;
-                            ctx.fillRect(canvasElementX, canvasElementY, canvasElementWidth, canvasElementHeight);
+                            ctx.fillRect(posX * scale, posY * scale, textWidth * scale, textHeight * scale);
                             ctx.fillStyle = canvasStyle.color;
                         }
                         
-                        // Padding escalado
-                        const scaledPadding = canvasStyle.padding;
-                        
-                        // Posición de texto según alineación
-                        let textX = canvasElementX + scaledPadding;
-                        const textY = canvasElementY + scaledPadding;
-                        const availableWidth = canvasElementWidth - (scaledPadding * 2);
-                        
-                        if (canvasStyle.textAlign === 'center') {
-                            textX = canvasElementX + canvasElementWidth / 2;
-                            ctx.textAlign = 'center';
-                        } else if (canvasStyle.textAlign === 'right') {
-                            textX = canvasElementX + canvasElementWidth - scaledPadding;
-                            ctx.textAlign = 'right';
-                        } else {
-                            ctx.textAlign = 'left';
-                        }
-                        
-                        // Saltos de línea y wrapping
+                        // Manejar texto multilinea
                         const lines = element.content.split('\n');
                         const lineHeight = parseInt(canvasStyle.fontSize) * parseFloat(canvasStyle.lineHeight);
-                        let currentY = textY;
                         
-                        console.log(`🔧 [THUMBNAIL] Text details: font=${ctx.font}, color=${ctx.fillStyle}, x=${textX}, y=${textY}`);
-                        
-                        lines.forEach((line, lineIndex) => {
-                            if (!line.trim()) {
-                                currentY += lineHeight;
-                                return;
-                            }
-                            
-                            // Wrapping manual si la línea es muy larga
-                            let words = line.split(' ');
-                            let currentLine = '';
-                            
-                            for (let n = 0; n < words.length; n++) {
-                                let testLine = currentLine ? currentLine + ' ' + words[n] : words[n];
-                                let metrics = ctx.measureText(testLine);
+                        lines.forEach((line, index) => {
+                            if (line.trim()) {
+                                const textX = posX * scale + (canvasStyle.padding || 0);
+                                const textY = posY * scale + (index * lineHeight) + (canvasStyle.padding || 0);
                                 
-                                if (metrics.width > availableWidth && currentLine) {
-                                    ctx.fillText(currentLine, textX, currentY);
-                                    console.log(`🔧 [THUMBNAIL] Drew line: "${currentLine}" at y=${currentY}`);
-                                    currentLine = words[n];
-                                    currentY += lineHeight;
-                                } else {
-                                    currentLine = testLine;
-                                }
-                            }
-                            
-                            if (currentLine) {
-                                ctx.fillText(currentLine, textX, currentY);
-                                console.log(`🔧 [THUMBNAIL] Drew final line: "${currentLine}" at y=${currentY}`);
-                                currentY += lineHeight;
+                                console.log(`🔧 [THUMBNAIL] Drawing line "${line}" at x=${textX}, y=${textY}, posX=${posX}, posY=${posY}`);
+                                ctx.fillText(line, textX, textY);
                             }
                         });
                         
                         ctx.restore();
-                        console.log(`✅ [THUMBNAIL] Text element drawn: ${element.id}`);
+                        console.log(`✅ [THUMBNAIL] Text element drawn: ${element.id} at (${posX}, ${posY}) size (${textWidth}, ${textHeight})`);
                     }
                 }
             }
@@ -1330,6 +1290,139 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 
                             } catch (error) {
                                 console.error('Error al cargar imagen:', error, element);
+                            }
+                        } else if (element.type === 'text') {
+                            console.log('🔤 [THUMBNAIL] Procesando elemento de texto:', element.id, element.content);
+                            console.log('🔤 [THUMBNAIL] Datos completos del elemento:', JSON.stringify(element, null, 2));
+                            
+                            try {
+                                // Calcular posición y tamaño relativos a la celda
+                                const isRelativeX = element.position?.x !== undefined && Math.abs(element.position.x) <= 1;
+                                const isRelativeY = element.position?.y !== undefined && Math.abs(element.position.y) <= 1;
+                                const isRelativeWidth = element.size?.width !== undefined && element.size.width <= 1;
+                                const isRelativeHeight = element.size?.height !== undefined && element.size.height <= 1;
+
+                                console.log('🔤 [THUMBNAIL] Es relativo:', { x: isRelativeX, y: isRelativeY, w: isRelativeWidth, h: isRelativeHeight });
+
+                                // Calcular posición absoluta en píxeles
+                                const elX = isRelativeX ? element.position.x * cellWidth : (element.position?.x || 0);
+                                const elY = isRelativeY ? element.position.y * cellHeight : (element.position?.y || 0);
+                                
+                                // Calcular dimensiones en píxeles - CORREGIR LÓGICA
+                                // Verificar si el tamaño parece ser un valor relativo (0-1) o absoluto (>1)
+                                let elW, elH;
+                                
+                                if (element.size?.width !== undefined) {
+                                    if (element.size.width <= 1) {
+                                        // Es un valor relativo (fracción de 0 a 1)
+                                        elW = element.size.width * cellWidth;
+                                    } else {
+                                        // Es un valor absoluto en píxeles
+                                        elW = element.size.width;
+                                    }
+                                } else {
+                                    // Fallback si no hay tamaño definido
+                                    elW = cellWidth * 0.8;
+                                }
+                                
+                                if (element.size?.height !== undefined) {
+                                    if (element.size.height <= 1) {
+                                        // Es un valor relativo (fracción de 0 a 1)
+                                        elH = element.size.height * cellHeight;
+                                    } else {
+                                        // Es un valor absoluto en píxeles
+                                        elH = element.size.height;
+                                    }
+                                } else {
+                                    // Fallback si no hay tamaño definido
+                                    elH = cellHeight * 0.3;
+                                }
+
+                                // Posición absoluta en la página (ajustada por la posición de la celda)
+                                const dx = cellX + elX;
+                                const dy = cellY + elY;
+
+                                console.log('📐 [THUMBNAIL] Renderizando texto:', {
+                                    elementId: element.id,
+                                    content: element.content,
+                                    cellId: cell.id,
+                                    cellPosition: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
+                                    elementPosition: { x: elX, y: elY, width: elW, height: elH },
+                                    finalPosition: { dx, dy },
+                                    isRelative: { x: isRelativeX, y: isRelativeY, w: isRelativeWidth, h: isRelativeHeight }
+                                });
+
+                                // Verificar que las coordenadas estén dentro del canvas
+                                if (dx < 0 || dy < 0 || dx >= workspaceDimensions.width || dy >= workspaceDimensions.height) {
+                                    console.warn('⚠️ [THUMBNAIL] Texto fuera del canvas:', { dx, dy, canvasWidth: workspaceDimensions.width, canvasHeight: workspaceDimensions.height });
+                                }
+
+                                // Obtener estilos del elemento
+                                const style = element.style || {};
+                                
+                                // Configurar contexto de texto
+                                customCtx.save();
+                                
+                                // Configurar fuente
+                                const fontSize = parseInt(style.fontSize) || 16;
+                                const fontFamily = style.fontFamily || 'Arial';
+                                const fontWeight = style.fontWeight || 'normal';
+                                const fontStyle = style.fontStyle || 'normal';
+                                
+                                customCtx.font = `${fontWeight} ${fontStyle} ${fontSize}px ${fontFamily}`;
+                                customCtx.fillStyle = style.color || '#000000';
+                                customCtx.textAlign = style.textAlign || 'left';
+                                customCtx.textBaseline = 'top';
+                                
+                                console.log('🔤 [THUMBNAIL] Configuración de fuente:', {
+                                    font: customCtx.font,
+                                    color: customCtx.fillStyle,
+                                    align: customCtx.textAlign
+                                });
+                                
+                                // DEBUG: Dibujar borde del área de texto
+                                customCtx.strokeStyle = '#ff0000';
+                                customCtx.lineWidth = 2;
+                                customCtx.strokeRect(dx, dy, elW, elH);
+                                console.log('🔤 [THUMBNAIL] Dibujando borde debug en:', { x: dx, y: dy, w: elW, h: elH });
+                                
+                                // Dibujar fondo si existe
+                                if (style.backgroundColor && style.backgroundColor !== 'transparent') {
+                                    customCtx.fillStyle = style.backgroundColor;
+                                    customCtx.fillRect(dx, dy, elW, elH);
+                                    customCtx.fillStyle = style.color || '#000000';
+                                }
+                                
+                                // Manejar texto multilinea
+                                const lines = element.content.split('\n');
+                                const lineHeight = fontSize * 1.2;
+                                const padding = parseInt(style.padding) || 8;
+                                
+                                console.log('🔤 [THUMBNAIL] Preparando líneas:', { lines, lineHeight, padding });
+                                
+                                lines.forEach((line, index) => {
+                                    if (line.trim()) {
+                                        const textX = dx + padding;
+                                        const textY = dy + (index * lineHeight) + padding;
+                                        
+                                        console.log(`🔤 [THUMBNAIL] Dibujando línea "${line}" en x=${textX}, y=${textY} con fuente=${customCtx.font}`);
+                                        console.log(`🔤 [THUMBNAIL] Color del texto: ${customCtx.fillStyle}`);
+                                        
+                                        // Verificar que estamos en el canvas
+                                        if (textX >= 0 && textY >= 0 && textX < workspaceDimensions.width && textY < workspaceDimensions.height) {
+                                            customCtx.fillText(line, textX, textY);
+                                            console.log(`✅ [THUMBNAIL] Línea "${line}" dibujada exitosamente`);
+                                        } else {
+                                            console.warn(`⚠️ [THUMBNAIL] Línea "${line}" fuera del canvas:`, { textX, textY, canvasWidth: workspaceDimensions.width, canvasHeight: workspaceDimensions.height });
+                                        }
+                                    }
+                                });
+                                
+                                customCtx.restore();
+                                console.log('✅ [THUMBNAIL] Texto renderizado exitosamente:', element.id);
+                                
+                            } catch (error) {
+                                console.error('❌ [THUMBNAIL] Error renderizando texto:', error, element);
                             }
                         }
                     }
