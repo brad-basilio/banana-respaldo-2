@@ -345,11 +345,6 @@ const BookPreviewModal = ({
                         const textWidth = isRelativeWidth ? size.width * cellWidth : (size.width || cellWidth * 0.8);
                         const textHeight = isRelativeHeight ? size.height * cellHeight : (size.height || cellHeight * 0.3);
                         
-                        // DEBUG: Dibujar borde del área de texto para depuración
-                        ctx.strokeStyle = '#ff0000';
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(posX * scale, posY * scale, textWidth * scale, textHeight * scale);
-                        
                         // Dibujar fondo si existe
                         if (canvasStyle.backgroundColor && canvasStyle.backgroundColor !== 'transparent') {
                             ctx.fillStyle = canvasStyle.backgroundColor;
@@ -363,10 +358,26 @@ const BookPreviewModal = ({
                         
                         lines.forEach((line, index) => {
                             if (line.trim()) {
-                                const textX = posX * scale + (canvasStyle.padding || 0);
-                                const textY = posY * scale + (index * lineHeight) + (canvasStyle.padding || 0);
+                                let textX, textY;
+                                const baseX = posX * scale;
+                                const baseY = posY * scale + (index * lineHeight);
                                 
-                                console.log(`🔧 [THUMBNAIL] Drawing line "${line}" at x=${textX}, y=${textY}, posX=${posX}, posY=${posY}`);
+                                // Aplicar alineación horizontal
+                                switch (canvasStyle.textAlign) {
+                                    case 'center':
+                                        textX = baseX + (textWidth * scale) / 2;
+                                        break;
+                                    case 'right':
+                                        textX = baseX + (textWidth * scale) - (canvasStyle.padding || 0);
+                                        break;
+                                    default: // 'left'
+                                        textX = baseX + (canvasStyle.padding || 0);
+                                        break;
+                                }
+                                
+                                textY = baseY + (canvasStyle.padding || 0);
+                                
+                                console.log(`🔧 [THUMBNAIL] Drawing line "${line}" at x=${textX}, y=${textY}, align=${canvasStyle.textAlign}`);
                                 ctx.fillText(line, textX, textY);
                             }
                         });
@@ -1293,23 +1304,17 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                             }
                         } else if (element.type === 'text') {
                             console.log('🔤 [THUMBNAIL] Procesando elemento de texto:', element.id, element.content);
-                            console.log('🔤 [THUMBNAIL] Datos completos del elemento:', JSON.stringify(element, null, 2));
                             
                             try {
                                 // Calcular posición y tamaño relativos a la celda
                                 const isRelativeX = element.position?.x !== undefined && Math.abs(element.position.x) <= 1;
                                 const isRelativeY = element.position?.y !== undefined && Math.abs(element.position.y) <= 1;
-                                const isRelativeWidth = element.size?.width !== undefined && element.size.width <= 1;
-                                const isRelativeHeight = element.size?.height !== undefined && element.size.height <= 1;
-
-                                console.log('🔤 [THUMBNAIL] Es relativo:', { x: isRelativeX, y: isRelativeY, w: isRelativeWidth, h: isRelativeHeight });
 
                                 // Calcular posición absoluta en píxeles
                                 const elX = isRelativeX ? element.position.x * cellWidth : (element.position?.x || 0);
                                 const elY = isRelativeY ? element.position.y * cellHeight : (element.position?.y || 0);
                                 
-                                // Calcular dimensiones en píxeles - CORREGIR LÓGICA
-                                // Verificar si el tamaño parece ser un valor relativo (0-1) o absoluto (>1)
+                                // Calcular dimensiones en píxeles - LÓGICA MEJORADA
                                 let elW, elH;
                                 
                                 if (element.size?.width !== undefined) {
@@ -1345,11 +1350,10 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 console.log('📐 [THUMBNAIL] Renderizando texto:', {
                                     elementId: element.id,
                                     content: element.content,
-                                    cellId: cell.id,
                                     cellPosition: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
                                     elementPosition: { x: elX, y: elY, width: elW, height: elH },
                                     finalPosition: { dx, dy },
-                                    isRelative: { x: isRelativeX, y: isRelativeY, w: isRelativeWidth, h: isRelativeHeight }
+                                    isRelative: { x: isRelativeX, y: isRelativeY }
                                 });
 
                                 // Verificar que las coordenadas estén dentro del canvas
@@ -1371,20 +1375,17 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 
                                 customCtx.font = `${fontWeight} ${fontStyle} ${fontSize}px ${fontFamily}`;
                                 customCtx.fillStyle = style.color || '#000000';
-                                customCtx.textAlign = style.textAlign || 'left';
+                                
+                                // Configurar alineación según el estilo
+                                const textAlign = style.textAlign || 'left';
+                                customCtx.textAlign = textAlign;
                                 customCtx.textBaseline = 'top';
                                 
                                 console.log('🔤 [THUMBNAIL] Configuración de fuente:', {
                                     font: customCtx.font,
                                     color: customCtx.fillStyle,
-                                    align: customCtx.textAlign
+                                    align: textAlign
                                 });
-                                
-                                // DEBUG: Dibujar borde del área de texto
-                                customCtx.strokeStyle = '#ff0000';
-                                customCtx.lineWidth = 2;
-                                customCtx.strokeRect(dx, dy, elW, elH);
-                                console.log('🔤 [THUMBNAIL] Dibujando borde debug en:', { x: dx, y: dy, w: elW, h: elH });
                                 
                                 // Dibujar fondo si existe
                                 if (style.backgroundColor && style.backgroundColor !== 'transparent') {
@@ -1402,11 +1403,26 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 
                                 lines.forEach((line, index) => {
                                     if (line.trim()) {
-                                        const textX = dx + padding;
-                                        const textY = dy + (index * lineHeight) + padding;
+                                        let textX, textY;
                                         
-                                        console.log(`🔤 [THUMBNAIL] Dibujando línea "${line}" en x=${textX}, y=${textY} con fuente=${customCtx.font}`);
-                                        console.log(`🔤 [THUMBNAIL] Color del texto: ${customCtx.fillStyle}`);
+                                        // Calcular posición Y
+                                        textY = dy + (index * lineHeight) + padding;
+                                        
+                                        // Calcular posición X según la alineación
+                                        switch (textAlign) {
+                                            case 'center':
+                                                textX = dx + (elW / 2);
+                                                break;
+                                            case 'right':
+                                                textX = dx + elW - padding;
+                                                break;
+                                            case 'left':
+                                            default:
+                                                textX = dx + padding;
+                                                break;
+                                        }
+                                        
+                                        console.log(`🔤 [THUMBNAIL] Dibujando línea "${line}" en x=${textX}, y=${textY} con alineación=${textAlign}`);
                                         
                                         // Verificar que estamos en el canvas
                                         if (textX >= 0 && textY >= 0 && textX < workspaceDimensions.width && textY < workspaceDimensions.height) {
