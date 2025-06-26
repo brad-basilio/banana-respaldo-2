@@ -1344,8 +1344,8 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 }
 
                                 // Posición absoluta en la página (ajustada por la posición de la celda)
-                                const dx = cellX + elX;
-                                const dy = cellY + elY;
+                                const dx = cellX + elX + (elX/3) ;
+                                const dy = cellY + elY + (elY/20);
 
                                 console.log('📐 [THUMBNAIL] Renderizando texto:', {
                                     elementId: element.id,
