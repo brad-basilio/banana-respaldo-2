@@ -138,7 +138,8 @@
                         "category",
                         "subcategory",
                         "brand",
-                        "collection"
+                        "collection",
+                        "variants"
                     ]
                 },
                 "generals": [
@@ -484,7 +485,9 @@
                             "with": [
                                 "category",
                                 "subcategory",
-                                "brand"
+                                "brand",
+                                "collection",
+                                "variants"
                             ],
                             "relations": [
                                 "category",
@@ -1038,7 +1041,7 @@
                         "is_new",
                         "views"
                     ],
-                    "with": ["category", "subcategory", "brand"],
+                    "with": ["category", "subcategory", "brand", "variants"],
                     "limit": 20
                 }
             },
@@ -1581,6 +1584,16 @@
                 "generals": [
                     "phone_whatsapp"
                 ]
+            }
+        ]
+    },
+    {
+        "id": "track",
+        "name": "Tracking",
+        "options": [
+            {
+                "id": "TrackSimple",
+                "name": "Simple"
             }
         ]
     },

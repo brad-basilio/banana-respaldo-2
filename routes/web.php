@@ -33,9 +33,11 @@ use App\Http\Controllers\Admin\SubCategoryController as AdminSubCategoryControll
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
+use App\Http\Controllers\Admin\SaleStatusController as AdminSaleStatusController;
 // Public 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RepositoryController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SystemController;
 use SoDe\Extend\File;
 
@@ -67,12 +69,10 @@ foreach ($pages as $page) {
 
 Route::get('/base-template', [SystemController::class, 'reactView'])->name('System.jsx');
 Route::get('/login', [AuthController::class, 'loginView'])->name('Login.jsx');
-Route::middleware('auth')->group(
-    function () {
-        Route::get('/profile', [AdminProfileController::class, 'reactView'])->name('Admin/Profile.jsx');
-        Route::get('/account', [AdminAccountController::class, 'reactView'])->name('Admin/Account.jsx');
-    }
-);
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [AdminProfileController::class, 'reactView'])->name('Admin/Profile.jsx');
+    Route::get('/account', [AdminAccountController::class, 'reactView'])->name('Admin/Account.jsx');
+});
 
 // Admin routes
 Route::middleware(['can:Admin', 'auth'])->prefix('admin')->group(function () {
@@ -102,6 +102,7 @@ Route::middleware(['can:Admin', 'auth'])->prefix('admin')->group(function () {
     Route::get('/banners', [AdminBannerController::class, 'reactView'])->name('Admin/Banners.jsx');
     Route::get('/testimonies', [AdminTestimonyController::class, 'reactView'])->name('Admin/Testimonies.jsx');
     Route::get('/socials', [AdminSocialController::class, 'reactView'])->name('Admin/Socials.jsx');
+    Route::get('/statuses', [AdminSaleStatusController::class, 'reactView'])->name('Admin/Statuses.jsx');
     Route::get('/strengths', [AdminStrengthController::class, 'reactView'])->name('Admin/Strengths.jsx');
     Route::get('/generals', [AdminGeneralController::class, 'reactView'])->name('Admin/Generals.jsx');
     Route::get('/coupons', [AdminCouponController::class, 'reactView'])->name('Admin/Coupons.jsx');

@@ -1,0 +1,1 @@
+import{j as e}from"./AboutSimple-Cf8x2fCZ.js";import"./index-yBjzXJbu.js";const s=({which:o})=>e.jsxs("div",{className:"w-full px-[5%] replace-max-w-here p-4 mx-auto",children:["- No Hay componente ",e.jsx("b",{children:o})," -"]});export{s as default};

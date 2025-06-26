@@ -9,7 +9,7 @@ import "tippy.js/dist/tippy.css";
 const ProductCardColors = ({ product, setCart, cart }) => {
 
     const itemsRest = new ItemsRest();
-    const [variationsItems, setVariationsItems] = useState([]);
+    const [variationsItems, setVariationsItems] = useState(product.variants);
 
     const onAddClicked = (product) => {
         const newCart = structuredClone(cart)
@@ -40,6 +40,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
             const response = await itemsRest.getVariations(request);
 
             if (!response) {
+                setVariationsItems([]);
                 return;
             }
 
@@ -48,15 +49,16 @@ const ProductCardColors = ({ product, setCart, cart }) => {
             setVariationsItems(variations.variants);
 
         } catch (error) {
+            setVariationsItems([]);
             return;
         }
     };
 
 
     useEffect(() => {
-        if (product?.id) {
-            handleVariations(product);
-        }
+        // if (product?.id) {
+        //     handleVariations(product);
+        // }
     }, [product]);
 
     const inCart = cart?.find(x => x.id == product?.id)
@@ -102,7 +104,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
 
                         <div className="hidden md:flex gap-2 sm:gap-3 items-center justify-start w-full flex-wrap py-2">
 
-                            {variationsItems.slice(0, 4).map((variant) => (
+                            {variationsItems?.slice(0, 4).map((variant) => (
                                 <Tippy content={variant.color} key={variant.slug}>
                                     <a
                                         href={`/item/${variant.slug}`}
@@ -121,7 +123,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
                                 </Tippy>
                             ))}
 
-                            {variationsItems.length > 4 && (
+                            {variationsItems?.length > 4 && (
                                 <Tippy content={`+${variationsItems.length - 4} colores más`}>
                                     <a
                                         key={product.slug}
@@ -138,7 +140,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
 
                         <div className="flex md:hidden gap-2 sm:gap-3 items-center justify-start w-full flex-wrap py-2">
 
-                            {variationsItems.slice(0, 3).map((variant) => (
+                            {variationsItems?.slice(0, 3).map((variant) => (
                                 <Tippy content={variant.color} key={variant.slug}>
                                     <a
                                         href={`/item/${variant.slug}`}
@@ -157,7 +159,7 @@ const ProductCardColors = ({ product, setCart, cart }) => {
                                 </Tippy>
                             ))}
 
-                            {variationsItems.length > 3 && (
+                            {variationsItems?.length > 3 && (
                                 <Tippy content={`+${variationsItems.length - 3} colores más`}>
                                     <a
                                         key={product.slug}

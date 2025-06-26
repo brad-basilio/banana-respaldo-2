@@ -108,7 +108,7 @@ class DeliveryPriceController extends BasicController
             $response->status = 200;
             $response->message = 'Precios obtenidos correctamente';
         }, function ($e) {
-           \Log::error('Error en getDeliveryPrice: ' . $e->getMessage());
+        //    \Log::error('Error en getDeliveryPrice: ' . $e->getMessage());
          //  dump('Error en getDeliveryPrice: ' . $e->getMessage());
         });
 
@@ -216,7 +216,7 @@ class DeliveryPriceController extends BasicController
             ->map(function ($item) {
                 return [
                     'ieni' => $item['inei'],
-                    'reniec' => $item['reniec'],
+                    'reniec' => $item['reniec'] ?? $item['inei'],
                     'departamento' => $item['departamento'],
                     'provincia' => $item['provincia'],
                     'distrito' => $item['distrito']

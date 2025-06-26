@@ -19,7 +19,8 @@ class SaleStatus extends Model
         'status',
         'color',
         'editable',
-        'reversible'
+        'reversible',
+        'icon',
     ];
 
     public static function getByName($name)
