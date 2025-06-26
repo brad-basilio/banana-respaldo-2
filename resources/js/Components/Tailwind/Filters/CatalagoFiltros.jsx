@@ -18,7 +18,9 @@ import {
     Layers,
     Grid3X3,
     Sliders,
-    Trash
+    Trash,
+    List,
+    ListFilter
 } from "lucide-react";
 import ItemsRest from "../../../Actions/ItemsRest";
 import ArrayJoin from "../../../Utils/ArrayJoin";
@@ -241,8 +243,12 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
         price: [],
         name: GET.search || null,
-        sort_by: "created_at",
-        order: "desc",
+        sort: [
+            {
+                selector: "final_price",
+                desc: true,
+            },
+        ],
     });
 
     // Track the order in which filters are activated
@@ -469,19 +475,32 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         });
     };
     // Opciones de ordenación
-    const sortOptions = [
-        { value: "created_at:desc", label: "Más reciente" },
-        { value: "created_at:asc", label: "Mas antiguo" },
-        { value: "final_price:asc", label: "Precio: Menor a Mayor" },
-        { value: "final_price:desc", label: "Precio: Mayor a Menor" },
-        { value: "name:asc", label: "Nombre: A-Z" },
-        { value: "name:desc", label: "Nombre: Z-A" },
-    ];
+   const sortOptions = [
+    { value: "created_at:desc", label: "Más reciente" },
+    { value: "created_at:asc", label: "Mas antiguo" },
+    { value: "final_price:asc", label: "Precio: Menor a Mayor" },
+    { value: "final_price:desc", label: "Precio: Mayor a Menor" },
+    { value: "name:asc", label: "Nombre: A-Z" },
+    { value: "name:desc", label: "Nombre: Z-A" },
+    { value: "is_new:desc", label: "Novedades" },
+    { value: "offering:desc", label: "Ofertas" },
+    { value: "recommended:desc", label: "Recomendados" },
+    { value: "featured:desc", label: "Destacados" },
+];
 
 
     //}, [items]);
     // Manejar cambios en los filtros y mantener filterSequence
     const handleFilterChange = (type, value) => {
+        // Soporte para filtros especiales tipo booleano
+        const specialFields = ['is_new', 'offering', 'recommended', 'featured'];
+        if (specialFields.includes(type)) {
+            setSelectedFilters((prev) => ({
+                ...prev,
+                [type]: prev[type] ? !prev[type] : true,
+            }));
+            return;
+        }
         setSelectedFilters((prev) => {
             if (type === "price") {
                 // Manejar múltiples rangos de precio
@@ -489,7 +508,6 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 const isAlreadySelected = currentPrices.some(
                     (range) => range.min === value.min && range.max === value.max
                 );
-                
                 let newPrices;
                 if (isAlreadySelected) {
                     // Deseleccionar el rango
@@ -500,13 +518,11 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                     // Agregar el nuevo rango
                     newPrices = [...currentPrices, value];
                 }
-                
                 return {
                     ...prev,
                     price: newPrices,
                 };
             }
-
             // Asegúrate de que prev[type] sea un array antes de usar .includes()
             const currentValues = Array.isArray(prev[type]) ? prev[type] : [];
             let newValues;
@@ -517,7 +533,6 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 // Seleccionar
                 newValues = [...currentValues, value];
             }
-
             return { ...prev, [type]: newValues };
         });
 
@@ -626,6 +641,11 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                             <SelectForm
                                 options={sortOptions}
                                 placeholder="Ordenar por"
+                                value={
+                                    selectedFilters.sort?.[0]?.selector && selectedFilters.sort?.[0]?.desc !== undefined
+                                        ? `${selectedFilters.sort[0].selector}:${selectedFilters.sort[0].desc ? "desc" : "asc"}`
+                                        : "final_price:desc"
+                                }
                                 onChange={(value) => {
                                     const [selector, order] = value.split(":");
                                     const sort = [
@@ -641,6 +661,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 }}
                                 labelKey="label"
                                 valueKey="value"
+                                className="customtext-neutral-dark border-primary  rounded-lg"
+                                generalIcon={<ListFilter className="w-5 h-5 mr-2 customtext-primary" />}
                             />
                         </motion.div>
                     </div>

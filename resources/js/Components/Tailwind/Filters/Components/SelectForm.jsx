@@ -1,5 +1,6 @@
 
 
+
 import { useState, useRef, useEffect } from "react"
 import { ChevronDown, Check, Search } from "lucide-react"
 
@@ -7,14 +8,14 @@ const SelectForm = ({
     options = [],
     placeholder = "Select an option",
     onChange,
+    value,
     valueKey,
     labelKey,
     label,
     labelClass,
     className = "customtext-neutral-dark   rounded-xl ",
     disabled = false,
-
-
+    generalIcon,
 }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedOption, setSelectedOption] = useState(null)
@@ -56,6 +57,14 @@ const SelectForm = ({
         setIsOpen(false)
     }
 
+
+    useEffect(() => {
+        if (value !== undefined && value !== (selectedOption && selectedOption.value)) {
+            const found = normalizedOptions.find(opt => opt.value === value);
+            setSelectedOption(found || null);
+        }
+    }, [value, normalizedOptions]);
+
     return (
         <div className="relative w-full" ref={selectRef}>
             {label && (
@@ -70,7 +79,10 @@ const SelectForm = ({
                 aria-expanded={isOpen}
                 disabled={disabled}
             >
-                <span className="block truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+                <span className="flex items-center gap-2">
+                    {typeof generalIcon !== 'undefined' && generalIcon}
+                    <span className="block truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+                </span>
                 <span className="absolute inset-y-0 right-0 flex items-center justify-center py-3 pr-2 pointer-events-none">
                     <ChevronDown
                         className={`w-5 h-5 customtext-neutral-dark transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -97,7 +109,7 @@ const SelectForm = ({
                             <li
                                 key={option.value}
                                 className={`px-4 py-2 cursor-pointer flex items-center justify-between 
-                                    ${selectedOption && selectedOption.value === option.value ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+                                    ${selectedOption && selectedOption.value === option.value ? "bg-primary text-white" : "hover:bg-gray-100"}`}
                                 onClick={() => handleSelect(option)}
                                 role="option"
                                 aria-selected={selectedOption && selectedOption.value === option.value}
