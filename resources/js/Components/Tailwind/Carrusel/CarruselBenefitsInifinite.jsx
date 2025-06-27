@@ -16,7 +16,7 @@ const CarruselBenefitsInifinite = ({ items }) => {
     <div ref={benefitsRef} className="bg-primary py-4 lg:py-6 overflow-hidden">
       <div className="px-primary 2xl:px-0 2xl:max-w-7xl mx-auto relative">
         <Swiper
-          slidesPerView={1.5}
+          slidesPerView={2}
           spaceBetween={32}
           loop={true}
           breakpoints={{
@@ -31,7 +31,7 @@ const CarruselBenefitsInifinite = ({ items }) => {
           {items.map((benefit, index) => (
             <SwiperSlide key={index}>
               <div
-                className={`flex items-center gap-4 justify-start relative 
+                className={`flex items-center gap-2  lg:gap-4 justify-start relative 
                 ${
                   index !== items.length - 1
                     ? "lg:before:absolute lg:before:-right-2 lg:before:top-1/2 lg:before:-translate-y-1/2 lg:before:h-14 lg:before:w-[2px] lg:before:bg-white"
