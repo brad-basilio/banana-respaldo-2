@@ -577,9 +577,12 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const filteredCategories = categories.filter((category) =>
         category.name.toLowerCase().includes(searchCategory.toLowerCase())
     );
-    const filteredSubcategories = subcategories.filter((subcategory) =>
-        subcategory.name.toLowerCase().includes(searchSubcategory.toLowerCase())
-    );
+    const filteredSubcategories = subcategories.filter((subcategory) => {
+        // Mostrar solo subcategorías de las categorías presentes en el array categories
+        const presentCategoryIds = categories.map(cat => cat.id);
+        return presentCategoryIds.includes(subcategory.category_id) &&
+            subcategory.name.toLowerCase().includes(searchSubcategory.toLowerCase());
+    });
     
  
 
