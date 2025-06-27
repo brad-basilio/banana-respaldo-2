@@ -38,7 +38,7 @@ const CarruselBenefitsInifinite = ({ items }) => {
                     : ""
                 }`}
               >
-                <div className="relative min-w-10 min-h-10 lg:w-16 lg:h-16 flex items-center justify-center">
+                <div className="relative min-w-8 min-h-8 lg:w-16 lg:h-16 flex items-center justify-center">
                   <div className="relative z-10 text-3xl lg:p-3">
                     <img
                     alt={benefit.name}
@@ -51,10 +51,10 @@ const CarruselBenefitsInifinite = ({ items }) => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm lg:text-lg">
+                  <h3 className="font-bold text-xs lg:text-lg">
                     {benefit.name}
                   </h3>
-                  <p className="text-[10px] lg:text-sm">{benefit.description}</p>
+                  <p className="text-[8px] lg:text-sm">{benefit.description}</p>
                 </div>
               </div>
             </SwiperSlide>
