@@ -1,33 +1,21 @@
 /**
- * Generador de thumbnails que respeta EXACTAMENTE los layouts del workspace
- * Solucionando el problema de que los thumbnails no respetan la estructura de celdas CSS Grid
+ * GENERADOR DE THUMBNAILS EXACTAMENTE IDÉNTICO AL WORKSPACE
+ * Replica 1:1 la lógica de renderizado del Editor.jsx
  */
 
 import { layouts } from '../constants/layouts';
 
-// Función para calcular las posiciones reales de las celdas según el layout CSS Grid
-function calculateLayoutCellPositions(layout, workspaceDimensions, pageCells) {
-    const cellPositions = {};
+/**
+ * Simula exactamente el CSS Grid del workspace usando canvas
+ * Esta función replica la lógica de getCurrentLayout() del Editor
+ */
+function simulateWorkspaceGrid(layout, workspaceDimensions) {
+    // Usar los mismos valores por defecto que el workspace
+    const gap = parseInt(layout.style?.gap?.replace('px', '')) || 16;
+    const padding = parseInt(layout.style?.padding?.replace('px', '')) || 16;
     
-    if (!layout || !layout.template) {
-        console.warn('⚠️ [THUMBNAIL] Layout inválido, usando posiciones fallback');
-        // Fallback: posicionar todas las celdas en el mismo lugar
-        pageCells.forEach(cell => {
-            cellPositions[cell.id] = {
-                x: 0,
-                y: 0,
-                width: workspaceDimensions.width,
-                height: workspaceDimensions.height
-            };
-        });
-        return cellPositions;
-    }
-    
-    console.log('🗂️ [THUMBNAIL] Calculando posiciones para layout:', layout.template);
-    
-    // Parsear el template de CSS Grid
+    // Parsear template igual que en CSS
     const parseGridTemplate = (template) => {
-        // Extraer cols y rows de strings como "grid-cols-2 grid-rows-3"
         const colsMatch = template.match(/grid-cols-(\d+)/);
         const rowsMatch = template.match(/grid-rows-(\d+)/);
         
@@ -38,491 +26,397 @@ function calculateLayoutCellPositions(layout, workspaceDimensions, pageCells) {
     };
     
     const { cols, rows } = parseGridTemplate(layout.template);
-    console.log('🗂️ [THUMBNAIL] Grid calculado:', { cols, rows });
     
-    // Calcular gap y padding
-    const gap = parseInt(layout.style?.gap?.replace('px', '')) || 0;
-    const padding = parseInt(layout.style?.padding?.replace('px', '')) || 0;
+    // Calcular área disponible EXACTAMENTE como CSS Grid
+    const contentWidth = workspaceDimensions.width - (2 * padding);
+    const contentHeight = workspaceDimensions.height - (2 * padding);
     
-    // Calcular dimensiones de las celdas
-    const availableWidth = workspaceDimensions.width - (2 * padding) - (gap * (cols - 1));
-    const availableHeight = workspaceDimensions.height - (2 * padding) - (gap * (rows - 1));
+    // Calcular tamaño de cada celda
+    const cellWidth = (contentWidth - (gap * (cols - 1))) / cols;
+    const cellHeight = (contentHeight - (gap * (rows - 1))) / rows;
     
-    const baseCellWidth = availableWidth / cols;
-    const baseCellHeight = availableHeight / rows;
-    
-    console.log('📏 [THUMBNAIL] Dimensiones base de celda:', { 
-        baseCellWidth, 
-        baseCellHeight, 
-        gap, 
-        padding,
-        availableWidth,
-        availableHeight 
+    console.log('🎯 [WORKSPACE REPLICA] Grid simulation:', {
+        template: layout.template,
+        cols, rows, gap, padding,
+        workspace: workspaceDimensions,
+        cellSize: { width: cellWidth, height: cellHeight }
     });
     
-    // Crear una matriz para colocar las celdas
-    const grid = Array(rows).fill(null).map(() => Array(cols).fill(null));
-    
-    // Función para parsear span de una celda
-    const parseCellSpan = (styleStr, key, defaultVal = 1) => {
-        if (!styleStr) return defaultVal;
-        const regex = new RegExp(`${key}-span-(\\d+)`);
-        const match = styleStr.match(regex);
-        return match ? parseInt(match[1]) : defaultVal;
+    return {
+        cols, rows, gap, padding, cellWidth, cellHeight,
+        contentX: padding, contentY: padding
     };
-    
-    // Función para encontrar el primer lugar libre en el grid
-    const findFirstFreeSpot = (grid, rows, cols, rowSpan, colSpan) => {
-        for (let r = 0; r <= rows - rowSpan; r++) {
-            for (let c = 0; c <= cols - colSpan; c++) {
-                let canPlace = true;
-                
-                // Verificar si todas las celdas necesarias están libres
-                for (let dr = 0; dr < rowSpan && canPlace; dr++) {
-                    for (let dc = 0; dc < colSpan && canPlace; dc++) {
-                        if (grid[r + dr] && grid[r + dr][c + dc] !== null) {
-                            canPlace = false;
-                        }
-                    }
-                }
-                
-                if (canPlace) {
-                    return { row: r, col: c };
-                }
-            }
-        }
-        return { row: 0, col: 0 }; // Fallback
-    };
-    
-    // Colocar cada celda en el grid
-    pageCells.forEach((cell, index) => {
-        const cellStyle = layout.cellStyles?.[index] || '';
-        
-        // Parsear spans
-        const colSpan = parseCellSpan(cellStyle, 'col', 1);
-        const rowSpan = parseCellSpan(cellStyle, 'row', 1);
-        
-        console.log(`🗂️ [THUMBNAIL] Celda ${index} (${cell.id}):`, { colSpan, rowSpan, cellStyle });
-        
-        // Encontrar posición libre
-        const { row, col } = findFirstFreeSpot(grid, rows, cols, rowSpan, colSpan);
-        
-        // Marcar las celdas como ocupadas
-        for (let dr = 0; dr < rowSpan; dr++) {
-            for (let dc = 0; dc < colSpan; dc++) {
-                if (grid[row + dr]) {
-                    grid[row + dr][col + dc] = cell.id;
-                }
-            }
-        }
-        
-        // Calcular posición y tamaño real
-        const x = padding + (col * (baseCellWidth + gap));
-        const y = padding + (row * (baseCellHeight + gap));
-        const width = (baseCellWidth * colSpan) + (gap * (colSpan - 1));
-        const height = (baseCellHeight * rowSpan) + (gap * (rowSpan - 1));
-        
-        cellPositions[cell.id] = { x, y, width, height };
-        
-        console.log(`📍 [THUMBNAIL] Celda ${cell.id} posicionada en:`, { 
-            gridPos: { row, col }, 
-            realPos: { x, y, width, height } 
-        });
-    });
-    
-    return cellPositions;
 }
 
-// Función para dibujar imagen manteniendo la relación de aspecto
-function drawImageCover(ctx, img, dx, dy, dWidth, dHeight) {
-    if (!img || !ctx) {
-        console.warn('⚠️ No se puede dibujar: contexto o imagen no válidos');
-        return;
-    }
+/**
+ * Dibuja imagen con object-fit: cover exactamente como en el workspace
+ */
+function drawImageWithCover(ctx, img, x, y, width, height) {
+    if (!img || !ctx || width <= 0 || height <= 0) return;
     
-    const sWidth = img.width;
-    const sHeight = img.height;
+    const imgRatio = img.width / img.height;
+    const destRatio = width / height;
     
-    if (sWidth === 0 || sHeight === 0) {
-        console.warn('⚠️ Imagen con dimensiones cero:', { sWidth, sHeight });
-        return;
-    }
-    
-    // Asegurarse de que las dimensiones de destino sean válidas
-    if (dWidth <= 0 || dHeight <= 0) {
-        console.warn('⚠️ Dimensiones de destino inválidas:', { dWidth, dHeight });
-        return;
-    }
-    
-    // Calcular relación de aspecto
-    const dRatio = dWidth / dHeight;
-    const sRatio = sWidth / sHeight;
-    
-    // Calcular el área de recorte (source) para mantener la relación de aspecto
     let sx, sy, sw, sh;
     
-    if (dRatio > sRatio) {
-        // La imagen es más ancha que el área de destino
-        sw = sWidth;
-        sh = sw / dRatio;
-        sx = 0;
-        sy = (sHeight - sh) / 2;
-    } else {
-        // La imagen es más alta que el área de destino
-        sh = sHeight;
-        sw = sh * dRatio;
-        sx = (sWidth - sw) / 2;
+    if (imgRatio > destRatio) {
+        // Imagen más ancha: recortar los lados
+        sh = img.height;
+        sw = sh * destRatio;
+        sx = (img.width - sw) / 2;
         sy = 0;
+    } else {
+        // Imagen más alta: recortar arriba y abajo
+        sw = img.width;
+        sh = sw / destRatio;
+        sx = 0;
+        sy = (img.height - sh) / 2;
     }
     
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
     try {
-        // Dibujar la imagen con las coordenadas y dimensiones calculadas
-        ctx.save();
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 
-            Math.max(0, sx), 
-            Math.max(0, sy), 
-            Math.min(sw, sWidth - sx), 
-            Math.min(sh, sHeight - sy),
-            dx, 
-            dy, 
-            dWidth, 
-            dHeight
+        ctx.drawImage(
+            img,
+            Math.max(0, sx), Math.max(0, sy),
+            Math.min(sw, img.width - Math.max(0, sx)),
+            Math.min(sh, img.height - Math.max(0, sy)),
+            x, y, width, height
         );
-        ctx.restore();
-    } catch (e) {
-        console.error('❌ Error al dibujar imagen:', e);
-        console.error('Detalles:', { 
-            source: { x: sx, y: sy, width: sw, height: sh },
-            dest: { x: dx, y: dy, width: dWidth, height: dHeight },
-            imgSize: { width: sWidth, height: sHeight }
+    } catch (error) {
+        console.error('Error dibujando imagen:', error);
+    }
+    
+    ctx.restore();
+}
+
+/**
+ * Renderiza un elemento de imagen exactamente como EditableCell
+ */
+function renderImageElement(ctx, element, cellX, cellY, cellWidth, cellHeight) {
+    return new Promise(async (resolve) => {
+        try {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = () => {
+                // Calcular posición y tamaño EXACTAMENTE como en EditableCell
+                const posX = element.position?.x || 0;
+                const posY = element.position?.y || 0;
+                
+                // Los elementos pueden tener posiciones relativas (0-1) o absolutas (píxeles)
+                const isRelativeX = posX >= 0 && posX <= 1;
+                const isRelativeY = posY >= 0 && posY <= 1;
+                
+                const elementX = cellX + (isRelativeX ? posX * cellWidth : posX);
+                const elementY = cellY + (isRelativeY ? posY * cellHeight : posY);
+                
+                // Tamaño del elemento
+                const elementWidth = element.size?.width ? 
+                    (element.size.width <= 1 ? element.size.width * cellWidth : element.size.width) : 
+                    cellWidth;
+                const elementHeight = element.size?.height ? 
+                    (element.size.height <= 1 ? element.size.height * cellHeight : element.size.height) : 
+                    cellHeight;
+                
+                console.log('🖼️ [WORKSPACE REPLICA] Imagen:', {
+                    id: element.id,
+                    cellPos: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
+                    elementPos: { x: elementX, y: elementY, width: elementWidth, height: elementHeight },
+                    originalPos: { x: posX, y: posY },
+                    isRelative: { x: isRelativeX, y: isRelativeY }
+                });
+                
+                // Aplicar filtros si existen (simplificado para thumbnail)
+                if (element.filters) {
+                    ctx.filter = `
+                        brightness(${(element.filters.brightness || 100) / 100})
+                        contrast(${(element.filters.contrast || 100) / 100})
+                        saturate(${(element.filters.saturation || 100) / 100})
+                        blur(${element.filters.blur || 0}px)
+                        opacity(${(element.filters.opacity || 100) / 100})
+                    `;
+                }
+                
+                // Dibujar imagen con object-fit: cover
+                drawImageWithCover(ctx, img, elementX, elementY, elementWidth, elementHeight);
+                
+                // Resetear filtros
+                ctx.filter = 'none';
+                
+                resolve();
+            };
+            
+            img.onerror = () => {
+                console.error('Error cargando imagen:', element.content);
+                resolve();
+            };
+            
+            img.src = element.content;
+            
+        } catch (error) {
+            console.error('Error en renderImageElement:', error);
+            resolve();
+        }
+    });
+}
+
+/**
+ * Renderiza un elemento de texto exactamente como EditableCell
+ */
+function renderTextElement(ctx, element, cellX, cellY, cellWidth, cellHeight) {
+    try {
+        // Posición del elemento
+        const posX = element.position?.x || 0;
+        const posY = element.position?.y || 0;
+        
+        const isRelativeX = posX >= 0 && posX <= 1;
+        const isRelativeY = posY >= 0 && posY <= 1;
+        
+        const elementX = cellX + (isRelativeX ? posX * cellWidth : posX);
+        const elementY = cellY + (isRelativeY ? posY * cellHeight : posY);
+        
+        // Tamaño del elemento
+        const elementWidth = element.size?.width ? 
+            (element.size.width <= 1 ? element.size.width * cellWidth : element.size.width) : 
+            cellWidth * 0.8;
+        const elementHeight = element.size?.height ? 
+            (element.size.height <= 1 ? element.size.height * cellHeight : element.size.height) : 
+            cellHeight * 0.2;
+        
+        console.log('📝 [WORKSPACE REPLICA] Texto:', {
+            id: element.id,
+            content: element.content,
+            cellPos: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
+            elementPos: { x: elementX, y: elementY, width: elementWidth, height: elementHeight }
         });
+        
+        // Aplicar estilos de texto
+        const style = element.style || {};
+        const fontSize = parseInt(style.fontSize) || 16;
+        const fontFamily = style.fontFamily || 'Arial, sans-serif';
+        const fontWeight = style.fontWeight || 'normal';
+        const fontStyle = style.fontStyle || 'normal';
+        const color = style.color || '#000000';
+        const textAlign = style.textAlign || 'left';
+        const backgroundColor = style.backgroundColor;
+        const padding = parseInt(style.padding) || 8;
+        
+        ctx.save();
+        
+        // Configurar fuente
+        ctx.font = `${fontWeight} ${fontStyle} ${fontSize}px ${fontFamily}`;
+        ctx.fillStyle = color;
+        ctx.textBaseline = 'top';
+        
+        // Dibujar fondo si existe
+        if (backgroundColor && backgroundColor !== 'transparent') {
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(elementX, elementY, elementWidth, elementHeight);
+            ctx.fillStyle = color;
+        }
+        
+        // Manejar texto multilínea
+        const lines = element.content.split('\n');
+        const lineHeight = fontSize * 1.2;
+        
+        lines.forEach((line, index) => {
+            if (line.trim()) {
+                let textX = elementX + padding;
+                const textY = elementY + padding + (index * lineHeight);
+                
+                // Aplicar alineación
+                if (textAlign === 'center') {
+                    textX = elementX + (elementWidth / 2);
+                    ctx.textAlign = 'center';
+                } else if (textAlign === 'right') {
+                    textX = elementX + elementWidth - padding;
+                    ctx.textAlign = 'right';
+                } else {
+                    ctx.textAlign = 'left';
+                }
+                
+                // Verificar que está dentro del canvas
+                if (textX >= 0 && textY >= 0 && textX < ctx.canvas.width && textY < ctx.canvas.height) {
+                    ctx.fillText(line, textX, textY);
+                }
+            }
+        });
+        
+        ctx.restore();
+        
+    } catch (error) {
+        console.error('Error en renderTextElement:', error);
     }
 }
 
 /**
- * Función principal para generar thumbnails que respetan exactamente el layout del workspace
+ * GENERADOR DE THUMBNAILS IDÉNTICO AL WORKSPACE
+ * Replica exactamente la lógica de renderizado del Editor.jsx línea por línea
  */
 export async function generateAccurateThumbnails({ pages, workspaceDimensions, presetData }) {
     const newThumbnails = {};
-    
-    console.log('🚀 [THUMBNAIL] Iniciando generación de thumbnails PRECISOS...');
-    console.log('📊 [THUMBNAIL] Parámetros recibidos:', { 
-        pagesCount: pages.length, 
-        workspaceDimensions, 
-        hasPresetData: !!presetData 
-    });
-    
+
+    console.log('🎯 [WORKSPACE REPLICA] Iniciando generación IDÉNTICA al workspace...');
+    console.log('📐 [WORKSPACE REPLICA] Dimensiones:', workspaceDimensions);
+
     for (const page of pages) {
         try {
-            const customCanvas = document.createElement('canvas');
-            const customCtx = customCanvas.getContext('2d', { willReadFrequently: true });
+            console.log(`🔄 [WORKSPACE REPLICA] Procesando página: ${page.id} (${page.type})`);
             
-            // Calcular dimensiones del canvas basadas en el workspace (1:1 ratio)
-            customCanvas.width = workspaceDimensions.width;
-            customCanvas.height = workspaceDimensions.height;
+            // Crear canvas con las dimensiones exactas del workspace
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             
-            // Configurar calidad de renderizado
-            customCtx.imageSmoothingEnabled = true;
-            customCtx.imageSmoothingQuality = 'high';
-            customCtx.textRendering = 'geometricPrecision';
-            customCtx.webkitImageSmoothingEnabled = true;
-            customCtx.mozImageSmoothingEnabled = true;
-            customCtx.msImageSmoothingEnabled = true;
+            canvas.width = workspaceDimensions.width;
+            canvas.height = workspaceDimensions.height;
             
-            console.log('🖼️ [THUMBNAIL] Generando miniatura para página:', page?.type);
-            console.log('🖼️ [THUMBNAIL] Layout:', page?.layout);
+            // Configuración de renderizado idéntica al workspace
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.textRendering = 'geometricPrecision';
             
-            // Renderizar fondo de la página (color + imagen de fondo)
-            let bgColor = page.backgroundColor || '#ffffff';
-            customCtx.fillStyle = bgColor;
-            customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
+            // === RENDERIZAR BACKGROUND LAYER === (idéntico al workspace)
+            console.log('🎨 [WORKSPACE REPLICA] Renderizando background...');
             
+            // 1. Color de fondo base
+            const backgroundColor = page.backgroundColor || '#ffffff';
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            console.log('🎨 [WORKSPACE REPLICA] Background color aplicado:', backgroundColor);
+            
+            // 2. Imagen de fondo si existe
             if (page.backgroundImage) {
                 try {
+                    console.log('🖼️ [WORKSPACE REPLICA] Cargando background image:', page.backgroundImage);
+                    
                     const bgImg = new Image();
                     bgImg.crossOrigin = 'anonymous';
-                    bgImg.src = page.backgroundImage;
                     
                     await new Promise((resolve, reject) => {
-                        if (bgImg.complete) {
-                            console.log('✅ [THUMBNAIL] Imagen de fondo ya cargada');
-                            return resolve();
-                        }
-                        bgImg.onload = () => {
-                            console.log('✅ [THUMBNAIL] Imagen de fondo cargada exitosamente');
-                            resolve();
-                        };
-                        bgImg.onerror = (error) => {
-                            console.error('❌ [THUMBNAIL] Error cargando imagen de fondo:', error);
-                            reject(error);
-                        };
+                        bgImg.onload = resolve;
+                        bgImg.onerror = reject;
+                        bgImg.src = page.backgroundImage;
                     });
                     
-                    drawImageCover(customCtx, bgImg, 0, 0, workspaceDimensions.width, workspaceDimensions.height);
-                    console.log('✅ [THUMBNAIL] Imagen de fondo dibujada');
+                    // Dibujar imagen de fondo cubriendo toda la página
+                    drawImageWithCover(ctx, bgImg, 0, 0, canvas.width, canvas.height);
+                    console.log('✅ [WORKSPACE REPLICA] Background image aplicada');
+                    
                 } catch (error) {
-                    console.error('❌ [THUMBNAIL] Error procesando imagen de fondo:', error);
+                    console.error('❌ [WORKSPACE REPLICA] Error con background image:', error);
                 }
             }
             
-            // Procesar las celdas si existen
-            if (page.cells && Array.isArray(page.cells) && page.cells.length > 0) {
-                // Buscar el layout correspondiente
-                const layout = layouts.find(l => l.id === page.layout);
+            // === RENDERIZAR GRID LAYER === (idéntico al workspace)
+            console.log('🗂️ [WORKSPACE REPLICA] Renderizando grid layout...');
+            
+            // Buscar el layout actual (igual que getCurrentLayout())
+            const currentLayout = layouts.find(l => l.id === page.layout) || layouts[0];
+            console.log('📋 [WORKSPACE REPLICA] Layout actual:', currentLayout.name, currentLayout.template);
+            
+            // Simular el CSS Grid exactamente como el workspace
+            const gridInfo = simulateWorkspaceGrid(currentLayout, workspaceDimensions);
+            
+            // === RENDERIZAR CELDAS Y ELEMENTOS ===
+            if (page.cells && Array.isArray(page.cells)) {
+                console.log(`📦 [WORKSPACE REPLICA] Renderizando ${page.cells.length} celdas...`);
                 
-                if (!layout) {
-                    console.warn('⚠️ [THUMBNAIL] Layout no encontrado para:', page.layout);
-                    continue;
-                }
-                
-                console.log('🗂️ [THUMBNAIL] Layout encontrado:', layout.name);
-                
-                // Calcular posiciones reales de las celdas usando el layout CSS Grid
-                const cellPositions = calculateLayoutCellPositions(layout, workspaceDimensions, page.cells);
-                
-                // Ordenar celdas por posición (Y, luego X) para renderizado consistente
+                // Ordenar celdas por índice para mantener consistencia
                 const sortedCells = [...page.cells].sort((a, b) => {
-                    const posA = cellPositions[a.id];
-                    const posB = cellPositions[b.id];
-                    if (!posA || !posB) return 0;
-                    
-                    if (posA.y !== posB.y) return posA.y - posB.y;
-                    return posA.x - posB.x;
+                    const aIndex = page.cells.indexOf(a);
+                    const bIndex = page.cells.indexOf(b);
+                    return aIndex - bIndex;
                 });
-
-                for (const cell of sortedCells) {
-                    if (!cell || !cell.elements) continue;
+                
+                for (let cellIndex = 0; cellIndex < sortedCells.length; cellIndex++) {
+                    const cell = sortedCells[cellIndex];
                     
-                    // Obtener la posición real de la celda calculada por el layout
-                    const cellPosition = cellPositions[cell.id];
-                    if (!cellPosition) {
-                        console.warn('⚠️ [THUMBNAIL] No se encontró posición para celda:', cell.id);
-                        continue;
-                    }
+                    // Calcular posición de la celda en el grid (igual que CSS Grid)
+                    const row = Math.floor(cellIndex / gridInfo.cols);
+                    const col = cellIndex % gridInfo.cols;
                     
-                    const { x: cellX, y: cellY, width: cellWidth, height: cellHeight } = cellPosition;
+                    const cellX = gridInfo.contentX + (col * (gridInfo.cellWidth + gridInfo.gap));
+                    const cellY = gridInfo.contentY + (row * (gridInfo.cellHeight + gridInfo.gap));
                     
-                    console.log(`🗂️ [THUMBNAIL] Procesando celda ${cell.id} en posición:`, cellPosition);
-
-                    // Ordenar elementos por zIndex
-                    const sortedElements = [...(cell.elements || [])].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-
-                    for (const element of sortedElements) {
-                        // Filtrar elementos base del layout (evitar duplicados)
-                        if (
-                            element.type === 'image' && (
-                                element.id === 'cover-base' ||
-                                element.id === 'final-base' ||
-                                (typeof element.id === 'string' && element.id.startsWith('content-base-'))
-                            )
-                        ) {
-                            continue;
-                        }
-
-                        // Solo renderizar elementos válidos
-                        if (!element || (element.type !== 'image' && element.type !== 'text') || !element.content) continue;
+                    console.log(`📦 [WORKSPACE REPLICA] Celda ${cellIndex} (${cell.id}):`, {
+                        gridPos: { row, col },
+                        realPos: { x: cellX, y: cellY, width: gridInfo.cellWidth, height: gridInfo.cellHeight }
+                    });
+                    
+                    // Dibujar fondo de la celda (opcional, igual que EditableCell)
+                    ctx.save();
+                    //  ctx.fillStyle = '#f9fafb';
+                    ctx.fillStyle = 'transparent'; // bg-gray-50 del EditableCell
+                    ctx.fillRect(cellX, cellY, gridInfo.cellWidth, gridInfo.cellHeight);
+                    ctx.restore();
+                    
+                    // === RENDERIZAR ELEMENTOS DE LA CELDA ===
+                    if (cell.elements && Array.isArray(cell.elements)) {
+                        // Ordenar elementos por zIndex (igual que en el workspace)
+                        const sortedElements = [...cell.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
                         
-                        if (element.type === 'image') {
-                            try {
-                                const img = new Image();
-                                img.crossOrigin = 'anonymous';
-                                
-                                // Cargar la imagen
-                                await new Promise((resolve, reject) => {
-                                    img.onload = resolve;
-                                    img.onerror = reject;
-                                    img.src = element.content;
-                                });
-
-                                // En el workspace real, las imágenes SIEMPRE ocupan toda la celda
-                                // Los elementos de imagen se comportan como width:100% height:100% dentro de su celda
-                                
-                                // Para thumbnails, simplificar: las imágenes SIEMPRE ocupan toda la celda
-                                // Ignorar tamaños específicos en píxeles ya que en el workspace se comportan como 100%
-                                const elX = 0;  // Posición X relativa a la celda
-                                const elY = 0;  // Posición Y relativa a la celda
-                                const elW = cellWidth;   // Ancho = toda la celda
-                                const elH = cellHeight;  // Alto = toda la celda
-
-                                // Posición absoluta en la página (ajustada por la posición real de la celda)
-                                const dx = cellX + elX;
-                                const dy = cellY + elY;
-
-                                console.log('📐 [THUMBNAIL] Renderizando imagen (OCUPANDO TODA LA CELDA):', {
-                                    elementId: element.id,
-                                    cellId: cell.id,
-                                    cellPosition: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
-                                    elementPosition: { x: elX, y: elY, width: elW, height: elH },
-                                    finalPosition: { dx, dy },
-                                    note: 'Imagen ocupa toda la celda como en workspace'
-                                });
-
-                                // Dibujar la imagen con las coordenadas exactas
-                                drawImageCover(customCtx, img, dx, dy, elW, elH);
-                                
-                            } catch (error) {
-                                console.error('❌ [THUMBNAIL] Error al cargar imagen:', error, element);
+                        console.log(`🔹 [WORKSPACE REPLICA] Renderizando ${sortedElements.length} elementos en celda ${cell.id}`);
+                        
+                        for (const element of sortedElements) {
+                            // Filtrar elementos bloqueados base del layout
+                            if (element.id === 'cover-base' || 
+                                element.id === 'final-base' || 
+                                element.id?.startsWith('content-base-')) {
+                                console.log('⏭️ [WORKSPACE REPLICA] Saltando elemento base:', element.id);
+                                continue;
                             }
-                        } else if (element.type === 'text') {
-                            console.log('🔤 [THUMBNAIL] Procesando elemento de texto:', element.id, element.content);
                             
-                            try {
-                                // Para texto, usar posicionamiento similar al workspace
-                                const isRelativeX = element.position?.x !== undefined && Math.abs(element.position.x) <= 1;
-                                const isRelativeY = element.position?.y !== undefined && Math.abs(element.position.y) <= 1;
-
-                                // Para thumbnails, respetar posición relativa o usar valores por defecto
-                                const elX = isRelativeX ? element.position.x * cellWidth : (element.position?.x || 10);
-                                const elY = isRelativeY ? element.position.y * cellHeight : (element.position?.y || 20);
-                                
-                                // Calcular dimensiones
-                                let elW = cellWidth * 0.8; // Default width
-                                let elH = cellHeight * 0.3; // Default height
-                                
-                                if (element.size?.width !== undefined) {
-                                    elW = element.size.width <= 1 ? element.size.width * cellWidth : element.size.width;
-                                }
-                                
-                                if (element.size?.height !== undefined) {
-                                    elH = element.size.height <= 1 ? element.size.height * cellHeight : element.size.height;
-                                }
-
-                                // Posición absoluta en la página
-                                const dx = cellX + elX;
-                                const dy = cellY + elY;
-
-                                console.log('📐 [THUMBNAIL] Renderizando texto:', {
-                                    elementId: element.id,
-                                    content: element.content,
-                                    cellPosition: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
-                                    elementPosition: { x: elX, y: elY, width: elW, height: elH },
-                                    finalPosition: { dx, dy },
-                                    originalPosition: element.position,
-                                    isRelative: { x: isRelativeX, y: isRelativeY }
-                                });
-
-                                // Obtener estilos del elemento
-                                const style = element.style || {};
-                                
-                                // Configurar contexto de texto
-                                customCtx.save();
-                                
-                                // Configurar fuente
-                                const fontSize = parseInt(style.fontSize) || 16;
-                                const fontFamily = style.fontFamily || 'Arial';
-                                const fontWeight = style.fontWeight || 'normal';
-                                const fontStyle = style.fontStyle || 'normal';
-                                
-                                customCtx.font = `${fontWeight} ${fontStyle} ${fontSize}px ${fontFamily}`;
-                                customCtx.fillStyle = style.color || '#000000';
-                                
-                                // Configurar alineación
-                                const textAlign = style.textAlign || 'left';
-                                customCtx.textAlign = textAlign;
-                                customCtx.textBaseline = 'top';
-                                
-                                // Dibujar fondo del texto si existe
-                                if (style.backgroundColor && style.backgroundColor !== 'transparent') {
-                                    customCtx.fillStyle = style.backgroundColor;
-                                    customCtx.fillRect(dx, dy, elW, elH);
-                                    customCtx.fillStyle = style.color || '#000000';
-                                }
-                                
-                                // Manejar texto multilinea
-                                const lines = element.content.split('\n');
-                                const lineHeight = fontSize * 1.2;
-                                const padding = parseInt(style.padding) || 8;
-                                
-                                lines.forEach((line, index) => {
-                                    if (line.trim()) {
-                                        let textX, textY;
-                                        
-                                        // Calcular posición Y
-                                        textY = dy + (index * lineHeight) + padding;
-                                        
-                                        // Calcular posición X según la alineación
-                                        switch (textAlign) {
-                                            case 'center':
-                                                textX = dx + (elW / 2);
-                                                break;
-                                            case 'right':
-                                                textX = dx + elW - padding;
-                                                break;
-                                            case 'left':
-                                            default:
-                                                textX = dx + padding;
-                                                break;
-                                        }
-                                        
-                                        // Verificar que estamos en el canvas
-                                        if (textX >= 0 && textY >= 0 && textX < workspaceDimensions.width && textY < workspaceDimensions.height) {
-                                            customCtx.fillText(line, textX, textY);
-                                            console.log(`✅ [THUMBNAIL] Línea "${line}" dibujada en x=${textX}, y=${textY}`);
-                                        }
-                                    }
-                                });
-                                
-                                customCtx.restore();
-                                console.log('✅ [THUMBNAIL] Texto renderizado exitosamente:', element.id);
-                                
-                            } catch (error) {
-                                console.error('❌ [THUMBNAIL] Error renderizando texto:', error, element);
+                            console.log(`🔸 [WORKSPACE REPLICA] Renderizando elemento: ${element.id} (${element.type})`);
+                            
+                            if (element.type === 'image' && element.content) {
+                                await renderImageElement(ctx, element, cellX, cellY, gridInfo.cellWidth, gridInfo.cellHeight);
+                            } else if (element.type === 'text' && element.content) {
+                                renderTextElement(ctx, element, cellX, cellY, gridInfo.cellWidth, gridInfo.cellHeight);
                             }
                         }
                     }
                 }
             }
             
-            // Crear el thumbnail con tamaño optimizado manteniendo relación de aspecto
+            // === CREAR THUMBNAIL FINAL ===
+            console.log('🖼️ [WORKSPACE REPLICA] Generando thumbnail final...');
+            
+            // Crear thumbnail con tamaño optimizado pero manteniendo proporción
             const thumbnailCanvas = document.createElement('canvas');
             const thumbnailCtx = thumbnailCanvas.getContext('2d');
             
-            // Tamaño máximo del thumbnail
-            const maxThumbnailSize = 800;
-            let thumbWidth, thumbHeight;
+            const maxSize = 600; // Tamaño máximo para thumbnails
+            const scale = Math.min(maxSize / canvas.width, maxSize / canvas.height);
             
-            // Calcular dimensiones manteniendo la relación de aspecto
-            if (workspaceDimensions.width > workspaceDimensions.height) {
-                thumbWidth = Math.min(maxThumbnailSize, workspaceDimensions.width);
-                thumbHeight = (thumbWidth / workspaceDimensions.width) * workspaceDimensions.height;
-            } else {
-                thumbHeight = Math.min(maxThumbnailSize, workspaceDimensions.height);
-                thumbWidth = (thumbHeight / workspaceDimensions.height) * workspaceDimensions.width;
-            }
+            thumbnailCanvas.width = Math.round(canvas.width * scale);
+            thumbnailCanvas.height = Math.round(canvas.height * scale);
             
-            // Asegurar valores enteros
-            thumbWidth = Math.round(thumbWidth);
-            thumbHeight = Math.round(thumbHeight);
-            
-            // Configurar canvas del thumbnail
-            thumbnailCanvas.width = thumbWidth;
-            thumbnailCanvas.height = thumbHeight;
-            
-            // Configurar calidad de renderizado
+            // Configurar calidad para el thumbnail
             thumbnailCtx.imageSmoothingEnabled = true;
             thumbnailCtx.imageSmoothingQuality = 'high';
-            thumbnailCtx.webkitImageSmoothingEnabled = true;
-            thumbnailCtx.mozImageSmoothingEnabled = true;
-            thumbnailCtx.msImageSmoothingEnabled = true;
             
-            // Dibujar el contenido escalado al tamaño del thumbnail
+            // Escalar el canvas original al thumbnail
             thumbnailCtx.drawImage(
-                customCanvas,
-                0, 0, customCanvas.width, customCanvas.height,
-                0, 0, thumbWidth, thumbHeight
+                canvas,
+                0, 0, canvas.width, canvas.height,
+                0, 0, thumbnailCanvas.width, thumbnailCanvas.height
             );
             
-            // Convertir a base64
-            newThumbnails[page.id] = thumbnailCanvas.toDataURL('image/png', 0.92);
-            console.log('✅ [THUMBNAIL] Thumbnail PRECISO generado exitosamente para página:', page.id);
+            // Convertir a data URL
+            newThumbnails[page.id] = thumbnailCanvas.toDataURL('image/png', 0.9);
+            
+            console.log(`✅ [WORKSPACE REPLICA] Thumbnail generado para ${page.id}: ${thumbnailCanvas.width}x${thumbnailCanvas.height}`);
             
         } catch (error) {
-            console.error(`❌ Error generando thumbnail para página ${page.id}:`, error);
+            console.error(`❌ [WORKSPACE REPLICA] Error generando thumbnail para página ${page.id}:`, error);
             newThumbnails[page.id] = null;
         }
     }
-    
-    console.log('🎯 [THUMBNAIL] Generación de thumbnails PRECISOS completada');
+
+    console.log('🎯 [WORKSPACE REPLICA] ¡Generación COMPLETADA! Thumbnails idénticos al workspace.');
     return newThumbnails;
 }

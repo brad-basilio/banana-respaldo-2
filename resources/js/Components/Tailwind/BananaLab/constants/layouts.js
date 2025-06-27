@@ -10,7 +10,7 @@ export const layouts = [
         cells: 1,
         style: {
             gap: "0px",
-            padding: "16px"
+            padding: "0px"
         },
         cellStyles: {
             0: "rounded-lg overflow-hidden shadow-lg"
