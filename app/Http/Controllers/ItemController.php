@@ -206,18 +206,11 @@ class ItemController extends BasicController
                 ? Item::getForeign($originalBuilder, Brand::class, 'brand_id')
                 : Item::getForeign($i4brand, Brand::class, 'brand_id');
 
-            // CATEGORIAS: si hay marcas seleccionadas, filtrar categorías por esas marcas, SIEMPRE, aunque category_id esté en filterSequence
-            if (!empty($selectedBrands)) {
-                // Si hay marcas seleccionadas, solo mostrar categorías que tengan productos de esas marcas
-                $catBuilder = clone $originalBuilder;
-                $catBuilder->whereIn('brand_id', $selectedBrands);
-                $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
-            } else {
-                // Si NO hay marcas seleccionadas, usar la lógica del filterSequence
-                $categories = in_array('category_id', $filterSequence)
-                    ? Item::getForeign($originalBuilder, Category::class, 'category_id')
-                    : Item::getForeign($i4category, Category::class, 'category_id');
-            }
+            // DEVOLVER TODAS LAS CATEGORÍAS ACTIVAS Y VISIBLES, NO SOLO LAS QUE TIENEN PRODUCTOS EN LA PÁGINA ACTUAL
+            $categories = Category::where('status', true)
+                ->where('visible', true)
+                ->orderBy('name')
+                ->get();
 
             // HIJO: subcategoría sí se filtra por los padres activos
             if (in_array('subcategory_id', $filterSequence)) {

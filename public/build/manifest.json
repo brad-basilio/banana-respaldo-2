@@ -440,8 +440,8 @@
       "_main-BvVILmTO.js"
     ]
   },
-  "_SelectForm-G0J6yhhv.js": {
-    "file": "assets/SelectForm-G0J6yhhv.js",
+  "_SelectForm-DFP8Osy1.js": {
+    "file": "assets/SelectForm-DFP8Osy1.js",
     "name": "SelectForm",
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
@@ -4612,7 +4612,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blog.jsx": {
-    "file": "assets/Blog-B_NeIwZK.js",
+    "file": "assets/Blog-hStXInMX.js",
     "name": "Blog",
     "src": "resources/js/Components/Tailwind/Blog.jsx",
     "isDynamicEntry": true,
@@ -5989,7 +5989,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filter.jsx": {
-    "file": "assets/Filter-DvN2iiiq.js",
+    "file": "assets/Filter-DOot4j24.js",
     "name": "Filter",
     "src": "resources/js/Components/Tailwind/Filter.jsx",
     "isDynamicEntry": true,
@@ -6010,7 +6010,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filters/CatalagoFiltros.jsx": {
-    "file": "assets/CatalagoFiltros-bt90hXq-.js",
+    "file": "assets/CatalagoFiltros-CetKWuID.js",
     "name": "CatalagoFiltros",
     "src": "resources/js/Components/Tailwind/Filters/CatalagoFiltros.jsx",
     "isDynamicEntry": true,
@@ -6020,7 +6020,7 @@
       "resources/js/Components/Tailwind/Products/ProductNavigation.jsx",
       "_ItemsRest-CNHS84XX.js",
       "_ArrayJoin-2k6ba35P.js",
-      "_SelectForm-G0J6yhhv.js",
+      "_SelectForm-DFP8Osy1.js",
       "_main-BvVILmTO.js",
       "_proxy-BTYtmp9V.js",
       "_sliders-vertical-C5ts4taK.js",
@@ -6059,7 +6059,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filters/CatalagoFiltrosAko.jsx": {
-    "file": "assets/CatalagoFiltrosAko-7PE0QT5J.js",
+    "file": "assets/CatalagoFiltrosAko-BSBAi47U.js",
     "name": "CatalagoFiltrosAko",
     "src": "resources/js/Components/Tailwind/Filters/CatalagoFiltrosAko.jsx",
     "isDynamicEntry": true,
@@ -6069,7 +6069,7 @@
       "resources/js/Components/Tailwind/Products/ProductNavigation.jsx",
       "_ItemsRest-CNHS84XX.js",
       "_ArrayJoin-2k6ba35P.js",
-      "_SelectForm-G0J6yhhv.js",
+      "_SelectForm-DFP8Osy1.js",
       "_main-BvVILmTO.js",
       "_ProductCardColors-DwA0JtMJ.js",
       "_proxy-BTYtmp9V.js",
@@ -6213,46 +6213,53 @@
     ]
   },
   "resources/js/Components/Tailwind/Filters/FilterBananaLab.jsx": {
-    "file": "assets/FilterBananaLab-BzfXlBJQ.js",
+    "file": "assets/FilterBananaLab-DfFteCu4.js",
     "name": "FilterBananaLab",
     "src": "resources/js/Components/Tailwind/Filters/FilterBananaLab.jsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
+      "resources/js/Components/Tailwind/Products/ProductNavigation.jsx",
       "_ItemsRest-CNHS84XX.js",
-      "_Loading-B-FwDSWi.js",
-      "_NoResult-C9qZVva5.js",
-      "_SelectForm-G0J6yhhv.js",
+      "_ArrayJoin-2k6ba35P.js",
+      "_SelectForm-DFP8Osy1.js",
+      "_main-BvVILmTO.js",
       "_CardProductBananaLab-CqX2Y_vl.js",
       "_proxy-BTYtmp9V.js",
+      "_createLucideIcon-Cy5Ya80P.js",
+      "_sliders-vertical-C5ts4taK.js",
+      "_filter-Ci9tsc_e.js",
+      "_layers-6oegOx-p.js",
       "_chevron-down-DS-mdh9v.js",
       "_index-CFtDjG4d.js",
       "_search-TwiiKGP5.js",
+      "_circle-check-CPWcvHtC.js",
+      "_trending-up-7xOumEqB.js",
+      "_x-DBMwyD6F.js",
+      "_shopping-bag-CoWGrL8C.js",
+      "_sparkles-DeLUn6av.js",
       "_chevron-left-B2s3ZsB7.js",
       "_chevron-right-Ckt5D2ka.js",
       "_index-yBjzXJbu.js",
-      "_main-BvVILmTO.js",
-      "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
-      "_BasicRest-b6WIUDlY.js",
-      "_index-Bx7_DjT0.js",
-      "_index-BrXtjC9y.js",
-      "_index-fNjTmf9T.js",
-      "_check-DQ7QoS0v.js",
-      "_createLucideIcon-Cy5Ya80P.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "resources/js/Components/Tailwind/Headers/HeaderSearch.jsx",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
+      "_index-fNjTmf9T.js",
       "_index-Chjiymov.js",
       "_CartItemRow-CuPy688Q.js",
       "_Number2Currency-e57Tgsuk.js",
       "_tippy-react.esm-GxPckcbS.js",
+      "_index-BrXtjC9y.js",
       "_trash-2-DK1wnsDn.js",
       "_minus-jyhodMPN.js",
       "_plus-Bot15Khs.js",
+      "_eye-CKCH9ORv.js",
+      "_BasicRest-b6WIUDlY.js",
+      "_index-Bx7_DjT0.js",
+      "_check-DQ7QoS0v.js",
+      "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "resources/js/Components/Tailwind/Headers/HeaderBananaLab.jsx",
-      "_shopping-bag-CoWGrL8C.js",
-      "_x-DBMwyD6F.js",
       "_shopping-cart-CZEUxbmv.js",
       "_arrow-right-DR00rP9v.js",
       "_heart-ChuvJi-4.js",
@@ -6263,7 +6270,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filters/FilterCategoryImage.jsx": {
-    "file": "assets/FilterCategoryImage-DEtFDa1z.js",
+    "file": "assets/FilterCategoryImage-DKdgvXra.js",
     "name": "FilterCategoryImage",
     "src": "resources/js/Components/Tailwind/Filters/FilterCategoryImage.jsx",
     "isDynamicEntry": true,
@@ -6274,7 +6281,7 @@
       "_ItemsRest-CNHS84XX.js",
       "_Loading-B-FwDSWi.js",
       "_NoResult-C9qZVva5.js",
-      "_SelectForm-G0J6yhhv.js",
+      "_SelectForm-DFP8Osy1.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "_ProductCardSimple-B2h4S-uC.js",
       "_CardProductBananaLab-CqX2Y_vl.js",
@@ -6317,7 +6324,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filters/FilterSalaFabulosa.jsx": {
-    "file": "assets/FilterSalaFabulosa-BRx14V0y.js",
+    "file": "assets/FilterSalaFabulosa-DsYtA6Nb.js",
     "name": "FilterSalaFabulosa",
     "src": "resources/js/Components/Tailwind/Filters/FilterSalaFabulosa.jsx",
     "isDynamicEntry": true,
@@ -6329,7 +6336,7 @@
       "_ArrayJoin-2k6ba35P.js",
       "_Loading-B-FwDSWi.js",
       "_NoResult-C9qZVva5.js",
-      "_SelectForm-G0J6yhhv.js",
+      "_SelectForm-DFP8Osy1.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "_ProductCardColors-DwA0JtMJ.js",
       "_main-BvVILmTO.js",
@@ -9190,7 +9197,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CBnlFuOm.js",
+    "file": "assets/System-CY5Xx_6-.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

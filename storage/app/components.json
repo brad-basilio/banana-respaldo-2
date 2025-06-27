@@ -1755,7 +1755,7 @@
                 ],
                 "using": {
                     "model": "Post",
-                    "limit": 3,
+                    "limit": 2,
                     "with": [
                         "category"
                     ]

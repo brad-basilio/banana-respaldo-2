@@ -88,7 +88,7 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                                     <img
                                         src={`/storage/images/post/${item?.image}`}
                                         alt={item?.title}
-                                        className="inset-0 h-[180px] w-full object-cover aspect-[4/3]"
+                                        className="inset-0  w-full object-cover aspect-[6/3]"
                                     />
                                 </motion.div>
                                 <div className="p-4">
