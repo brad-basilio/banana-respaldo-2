@@ -6,6 +6,7 @@ import Table from "../Components/Adminto/Table";
 import DxButton from "../Components/dx/DxButton";
 import ReactAppend from "../Utils/ReactAppend";
 import Swal from "sweetalert2";
+import moment from "moment";
 import SalesRest from "../Actions/Admin/SalesRest";
 import Global from "../Utils/Global";
 import Number2Currency from "../Utils/Number2Currency";
@@ -22,6 +23,7 @@ const Sales = ({ statuses = [] }) => {
 
     const [saleLoaded, setSaleLoaded] = useState(null);
     const [saleStatuses, setSaleStatuses] = useState([]);
+    const [projectPDFs, setProjectPDFs] = useState({}); // Para cargar PDFs de proyectos
 
     const onStatusChange = async (e) => {
         const result = await salesRest.save({
@@ -52,7 +54,88 @@ const Sales = ({ statuses = [] }) => {
     const onModalOpen = async (saleId) => {
         const newSale = await salesRest.get(saleId);
         setSaleLoaded(newSale.data);
+        
+        // Cargar PDFs de proyectos si existen
+        if (newSale.data?.details) {
+            const projectIds = newSale.data.details
+                .filter(detail => detail.colors) // colors contiene el project_id
+                .map(detail => detail.colors);
+            
+            if (projectIds.length > 0) {
+                await loadProjectPDFs(projectIds);
+            }
+        }
+        
         $(modalRef.current).modal("show");
+    };
+
+    // Función para cargar información de PDFs de proyectos
+    const loadProjectPDFs = async (projectIds) => {
+        try {
+            const pdfData = {};
+            
+            for (const projectId of projectIds) {
+                try {
+                    const response = await fetch(`/api/admin/projects/${projectId}/info`, {
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log(`Proyecto ${projectId} info:`, result);
+                        if (result.success) {
+                            pdfData[projectId] = result.data;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error cargando info del proyecto ${projectId}:`, error);
+                }
+            }
+            
+            setProjectPDFs(pdfData);
+        } catch (error) {
+            console.error('Error cargando PDFs de proyectos:', error);
+        }
+    };
+
+    // Función para descargar PDF
+    const downloadProjectPDF = async (projectId) => {
+        try {
+            const response = await fetch(`/api/admin/projects/${projectId}/pdf`, {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            });
+            console.log(response)
+            
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `proyecto_${projectId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                Swal.fire({
+                    title: "Error",
+                    text: "No se pudo descargar el PDF del proyecto",
+                    icon: "error"
+                });
+            }
+        } catch (error) {
+            console.error('Error descargando PDF:', error);
+            Swal.fire({
+                title: "Error",
+                text: "Error al descargar el PDF",
+                icon: "error"
+            });
+        }
     };
 
     useEffect(() => {
@@ -365,6 +448,7 @@ const Sales = ({ statuses = [] }) => {
                                             <th>Precio</th>
                                             <th>Cantidad</th>
                                             <th>Subtotal</th>
+                                            <th>PDF</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -391,29 +475,67 @@ const Sales = ({ statuses = [] }) => {
                                                                     }}
                                                                 />
                                                             ) : null}
-                                                        </td>
-                                                        <td>
-                                                            {detail.name}{detail.colors ? ' - ' + detail.colors : ''}
-                                                        </td>
-                                                        <td align="right">
-                                                            <span className="text-nowrap">
-                                                                S/{" "}
-                                                                {Number2Currency(
-                                                                    detail.price
-                                                                )}
-                                                            </span>
-                                                        </td>
-                                                        <td align="center">
-                                                            {quantity}
-                                                        </td>
-                                                        <td align="right">
-                                                            <span className="text-nowrap">
-                                                                S/{" "}
-                                                                {Number2Currency(
-                                                                    totalPrice
-                                                                )}
-                                                            </span>
-                                                        </td>
+                                                        </td>                                        <td>
+                                            {detail.name}{detail.colors ? ' - ' + detail.colors : ''}
+                                        </td>
+                                        <td align="right">
+                                            <span className="text-nowrap">
+                                                S/{" "}
+                                                {Number2Currency(
+                                                    detail.price
+                                                )}
+                                            </span>
+                                        </td>
+                                        <td align="center">
+                                            {quantity}
+                                        </td>
+                                        <td align="right">
+                                            <span className="text-nowrap">
+                                                S/{" "}
+                                                {Number2Currency(
+                                                    totalPrice
+                                                )}
+                                            </span>
+                                        </td>
+                                        <td align="center">
+                                            {detail.colors ? (
+                                                <div className="d-flex flex-column gap-1">
+                                                    {projectPDFs[detail.colors] ? (
+                                                        <>
+                                                            <Tippy content="Descargar PDF del proyecto">
+                                                                <button
+                                                                    className="btn btn-xs btn-success"
+                                                                    onClick={() => downloadProjectPDF(detail.colors)}
+                                                                >
+                                                                    <i className="fa fa-download"></i> PDF
+                                                                </button>
+                                                            </Tippy>
+                                                            <small className="text-muted">
+                                                                Proyecto: {detail.colors}
+                                                            </small>
+                                                            {projectPDFs[detail.colors].pdf_generated_at && (
+                                                                <small className="text-success">
+                                                                    Generado: {moment(projectPDFs[detail.colors].pdf_generated_at).format('DD/MM/YY HH:mm')}
+                                                                </small>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <div>
+                                                            <small className="text-warning">
+                                                                <i className="fa fa-clock"></i> Proyecto: {detail.colors}
+                                                            </small>
+                                                            <small className="text-muted d-block">
+                                                                PDF no disponible
+                                                            </small>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <small className="text-muted">
+                                                    N/A
+                                                </small>
+                                            )}
+                                        </td>
                                                     </tr>
                                                 );
                                             }

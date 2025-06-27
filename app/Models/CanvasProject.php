@@ -22,11 +22,16 @@ class CanvasProject extends Model
         'project_data',
         'status',
         'name',
-        'thumbnail'
+        'thumbnail',
+        'pdf_path',
+        'pdf_generated_at',
+        'item_data'
     ];
 
     protected $casts = [
         'project_data' => 'array',
+        'item_data' => 'array',
+        'pdf_generated_at' => 'datetime',
     ];
 
     // Relaciones

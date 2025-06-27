@@ -77,7 +77,8 @@ export default function UploadVoucherModalYape({
                 payment_proof: voucher,
                 details: JSON.stringify(request.cart.map((item) => ({
                     id: item.id,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    project_id:item.project_id
                 }))),
             };
             

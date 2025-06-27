@@ -227,6 +227,7 @@ class SaleController extends BasicController
         //$body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
         $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
         $body['user_id'] = Auth::id();
+       
 
         // Manejar cupón si está presente
         if (isset($body['coupon_code']) && $body['coupon_code']) {
@@ -272,6 +273,7 @@ class SaleController extends BasicController
                 'price' => $itemJpa->final_price,
                 'quantity' => $item['quantity'],
                 'image' => $itemJpa->image,
+                'colors'=>$item['project_id']
             ]);
             $totalPrice += $itemJpa->final_price * $item['quantity'];
         }

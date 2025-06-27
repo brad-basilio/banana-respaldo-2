@@ -16,7 +16,7 @@ import CardProductBananaLab from "../Products/Components/CardProductBananaLab";
 
 const itemsRest = new ItemsRest();
 
-const FilterBananaLab = ({ items, data, filteredData, cart, setCart }) => {
+const FilterBananaLab = ({ items, data, filteredData, cart, setCart,setFavorites, favorites }) => {
     const { collections, categories, brands, priceRanges } = filteredData;
     const [subcategories, setSubcategories] = useState([]);
     
@@ -733,6 +733,8 @@ const FilterBananaLab = ({ items, data, filteredData, cart, setCart }) => {
                                                 product={product}
                                                 cart={cart}
                                                 setCart={setCart}
+                                                setFavorites={setFavorites}
+                                                favorites={favorites}
                                             />
                                         </motion.div>
                                     ))

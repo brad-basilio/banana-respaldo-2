@@ -19,9 +19,12 @@ class CanvasController extends Controller
     {
         try {
             $request->validate([
+                'id' => 'sometimes|string|uuid',
                 'item_id' => 'required|exists:items,id',
                 'canvas_preset_id' => 'required|exists:canvas_presets,id',
                 'name' => 'string|max:255',
+                'design_data' => 'sometimes|array',
+                'status' => 'sometimes|string|in:draft,completed,exported,ordered',
             ]);
 
             $user = auth()->user();
@@ -37,16 +40,37 @@ class CanvasController extends Controller
                 return response()->json(['error' => 'Este producto no tiene configuración de canvas'], 400);
             }
 
-            // Crear el proyecto
-            $project = CanvasProject::create([
-                'id' => (string) Str::uuid(),
-                'user_id' => $user->id,
-                'item_id' => $item->id,
-                'canvas_preset_id' => $canvasPreset->id,
-                'name' => $request->name ?? "Proyecto {$item->name}",
-                'project_data' => $this->generateInitialProjectData($item, $canvasPreset),
-                'status' => 'draft',
-            ]);
+            // Crear o actualizar el proyecto
+            $projectId = $request->id ?? (string) Str::uuid();
+            
+            // Intentar encontrar proyecto existente si se proporciona ID
+            $project = null;
+            if ($request->id) {
+                $project = CanvasProject::find($request->id);
+            }
+            
+            if ($project) {
+                // Actualizar proyecto existente
+                $project->update([
+                    'user_id' => $user->id,
+                    'item_id' => $item->id,
+                    'canvas_preset_id' => $canvasPreset->id,
+                    'name' => $request->name ?? $project->name ?? "Proyecto {$item->name}",
+                    'project_data' => $this->generateInitialProjectData($item, $canvasPreset),
+                    'status' => $request->status ?? $project->status ?? 'draft',
+                ]);
+            } else {
+                // Crear nuevo proyecto
+                $project = CanvasProject::create([
+                    'id' => $projectId,
+                    'user_id' => $user->id,
+                    'item_id' => $item->id,
+                    'canvas_preset_id' => $canvasPreset->id,
+                    'name' => $request->name ?? "Proyecto {$item->name}",
+                    'project_data' => $this->generateInitialProjectData($item, $canvasPreset),
+                    'status' => $request->status ?? 'draft',
+                ]);
+            }
 
             return response()->json([
                 'id' => $project->id,

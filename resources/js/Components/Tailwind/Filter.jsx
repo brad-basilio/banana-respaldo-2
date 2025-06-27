@@ -9,7 +9,7 @@ const FilterBananaLab = React.lazy(() => import('./Filters/FilterBananaLab'))
 const FilterCategoryImage = React.lazy(() => import('./Filters/FilterCategoryImage'))
 const CatalagoFiltrosAko = React.lazy(() => import('./Filters/CatalagoFiltrosAko'))
 //const Filter = ({ which, items, data, category, brands, subcategory, cart, setCart, prices }) => {
-const Filter = ({ which, items, data, cart, setCart, filteredData }) => {
+const Filter = ({ which, items, data, cart, setCart, filteredData,setFavorites, favorites }) => {
   const getFilter = () => {
     switch (which) {
       case 'FilterSimple':
@@ -28,7 +28,7 @@ const Filter = ({ which, items, data, cart, setCart, filteredData }) => {
           // return <CatalagoFiltros data={data} items={items} prices={prices} categories={category} brands={brands} cart={cart} setCart={setCart} />
           return <FilterCategoryImage data={data} items={items} cart={cart} setCart={setCart} filteredData={filteredData} />
       case 'FilterBananaLab':
-          return <FilterBananaLab data={data} items={items} cart={cart} setCart={setCart} filteredData={filteredData} />
+          return <FilterBananaLab data={data} items={items} cart={cart} setCart={setCart} filteredData={filteredData} setFavorites={setFavorites} favorites={favorites} />
       case 'CatalagoFiltrosAko':
           return <CatalagoFiltrosAko data={data} items={items} cart={cart} setCart={setCart} filteredData={filteredData} />
 

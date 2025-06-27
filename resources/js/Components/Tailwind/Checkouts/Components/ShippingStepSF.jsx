@@ -670,7 +670,7 @@ export default function ShippingStepSF({
                     coupon_discount: descuentofinal || 0,
                     total_amount: totalFinal || 0,
                 };
-                
+                console.log(request)
                 try {
                     const response = await processMercadoPagoPayment(request)
                     const data = response;

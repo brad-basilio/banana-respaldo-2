@@ -2,9 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Modal from "react-modal";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import HTMLFlipBook from "react-pageflip";
+import { jsPDF } from "jspdf";
 import Global from "../../../../../Utils/Global";
 import { layouts } from '../../constants/layouts';
-import { getCanvasTextStyle, loadFont } from "../Elements/TextElement";
 
 // Estilos para el modal
 const customStyles = {
@@ -71,7 +71,9 @@ const BookPreviewModal = ({
     addAlbumToCart, 
     workspaceDimensions = { width: 800, height: 600 }, 
     layouts = [], 
-    presetData = null 
+    presetData = null,
+    projectData = null,
+    itemData = null
 }) => {
     const [currentPage, setCurrentPage] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -196,10 +198,28 @@ const BookPreviewModal = ({
         
         const newThumbnails = {};
         const scale = 4; // Factor de escala para alta resolución
+        
+        // Función auxiliar para dibujar elementos en la posición correcta
+        const drawElementInCell = (ctx, element, cellPosition, scale) => {
+            if (!element || !element.image) return;
+            
+            const img = new Image();
+            img.src = element.image;
+            
+            img.onload = () => {
+                // Calcular posición y tamaño del elemento dentro de la celda
+                const elementX = cellPosition.x + element.x * scale;
+                const elementY = cellPosition.y + element.y * scale;
+                const elementWidth = element.width * scale;
+                const elementHeight = element.height * scale;
+                
+                // Dibujar imagen usando la función drawImageCover
+                drawImageCover(ctx, img, elementX, elementY, elementWidth, elementHeight);
+            };
+        };
 
-        // Procesar cada página
-        for (let index = 0; index < pages.length; index++) {
-            const page = pages[index];
+        // Función para generar thumbnail de una página
+        const generatePageThumbnail = async (page, index) => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
@@ -207,192 +227,44 @@ const BookPreviewModal = ({
             canvas.width = workspaceDimensions.width * scale;
             canvas.height = workspaceDimensions.height * scale;
             
-            console.log(`🔧 [THUMBNAIL] Generando thumbnail para página ${index} (${page.type})`);
-            
             // Dibujar fondo de la página
-            if (page.backgroundImage) {
-                try {
-                    const bgImg = new Image();
-                    bgImg.crossOrigin = 'anonymous';
-                    await new Promise((resolve, reject) => {
-                        bgImg.onload = () => {
-                            drawImageCover(ctx, bgImg, 0, 0, canvas.width, canvas.height);
-                            resolve();
-                        };
-                        bgImg.onerror = () => {
-                            ctx.fillStyle = page.backgroundColor || '#ffffff';
-                            ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            resolve();
-                        };
-                        bgImg.src = page.backgroundImage;
-                    });
-                } catch (error) {
-                    ctx.fillStyle = page.backgroundColor || '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                }
-            } else {
-                ctx.fillStyle = page.backgroundColor || '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (presetData && presetData.final_layer_image) {
+                const bgImg = new Image();
+                bgImg.src = presetData.final_layer_image;
+                bgImg.onload = () => {
+                    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+                };
             }
 
             // Obtener posiciones de las celdas
-            const layout = layouts.find(l => l.id === page.layout);
-            console.log(`🔧 [THUMBNAIL] Looking for layout: ${page.layout}, found:`, !!layout);
+            const layout = layouts.find(l => l.id === page.layoutId);
+            if (!layout) return;
             
-            let cellPositions = {};
-            if (!layout) {
-                console.warn(`⚠️ [THUMBNAIL] Layout not found for page ${index}:`, page.layout);
-                for (const cell of page.cells) {
-                    cellPositions[cell.id] = {
-                        x: 0,
-                        y: 0,
-                        width: workspaceDimensions.width * scale,
-                        height: workspaceDimensions.height * scale
-                    };
-                }
-            } else {
-                cellPositions = getLayoutCellPositions(layout, { 
-                    width: workspaceDimensions.width * scale, 
-                    height: workspaceDimensions.height * scale 
-                }, page.cells);
-            }
+            const cellPositions = getLayoutCellPositions(layout, workspaceDimensions, page.cells);
             
             // Dibujar elementos en sus celdas correspondientes
-            for (const cell of page.cells) {
+            page.cells.forEach(cell => {
                 const cellPosition = cellPositions[cell.id];
-                if (!cellPosition) {
-                    console.warn(`⚠️ [THUMBNAIL] Cell position not found for cell: ${cell.id}`);
-                    continue;
+                if (cellPosition) {
+                    cell.elements.forEach(element => {
+                        drawElementInCell(ctx, element, cellPosition, scale);
+                    });
                 }
-                
-                console.log(`🔧 [THUMBNAIL] Processing cell ${cell.id} with ${cell.elements.length} elements`);
-                
-                // Crear elementos ordenados por zIndex para renderizado correcto
-                const sortedElements = cell.elements.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-                
-                for (const element of sortedElements) {
-                    console.log(`🔧 [THUMBNAIL] Drawing element ${element.id} (${element.type}): "${element.content}"`);
-                    
-                    // Calcular posición del elemento dentro de la celda
-                    const position = element.position || { x: 0, y: 0 };
-                    const cellX = cellPosition.x / scale;
-                    const cellY = cellPosition.y / scale;
-                    const cellWidth = cellPosition.width / scale;
-                    const cellHeight = cellPosition.height / scale;
-                    
-                    // Determinar si las posiciones son relativas (0-1) o absolutas (píxeles)
-                    const isRelativeX = position.x !== undefined && Math.abs(position.x) <= 1;
-                    const isRelativeY = position.y !== undefined && Math.abs(position.y) <= 1;
-                    
-                    // Calcular posición absoluta del elemento
-                    const elX = isRelativeX ? position.x * cellWidth : (position.x || 0);
-                    const elY = isRelativeY ? position.y * cellHeight : (position.y || 0);
-                    const posX = cellX + elX;
-                    const posY = cellY + elY;
-                    
-                    // Procesar según tipo de elemento
-                    if (element.type === 'image' && element.content) {
-                        try {
-                            const img = new Image();
-                            img.crossOrigin = 'anonymous';
-                            await new Promise((resolve, reject) => {
-                                img.onload = () => {
-                                    // Calcular tamaño de imagen
-                                    const size = element.size || {};
-                                    const isRelativeWidth = size.width !== undefined && size.width <= 1;
-                                    const isRelativeHeight = size.height !== undefined && size.height <= 1;
-                                    
-                                    const imgWidth = isRelativeWidth ? size.width * cellWidth : (size.width || cellWidth * 0.8);
-                                    const imgHeight = isRelativeHeight ? size.height * cellHeight : (size.height || cellHeight * 0.8);
-                                    
-                                    drawImageCover(ctx, img, posX * scale, posY * scale, imgWidth * scale, imgHeight * scale);
-                                    console.log(`✅ [THUMBNAIL] Image element drawn: ${element.id} at (${posX}, ${posY}) size (${imgWidth}, ${imgHeight})`);
-                                    resolve();
-                                };
-                                img.onerror = () => {
-                                    console.error(`❌ [THUMBNAIL] Failed to load image element:`, element.content);
-                                    resolve(); // Continue even if image fails to load
-                                };
-                                img.src = element.content;
-                            });
-                        } catch (error) {
-                            console.error(`❌ [THUMBNAIL] Error loading image element:`, error);
-                        }
-                    } else if (element.type === 'text' && element.content) {
-                        console.log(`🔧 [THUMBNAIL] Drawing text element: "${element.content}" at relative pos (${position.x}, ${position.y})`);
-                        
-                        // Precargar fuente si es necesario
-                        const style = element.style || {};
-                        if (style.fontFamily) {
-                            await loadFont(style.fontFamily);
-                        }
-                        
-                        // Obtener estilos para canvas
-                        const canvasStyle = getCanvasTextStyle(style, scale);
-                        ctx.save();
-                        
-                        // Configurar contexto
-                        ctx.font = `${canvasStyle.fontWeight} ${canvasStyle.fontStyle} ${canvasStyle.fontSize} ${canvasStyle.fontFamily}`;
-                        ctx.fillStyle = canvasStyle.color;
-                        ctx.textAlign = canvasStyle.textAlign || 'left';
-                        ctx.textBaseline = 'top';
-                        
-                        // Calcular tamaño del área de texto
-                        const size = element.size || {};
-                        const isRelativeWidth = size.width !== undefined && size.width <= 1;
-                        const isRelativeHeight = size.height !== undefined && size.height <= 1;
-                        
-                        const textWidth = isRelativeWidth ? size.width * cellWidth : (size.width || cellWidth * 0.8);
-                        const textHeight = isRelativeHeight ? size.height * cellHeight : (size.height || cellHeight * 0.3);
-                        
-                        // Dibujar fondo si existe
-                        if (canvasStyle.backgroundColor && canvasStyle.backgroundColor !== 'transparent') {
-                            ctx.fillStyle = canvasStyle.backgroundColor;
-                            ctx.fillRect(posX * scale, posY * scale, textWidth * scale, textHeight * scale);
-                            ctx.fillStyle = canvasStyle.color;
-                        }
-                        
-                        // Manejar texto multilinea
-                        const lines = element.content.split('\n');
-                        const lineHeight = parseInt(canvasStyle.fontSize) * parseFloat(canvasStyle.lineHeight);
-                        
-                        lines.forEach((line, index) => {
-                            if (line.trim()) {
-                                let textX, textY;
-                                const baseX = posX * scale;
-                                const baseY = posY * scale + (index * lineHeight);
-                                
-                                // Aplicar alineación horizontal
-                                switch (canvasStyle.textAlign) {
-                                    case 'center':
-                                        textX = baseX + (textWidth * scale) / 2;
-                                        break;
-                                    case 'right':
-                                        textX = baseX + (textWidth * scale) - (canvasStyle.padding || 0);
-                                        break;
-                                    default: // 'left'
-                                        textX = baseX + (canvasStyle.padding || 0);
-                                        break;
-                                }
-                                
-                                textY = baseY + (canvasStyle.padding || 0);
-                                
-                                console.log(`🔧 [THUMBNAIL] Drawing line "${line}" at x=${textX}, y=${textY}, align=${canvasStyle.textAlign}`);
-                                ctx.fillText(line, textX, textY);
-                            }
-                        });
-                        
-                        ctx.restore();
-                        console.log(`✅ [THUMBNAIL] Text element drawn: ${element.id} at (${posX}, ${posY}) size (${textWidth}, ${textHeight})`);
-                    }
-                }
-            }
+            });
 
             // Generar thumbnail
             const thumbnail = canvas.toDataURL('image/jpeg', 0.9);
-            console.log(`🎯 [THUMBNAIL] Generated thumbnail for page ${index}`);
-            newThumbnails[index] = thumbnail;
-        }
+            return { [index]: thumbnail };
+        };
+
+        // Generar thumbnails para todas las páginas
+        const promises = pages.map((page, index) => generatePageThumbnail(page, index));
+        const thumbnails = await Promise.all(promises);
+        
+        // Combinar todos los thumbnails
+        thumbnails.forEach(thumb => {
+            Object.assign(newThumbnails, thumb);
+        });
 
         // Actualizar estado
         setGeneratedThumbnails(newThumbnails);
@@ -864,120 +736,206 @@ const BookPreviewModal = ({
                                 return;
                             }
 
-                            // Paso 1: Finalizar el diseño del álbum
-                            if (typeof window.finalizeAlbumDesign === 'function') {
-                                console.log('📄 Finalizando diseño del álbum...');
-                                const success = await window.finalizeAlbumDesign();
-                                console.log('📄 Resultado de finalizeAlbumDesign:', success);
+                            // Paso 1: Agregar al carrito primero (incluye generación del project_id)
+                            console.log('� Agregando álbum al carrito...');
+                            const addedToCart = addAlbumToCart();
+                            console.log('� Resultado de addAlbumToCart:', addedToCart);
 
-                                if (success) {
-                                    // Paso 2: Generar PDF del álbum
-                                    console.log('📄 Generando PDF del álbum...');
-                                    if (typeof window.generateAlbumPDF === 'function') {
-                                        try {
-                                            const pdfBlob = await window.generateAlbumPDF();
-                                            console.log('📄 PDF generado exitosamente:', pdfBlob);
+                            if (addedToCart) {
+                                console.log('✅ Álbum agregado al carrito exitosamente');
 
-                                            // Paso 3: Enviar PDF al servidor para guardarlo
-                                            console.log('💾 Guardando PDF en el servidor...');
-                                            const albumUuid = window.currentAlbumUuid || window.albumUuid;
+                                // Paso 2: Obtener el project_id del producto agregado al carrito
+                                let projectId = null;
+                                
+                                // Verificar el carrito para obtener el project_id del álbum recién agregado
+                                try {
+                                    const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
+                                    const currentCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+                                    
+                                    // Buscar el último álbum agregado (el más reciente)
+                                    const latestAlbum = currentCart
+                                        .filter(item => item.type === 'custom_album')
+                                        .sort((a, b) => {
+                                            // Ordenar por timestamp en el ID para obtener el más reciente
+                                            const timestampA = parseInt(a.id.split('_').pop());
+                                            const timestampB = parseInt(b.id.split('_').pop());
+                                            return timestampB - timestampA;
+                                        })[0];
+                                    
+                                    if (latestAlbum && latestAlbum.project_id) {
+                                        projectId = latestAlbum.project_id;
+                                        console.log('🆔 Project ID obtenido del carrito:', projectId);
+                                    } else {
+                                        console.warn('⚠️ No se encontró project_id en el carrito');
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error al obtener project_id del carrito:', error);
+                                }
+                                
+                                // Si no se pudo obtener del carrito, usar las variables globales como fallback
+                                if (!projectId) {
+                                    projectId = window.currentProjectId || 
+                                               window.albumProjectId || 
+                                               `project_${Date.now()}`;
+                                    console.log('🆔 Project ID de fallback:', projectId);
+                                }
+
+                                // Paso 3: Generar PDF del álbum usando los thumbnails generados
+                                console.log('📄 Generando PDF del álbum usando thumbnails...');
+                                try {
+                                    // Verificar que jsPDF esté disponible
+                                    if (!jsPDF) {
+                                        throw new Error('jsPDF no está disponible');
+                                    }
+
+                                    // Configurar el PDF con las dimensiones del workspace
+                                    const pdfWidth = workspaceDimensions.width * 0.264583; // Convertir px a mm (1px = 0.264583mm)
+                                    const pdfHeight = workspaceDimensions.height * 0.264583;
+                                    
+                                    const pdf = new jsPDF({
+                                        orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+                                        unit: 'mm',
+                                        format: [pdfWidth, pdfHeight]
+                                    });
+
+                                    // Obtener solo las páginas con contenido (sin reversos)
+                                    const contentPages = pages.filter(page => !page.isBack && !page.isEmpty);
+                                    console.log('📄 Páginas a incluir en PDF:', contentPages.length);
+
+                                    // Usar los thumbnails disponibles (los mismos que se muestran en el preview)
+                                    const thumbnailsToUse = Object.keys(activeThumbnails).length > 0 ? activeThumbnails : generatedThumbnails;
+                                    
+                                    if (Object.keys(thumbnailsToUse).length === 0) {
+                                        throw new Error('No hay thumbnails disponibles para generar el PDF');
+                                    }
+
+                                    console.log('📄 Usando thumbnails:', Object.keys(thumbnailsToUse));
+
+                                    // Agregar cada página al PDF usando sus thumbnails
+                                    for (let i = 0; i < contentPages.length; i++) {
+                                        const page = contentPages[i];
+                                        const thumbnail = thumbnailsToUse[page.id];
+                                        
+                                        if (thumbnail) {
+                                            // Agregar nueva página (excepto la primera)
+                                            if (i > 0) {
+                                                pdf.addPage([pdfWidth, pdfHeight]);
+                                            }
                                             
-                                            if (!albumUuid) {
-                                                throw new Error('No se encontró el UUID del álbum');
-                                            }
-
-                                            // Convertir blob a base64
-                                            const base64PDF = await new Promise((resolve, reject) => {
-                                                const reader = new FileReader();
-                                                reader.onload = () => {
-                                                    const base64 = reader.result.split(',')[1];
-                                                    resolve(base64);
-                                                };
-                                                reader.onerror = reject;
-                                                reader.readAsDataURL(pdfBlob);
-                                            });
-
-                                            // Enviar PDF al servidor
-                                            const generatePDFResponse = await fetch(`/api/albums/${albumUuid}/generate-pdf`, {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Content-Type': 'application/json',
-                                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                                                },
-                                                body: JSON.stringify({
-                                                    pdf_blob: base64PDF
-                                                })
-                                            });
-
-                                            if (!generatePDFResponse.ok) {
-                                                const errorData = await generatePDFResponse.json();
-                                                throw new Error(errorData.message || 'Error al guardar el PDF en el servidor');
-                                            }
-
-                                            const pdfResult = await generatePDFResponse.json();
-                                            console.log('💾 PDF guardado en servidor:', pdfResult);
-
-                                        } catch (pdfError) {
-                                            console.error('❌ Error generando/guardando PDF:', pdfError);
-                                            // Continuar con el proceso aunque falle el PDF
-                                            console.log('⚠️ Continuando sin PDF...');
+                                            // Agregar el thumbnail como imagen al PDF
+                                            pdf.addImage(
+                                                thumbnail, 
+                                                'PNG', 
+                                                0, 
+                                                0, 
+                                                pdfWidth, 
+                                                pdfHeight,
+                                                undefined,
+                                                'FAST'
+                                            );
+                                            
+                                            console.log(`📄 Página ${i + 1} agregada al PDF:`, page.type);
+                                        } else {
+                                            console.warn(`⚠️ No se encontró thumbnail para página ${page.id}`);
                                         }
-                                    } else {
-                                        console.warn('⚠️ window.generateAlbumPDF no está disponible, continuando sin PDF...');
                                     }
 
-                                    // Paso 4: Agregar al carrito
-                                    console.log('📦 Agregando álbum al carrito...');
-                                    const addedToCart = addAlbumToCart();
-                                    console.log('📦 Resultado de addAlbumToCart:', addedToCart);
+                                    // Generar el PDF como blob
+                                    const pdfBlob = pdf.output('blob');
+                                    console.log('📄 PDF generado exitosamente usando thumbnails:', pdfBlob.size, 'bytes');
 
-                                    if (addedToCart) {
-                                        console.log('✅ Álbum agregado al carrito exitosamente');
+                                    // Paso 4: Enviar PDF al servidor para guardarlo con el project_id
+                                    console.log('💾 Guardando PDF en el servidor...');
 
-                                        try {
-                                            // Esperar un poco para asegurar que el localStorage se actualice
-                                            await new Promise(resolve => setTimeout(resolve, 200));
+                                    // Convertir blob a base64
+                                    const base64PDF = await new Promise((resolve, reject) => {
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                            const base64 = reader.result.split(',')[1];
+                                            resolve(base64);
+                                        };
+                                        reader.onerror = reject;
+                                        reader.readAsDataURL(pdfBlob);
+                                    });
 
-                                            // Verificar una vez más que el álbum esté en el carrito
-                                            const verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
-                                            console.log('🔍 Verificación final del carrito:', verifyCart);
-                                            console.log('🔍 Longitud del carrito:', verifyCart.length);
+                                    // Preparar datos para enviar al servidor
+                                    const itemDataToSend = {
+                                        item_id: itemData?.id,
+                                        preset_id: presetData?.id,
+                                        title: itemData?.name || itemData?.title || 'Álbum Personalizado',
+                                        user_id: itemData?.user_id // Incluir user_id si está disponible
+                                    };
 
-                                            if (verifyCart.length === 0) {
-                                                console.error('❌ ADVERTENCIA: El carrito parece vacío después de agregar');
-                                            }
+                                    console.log('📄 Enviando PDF al servidor:', {
+                                        projectId,
+                                        itemDataToSend,
+                                        pdfSize: base64PDF.length
+                                    });
 
-                                            // Paso 5: Redirigir al carrito
-                                            const cartUrl = `${Global.APP_URL}/cart`;
-                                            console.log('🔄 Redirigiendo al carrito...');
-                                            console.log('🔄 URL del carrito:', cartUrl);
+                                    // Enviar PDF al servidor con project_id
+                                    const generatePDFResponse = await fetch(`/api/projects/${projectId}/generate-pdf`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                        },
+                                        body: JSON.stringify({
+                                            pdf_blob: base64PDF,
+                                            item_data: itemDataToSend
+                                        })
+                                    });
 
-                                            // Usar window.location.href para la redirección
-                                            window.location.href = cartUrl;
-
-                                        } catch (redirectError) {
-                                            console.error('⚠️ Error durante verificación o redirección:', redirectError);
-                                            console.log('🔄 Intentando redirección directa...');
-
-                                            // Redirección de emergencia sin verificaciones adicionales
-                                            const cartUrl = `${Global.APP_URL}/cart`;
-                                            console.log('🔄 Redirigiendo al carrito...');
-                                            console.log('🔄 URL del carrito:', cartUrl);
-
-                                            // Usar window.location.href para la redirección
-                                            window.location.href = cartUrl;
-                                        }
-                                    } else {
-                                        console.error('❌ No se pudo agregar al carrito');
-                                        alert('Error al agregar el álbum al carrito. Revise la consola para más detalles.');
+                                    if (!generatePDFResponse.ok) {
+                                        const errorData = await generatePDFResponse.json();
+                                        throw new Error(errorData.message || 'Error al guardar el PDF en el servidor');
                                     }
-                                } else {
-                                    console.error('❌ No se pudo finalizar el diseño del álbum');
-                                    alert('Error al finalizar el diseño del álbum. Inténtelo nuevamente.');
+
+                                    const pdfResult = await generatePDFResponse.json();
+                                    console.log('💾 PDF guardado en servidor:', pdfResult);
+
+                                } catch (pdfError) {
+                                    console.error('❌ Error generando/guardando PDF:', pdfError);
+                                    // Continuar con el proceso aunque falle el PDF
+                                    console.log('⚠️ Continuando sin PDF...');
+                                }
+
+                                // Paso 5: Redirigir al carrito
+                                try {
+                                    // Esperar un poco para asegurar que el localStorage se actualice
+                                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                                    // Verificar una vez más que el álbum esté en el carrito
+                                    const verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
+                                    console.log('🔍 Verificación final del carrito:', verifyCart);
+                                    console.log('🔍 Longitud del carrito:', verifyCart.length);
+
+                                    if (verifyCart.length === 0) {
+                                        console.error('❌ ADVERTENCIA: El carrito parece vacío después de agregar');
+                                    }
+
+                                    // Redirigir al carrito
+                                    const cartUrl = `${Global.APP_URL}/cart`;
+                                    console.log('🔄 Redirigiendo al carrito...');
+                                    console.log('🔄 URL del carrito:', cartUrl);
+
+                                    // Usar window.location.href para la redirección
+                                    window.location.href = cartUrl;
+
+                                } catch (redirectError) {
+                                    console.error('⚠️ Error durante verificación o redirección:', redirectError);
+                                    console.log('🔄 Intentando redirección directa...');
+
+                                    // Redirección de emergencia sin verificaciones adicionales
+                                    const cartUrl = `${Global.APP_URL}/cart`;
+                                    console.log('🔄 Redirigiendo al carrito...');
+                                    console.log('🔄 URL del carrito:', cartUrl);
+
+                                    // Usar window.location.href para la redirección
+                                    window.location.href = cartUrl;
                                 }
                             } else {
-                                console.error('❌ window.finalizeAlbumDesign no está disponible');
-                                alert('Funcionalidad de finalización de diseño pendiente de implementar.');
+                                console.error('❌ No se pudo agregar al carrito');
+                                alert('Error al agregar el álbum al carrito. Revise la consola para más detalles.');
                             }
                         } catch (error) {
                             console.error('❌ === ERROR DURANTE PROCESO DE COMPRA ===');
@@ -1167,52 +1125,40 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
             customCtx.msImageSmoothingEnabled = true;
             
             // --- Renderizar background layer igual que en el workspace ---
-            // Debug log para verificar los datos de la página en miniatura
-            console.log('🖼️ [THUMBNAIL] Generando miniatura para página:', page?.type);
-            console.log('🖼️ [THUMBNAIL] backgroundImage:', page?.backgroundImage);
-            console.log('🖼️ [THUMBNAIL] backgroundColor:', page?.backgroundColor);
+            let bgUrl = null;
+            if (page.type === 'cover' && presetData?.cover_image) {
+                bgUrl = presetData.cover_image.startsWith('http')
+                    ? presetData.cover_image
+                    : `/storage/images/item_preset/${presetData.cover_image}`;
+            } else if (page.type === 'content' && presetData?.content_layer_image) {
+                bgUrl = presetData.content_layer_image.startsWith('http')
+                    ? presetData.content_layer_image
+                    : `/storage/images/item_preset/${presetData.content_layer_image}`;
+            } else if (page.type === 'final' && presetData?.final_layer_image) {
+                bgUrl = presetData.final_layer_image.startsWith('http')
+                    ? presetData.final_layer_image
+                    : `/storage/images/item_preset/${presetData.final_layer_image}`;
+            }
             
-            // Usar las propiedades backgroundImage y backgroundColor de la página (igual que el workspace)
-            let bgUrl = page.backgroundImage; // Directamente usar la propiedad de la página
-            let bgColor = page.backgroundColor || '#ffffff';
-            
-            console.log('🖼️ [THUMBNAIL] URL final:', bgUrl);
-            console.log('🎨 [THUMBNAIL] Color final:', bgColor);
-            
-            // Aplicar color de fondo
-            customCtx.fillStyle = bgColor;
-            customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
-            
-            // Si hay imagen de fondo, cargarla y dibujarla encima del color de fondo
+            // Si no hay fondo, usar blanco
+            if (!bgUrl) {
+                customCtx.fillStyle = '#ffffff';
+                customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
+            }
             if (bgUrl) {
-                console.log('🖼️ [THUMBNAIL] Cargando imagen de fondo:', bgUrl);
-                try {
-                    const bgImg = new window.Image();
-                    bgImg.crossOrigin = 'anonymous';
-                    bgImg.src = bgUrl;
-                    
-                    await new Promise((resolve, reject) => {
-                        if (bgImg.complete) {
-                            console.log('✅ [THUMBNAIL] Imagen ya cargada');
-                            return resolve();
-                        }
-                        bgImg.onload = () => {
-                            console.log('✅ [THUMBNAIL] Imagen cargada exitosamente');
-                            resolve();
-                        };
-                        bgImg.onerror = (error) => {
-                            console.error('❌ [THUMBNAIL] Error cargando imagen:', error);
-                            reject(error);
-                        };
-                    });
-                    
-                    drawImageCover(customCtx, bgImg, 0, 0, workspaceDimensions.width, workspaceDimensions.height);
-                    console.log('✅ [THUMBNAIL] Imagen de fondo dibujada');
-                } catch (error) {
-                    console.error('❌ [THUMBNAIL] Error procesando imagen de fondo:', error);
-                }
+                const bgImg = new window.Image();
+                bgImg.crossOrigin = 'anonymous';
+                bgImg.src = bgUrl;
+                await new Promise((resolve, reject) => {
+                    if (bgImg.complete) return resolve();
+                    bgImg.onload = resolve;
+                    bgImg.onerror = reject;
+                });
+                drawImageCover(customCtx, bgImg, 0, 0, workspaceDimensions.width, workspaceDimensions.height);
             } else {
-                console.log('ℹ️ [THUMBNAIL] Sin imagen de fondo, usando solo color');
+                // Si no hay background, fondo blanco
+                customCtx.fillStyle = '#ffffff';
+                customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
             }
             // --- Fin background layer ---
             if (page.cells && Array.isArray(page.cells)) {
@@ -1301,144 +1247,6 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 
                             } catch (error) {
                                 console.error('Error al cargar imagen:', error, element);
-                            }
-                        } else if (element.type === 'text') {
-                            console.log('🔤 [THUMBNAIL] Procesando elemento de texto:', element.id, element.content);
-                            
-                            try {
-                                // Calcular posición y tamaño relativos a la celda
-                                const isRelativeX = element.position?.x !== undefined && Math.abs(element.position.x) <= 1;
-                                const isRelativeY = element.position?.y !== undefined && Math.abs(element.position.y) <= 1;
-
-                                // Calcular posición absoluta en píxeles
-                                const elX = isRelativeX ? element.position.x * cellWidth : (element.position?.x || 0);
-                                const elY = isRelativeY ? element.position.y * cellHeight : (element.position?.y || 0);
-                                
-                                // Calcular dimensiones en píxeles - LÓGICA MEJORADA
-                                let elW, elH;
-                                
-                                if (element.size?.width !== undefined) {
-                                    if (element.size.width <= 1) {
-                                        // Es un valor relativo (fracción de 0 a 1)
-                                        elW = element.size.width * cellWidth;
-                                    } else {
-                                        // Es un valor absoluto en píxeles
-                                        elW = element.size.width;
-                                    }
-                                } else {
-                                    // Fallback si no hay tamaño definido
-                                    elW = cellWidth * 0.8;
-                                }
-                                
-                                if (element.size?.height !== undefined) {
-                                    if (element.size.height <= 1) {
-                                        // Es un valor relativo (fracción de 0 a 1)
-                                        elH = element.size.height * cellHeight;
-                                    } else {
-                                        // Es un valor absoluto en píxeles
-                                        elH = element.size.height;
-                                    }
-                                } else {
-                                    // Fallback si no hay tamaño definido
-                                    elH = cellHeight * 0.3;
-                                }
-
-                                // Posición absoluta en la página (ajustada por la posición de la celda)
-                                const dx = cellX + elX + (elX/3) ;
-                                const dy = cellY + elY + (elY/20);
-
-                                console.log('📐 [THUMBNAIL] Renderizando texto:', {
-                                    elementId: element.id,
-                                    content: element.content,
-                                    cellPosition: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
-                                    elementPosition: { x: elX, y: elY, width: elW, height: elH },
-                                    finalPosition: { dx, dy },
-                                    isRelative: { x: isRelativeX, y: isRelativeY }
-                                });
-
-                                // Verificar que las coordenadas estén dentro del canvas
-                                if (dx < 0 || dy < 0 || dx >= workspaceDimensions.width || dy >= workspaceDimensions.height) {
-                                    console.warn('⚠️ [THUMBNAIL] Texto fuera del canvas:', { dx, dy, canvasWidth: workspaceDimensions.width, canvasHeight: workspaceDimensions.height });
-                                }
-
-                                // Obtener estilos del elemento
-                                const style = element.style || {};
-                                
-                                // Configurar contexto de texto
-                                customCtx.save();
-                                
-                                // Configurar fuente
-                                const fontSize = parseInt(style.fontSize) || 16;
-                                const fontFamily = style.fontFamily || 'Arial';
-                                const fontWeight = style.fontWeight || 'normal';
-                                const fontStyle = style.fontStyle || 'normal';
-                                
-                                customCtx.font = `${fontWeight} ${fontStyle} ${fontSize}px ${fontFamily}`;
-                                customCtx.fillStyle = style.color || '#000000';
-                                
-                                // Configurar alineación según el estilo
-                                const textAlign = style.textAlign || 'left';
-                                customCtx.textAlign = textAlign;
-                                customCtx.textBaseline = 'top';
-                                
-                                console.log('🔤 [THUMBNAIL] Configuración de fuente:', {
-                                    font: customCtx.font,
-                                    color: customCtx.fillStyle,
-                                    align: textAlign
-                                });
-                                
-                                // Dibujar fondo si existe
-                                if (style.backgroundColor && style.backgroundColor !== 'transparent') {
-                                    customCtx.fillStyle = style.backgroundColor;
-                                    customCtx.fillRect(dx, dy, elW, elH);
-                                    customCtx.fillStyle = style.color || '#000000';
-                                }
-                                
-                                // Manejar texto multilinea
-                                const lines = element.content.split('\n');
-                                const lineHeight = fontSize * 1.2;
-                                const padding = parseInt(style.padding) || 8;
-                                
-                                console.log('🔤 [THUMBNAIL] Preparando líneas:', { lines, lineHeight, padding });
-                                
-                                lines.forEach((line, index) => {
-                                    if (line.trim()) {
-                                        let textX, textY;
-                                        
-                                        // Calcular posición Y
-                                        textY = dy + (index * lineHeight) + padding;
-                                        
-                                        // Calcular posición X según la alineación
-                                        switch (textAlign) {
-                                            case 'center':
-                                                textX = dx + (elW / 2);
-                                                break;
-                                            case 'right':
-                                                textX = dx + elW - padding;
-                                                break;
-                                            case 'left':
-                                            default:
-                                                textX = dx + padding;
-                                                break;
-                                        }
-                                        
-                                        console.log(`🔤 [THUMBNAIL] Dibujando línea "${line}" en x=${textX}, y=${textY} con alineación=${textAlign}`);
-                                        
-                                        // Verificar que estamos en el canvas
-                                        if (textX >= 0 && textY >= 0 && textX < workspaceDimensions.width && textY < workspaceDimensions.height) {
-                                            customCtx.fillText(line, textX, textY);
-                                            console.log(`✅ [THUMBNAIL] Línea "${line}" dibujada exitosamente`);
-                                        } else {
-                                            console.warn(`⚠️ [THUMBNAIL] Línea "${line}" fuera del canvas:`, { textX, textY, canvasWidth: workspaceDimensions.width, canvasHeight: workspaceDimensions.height });
-                                        }
-                                    }
-                                });
-                                
-                                customCtx.restore();
-                                console.log('✅ [THUMBNAIL] Texto renderizado exitosamente:', element.id);
-                                
-                            } catch (error) {
-                                console.error('❌ [THUMBNAIL] Error renderizando texto:', error, element);
                             }
                         }
                     }
