@@ -49,7 +49,7 @@ const Items = ({ categories, brands, collections }) => {
     const priceRef = useRef();
     const discountRef = useRef();
     const tagsRef = useRef();
-    const bannerRef = useRef();
+    //const bannerRef = useRef();
     const imageRef = useRef();
     //const textureRef = useRef();
     const descriptionRef = useRef();
@@ -173,15 +173,15 @@ const Items = ({ categories, brands, collections }) => {
 
         SetSelectValue(tagsRef.current, data?.tags ?? [], "id", "name");
 
-        bannerRef.current.value = null;
+      //  bannerRef.current.value = null;
         imageRef.current.value = null;
         coverImageRef.current.value = null;
         contentImageRef.current.value = null;
         backCoverImageRef.current.value = null;
         
-        bannerRef.image.src = `/storage/images/item/${
+      /*  bannerRef.image.src = `/storage/images/item/${
             data?.banner ?? "undefined"
-        }`;
+        }`;*/
         imageRef.image.src = `/storage/images/item/${
             data?.image ?? "undefined"
         }`;
@@ -287,10 +287,10 @@ const Items = ({ categories, brands, collections }) => {
         if (texture) {
             formData.append("texture", texture);
         }*/
-        const banner = bannerRef.current.files[0];
-        if (banner) {
+        //const banner = bannerRef.current.files[0];
+      /*  if (banner) {
             formData.append("banner", banner);
-        }
+        }*/
         const coverImage = coverImageRef.current.files[0];
         if (coverImage) {
             formData.append("cover_image", coverImage);
@@ -713,34 +713,425 @@ const Items = ({ categories, brands, collections }) => {
             />
             <Modal
                 modalRef={modalRef}
-                title={isEditing ? "Editar curso" : "Agregar curso"}
+                title={isEditing ? "Editar item" : "Agregar item"}
                 onSubmit={onModalSubmit}
                 size="xl"
             >
-                <div className="row" id="principal-container">
+                <div className="container-fluid" id="principal-container">
                     <input ref={idRef} type="hidden" />
-                    <div className="col-md-3">
-                        <InputFormGroup
-                            eRef={skuRef}
-                            label="SKU"
-                            required
-                        />
-                        <SelectFormGroup
-                            eRef={categoryRef}
-                            label="Categoría"
-                            required
-                            dropdownParent="#principal-container"
-                            onChange={(e) =>
-                                setSelectedCategory(e.target.value)
-                            }
-                        >
-                            {categories.map((item, index) => (
-                                <option key={index} value={item.id}>
-                                    {item.name}
-                                </option>
-                            ))}
-                        </SelectFormGroup>
-                     {/*   <SelectFormGroup
+                    
+                    {/* Información Básica */}
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <h6 className="card-title mb-0">
+                                <i className="fa fa-info-circle me-2"></i>
+                                Información Básica
+                            </h6>
+                        </div>
+                        <div className="card-body">
+                            <div className="row">
+                                <div className="col-md-4">
+                                    <InputFormGroup
+                                        eRef={skuRef}
+                                        label="SKU"
+                                        required
+                                    />
+                                </div>
+                                <div className="col-md-8">
+                                    <InputFormGroup
+                                        eRef={nameRef}
+                                        label="Nombre del Producto"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="row">
+                                <div className="col-md-12">
+                                    <TextareaFormGroup
+                                        eRef={summaryRef}
+                                        label="Resumen"
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Categorización */}
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <h6 className="card-title mb-0">
+                                <i className="fa fa-tags me-2"></i>
+                                Categorización
+                            </h6>
+                        </div>
+                        <div className="card-body">
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <SelectFormGroup
+                                        eRef={categoryRef}
+                                        label="Categoría"
+                                        required
+                                        dropdownParent="#principal-container"
+                                        onChange={(e) =>
+                                            setSelectedCategory(e.target.value)
+                                        }
+                                    >
+                                        {categories.map((item, index) => (
+                                            <option key={index} value={item.id}>
+                                                {item.name}
+                                            </option>
+                                        ))}
+                                    </SelectFormGroup>
+                                </div>
+                                <div className="col-md-6">
+                                    <SelectAPIFormGroup
+                                        eRef={subcategoryRef}
+                                        label="Subcategoría"
+                                        searchAPI="/api/admin/subcategories/paginate"
+                                        searchBy="name"
+                                        filter={["category_id", "=", selectedCategory]}
+                                        dropdownParent="#principal-container"
+                                    />
+                                </div>
+                            </div>
+                            <div className="row">
+                                <div className="col-md-12">
+                                    <SelectAPIFormGroup
+                                        id="tags"
+                                        eRef={tagsRef}
+                                        searchAPI={"/api/admin/tags/paginate"}
+                                        searchBy="name"
+                                        label="Tags"
+                                        dropdownParent="#principal-container"
+                                        tags
+                                        multiple
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Configuración de Canvas y Producto */}
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <h6 className="card-title mb-0">
+                                <i className="fa fa-cog me-2"></i>
+                                Configuración de Canvas y Producto
+                            </h6>
+                        </div>
+                        <div className="card-body">
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <SelectFormGroup
+                                        eRef={canvasPresetRef}
+                                        label="Preset de Canvas"
+                                        dropdownParent="#principal-container"
+                                        onChange={(e) => handlePresetChange(e.target.value)}
+                                    >
+                                        <option value="">Seleccionar preset...</option>
+                                        {presets.map((preset) => (
+                                            <option key={preset.id} value={preset.id}>
+                                                {preset.name} ({preset.width}x{preset.height}cm, {preset.pages}p)
+                                            </option>
+                                        ))}
+                                    </SelectFormGroup>
+                                </div>
+                                <div className="col-md-3">
+                                    <InputFormGroup
+                                        eRef={pagesRef}
+                                        label="Número de Páginas"
+                                        type="number"
+                                        min="1"
+                                        defaultValue="1"
+                                    />
+                                </div>
+                                <div className="col-md-3">
+                                    <InputFormGroup
+                                        label="Stock"
+                                        eRef={stockRef}
+                                        type="number"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Precios */}
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <h6 className="card-title mb-0">
+                                <i className="fa fa-dollar-sign me-2"></i>
+                                Precios
+                            </h6>
+                        </div>
+                        <div className="card-body">
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <InputFormGroup
+                                        eRef={priceRef}
+                                        label="Precio Regular"
+                                        type="number"
+                                        step="0.01"
+                                        required
+                                    />
+                                </div>
+                                <div className="col-md-6">
+                                    <InputFormGroup
+                                        eRef={discountRef}
+                                        label="Precio con Descuento"
+                                        type="number"
+                                        step="0.01"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Imágenes */}
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <h6 className="card-title mb-0">
+                                <i className="fa fa-images me-2"></i>
+                                Imágenes del Producto
+                            </h6>
+                        </div>
+                        <div className="card-body">
+                            {/* Imagen Principal */}
+                            <div className="row mb-4">
+                                <div className="col-12">
+                                    <h6 className="text-primary mb-3">
+                                        <i className="fa fa-star me-2"></i>
+                                        Imagen Principal
+                                    </h6>
+                                </div>
+                                <div className="col-md-3">
+                                    <ImageFormGroup
+                                        eRef={imageRef}
+                                        label="Imagen Principal"
+                                        aspect={1}
+                                        col="col-12"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Imágenes de Producto Específicas */}
+                            <div className="row mb-4">
+                                <div className="col-12">
+                                    <h6 className="text-info mb-3">
+                                        <i className="fa fa-layer-group me-2"></i>
+                                        Imágenes Específicas del Producto
+                                    </h6>
+                                </div>
+                                <div className="col-md-4">
+                                    <ImageFormGroup
+                                        eRef={coverImageRef}
+                                        label="Imagen de Portada"
+                                        aspect={1}
+                                        col="col-12"
+                                    />
+                                </div>
+                                <div className="col-md-4">
+                                    <ImageFormGroup
+                                        eRef={contentImageRef}
+                                        label="Imagen de Contenido"
+                                        aspect={1}
+                                        col="col-12"
+                                    />
+                                </div>
+                                <div className="col-md-4">
+                                    <ImageFormGroup
+                                        eRef={backCoverImageRef}
+                                        label="Imagen de Contraportada"
+                                        aspect={1}
+                                        col="col-12"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Galería de Imágenes */}
+                            <div className="row">
+                                <div className="col-12">
+                                    <h6 className="text-success mb-3">
+                                        <i className="fa fa-images me-2"></i>
+                                        Galería de Imágenes Adicionales
+                                    </h6>
+                                </div>
+                                <div className="col-md-5">
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Subir Nuevas Imágenes</label>
+                                        <input
+                                            id="input-item-gallery"
+                                            ref={galleryRef}
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            hidden
+                                            onChange={handleGalleryChange}
+                                        />
+                                        <div
+                                            className="border-2 border-dashed p-4 text-center position-relative"
+                                            style={{
+                                                borderColor: "#28a745",
+                                                backgroundColor: "#f8fff9",
+                                                cursor: "pointer",
+                                                borderRadius: "12px",
+                                                minHeight: "180px",
+                                                transition: "all 0.3s ease",
+                                            }}
+                                            onClick={() => galleryRef.current.click()}
+                                            onDrop={handleDrop}
+                                            onDragOver={handleDragOver}
+                                            onMouseEnter={(e) => {
+                                                e.target.style.borderColor = "#20c997";
+                                                e.target.style.backgroundColor = "#f0fff4";
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.target.style.borderColor = "#28a745";
+                                                e.target.style.backgroundColor = "#f8fff9";
+                                            }}
+                                        >
+                                            <div className="d-flex flex-column align-items-center justify-content-center h-100">
+                                                <i className="fa fa-cloud-upload-alt fa-3x text-success mb-3"></i>
+                                                <h6 className="text-success mb-2">Agregar Imágenes</h6>
+                                                <p className="text-muted mb-0 small">
+                                                    Arrastra y suelta archivos aquí<br />
+                                                    o haz clic para seleccionar
+                                                </p>
+                                                <small className="text-muted mt-2">
+                                                    Formatos: JPG, PNG, WebP
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-md-7">
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">
+                                            Imágenes de la Galería 
+                                            {gallery.length > 0 && (
+                                                <span className="badge bg-primary ms-2">{gallery.length}</span>
+                                            )}
+                                        </label>
+                                        <div 
+                                            className="border rounded p-3"
+                                            style={{ 
+                                                minHeight: "180px",
+                                                backgroundColor: "#f8f9fa",
+                                                overflowY: "auto",
+                                                maxHeight: "300px"
+                                            }}
+                                        >
+                                            {gallery.length === 0 ? (
+                                                <div className="h-100 d-flex align-items-center justify-content-center">
+                                                    <div className="text-center text-muted">
+                                                        <i className="fa fa-image fa-2x mb-2 opacity-50"></i>
+                                                        <p className="mb-0">No hay imágenes en la galería</p>
+                                                        <small>Las imágenes aparecerán aquí después de subirlas</small>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="d-flex flex-wrap gap-3">
+                                                    {gallery.map((image, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="position-relative"
+                                                            style={{
+                                                                width: "90px",
+                                                                height: "90px",
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src={`${image.url}`}
+                                                                alt={`Imagen ${index + 1}`}
+                                                                className="shadow-sm"
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    objectFit: "cover",
+                                                                    borderRadius: "8px",
+                                                                    border: "2px solid #e9ecef",
+                                                                }}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-danger btn-sm position-absolute shadow"
+                                                                style={{ 
+                                                                    top: "-8px", 
+                                                                    right: "-8px",
+                                                                    width: "24px",
+                                                                    height: "24px",
+                                                                    padding: "0",
+                                                                    borderRadius: "50%",
+                                                                    fontSize: "12px",
+                                                                    lineHeight: "1",
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center"
+                                                                }}
+                                                                onClick={(e) => removeGalleryImage(e, index)}
+                                                                title="Eliminar imagen"
+                                                            >
+                                                                <i className="fa fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Características y Especificaciones */}
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <h6 className="card-title mb-0">
+                                <i className="fa fa-list me-2"></i>
+                                Características y Especificaciones
+                            </h6>
+                        </div>
+                        <div className="card-body">
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <DynamicField
+                                        ref={featuresRef}
+                                        label="Características"
+                                        structure=""
+                                        value={features}
+                                        onChange={setFeatures}
+                                    />
+                                </div>
+                                <div className="col-md-6">
+                                    <DynamicField
+                                        ref={specificationsRef}
+                                        label="Especificaciones"
+                                        structure={{ type: "", title: "", description: "" }}
+                                        value={specifications}
+                                        onChange={setSpecifications}
+                                        typeOptions={typeOptions}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Descripción */}
+                    <div className="card mb-4">
+                        <div className="card-header">
+                            <h6 className="card-title mb-0">
+                                <i className="fa fa-align-left me-2"></i>
+                                Descripción Detallada
+                            </h6>
+                        </div>
+                        <div className="card-body">
+                            <QuillFormGroup eRef={descriptionRef} label="Descripción" />
+                        </div>
+                    </div>
+
+                    {/*   <SelectFormGroup
                             eRef={collectionRef}
                             label="Colección"
                             dropdownParent="#principal-container"
@@ -754,14 +1145,6 @@ const Items = ({ categories, brands, collections }) => {
                                 </option>
                             ))}
                         </SelectFormGroup> */}
-                        <SelectAPIFormGroup
-                            eRef={subcategoryRef}
-                            label="Subcategoría"
-                            searchAPI="/api/admin/subcategories/paginate"
-                            searchBy="name"
-                            filter={["category_id", "=", selectedCategory]}
-                            dropdownParent="#principal-container"
-                        />
 
                        {/* <SelectFormGroup
                             eRef={brandRef}
@@ -775,66 +1158,6 @@ const Items = ({ categories, brands, collections }) => {
                             ))}
                         </SelectFormGroup> */}
 
-                        <InputFormGroup
-                            label="Stock"
-                            eRef={stockRef}
-                            type="number"
-                        />
-
-                        <SelectFormGroup
-                            eRef={canvasPresetRef}
-                            label="Preset de Canvas"
-                            dropdownParent="#principal-container"
-                            onChange={(e) => handlePresetChange(e.target.value)}
-                        >
-                            <option value="">Seleccionar preset...</option>
-                            {presets.map((preset) => (
-                                <option key={preset.id} value={preset.id}>
-                                    {preset.name} ({preset.width}x{preset.height}cm, {preset.pages}p)
-                                </option>
-                            ))}
-                        </SelectFormGroup>
-
-                        <InputFormGroup
-                            eRef={pagesRef}
-                            label="Número de Páginas"
-                            type="number"
-                            min="1"
-                            defaultValue="1"
-                        />
-
-                        <InputFormGroup
-                            eRef={priceRef}
-                            label="Precio"
-                            type="number"
-                            step="0.01"
-                            required
-                        />
-                        <InputFormGroup
-                            eRef={discountRef}
-                            label="Descuento"
-                            type="number"
-                            step="0.01"
-                        />
-
-                        <SelectAPIFormGroup
-                            id="tags"
-                            eRef={tagsRef}
-                            searchAPI={"/api/admin/tags/paginate"}
-                            searchBy="name"
-                            label="Tags"
-                            dropdownParent="#principal-container"
-                            tags
-                            multiple
-                        />
-                    </div>
-                    <div className="col-md-5">
-                        {/*Agregar aqui lo que falta */}
-                        <InputFormGroup
-                            eRef={nameRef}
-                            label="Nombre"
-                            required
-                        />
                        {/* <InputFormGroup
                             eRef={colorRef}
                             label="Color"
@@ -846,155 +1169,14 @@ const Items = ({ categories, brands, collections }) => {
                             aspect={1}
                             col="col-lg-6 col-md-12 col-sm-6"
                         /> */}
-                        <TextareaFormGroup
-                            eRef={summaryRef}
-                            label="Resumen"
-                            rows={3}
-                        />
-                        {/* Sección de Características */}
-                        {/* Características (Lista de textos) */}
-                        <DynamicField
-                            ref={featuresRef}
-                            label="Características"
-                            structure=""
-                            value={features}
-                            onChange={setFeatures}
-                        />
 
-                        {/* Especificaciones (Objetos con campos, con "type" como <select>) */}
-                        <DynamicField
-                            ref={specificationsRef}
-                            label="Especificaciones"
-                            structure={{ type: "", title: "", description: "" }}
-                            value={specifications}
-                            onChange={setSpecifications}
-                            typeOptions={typeOptions}
-                        />
-                    </div>
-                    <div className="col-md-4">
-                        <div className="row">
-                            <ImageFormGroup
-                                eRef={bannerRef}
-                                label="Banner"
-                                aspect={2 / 1}
-                                col="col-12"
-                            />
-                            <ImageFormGroup
-                                eRef={imageRef}
-                                label="Imagen Principal"
-                                aspect={1}
-                                col="col-lg-6 col-md-12 col-sm-6"
-                            />
                            {/* <ImageFormGroup
                                 eRef={textureRef}
                                 label="Textura"
                                 aspect={1}
                                 col="col-lg-6 col-md-12 col-sm-6"
                             /> */}
-                        </div>
-                        
-                        {/* Sección de imágenes específicas para productos con páginas */}
-                        <div className="row">
-                            <div className="col-12">
-                                <h6 className="text-muted mb-2">Imágenes de Producto</h6>
-                            </div>
-                            <ImageFormGroup
-                                eRef={coverImageRef}
-                                label="Imagen de Portada"
-                                aspect={3 / 4}
-                                col="col-lg-4 col-md-6 col-sm-4"
-                            />
-                            <ImageFormGroup
-                                eRef={contentImageRef}
-                                label="Imagen de Contenido"
-                                aspect={3 / 4}
-                                col="col-lg-4 col-md-6 col-sm-4"
-                            />
-                            <ImageFormGroup
-                                eRef={backCoverImageRef}
-                                label="Imagen de Contraportada"
-                                aspect={3 / 4}
-                                col="col-lg-4 col-md-6 col-sm-4"
-                            />
-                        </div>
-
-                        <div className="row">
-                            <div className="col-lg-6 col-md-12 col-sm-6">
-                                <label className="form-label">Galeria</label>
-                                <input
-                                    id="input-item-gallery"
-                                    ref={galleryRef}
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    hidden
-                                    onChange={handleGalleryChange}
-                                />
-                                <div
-                                    style={{
-                                        border: "2px dashed #ccc",
-                                        padding: "20px",
-                                        textAlign: "center",
-                                        cursor: "pointer",
-                                        borderRadius: "4px",
-                                        boxShadow:
-                                            "2.5px 2.5px 5px rgba(0,0,0,.125)",
-                                        aspectRatio: "21/9",
-                                        height: "209px",
-                                        width: "100%",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                    onClick={() => galleryRef.current.click()}
-                                    onDrop={handleDrop}
-                                    onDragOver={handleDragOver}
-                                >
-                                    <span className="form-label d-block mb-1">
-                                        Arrastra y suelta imágenes aquí o haz
-                                        clic para agregar
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="col-lg-6 col-md-12 col-sm-6">
-                                <div className="d-flex flex-wrap gap-1 mt-2">
-                                    {gallery.map((image, index) => (
-                                        <div
-                                            key={index}
-                                            className="position-relative"
-                                            style={{
-                                                width: "80px",
-                                                height: "80px",
-                                            }}
-                                        >
-                                            <img
-                                                src={`${image.url}`}
-                                                alt="preview"
-                                                style={{
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    objectFit: "cover",
-                                                    borderRadius: "4px",
-                                                }}
-                                            />
-                                            <button
-                                                className="btn btn-xs btn-danger position-absolute"
-                                                style={{ top: 0, right: 0 }}
-                                                onClick={(e) =>
-                                                    removeGalleryImage(e, index)
-                                                }
-                                            >
-                                                ×
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-                <hr className="my-1" />
-                <QuillFormGroup eRef={descriptionRef} label="Descripcion" />
             </Modal>
             <Modal modalRef={modalImportRef} title={"Importar Datos"} size="sm">
                 <ModalImportItem gridRef={gridRef} modalRef={modalImportRef} />
