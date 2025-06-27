@@ -105,18 +105,18 @@ const CardProductBananaLab = ({
                 href={`/product/${product.slug}`}
                 initial={{
                     scale: 1,
-                  
                 }}
                 whileHover={{
                     scale: 1.02,
-                   
                     transition: { duration: 0.3 },
                 }}
-              
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
-                <div className="bg-white rounded-md lg:p-4 h-full flex flex-col relative">
+                <div className={
+                    `bg-white rounded-md lg:p-4 h-full flex flex-col relative transition-all duration-300 ` +
+                    (isHovered ? 'z-30 shadow-xl scale-[1.04]' : 'shadow-none')
+                }>
                     {/* Imagen del producto y etiqueta de descuento */}
                     <div className="relative">
                         {product.discount != null &&
