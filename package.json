@@ -28,6 +28,7 @@
         "aos": "^2.3.4",
         "apexcharts": "^4.7.0",
         "chart.js": "^4.4.3",
+        "dom-to-image-more": "^3.6.0",
         "fabric": "^5.5.2",
         "file-saver": "^2.0.5",
         "filepond": "^4.32.7",

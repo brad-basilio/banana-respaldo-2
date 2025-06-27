@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import LayerPanel from "./components/Elements/LayerPanel";
@@ -45,6 +45,43 @@ import Global from "../../../Utils/Global";
 import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
 import { useSaveProject } from "./utils/useSaveProject";
 import SaveIndicator from "./components/UI/SaveIndicator";
+import domtoimage from 'dom-to-image-more';
+
+// Componente optimizado para miniaturas que evita re-renderizados innecesarios
+const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
+    if (thumbnail) {
+        return (
+            <img
+                src={thumbnail}
+                alt={altText}
+                className="w-full h-full object-contain"
+                loading="lazy"
+                style={{ 
+                    transition: 'opacity 0.2s ease-in-out',
+                    imageRendering: 'optimizeQuality'
+                }}
+            />
+        );
+    }
+
+    // Fallback placeholder
+    const PlaceholderIcon = type === 'cover' || type === 'final' ? Book : 
+        () => (
+            <div className="grid grid-cols-2 gap-0.5 w-8 h-8">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="bg-gray-300 rounded-sm"></div>
+                ))}
+            </div>
+        );
+
+    return (
+        <div className="w-full h-full flex items-center justify-center">
+            <div className={`${type === 'cover' ? 'text-purple-300' : type === 'final' ? 'text-green-300' : 'text-gray-300'}`}>
+                <PlaceholderIcon />
+            </div>
+        </div>
+    );
+});
 
 // Componente principal del editor
 export default function EditorLibro() {
@@ -211,6 +248,257 @@ export default function EditorLibro() {
     const [previewMode, setPreviewMode] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [pageThumbnails, setPageThumbnails] = useState({});
+    
+    // Referencias y timeouts para manejo de miniaturas
+    const thumbnailTimeout = useRef();
+
+    // Función para obtener las dimensiones del área de trabajo
+    const getWorkspaceDimensions = () => {
+        // Si hay preset con dimensiones, usar esas dimensiones
+        if (presetData?.width && presetData?.height) {
+            // Las dimensiones vienen en centímetros desde la base de datos
+            let widthCm = presetData.width;
+            let heightCm = presetData.height;
+            let widthPx = widthCm * 37.8; // Conversión aproximada cm a px (300 DPI)
+            let heightPx = heightCm * 37.8;
+
+            if (widthPx && heightPx) {
+                const maxScreenWidth = window.innerWidth * 0.6; // 60% del ancho de pantalla
+                const maxScreenHeight = window.innerHeight * 0.7; // 70% del alto de pantalla
+
+                // Calcular escala para que quepa en pantalla manteniendo proporción
+                const scaleX = maxScreenWidth / widthPx;
+                const scaleY = maxScreenHeight / heightPx;
+                const scale = Math.min(scaleX, scaleY, 1); // No agrandar más del tamaño original
+
+                return {
+                    width: Math.round(widthPx * scale),
+                    height: Math.round(heightPx * scale),
+                    originalWidth: widthCm,
+                    originalHeight: heightCm,
+                    scale: scale,
+                    unit: 'cm',
+                    originalWidthPx: Math.round(widthPx),
+                    originalHeightPx: Math.round(heightPx)
+                };
+            }
+        }
+
+        // Fallback si hay canvas_config en extra_settings
+        if (presetData?.extra_settings) {
+            try {
+                const extraSettings = typeof presetData.extra_settings === 'string'
+                    ? JSON.parse(presetData.extra_settings)
+                    : presetData.extra_settings;
+
+                if (extraSettings?.canvas_config) {
+                    const canvasConfig = extraSettings.canvas_config;
+                    let widthCm = canvasConfig.width;
+                    let heightCm = canvasConfig.height;
+                    let widthPx = widthCm * 37.8;
+                    let heightPx = heightCm * 37.8;
+
+                    if (widthPx && heightPx) {
+                        const maxScreenWidth = window.innerWidth * 0.6;
+                        const maxScreenHeight = window.innerHeight * 0.7;
+                        const scaleX = maxScreenWidth / widthPx;
+                        const scaleY = maxScreenHeight / heightPx;
+                        const scale = Math.min(scaleX, scaleY, 1);
+
+                        return {
+                            width: Math.round(widthPx * scale),
+                            height: Math.round(heightPx * scale),
+                            originalWidth: widthCm,
+                            originalHeight: heightCm,
+                            scale: scale,
+                            unit: 'cm',
+                            originalWidthPx: Math.round(widthPx),
+                            originalHeightPx: Math.round(heightPx)
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn('Error parsing extra_settings:', e);
+            }
+        }
+
+        // Fallback a tamaños predefinidos
+        const predefinedSizes = {
+            "square": { width: 600, height: 600 },
+            "landscape": { width: 1280, height: 720 },
+            "portrait": { width: 600, height: 800 },
+            "wide": { width: 1200, height: 600 },
+            "tall": { width: 540, height: 960 },
+            "preset": { width: 800, height: 600 } // Default si no hay preset
+        };
+
+        const size = predefinedSizes[workspaceSize] || predefinedSizes.preset;
+
+        // Aplicar escalado también a tamaños predefinidos
+        const maxScreenWidth = window.innerWidth * 0.6;
+        const maxScreenHeight = window.innerHeight * 0.7;
+
+        const scaleX = maxScreenWidth / size.width;
+        const scaleY = maxScreenHeight / size.height;
+        const scale = Math.min(scaleX, scaleY, 1);
+
+        return {
+            width: Math.round(size.width * scale),
+            height: Math.round(size.height * scale),
+            originalWidth: size.width,
+            originalHeight: size.height,
+            scale: scale,
+            unit: 'px'
+        };
+    };
+
+    // Estado para las dimensiones calculadas
+    const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
+    
+    // Función para capturar el workspace actual usando dom-to-image
+    const captureCurrentWorkspace = useCallback(async () => {
+        if (!pages[currentPage]) return null;
+        
+        try {
+            const workspaceElement = document.querySelector(`#page-${pages[currentPage].id}`);
+            if (!workspaceElement) {
+                console.warn('Workspace element not found for page:', pages[currentPage].id);
+                return null;
+            }
+
+            // Opciones para dom-to-image
+            const options = {
+                quality: 0.8,
+                bgcolor: pages[currentPage]?.backgroundColor || '#ffffff',
+                width: workspaceElement.offsetWidth,
+                height: workspaceElement.offsetHeight,
+                filter: (node) => {
+                    // Filtrar elementos de UI que no son parte del diseño
+                    if (node.classList) {
+                        const excludedClasses = [
+                            'toolbar', 'ui-element', 'floating', 
+                            'overlay', 'modal', 'popover', 
+                            'text-toolbar', 'element-selector', 
+                            'element-controls', 'resize-handle',
+                            'sidebar', 'panel', 'btn', 'button',
+                            'control', 'menu', 'dropdown',
+                            'tooltip', 'pointer-events-none'
+                        ];
+                        
+                        if (excludedClasses.some(cls => node.classList.contains(cls))) {
+                            return false;
+                        }
+                    }
+                    
+                    // Excluir inputs editables
+                    if (node.tagName === 'INPUT' || 
+                        node.tagName === 'TEXTAREA' ||
+                        node.contentEditable === 'true') {
+                        return false;
+                    }
+                    
+                    // Excluir elementos con data-exclude-thumbnail
+                    if (node.dataset && node.dataset.excludeThumbnail === 'true') {
+                        return false;
+                    }
+                    
+                    return true;
+                }
+            };
+
+            const dataUrl = await domtoimage.toPng(workspaceElement, options);
+            console.log('✅ Thumbnail captured for page:', pages[currentPage].id);
+            return dataUrl;
+        } catch (error) {
+            console.error('❌ Error capturing workspace:', error);
+            return null;
+        }
+    }, [currentPage, pages]);
+
+    // Generar miniatura para la página actual
+    const generateCurrentThumbnail = useCallback(async () => {
+        if (!pages[currentPage]) return;
+        
+        const thumbnail = await captureCurrentWorkspace();
+        if (thumbnail) {
+            setPageThumbnails(prev => ({
+                ...prev,
+                [pages[currentPage].id]: thumbnail
+            }));
+            console.log('🖼️ Thumbnail generated for page:', pages[currentPage].id);
+        }
+    }, [captureCurrentWorkspace, currentPage, pages]);
+
+    // Debounced thumbnail generation optimizado para evitar capturas excesivas
+    const scheduleThumbnailGeneration = useCallback(() => {
+        clearTimeout(thumbnailTimeout.current);
+        thumbnailTimeout.current = setTimeout(() => {
+            // Solo generar si la página actual no tiene miniatura
+            if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
+                generateCurrentThumbnail();
+            }
+        }, 1200); // Increased debounce time significantly to reduce flicker
+    }, [generateCurrentThumbnail, pages, currentPage, pageThumbnails]);
+
+    // Función para generar miniatura inmediata optimizada
+    const generateImmediateThumbnail = useCallback(() => {
+        // Solo generar si realmente es necesario
+        if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
+            setTimeout(() => {
+                generateCurrentThumbnail();
+            }, 300); // Longer delay to ensure DOM stability
+        }
+    }, [generateCurrentThumbnail, pages, currentPage, pageThumbnails]);
+
+    // Actualizar dimensiones cuando cambie el preset o el tamaño del workspace
+    useEffect(() => {
+        const dimensions = getWorkspaceDimensions();
+        setWorkspaceDimensions(dimensions);
+    }, [presetData, workspaceSize]);
+
+    // Actualizar dimensiones cuando cambie el tamaño de la ventana
+    useEffect(() => {
+        const handleResize = () => {
+            const dimensions = getWorkspaceDimensions();
+            setWorkspaceDimensions(dimensions);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [presetData, workspaceSize]);
+
+    // useEffect simplificado para cambio de página
+    useEffect(() => {
+        if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
+            // Solo generar si realmente no existe la miniatura
+            const timeoutId = setTimeout(() => {
+                generateImmediateThumbnail();
+            }, 400);
+            
+            return () => clearTimeout(timeoutId);
+        }
+    }, [currentPage]);
+
+    // useEffect para limpiar miniaturas cuando cambian dimensiones significativamente
+    useEffect(() => {
+        const dimensionsKey = `${workspaceDimensions.width}x${workspaceDimensions.height}`;
+        const lastDimensionsKey = sessionStorage.getItem('lastWorkspaceDimensions');
+        
+        if (lastDimensionsKey && lastDimensionsKey !== dimensionsKey && pages.length > 0) {
+            console.log('🔄 Dimensiones del workspace cambiaron, limpiando miniaturas');
+            setPageThumbnails({});
+            
+            // Generar nueva miniatura para la página actual después de un delay
+            setTimeout(() => {
+                if (pages[currentPage]) {
+                    generateImmediateThumbnail();
+                }
+            }, 800);
+        }
+        
+        sessionStorage.setItem('lastWorkspaceDimensions', dimensionsKey);
+    }, [workspaceDimensions.width, workspaceDimensions.height]);
+
     // Añade estos estados al principio del componente EditorLibro
     const [textToolbarVisible, setTextToolbarVisible] = useState(false);
     const [textEditingOptions, setTextEditingOptions] = useState({
@@ -458,6 +746,15 @@ export default function EditorLibro() {
         return page?.type === "content";
     };
 
+    // Memoize categorized pages for sidebar rendering to avoid re-filtering on every render
+    const categorizedPages = useMemo(() => {
+        return {
+            cover: pages.filter(page => page.type === "cover"),
+            content: pages.filter(page => page.type === "content"),
+            final: pages.filter(page => page.type === "final")
+        };
+    }, [pages]);
+
     // Modifica la función getSelectedElement para que use useCallback
     const getSelectedElement = useCallback(() => {
         if (!selectedElement || !selectedCell || pages.length === 0) return null;
@@ -541,8 +838,9 @@ export default function EditorLibro() {
         );
     };
 
-    // Actualizar el estado de las páginas y guardar en localStorage
-    const updatePages = (newPages) => {
+    // Actualizar el estado de las páginas y guardar en localStorage (optimizado)
+    const updatePages = useCallback((newPages) => {
+        console.log('📝 [DEBUG] updatePages llamado para página:', currentPage);
         setPages(newPages);
         // Actualizar el historial
         const newHistory = [
@@ -558,7 +856,21 @@ export default function EditorLibro() {
             currentPage,
             savedAt: Date.now(),
         }));
-    };
+
+        // Invalidar el thumbnail de la página actual siempre que se modifique
+        if (newPages[currentPage]) {
+            const currentPageId = newPages[currentPage].id;
+            console.log('�️ [DEBUG] Invalidando miniatura por cambios en página:', currentPageId);
+            
+            // Eliminar el thumbnail existente para forzar regeneración
+            setPageThumbnails(prev => {
+                const updated = { ...prev };
+                delete updated[currentPageId];
+                console.log('🗑️ [DEBUG] Thumbnail eliminado, forzando regeneración');
+                return updated;
+            });
+        }
+    }, [history, historyIndex, getStorageKey, currentPage]);
 
     // Guardar currentPage en localStorage cuando cambie
     useEffect(() => {
@@ -751,17 +1063,20 @@ export default function EditorLibro() {
 
     // Añadir un elemento a una celda
     const addElementToCell = (cellId, element) => {
-        console.log('[Editor] addElementToCell', { cellId, elementId: element.id });
+        console.log('➕ [DEBUG] addElementToCell llamado:', { cellId, elementId: element.id, type: element.type });
         const updatedPages = [...pages];
         // Asegurarse de que solo se agrega a la celda correcta
         for (let i = 0; i < updatedPages[currentPage].cells.length; i++) {
             if (updatedPages[currentPage].cells[i].id === cellId) {
                 updatedPages[currentPage].cells[i].elements.push(element);
+                console.log('✅ [DEBUG] Elemento añadido a celda. Total elementos en celda:', updatedPages[currentPage].cells[i].elements.length);
             }
         }
         updatePages(updatedPages);
         setSelectedElement(element.id);
         setSelectedCell(cellId);
+        
+        console.log('🎯 [DEBUG] Elemento añadido, thumbnail debería regenerarse');
     };
 
     // Actualizar un elemento en una celda
@@ -785,6 +1100,7 @@ export default function EditorLibro() {
                     ),
                     ...updates,
                 });
+                console.log('🎯 [DEBUG] Elemento duplicado, thumbnail debería regenerarse');
             } else {
                 // Actualizar elemento existente
                 const elementIndex = updatedPages[currentPage].cells[
@@ -800,6 +1116,7 @@ export default function EditorLibro() {
                         ],
                         ...updates,
                     };
+                    console.log('🎯 [DEBUG] Elemento actualizado, thumbnail debería regenerarse');
                 }
             }
             updatePages(updatedPages);
@@ -808,6 +1125,7 @@ export default function EditorLibro() {
 
     // Eliminar un elemento de una celda
     const deleteElementFromCell = (cellId, elementId) => {
+        console.log('🎯 [DEBUG] Eliminando elemento, thumbnail debería regenerarse');
         const updatedPages = [...pages];
         const cellIndex = updatedPages[currentPage].cells.findIndex(
             (cell) => cell.id === cellId
@@ -896,196 +1214,212 @@ export default function EditorLibro() {
         });
     };
 
-    // Función para obtener las dimensiones del área de trabajo
-    const getWorkspaceDimensions = () => {
-        // Si hay preset con dimensiones, usar esas dimensiones
-        if (presetData?.width && presetData?.height) {
-            // Las dimensiones vienen en centímetros desde la base de datos
-            let widthCm = presetData.width;
-            let heightCm = presetData.height;
-            let widthPx = widthCm * 37.8; // Conversión aproximada cm a px (300 DPI)
-            let heightPx = heightCm * 37.8;
-
-            if (widthPx && heightPx) {
-                const maxScreenWidth = window.innerWidth * 0.6; // 60% del ancho de pantalla
-                const maxScreenHeight = window.innerHeight * 0.7; // 70% del alto de pantalla
-
-                // Calcular escala para que quepa en pantalla manteniendo proporción
-                const scaleX = maxScreenWidth / widthPx;
-                const scaleY = maxScreenHeight / heightPx;
-                const scale = Math.min(scaleX, scaleY, 1); // No agrandar más del tamaño original
-
-                return {
-                    width: Math.round(widthPx * scale),
-                    height: Math.round(heightPx * scale),
-                    originalWidth: widthCm,
-                    originalHeight: heightCm,
-                    scale: scale,
-                    unit: 'cm',
-                    originalWidthPx: Math.round(widthPx),
-                    originalHeightPx: Math.round(heightPx)
-                };
+    // Sistema optimizado de miniaturas usando useMemo para detectar cambios específicos por página
+    const thumbnailGenerationKey = useMemo(() => {
+        // Crear una clave específica para la página actual
+        const currentPageData = pages[currentPage];
+        if (!currentPageData) return null;
+        
+        // Generar un hash más detallado del contenido
+        const allElements = currentPageData.cells?.flatMap(cell => cell.elements || []) || [];
+        const contentHash = allElements.map(el => {
+            // Incluir más detalles según el tipo de elemento
+            const baseProps = {
+                id: el.id,
+                type: el.type,
+                content: el.content,
+                position: el.position,
+                size: el.size,
+                style: el.style,
+                rotation: el.rotation
+            };
+            
+            // Para imágenes, incluir src y dimensiones
+            if (el.type === 'image') {
+                baseProps.src = el.src;
+                baseProps.originalWidth = el.originalWidth;
+                baseProps.originalHeight = el.originalHeight;
             }
+            
+            // Para texto, incluir propiedades de font
+            if (el.type === 'text') {
+                baseProps.fontSize = el.fontSize;
+                baseProps.fontFamily = el.fontFamily;
+                baseProps.fontWeight = el.fontWeight;
+                baseProps.textAlign = el.textAlign;
+                baseProps.color = el.color;
+            }
+            
+            return baseProps;
+        });
+        
+        const key = {
+            pageId: currentPageData.id,
+            elementsCount: allElements.length,
+            contentHash: JSON.stringify(contentHash),
+            backgroundImage: currentPageData.backgroundImage,
+            backgroundColor: currentPageData.backgroundColor,
+            layout: currentPageData.layout,
+            timestamp: Date.now() // Forzar regeneración agregando timestamp
+        };
+        
+        console.log('🔑 [DEBUG] Nueva clave de thumbnail generada:', key);
+        return key;
+    }, [pages, currentPage]);
+
+    // useEffect optimizado que regenera thumbnails cuando cambia el contenido
+    useEffect(() => {
+        if (pages.length === 0 || isLoading || !thumbnailGenerationKey) {
+            console.log('🔍 [DEBUG] Saltando generación de thumbnail:', { pagesLength: pages.length, isLoading, hasKey: !!thumbnailGenerationKey });
+            return;
         }
 
-        // Fallback si hay canvas_config en extra_settings
-        if (presetData?.extra_settings) {
+        let isCancelled = false;
+        
+        const generateThumbnailForCurrentPage = async () => {
             try {
-                const extraSettings = typeof presetData.extra_settings === 'string'
-                    ? JSON.parse(presetData.extra_settings)
-                    : presetData.extra_settings;
-
-                if (extraSettings?.canvas_config) {
-                    const canvasConfig = extraSettings.canvas_config;
-                    let widthCm = canvasConfig.width;
-                    let heightCm = canvasConfig.height;
-                    let widthPx = widthCm * 37.8;
-                    let heightPx = heightCm * 37.8;
-
-                    if (widthPx && heightPx) {
-                        const maxScreenWidth = window.innerWidth * 0.6;
-                        const maxScreenHeight = window.innerHeight * 0.7;
-                        const scaleX = maxScreenWidth / widthPx;
-                        const scaleY = maxScreenHeight / heightPx;
-                        const scale = Math.min(scaleX, scaleY, 1);
-
-                        return {
-                            width: Math.round(widthPx * scale),
-                            height: Math.round(heightPx * scale),
-                            originalWidth: widthCm,
-                            originalHeight: heightCm,
-                            scale: scale,
-                            unit: 'cm',
-                            originalWidthPx: Math.round(widthPx),
-                            originalHeightPx: Math.round(heightPx)
-                        };
-                    }
+                const currentPageData = pages[currentPage];
+                if (!currentPageData || !currentPageData.id) {
+                    console.log('🔍 [DEBUG] No hay página actual válida');
+                    return;
                 }
-            } catch (e) {
-                console.warn('Error parsing extra_settings:', e);
-            }
-        }
 
-        // Fallback a tamaños predefinidos
-        const predefinedSizes = {
-            "square": { width: 600, height: 600 },
-            "landscape": { width: 1280, height: 720 },
-            "portrait": { width: 600, height: 800 },
-            "wide": { width: 1200, height: 600 },
-            "tall": { width: 540, height: 960 },
-            "preset": { width: 800, height: 600 } // Default si no hay preset
-        };
-
-        const size = predefinedSizes[workspaceSize] || predefinedSizes.preset;
-
-        // Aplicar escalado también a tamaños predefinidos
-        const maxScreenWidth = window.innerWidth * 0.6;
-        const maxScreenHeight = window.innerHeight * 0.7;
-
-        const scaleX = maxScreenWidth / size.width;
-        const scaleY = maxScreenHeight / size.height;
-        const scale = Math.min(scaleX, scaleY, 1);
-
-        return {
-            width: Math.round(size.width * scale),
-            height: Math.round(size.height * scale),
-            originalWidth: size.width,
-            originalHeight: size.height,
-            scale: scale,
-            unit: 'px'
-        };
-    };
-
-    // Estado para las dimensiones calculadas
-    const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
-
-    // Actualizar dimensiones cuando cambie el preset o el tamaño del workspace
-    useEffect(() => {
-        const dimensions = getWorkspaceDimensions();
-        setWorkspaceDimensions(dimensions);
-    }, [presetData, workspaceSize]);
-
-    // Actualizar dimensiones cuando cambie el tamaño de la ventana
-    useEffect(() => {
-        const handleResize = () => {
-            const dimensions = getWorkspaceDimensions();
-            setWorkspaceDimensions(dimensions);
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [presetData, workspaceSize]);
-
-    useEffect(() => {
-        const generateThumbnails = async () => {
-            try {
-                console.log('🔄 Iniciando generación de miniaturas...');
-
-                // Crear una copia profunda de las páginas para evitar mutaciones
-                const pagesToProcess = JSON.parse(JSON.stringify(pages));
-
-                // Procesar cada página para asegurar el orden correcto de celdas y elementos
-                const processedPages = pagesToProcess.map(page => ({
-                    ...page,
-                    cells: (page.cells || []).map(cell => ({
-                        ...cell,
-                        position: {
-                            x: cell.position?.x || 0,
-                            y: cell.position?.y || 0,
-                            ...cell.position
-                        },
-                        size: {
-                            width: cell.size?.width || workspaceDimensions.width,
-                            height: cell.size?.height || workspaceDimensions.height,
-                            ...cell.size
-                        },
-                        elements: (cell.elements || []).map(el => ({
-                            ...el,
-                            zIndex: el.zIndex || 0
-                        })).sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-                    })).sort((a, b) => {
-                        // Ordenar celdas por posición (Y, luego X)
-                        const aY = a.position?.y || 0;
-                        const bY = b.position?.y || 0;
-                        if (aY !== bY) return aY - bY;
-                        return (a.position?.x || 0) - (b.position?.x || 0);
-                    })
-                }));
-
-                const thumbnails = await generateAccurateThumbnails({
-                    pages: processedPages,
-                    workspaceDimensions,
-                    presetData
-                });
-
-                console.log('🖼️ Miniaturas generadas:', thumbnails);
-
-                // Actualizar solo las miniaturas para las páginas que han cambiado
+                const pageId = currentPageData.id;
+                
+                console.log('🔄 [DEBUG] Forzando regeneración de miniatura para página:', pageId);
+                console.log('🔍 [DEBUG] Clave de generación completa:', thumbnailGenerationKey);
+                
+                // Eliminar thumbnail existente antes de generar uno nuevo
                 setPageThumbnails(prev => {
-                    const updated = {
-                        ...prev,
-                        ...Object.fromEntries(
-                            Object.entries(thumbnails || {}).map(([pageId, thumbnail]) => [
-                                pageId,
-                                thumbnail || prev[pageId] // Mantener la miniatura anterior si la nueva es nula
-                            ])
-                        )
-                    };
-                    console.log('🔄 Miniaturas actualizadas:', updated);
+                    const updated = { ...prev };
+                    delete updated[pageId];
                     return updated;
                 });
-
+                
+                // Esperar un poco para que el DOM se estabilice y el thumbnail se elimine
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (isCancelled) {
+                    console.log('🚫 [DEBUG] Generación cancelada');
+                    return;
+                }
+                
+                console.log('📸 [DEBUG] Capturando workspace...');
+                const thumbnail = await captureCurrentWorkspace();
+                
+                if (thumbnail && !isCancelled) {
+                    console.log('✅ [DEBUG] Miniatura capturada, aplicando...');
+                    setPageThumbnails(prev => ({
+                        ...prev,
+                        [pageId]: thumbnail
+                    }));
+                    console.log('✅ [DEBUG] Miniatura regenerada exitosamente para:', pageId);
+                } else {
+                    console.warn('⚠️ [DEBUG] No se pudo generar miniatura para:', pageId);
+                }
             } catch (error) {
-                console.error("❌ Error generando miniatura:", error);
+                if (!isCancelled) {
+                    console.error("❌ [DEBUG] Error regenerando miniatura:", error);
+                }
             }
         };
 
-        const debouncedGenerate = setTimeout(() => {
-            generateThumbnails();
-        }, 500);
+        // Debounce para evitar generar thumbnails muy seguido
+        const timeoutId = setTimeout(() => {
+            console.log('⏰ [DEBUG] Ejecutando generación de thumbnail después del debounce');
+            generateThumbnailForCurrentPage();
+        }, 500); // Reduzco el tiempo para testing
 
-        return () => clearTimeout(debouncedGenerate);
-    }, [pages, currentPage, workspaceDimensions, presetData]);
+        return () => {
+            isCancelled = true;
+            clearTimeout(timeoutId);
+        };
+    }, [currentPage, thumbnailGenerationKey, isLoading, captureCurrentWorkspace]);
+
+    // Generación de miniaturas en segundo plano (solo para páginas que no tienen miniatura)
+    useEffect(() => {
+        if (pages.length === 0 || isLoading) return;
+
+        const generateBackgroundThumbnails = async () => {
+            // Encontrar páginas sin miniatura
+            const pagesWithoutThumbnails = pages.filter(page => !pageThumbnails[page.id]);
+            
+            if (pagesWithoutThumbnails.length === 0) return;
+
+            console.log('🔄 Generando miniaturas en segundo plano para', pagesWithoutThumbnails.length, 'páginas');
+
+            // Generar una por una con pausa entre cada una
+            for (const page of pagesWithoutThumbnails) {
+                try {
+                    // Crear elemento temporal simplificado para la miniatura
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 200;
+                    canvas.height = 150;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Fondo
+                    ctx.fillStyle = page.backgroundColor || '#ffffff';
+                    ctx.fillRect(0, 0, 200, 150);
+                    
+                    // Imagen de fondo si existe
+                    if (page.backgroundImage) {
+                        try {
+                            const img = new Image();
+                            img.crossOrigin = 'anonymous';
+                            await new Promise((resolve, reject) => {
+                                img.onload = resolve;
+                                img.onerror = reject;
+                                img.src = page.backgroundImage;
+                            });
+                            ctx.drawImage(img, 0, 0, 200, 150);
+                        } catch (imgError) {
+                            console.warn('No se pudo cargar imagen de fondo para miniatura:', imgError);
+                        }
+                    }
+                    
+                    // Elementos básicos (simplified)
+                    if (page.cells) {
+                        page.cells.forEach(cell => {
+                            if (cell.elements) {
+                                cell.elements.forEach(element => {
+                                    if (element.type === 'text' && element.content) {
+                                        ctx.fillStyle = element.style?.color || '#000000';
+                                        ctx.font = '12px Arial';
+                                        ctx.fillText(
+                                            element.content.substring(0, 20) + (element.content.length > 20 ? '...' : ''),
+                                            10, 30
+                                        );
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    
+                    const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    setPageThumbnails(prev => ({
+                        ...prev,
+                        [page.id]: thumbnail
+                    }));
+                    
+                    console.log('✅ Miniatura de fondo generada para:', page.id);
+                    
+                    // Pausa entre generaciones
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                } catch (error) {
+                    console.error('❌ Error generando miniatura de fondo para:', page.id, error);
+                }
+            }
+        };
+
+        // Ejecutar después de un delay para no interferir con la página actual
+        const backgroundTimeoutId = setTimeout(() => {
+            generateBackgroundThumbnails();
+        }, 2000);
+
+        return () => clearTimeout(backgroundTimeoutId);
+    }, [pages, pageThumbnails, isLoading]);
 
 
 
@@ -1604,7 +1938,7 @@ export default function EditorLibro() {
     };
 
     return (
-        <DndProvider backend={HTML5Backend}>
+        <DndProvider backend={HTML5Backend} className="!h-screen !w-screen overflow-hidden">
             {isLoading ? (
                 <div className="h-screen bg-gray-100 flex items-center justify-center">
                     <div className="bg-white p-8 rounded-lg shadow-lg text-center">
@@ -2430,7 +2764,7 @@ export default function EditorLibro() {
                                             <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mr-1.5"></div>
                                             Portada
                                         </div>
-                                        {pages.filter(page => page.type === "cover").map((page, index) => (
+                                        {categorizedPages.cover.map((page, index) => (
                                             <div
                                                 key={page.id}
                                                 className={`relative group flex flex-col cursor-pointer  transition-all duration-200 transform 
@@ -2441,19 +2775,12 @@ export default function EditorLibro() {
                                                 onClick={() => setCurrentPage(pages.indexOf(page))}
                                             >
                                                 <div className="relative bg-purple-50  overflow-hidden border aspect-[4/3] ">
-                                                    {pageThumbnails[page.id] ? (
-                                                        <img
-                                                            src={pageThumbnails[page.id]}
-                                                            alt="Portada"
-                                                            className="w-full h-full object-contain"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <div className="text-purple-300">
-                                                                <Book className="h-8 w-8" />
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                    <ThumbnailImage
+                                                        pageId={page.id}
+                                                        thumbnail={pageThumbnails[page.id]}
+                                                        altText="Portada"
+                                                        type="cover"
+                                                    />
 
                                                     {/* Overlay with info */}
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
@@ -2473,7 +2800,7 @@ export default function EditorLibro() {
                                             Páginas de contenido
                                         </div>
                                         <div className="space-y-2">
-                                            {pages.filter(page => page.type === "content").map((page, index) => (
+                                            {categorizedPages.content.map((page, index) => (
                                                 <div
                                                     key={page.id}
                                                     className={`relative group flex flex-col cursor-pointer  transition-all duration-200 transform 
@@ -2484,28 +2811,12 @@ export default function EditorLibro() {
                                                     onClick={() => setCurrentPage(pages.indexOf(page))}
                                                 >
                                                     <div className="relative  overflow-hidden border aspect-[4/3]">
-                                                        {pageThumbnails[page.id] ? (
-                                                            <img
-                                                                src={pageThumbnails[page.id]}
-                                                                alt={`Página ${page.pageNumber}`}
-                                                                className="w-full h-full object-contain"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <div
-                                                                    className={`grid ${getCurrentLayout().template} gap-0.5 w-full h-full `}
-                                                                >
-                                                                    {Array.from({
-                                                                        length: getCurrentLayout().cells,
-                                                                    }).map((_, i) => (
-                                                                        <div
-                                                                            key={i}
-                                                                            className="bg-gray-200 rounded-sm"
-                                                                        ></div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
+                                                        <ThumbnailImage
+                                                            pageId={page.id}
+                                                            thumbnail={pageThumbnails[page.id]}
+                                                            altText={`Página ${page.pageNumber}`}
+                                                            type="content"
+                                                        />
 
                                                         {/* Page number badge */}
                                                         <div className="absolute top-1 left-1 bg-white/90 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold shadow-sm">
@@ -2551,7 +2862,7 @@ export default function EditorLibro() {
                                             <div className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></div>
                                             Contraportada
                                         </div>
-                                        {pages.filter(page => page.type === "final").map((page, index) => (
+                                        {categorizedPages.final.map((page, index) => (
                                             <div
                                                 key={page.id}
                                                 className={`relative group flex flex-col cursor-pointer  transition-all duration-200 transform 
@@ -2562,19 +2873,12 @@ export default function EditorLibro() {
                                                 onClick={() => setCurrentPage(pages.indexOf(page))}
                                             >
                                                 <div className="relative  overflow-hidden border mb-1 aspect-[4/3]">
-                                                    {pageThumbnails[page.id] ? (
-                                                        <img
-                                                            src={pageThumbnails[page.id]}
-                                                            alt="Contraportada"
-                                                            className="w-full h-full object-contain"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <div className="text-green-300">
-                                                                <Book className="h-8 w-8" />
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                    <ThumbnailImage
+                                                        pageId={page.id}
+                                                        thumbnail={pageThumbnails[page.id]}
+                                                        altText="Contraportada"
+                                                        type="final"
+                                                    />
 
                                                     {/* Overlay with info */}
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
