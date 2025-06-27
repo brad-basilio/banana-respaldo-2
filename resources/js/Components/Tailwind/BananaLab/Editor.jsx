@@ -366,12 +366,27 @@ export default function EditorLibro() {
                 return null;
             }
 
-            // Opciones para dom-to-image
+            console.log('📸 [DEBUG] Elemento workspace encontrado:', workspaceElement);
+            console.log('📸 [DEBUG] Dimensiones del elemento:', {
+                width: workspaceElement.offsetWidth,
+                height: workspaceElement.offsetHeight,
+                background: getComputedStyle(workspaceElement).backgroundColor
+            });
+
+            // Opciones simplificadas y optimizadas para dom-to-image
             const options = {
                 quality: 0.8,
                 bgcolor: pages[currentPage]?.backgroundColor || '#ffffff',
                 width: workspaceElement.offsetWidth,
                 height: workspaceElement.offsetHeight,
+                style: {
+                    transform: 'scale(1)',
+                    transformOrigin: 'top left'
+                },
+                // Configuración básica para evitar errores de CORS
+                useCORS: true,
+                allowTaint: false,
+                skipFonts: true,
                 filter: (node) => {
                     // Filtrar elementos de UI que no son parte del diseño
                     if (node.classList) {
@@ -390,9 +405,11 @@ export default function EditorLibro() {
                         }
                     }
                     
-                    // Excluir inputs editables
+                    // Excluir inputs editables y elementos problemáticos
                     if (node.tagName === 'INPUT' || 
                         node.tagName === 'TEXTAREA' ||
+                        node.tagName === 'SCRIPT' ||
+                        node.tagName === 'STYLE' ||
                         node.contentEditable === 'true') {
                         return false;
                     }
@@ -406,12 +423,39 @@ export default function EditorLibro() {
                 }
             };
 
+            console.log('📸 [DEBUG] Iniciando captura con opciones:', options);
             const dataUrl = await domtoimage.toPng(workspaceElement, options);
-            console.log('✅ Thumbnail captured for page:', pages[currentPage].id);
+            console.log('✅ [DEBUG] Thumbnail capturado exitosamente para página:', pages[currentPage].id);
             return dataUrl;
         } catch (error) {
-            console.error('❌ Error capturing workspace:', error);
-            return null;
+            console.error('❌ [DEBUG] Error capturando workspace:', error);
+            
+            // Fallback: crear thumbnail básico con canvas
+            try {
+                console.log('🔄 [DEBUG] Intentando fallback con canvas...');
+                const canvas = document.createElement('canvas');
+                canvas.width = 300;
+                canvas.height = 200;
+                const ctx = canvas.getContext('2d');
+                
+                // Aplicar background
+                const bgColor = pages[currentPage]?.backgroundColor || '#ffffff';
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, 300, 200);
+                
+                // Texto indicativo
+                ctx.fillStyle = '#666666';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Página ' + (currentPage + 1), 150, 100);
+                
+                const fallbackDataUrl = canvas.toDataURL('image/png', 0.8);
+                console.log('✅ [DEBUG] Fallback thumbnail creado');
+                return fallbackDataUrl;
+            } catch (fallbackError) {
+                console.error('❌ [DEBUG] Error en fallback:', fallbackError);
+                return null;
+            }
         }
     }, [currentPage, pages]);
 
@@ -1584,93 +1628,92 @@ export default function EditorLibro() {
     // --- Finalizar diseño del álbum ---
     // Guarda el estado completo del diseño en la base de datos (optimizado)
     window.finalizeAlbumDesign = async () => {
+        console.log('🚀 Iniciando finalización del diseño del álbum...');
+
         try {
-            if (!projectData?.id) {
-                alert('Error: No se encontró el ID del proyecto');
-                return false;
+            if (!pages || pages.length === 0) {
+                throw new Error('No hay páginas para finalizar');
             }
 
-            // Optimizar y comprimir los datos del diseño
-            const optimizePages = (pages) => {
-                return pages.map(page => ({
-                    id: page.id,
-                    type: page.type,
-                    pageNumber: page.pageNumber,
-                    layout: page.layout,
-                    cells: page.cells.map(cell => ({
-                        id: cell.id,
-                        elements: cell.elements.map(element => {
-                            const optimizedElement = {
-                                id: element.id,
-                                type: element.type,
-                                position: element.position,
-                                zIndex: element.zIndex || 1
-                            };
+            // Función para optimizar páginas y reducir el tamaño de los datos
+            const optimizePages = (pages) => pages.map(page => ({
+                id: page.id,
+                type: page.type,
+                pageNumber: page.pageNumber,
+                layout: page.layout,
+                cells: page.cells.map(cell => ({
+                    id: cell.id,
+                    elements: cell.elements.map(element => {
+                        const optimizedElement = {
+                            id: element.id,
+                            type: element.type,
+                            position: element.position,
+                            zIndex: element.zIndex || 1
+                        };
 
-                            // Solo incluir propiedades necesarias según el tipo
-                            if (element.type === 'image') {
-                                // Para imágenes base64, guardar solo un hash o identificador
-                                if (element.content.startsWith('data:image/')) {
-                                    // Crear un hash simple de la imagen para identificarla
-                                    const imageHash = btoa(element.content.substring(0, 100)).substring(0, 20);
-                                    optimizedElement.content = `[BASE64_IMAGE_${imageHash}]`;
-                                    optimizedElement.contentType = element.content.split(';')[0].split(':')[1];
-                                    optimizedElement.originalSize = element.content.length;
-                                } else {
-                                    optimizedElement.content = element.content;
-                                }
-
-                                // Solo incluir filtros no vacíos
-                                if (element.filters) {
-                                    const activeFilters = Object.entries(element.filters)
-                                        .filter(([key, value]) => value !== 0 && value !== false && value !== null)
-                                        .reduce((acc, [key, value]) => {
-                                            acc[key] = value;
-                                            return acc;
-                                        }, {});
-
-                                    if (Object.keys(activeFilters).length > 0) {
-                                        optimizedElement.filters = activeFilters;
-                                    }
-                                }
-
-                                if (element.mask && element.mask !== 'none') {
-                                    optimizedElement.mask = element.mask;
-                                }
-                                if (element.size) {
-                                    optimizedElement.size = element.size;
-                                }
-                                if (element.locked) {
-                                    optimizedElement.locked = element.locked;
-                                }
-                            } else if (element.type === 'text') {
+                        // Solo incluir propiedades necesarias según el tipo
+                        if (element.type === 'image') {
+                            // Para imágenes base64, guardar solo un hash o identificador
+                            if (element.content.startsWith('data:image/')) {
+                                // Crear un hash simple de la imagen para identificarla
+                                const imageHash = btoa(element.content.substring(0, 100)).substring(0, 20);
+                                optimizedElement.content = `[BASE64_IMAGE_${imageHash}]`;
+                                optimizedElement.contentType = element.content.split(';')[0].split(':')[1];
+                                optimizedElement.originalSize = element.content.length;
+                            } else {
                                 optimizedElement.content = element.content;
-                                if (element.style) {
-                                    // Solo incluir estilos no por defecto
-                                    const nonDefaultStyles = Object.entries(element.style)
-                                        .filter(([key, value]) => {
-                                            // Filtrar valores por defecto comunes
-                                            if (key === 'fontSize' && value === '16px') return false;
-                                            if (key === 'color' && value === '#000000') return false;
-                                            if (key === 'fontFamily' && value === 'Arial') return false;
-                                            return true;
-                                        })
-                                        .reduce((acc, [key, value]) => {
-                                            acc[key] = value;
-                                            return acc;
-                                        }, {});
+                            }
 
-                                    if (Object.keys(nonDefaultStyles).length > 0) {
-                                        optimizedElement.style = nonDefaultStyles;
-                                    }
+                            // Solo incluir filtros no vacíos
+                            if (element.filters) {
+                                const activeFilters = Object.entries(element.filters)
+                                    .filter(([key, value]) => value !== 0 && value !== false && value !== null)
+                                    .reduce((acc, [key, value]) => {
+                                        acc[key] = value;
+                                        return acc;
+                                    }, {});
+
+                                if (Object.keys(activeFilters).length > 0) {
+                                    optimizedElement.filters = activeFilters;
                                 }
                             }
 
-                            return optimizedElement;
-                        })
-                    }))
-                }));
-            };
+                            if (element.mask && element.mask !== 'none') {
+                                optimizedElement.mask = element.mask;
+                            }
+                            if (element.size) {
+                                optimizedElement.size = element.size;
+                            }
+                            if (element.locked) {
+                                optimizedElement.locked = element.locked;
+                            }
+                        } else if (element.type === 'text') {
+                            optimizedElement.content = element.content;
+                            if (element.style) {
+                                // Solo incluir estilos no por defecto
+                                const nonDefaultStyles = Object.entries(element.style)
+                                    .filter(([key, value]) => {
+                                        // Filtrar valores por defecto comunes
+                                        if (key === 'fontSize' && value === '16px') return false;
+                                        if (key === 'color' && value === '#000000') return false;
+                                        if (key === 'fontFamily' && value === 'Arial') return false;
+                                        return true;
+                                    })
+                                    .reduce((acc, [key, value]) => {
+                                        acc[key] = value;
+                                        return acc;
+                                    }, {});
+
+                                if (Object.keys(nonDefaultStyles).length > 0) {
+                                    optimizedElement.style = nonDefaultStyles;
+                                }
+                            }
+                        }
+
+                        return optimizedElement;
+                    })
+                }))
+            }));
 
             // Preparar los datos del diseño optimizados
             const designData = {
@@ -1795,7 +1838,8 @@ export default function EditorLibro() {
     // --- Generar PDF del álbum (fiel al render del editor) ---
     // Renderiza cada página usando el mismo componente React en un contenedor oculto
     window.generateAlbumPDF = async () => {
-        // 1. Crear un contenedor oculto React en el DOM
+        try {
+            // 1. Crear un contenedor oculto React en el DOM
         let hiddenContainer = document.getElementById('pdf-hidden-pages');
         if (!hiddenContainer) {
             hiddenContainer = document.createElement('div');
@@ -1935,6 +1979,12 @@ export default function EditorLibro() {
         pdf.save('album.pdf');
         // 4. Limpiar el DOM
         hiddenContainer.innerHTML = '';
+        
+        return true;
+        } catch (error) {
+            console.error('Error al finalizar el diseño del álbum:', error);
+            return false;
+        }
     };
 
     return (
@@ -2597,7 +2647,11 @@ export default function EditorLibro() {
                                             width: workspaceDimensions.width,
                                             height: workspaceDimensions.height,
                                             position: 'relative',
-                                            backgroundColor: pages[currentPage]?.backgroundImage ? 'transparent' : (pages[currentPage]?.backgroundColor || '#ffffff')
+                                            backgroundColor: pages[currentPage]?.backgroundColor || '#ffffff',
+                                            backgroundImage: pages[currentPage]?.backgroundImage ? `url(${pages[currentPage].backgroundImage})` : 'none',
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                            backgroundRepeat: 'no-repeat'
                                         }}
                                     >                                        {/* Background layer */}
                                         {(() => {
@@ -2902,23 +2956,3 @@ export default function EditorLibro() {
         </DndProvider>
     );
 }
-
-
-
-<style jsx>{`
-    .custom-scroll {
-        scrollbar-width: thin;
-        scrollbar-color: #c7d2fe #f5f3ff;
-    }
-    .custom-scroll::-webkit-scrollbar {
-        height: 6px;
-    }
-    .custom-scroll::-webkit-scrollbar-track {
-        background: #f5f3ff;
-        border-radius: 3px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-        background-color: #c7d2fe;
-        border-radius: 3px;
-    }
-`}</style>

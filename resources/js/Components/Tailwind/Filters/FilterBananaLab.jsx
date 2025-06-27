@@ -317,7 +317,7 @@ const FilterBananaLab = ({ items, data, filteredData, cart, setCart,setFavorites
                 <div className="relative flex flex-col sm:flex-row gap-4">
                     {/* Panel de filtros */}
                     <motion.div 
-                        className="w-full sm:w-1/5 bg-white p-4 rounded-lg h-max shadow-sm"
+                        className="w-full sm:w-1/5 bg-white p-4 rounded-lg h-max"
                         initial={{ x: -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.2 }}
@@ -714,20 +714,9 @@ const FilterBananaLab = ({ items, data, filteredData, cart, setCart,setFavorites
                                         <motion.div
                                             key={product.id}
                                             custom={index}
-                                            variants={{
-                                                hidden: { opacity: 0, y: 20 },
-                                                visible: { 
-                                                    opacity: 1, 
-                                                    y: 0,
-                                                    transition: { 
-                                                        type: "spring",
-                                                        stiffness: 100,
-                                                        delay: index * 0.03
-                                                    }
-                                                }
-                                            }}
+                                            
                                             whileHover={{ y: -5 }}
-                                            className="w-full md:w-1/2 lg:w-1/3 px-2"
+                                            className="w-full md:w-1/2 lg:w-1/3 px-2  h-[500px] min-h-[500px] max-h-[500px]"
                                         >
                                             <CardProductBananaLab
                                                 product={product}

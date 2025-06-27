@@ -33,19 +33,20 @@
     <noscript><link rel="stylesheet" href="/lte/assets/css/icons.min.css"></noscript>
     
 
-    <link rel="preload" href='https://fonts.googleapis.com/css?family=Poppins' as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href='https://fonts.googleapis.com/css?family=Poppins'></noscript>
+    <!-- Fuentes con configuración CORS para dom-to-image -->
+    <link rel="preload" href='https://fonts.googleapis.com/css?family=Poppins' as="style" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href='https://fonts.googleapis.com/css?family=Poppins' crossorigin="anonymous"></noscript>
     
     
-    <!-- Carga diferida de Tailwind CSS -->
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"></noscript>
+    <!-- Carga diferida de Tailwind CSS con CORS -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" as="style" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" crossorigin="anonymous"></noscript>
     
-    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://cdn.tailwindcss.com" defer crossorigin="anonymous"></script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet" crossorigin="anonymous">
     
     @php
         $pixelScripts = App\Helpers\PixelHelper::getPixelScripts();
@@ -54,11 +55,11 @@
     {!! $pixelScripts['head'] !!}
 
     @if ($data['fonts']['title']['url'] && $data['fonts']['title']['source'] !== 'true')
-        <link rel="stylesheet" href="{{ $data['fonts']['title']['url'] }}">
+        <link rel="stylesheet" href="{{ $data['fonts']['title']['url'] }}" crossorigin="anonymous">
     @endif
 
     @if ($data['fonts']['paragraph']['url'] && $data['fonts']['paragraph']['source'] !== 'true')
-        <link rel="stylesheet" href="{{ $data['fonts']['paragraph']['url'] }}">
+        <link rel="stylesheet" href="{{ $data['fonts']['paragraph']['url'] }}" crossorigin="anonymous">
     @endif
 
     @vite(['resources/css/app.css', 'resources/js/' . Route::currentRouteName()])
@@ -245,6 +246,34 @@
                 });
             }
         });
+    </script>
+
+    <!-- Configuración para dom-to-image: suprimir errores de CORS en CSS -->
+    <script>
+        // Suprimir errores específicos de dom-to-image relacionados con CORS CSS
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            const errorMessage = args.join(' ');
+            
+            // Filtrar errores conocidos de CORS en CSS que no afectan la funcionalidad
+            if (errorMessage.includes('domtoimage: Error while reading CSS rules') && 
+                (errorMessage.includes('fonts.googleapis.com') || 
+                 errorMessage.includes('tailwindcss') || 
+                 errorMessage.includes('SecurityError: Failed to read'))) {
+                // Silenciar estos errores específicos
+                return;
+            }
+            
+            // Permitir otros errores
+            originalConsoleError.apply(console, args);
+        };
+        
+        // Configuración adicional para dom-to-image
+        window.domToImageConfig = {
+            skipFonts: true,
+            useCORS: true,
+            allowTaint: true
+        };
     </script>
 
 </body>
