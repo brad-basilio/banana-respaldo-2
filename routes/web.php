@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
+use App\Http\Controllers\ProjectPDFController;
 // Public 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RepositoryController;
@@ -149,6 +150,8 @@ Route::middleware(['can:Admin', 'auth'])->prefix('admin')->group(function () {
     Route::get('/repository', [AdminRepositoryController::class, 'reactView'])->name('Admin/Repository.jsx');
 
     Route::middleware(['can:Root'])->get('/system', [AdminSystemController::class, 'reactView'])->name('Admin/System.jsx');
+    
+   
 });
 
 Route::middleware(['can:Customer', 'auth'])->prefix('customer')->group(function () {
@@ -167,8 +170,6 @@ Route::middleware(['auth'])->prefix('canvas')->group(function () {
 
 // Test route for development
 if (env('APP_ENV') === 'local') {
-    Route::get('/canvas-test', function () {
-        return view('canvas-test');
-    })->middleware('auth');
+   
     Route::get('/cloud/{uuid}', [RepositoryController::class, 'media']);
 }

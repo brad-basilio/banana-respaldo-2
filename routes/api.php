@@ -448,13 +448,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/canvas/auto-save', [ProjectSaveController::class, 'autoSave']);
     Route::post('/canvas/manual-save', [ProjectSaveController::class, 'manualSave']);
 
+    // Project PDF generation route (for frontend users)
+    Route::post('/projects/{projectId}/generate-pdf', [ProjectPDFController::class, 'generatePDF']);
+
     Route::patch('/account/email', [AdminAccountController::class, 'email']);
     Route::patch('/account/password', [AdminAccountController::class, 'password']);
-  });
-
-  // Project PDF generation route (for frontend users) - moved to auth group
-  Route::middleware('auth')->group(function () {
-    Route::post('/projects/{projectId}/generate-pdf', [ProjectPDFController::class, 'generatePDF']);
   });
 
   Route::middleware('can:Customer')->prefix('customer')->group(function () {

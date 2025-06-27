@@ -77,6 +77,7 @@ const Sales = ({ statuses = [] }) => {
             for (const projectId of projectIds) {
                 try {
                     const response = await fetch(`/api/admin/projects/${projectId}/info`, {
+                        credentials: 'include',
                         headers: {
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                         }
@@ -103,15 +104,29 @@ const Sales = ({ statuses = [] }) => {
     // Función para descargar PDF
     const downloadProjectPDF = async (projectId) => {
         try {
+            console.log(`🔽 Iniciando descarga de PDF para proyecto: ${projectId}`);
+            
             const response = await fetch(`/api/admin/projects/${projectId}/pdf`, {
+                credentials: 'include',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 }
             });
-            console.log(response)
+            
+            console.log(`📡 Respuesta del servidor:`, {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                headers: Object.fromEntries(response.headers.entries())
+            });
             
             if (response.ok) {
                 const blob = await response.blob();
+                console.log(`📄 Blob recibido:`, {
+                    size: blob.size,
+                    type: blob.type
+                });
+                
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
@@ -121,18 +136,27 @@ const Sales = ({ statuses = [] }) => {
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
+                
+                console.log(`✅ Descarga iniciada exitosamente`);
             } else {
+                const errorText = await response.text();
+                console.error(`❌ Error en respuesta del servidor:`, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorText: errorText
+                });
+                
                 Swal.fire({
                     title: "Error",
-                    text: "No se pudo descargar el PDF del proyecto",
+                    text: `No se pudo descargar el PDF del proyecto (${response.status}: ${response.statusText})`,
                     icon: "error"
                 });
             }
         } catch (error) {
-            console.error('Error descargando PDF:', error);
+            console.error('❌ Error descargando PDF:', error);
             Swal.fire({
                 title: "Error",
-                text: "Error al descargar el PDF",
+                text: `Error al descargar el PDF: ${error.message}`,
                 icon: "error"
             });
         }
@@ -505,7 +529,11 @@ const Sales = ({ statuses = [] }) => {
                                                             <Tippy content="Descargar PDF del proyecto">
                                                                 <button
                                                                     className="btn btn-xs btn-success"
-                                                                    onClick={() => downloadProjectPDF(detail.colors)}
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        downloadProjectPDF(detail.colors);
+                                                                    }}
                                                                 >
                                                                     <i className="fa fa-download"></i> PDF
                                                                 </button>

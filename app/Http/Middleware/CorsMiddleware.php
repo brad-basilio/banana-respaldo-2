@@ -15,11 +15,20 @@ class CorsMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-
-
-        return $next($request)
-            ->header('Access-Control-Allow-Origin', '*')
-            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Xsrf-Token, X-Requested-With');
+        $response = $next($request);
+        
+        // Para StreamedResponse y otros tipos que no tienen el método header()
+        if (method_exists($response, 'header')) {
+            return $response
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Xsrf-Token, X-Requested-With');
+        } else {
+            // Para StreamedResponse y otros tipos, usar headers directamente
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+            $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Xsrf-Token, X-Requested-With');
+            return $response;
+        }
     }
 }
