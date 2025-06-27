@@ -30,7 +30,7 @@ console.log("items", data)
                             {isMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </button>
                         {isMenuOpen && (
-                            <div className="absolute z-50 top-12 left-0 bg-white shadow-xl border-t rounded-xl transition-all duration-500 ease-in-out w-[calc(60vw-6rem)]">
+                            <div className="absolute z-50 top-12 left-0 bg-white shadow-xl border-t rounded-xl transition-all duration-500 ease-in-out h-[70dvh] overflow-y-scroll w-[calc(60vw-6rem)]">
                                 <div className="p-8">
                                     <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-8">
                                         {[...items].sort((a, b) => a.name.localeCompare(b.name)).map((category, index) => (
