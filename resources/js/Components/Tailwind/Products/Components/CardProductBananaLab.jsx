@@ -192,16 +192,17 @@ const CardProductBananaLab = ({
                         </div>
 
                         <div className="mt-3 overflow-hidden block lg:hidden">
-                            <button
-                                onClick={(e) => onAddClicked(e, product)}
+                            <a
+                                href={`/product/${product.slug}`}
+                               // onClick={(e) => onAddClicked(e, product)}
                                 className="w-full text-[10px] font-light lg:font-normal flex items-center justify-center bg-primary text-white lg:text-sm py-2 lg:py-3 px-4 rounded-full shadow-md hover:bg-primary-dark transition-all duration-300"
                             >
-                                <span className="mr-2">Agregar al carrito</span>
-                                <ShoppingCart
+                              <span className="mr-2">Ver detalle</span>
+                                <ChevronRightCircle
                                     className="w-3 h-3 lg:w-4 lg:h-4"
                                     strokeWidth={2}
                                 />
-                            </button>
+                            </a>
                         </div>
                         {/* Botón de acción - justo debajo del precio, solo visible en hover en desktop */}
                         <motion.div
@@ -214,8 +215,9 @@ const CardProductBananaLab = ({
                             transition={{ duration: 0.2 }}
                             className="hidden lg:flex items-center justify-center mt-3"
                         >
-                            <button
-                                onClick={(e) => onAddClicked(e, product)}
+                            <a
+                                //onClick={(e) => onAddClicked(e, product)}
+                                href={`/product/${product.slug}`}
                                 className="w-full text-[10px] font-light lg:font-normal flex items-center justify-center bg-primary text-white lg:text-sm py-2 lg:py-3 px-4 rounded-full shadow-md hover:bg-primary-dark transition-all duration-300"
                             >
                                 <span className="mr-2">Ver detalle</span>
@@ -223,7 +225,7 @@ const CardProductBananaLab = ({
                                     className="w-3 h-3 lg:w-4 lg:h-4"
                                     strokeWidth={2}
                                 />
-                            </button>
+                            </a>
                         </motion.div>
                     </div>
                 </div>

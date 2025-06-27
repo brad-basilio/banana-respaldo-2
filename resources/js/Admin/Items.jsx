@@ -40,18 +40,18 @@ const Items = ({ categories, brands, collections }) => {
 
     const idRef = useRef();
     const categoryRef = useRef();
-    const collectionRef = useRef();
+  //  const collectionRef = useRef();
     const subcategoryRef = useRef();
-    const brandRef = useRef();
+   // const brandRef = useRef();
     const nameRef = useRef();
-    const colorRef = useRef();
+  //  const colorRef = useRef();
     const summaryRef = useRef();
     const priceRef = useRef();
     const discountRef = useRef();
     const tagsRef = useRef();
     const bannerRef = useRef();
     const imageRef = useRef();
-    const textureRef = useRef();
+    //const textureRef = useRef();
     const descriptionRef = useRef();
     const skuRef = useRef();
     // Nuevos campos
@@ -149,20 +149,20 @@ const Items = ({ categories, brands, collections }) => {
         $(categoryRef.current)
             .val(data?.category_id || null)
             .trigger("change");
-        $(collectionRef.current)
+       /* $(collectionRef.current)
             .val(data?.collection_id || null)
-            .trigger("change");
+            .trigger("change");*/
         SetSelectValue(
             subcategoryRef.current,
             data?.subcategory?.id,
             data?.subcategory?.name
         );
-        $(brandRef.current)
+      /*  $(brandRef.current)
             .val(data?.brand_id || null)
-            .trigger("change");
+            .trigger("change");*/
         nameRef.current.value = data?.name || "";
         skuRef.current.value = data?.sku || "";
-        colorRef.current.value = data?.color || "";
+        //colorRef.current.value = data?.color || "";
         summaryRef.current.value = data?.summary || "";
         priceRef.current.value = data?.price || 0;
         discountRef.current.value = data?.discount || 0;
@@ -185,9 +185,9 @@ const Items = ({ categories, brands, collections }) => {
         imageRef.image.src = `/storage/images/item/${
             data?.image ?? "undefined"
         }`;
-        textureRef.image.src = `/storage/images/item/${
+      /*  textureRef.image.src = `/storage/images/item/${
             data?.texture ?? "undefined"
-        }`;
+        }`;*/
         coverImageRef.image.src = `/storage/images/item/${
             data?.cover_image ?? "undefined"
         }`;
@@ -249,12 +249,12 @@ const Items = ({ categories, brands, collections }) => {
         const request = {
             id: idRef.current.value || undefined,
             category_id: categoryRef.current.value,
-            collection_id: collectionRef.current.value || null,
+          //  collection_id: collectionRef.current.value || null,
             subcategory_id: subcategoryRef.current.value,
-            brand_id: brandRef.current.value,
+           // brand_id: brandRef.current.value,
             name: nameRef.current.value,
             sku: skuRef.current.value,
-            color: colorRef.current.value,
+          //  color: colorRef.current.value,
             summary: summaryRef.current.value,
             price: priceRef.current.value,
             discount: discountRef.current.value,
@@ -283,10 +283,10 @@ const Items = ({ categories, brands, collections }) => {
         if (image) {
             formData.append("image", image);
         }
-        const texture = textureRef.current.files[0];
+       /* const texture = textureRef.current.files[0];
         if (texture) {
             formData.append("texture", texture);
-        }
+        }*/
         const banner = bannerRef.current.files[0];
         if (banner) {
             formData.append("banner", banner);
@@ -455,11 +455,11 @@ const Items = ({ categories, brands, collections }) => {
                         caption: "Subcategoría",
                         visible: false,
                     },
-                    {
+                   /* {
                         dataField: "brand.name",
                         caption: "Marca",
                         width: "120px",
-                    },
+                    },*/
                     {
                         dataField: "canvas_preset.name",
                         caption: "Preset",
@@ -740,7 +740,7 @@ const Items = ({ categories, brands, collections }) => {
                                 </option>
                             ))}
                         </SelectFormGroup>
-                        <SelectFormGroup
+                     {/*   <SelectFormGroup
                             eRef={collectionRef}
                             label="Colección"
                             dropdownParent="#principal-container"
@@ -753,7 +753,7 @@ const Items = ({ categories, brands, collections }) => {
                                     {item.name}
                                 </option>
                             ))}
-                        </SelectFormGroup>
+                        </SelectFormGroup> */}
                         <SelectAPIFormGroup
                             eRef={subcategoryRef}
                             label="Subcategoría"
@@ -763,7 +763,7 @@ const Items = ({ categories, brands, collections }) => {
                             dropdownParent="#principal-container"
                         />
 
-                        <SelectFormGroup
+                       {/* <SelectFormGroup
                             eRef={brandRef}
                             label="Marca"
                             dropdownParent="#principal-container"
@@ -773,7 +773,7 @@ const Items = ({ categories, brands, collections }) => {
                                     {item.name}
                                 </option>
                             ))}
-                        </SelectFormGroup>
+                        </SelectFormGroup> */}
 
                         <InputFormGroup
                             label="Stock"
@@ -835,7 +835,7 @@ const Items = ({ categories, brands, collections }) => {
                             label="Nombre"
                             required
                         />
-                        <InputFormGroup
+                       {/* <InputFormGroup
                             eRef={colorRef}
                             label="Color"
                             required
@@ -845,7 +845,7 @@ const Items = ({ categories, brands, collections }) => {
                             label="Imagen Textura"
                             aspect={1}
                             col="col-lg-6 col-md-12 col-sm-6"
-                        />
+                        /> */}
                         <TextareaFormGroup
                             eRef={summaryRef}
                             label="Resumen"
@@ -885,12 +885,12 @@ const Items = ({ categories, brands, collections }) => {
                                 aspect={1}
                                 col="col-lg-6 col-md-12 col-sm-6"
                             />
-                            <ImageFormGroup
+                           {/* <ImageFormGroup
                                 eRef={textureRef}
                                 label="Textura"
                                 aspect={1}
                                 col="col-lg-6 col-md-12 col-sm-6"
-                            />
+                            /> */}
                         </div>
                         
                         {/* Sección de imágenes específicas para productos con páginas */}
