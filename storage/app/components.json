@@ -1453,7 +1453,12 @@
                 "using": {
                     "model": "Item",
                     "flied": "slug"
-                }
+                },
+                "generals": [
+                    "phone_whatsapp",
+                    "message_whatsapp",
+                    "delivery_policy"
+                ]
             },
              {
                 "id": "ProductDetailPaani",
