@@ -16,9 +16,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use SoDe\Extend\Response;
-use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
+use App\Models\dxDataGrid;
+use App\Http\Classes\dxResponse;
 
 use Illuminate\Http\Response as HttpResponse;
 
@@ -247,7 +251,6 @@ class ItemController extends BasicController
 
         return $query;
     }
-
     public function setPaginationSummary(Request $request, Builder $builder, Builder $originalBuilder)
     {
         /* $minPrice = Item::min('price');
@@ -552,6 +555,300 @@ class ItemController extends BasicController
                 'status' => false,
                 'message' => $e->getMessage(),
             ], 500);
+        }
+    }
+    
+    /**
+     * Agregar scope para productos más vendidos (mediante joins con sale_details)
+     */
+    public function scopeBestSellers($query, $limit = null)
+    {
+        $query = $query->select(['items.*', DB::raw('COALESCE(SUM(sale_details.quantity), 0) as total_sold')])
+            ->leftJoin('sale_details', 'items.id', '=', 'sale_details.item_id')
+            ->leftJoin('sales', function($join) {
+                $join->on('sale_details.sale_id', '=', 'sales.id')
+                     ->where('sales.payment_status', '=', 'pagado'); // Solo ventas confirmadas
+            })
+            ->groupBy('items.id')
+            ->orderBy('total_sold', 'DESC');
+            
+        if ($limit) {
+            $query->limit($limit);
+        }
+        
+        return $query;
+    }
+    
+    /**
+     * Scope para productos con mejor descuento 
+     */
+    public function scopeBestDiscounts($query, $limit = null)
+    {
+        $query = $query->where('discount_percent', '>', 0)
+            ->orderBy('discount_percent', 'DESC');
+            
+        if ($limit) {
+            $query->limit($limit);
+        }
+        
+        return $query;
+    }
+    
+    /**
+     * Scope para productos más vistos
+     */
+    public function scopeMostViewed($query, $limit = null)
+    {
+        $query = $query->where('views', '>', 0)
+            ->orderBy('views', 'DESC');
+            
+        if ($limit) {
+            $query->limit($limit);
+        }
+        
+        return $query;
+    }
+    
+    /**
+     * Get most sold products
+     */
+    public function mostSold(Request $request)
+    {
+        $response = new Response();
+        try {
+            $limit = $request->input('limit', 10);
+            
+            $products = Item::select(['items.*', DB::raw('COALESCE(SUM(sale_details.quantity), 0) as total_sold')])
+                ->leftJoin('sale_details', 'items.id', '=', 'sale_details.item_id')
+                ->leftJoin('sales', function($join) {
+                    $join->on('sale_details.sale_id', '=', 'sales.id')
+                         ->where('sales.payment_status', '=', 'pagado');
+                })
+                ->where('items.status', true)
+                ->where('items.visible', true)
+                ->groupBy('items.id')
+                ->having('total_sold', '>', 0)
+                ->orderBy('total_sold', 'DESC')
+                ->limit($limit)
+                ->get();
+
+            $response->status = 200;
+            $response->message = 'Productos más vendidos obtenidos correctamente';
+            $response->data = $products;
+        } catch (\Throwable $th) {
+            $response->status = 400;
+            $response->message = $th->getMessage();
+        }
+
+        return response($response->toArray(), $response->status);
+    }
+    
+    /**
+     * Get most viewed products
+     */
+    public function mostViewed(Request $request)
+    {
+        $response = new Response();
+        try {
+            $limit = $request->input('limit', 10);
+            
+            $products = Item::where('status', true)
+                ->where('visible', true)
+                ->where('views', '>', 0)
+                ->orderBy('views', 'DESC')
+                ->limit($limit)
+                ->get();
+
+            $response->status = 200;
+            $response->message = 'Productos más visitados obtenidos correctamente';
+            $response->data = $products;
+        } catch (\Throwable $th) {
+            $response->status = 400;
+            $response->message = $th->getMessage();
+        }
+
+        return response($response->toArray(), $response->status);
+    }
+    
+    /**
+     * Get products with best discounts
+     */
+    public function bestDiscounts(Request $request)
+    {
+        $response = new Response();
+        try {
+            $limit = $request->input('limit', 10);
+            
+            $products = Item::where('status', true)
+                ->where('visible', true)
+                ->where('discount_percent', '>', 0)
+                ->orderBy('discount_percent', 'DESC')
+                ->limit($limit)
+                ->get();
+
+            $response->status = 200;
+            $response->message = 'Productos con mejores descuentos obtenidos correctamente';
+            $response->data = $products;
+        } catch (\Throwable $th) {
+            $response->status = 400;
+            $response->message = $th->getMessage();
+        }        return response($response->toArray(), $response->status);
+    }
+
+    /**
+     * Override paginate to handle special sorting for products
+     */
+    public function paginate(Request $request): HttpResponse|ResponseFactory
+    {
+        $response = new dxResponse();
+        try {
+            $withRelations = $request->has('with') ? explode(',', $request->with) : [];
+            $instance = $this->setPaginationInstance($request, $this->model)->with($withRelations);
+            $originalInstance = clone $instance;
+
+            if ($request->group != null) {
+                [$grouping] = $request->group;
+                $selector = $grouping['selector'];
+                if ($this->prefix4filter && !str_contains($selector, '.')) {
+                    $selector = $this->prefix4filter . '.' . $selector;
+                }
+                $instance = $instance->select([
+                    DB::raw("{$selector} AS 'key'")
+                ])->groupBy($selector);
+            }
+
+            if (Auth::check()) {
+                $table = $this->prefix4filter ? $this->prefix4filter : (new $this->model)->getTable();
+                if (Schema::hasColumn($table, 'status')) {
+                    $instance->whereNotNull($this->prefix4filter ? $this->prefix4filter . '.status' : 'status');
+                }
+            }
+
+            if ($request->filter) {
+                $instance->where(function ($query) use ($request) {
+                    dxDataGrid::filter($query, $request->filter ?? [], false, $this->prefix4filter);
+                });
+            }
+
+            // CUSTOM SORTING LOGIC FOR PRODUCTS
+            if ($request->group == null) {
+                if ($request->sort != null) {
+                    foreach ($request->sort as $sorting) {
+                        $selector = $sorting['selector'];
+                        $desc = $sorting['desc'] ? 'DESC' : 'ASC';
+                        
+                        switch ($selector) {
+                            case 'most_sold':
+                                // Para productos más vendidos, necesitamos hacer JOIN con sale_details y sales
+                                $instance = $instance->leftJoin('sale_details as sd', 'items.id', '=', 'sd.item_id')
+                                    ->leftJoin('sales as s', function($join) {
+                                        $join->on('sd.sale_id', '=', 's.id')
+                                             ->where('s.payment_status', '=', 'pagado');
+                                    })
+                                    ->selectRaw('items.*, COALESCE(SUM(sd.quantity), 0) as total_sold')
+                                    ->groupBy([
+                                        'items.id', 'items.slug', 'items.name', 'items.summary', 'items.description',
+                                        'items.price', 'items.discount', 'items.final_price', 'items.discount_percent',
+                                        'items.banner', 'items.image', 'items.category_id', 'items.subcategory_id',
+                                        'items.brand_id', 'items.is_new', 'items.offering', 'items.recommended',
+                                        'items.featured', 'items.visible', 'items.status', 'items.created_at',
+                                        'items.updated_at', 'items.sku', 'items.stock', 'items.url', 'items.views',
+                                        'items.collection_id', 'items.color', 'items.texture'
+                                    ])
+                                    ->orderBy('total_sold', $desc);
+                                break;
+                                
+                            case 'best_discount':
+                                // Para mejores descuentos, mostrar solo productos con descuento
+                                $instance = $instance->where('items.discount_percent', '>', 0)
+                                    ->orderBy('items.discount_percent', $desc);
+                                break;
+                                
+                            case 'most_viewed':
+                            case 'views':
+                                // Para más visitados, ordenar por views
+                                $instance = $instance->orderBy('items.views', $desc);
+                                break;
+                                
+                            case 'discount_percent':
+                                // Ordenar por porcentaje de descuento
+                                $instance = $instance->orderBy('items.discount_percent', $desc);
+                                break;
+                                
+                            case 'offering':
+                                // Productos en oferta (con descuento > 0) primero
+                                $instance = $instance->orderByRaw('CASE WHEN items.discount_percent > 0 THEN 0 ELSE 1 END ASC')
+                                    ->orderBy('items.discount_percent', 'DESC');
+                                break;
+                                
+                            case 'is_new':
+                                // Productos nuevos primero
+                                $instance = $instance->orderByRaw('CASE WHEN items.is_new = 1 THEN 0 ELSE 1 END ASC')
+                                    ->orderBy('items.created_at', 'DESC');
+                                break;
+                                
+                            case 'featured':
+                                // Productos destacados primero
+                                $instance = $instance->orderByRaw('CASE WHEN items.featured = 1 THEN 0 ELSE 1 END ASC')
+                                    ->orderBy('items.created_at', 'DESC');
+                                break;
+                                
+                            case 'recommended':
+                                // Productos recomendados primero
+                                $instance = $instance->orderByRaw('CASE WHEN items.recommended = 1 THEN 0 ELSE 1 END ASC')
+                                    ->orderBy('items.created_at', 'DESC');
+                                break;
+                                
+                            default:
+                                // Ordenamiento estándar
+                                if ($this->prefix4filter && !str_contains($selector, '.')) {
+                                    $selector = $this->prefix4filter . '.' . $selector;
+                                }
+                                $instance = $instance->orderBy($selector, $desc);
+                                break;
+                        }
+                        
+                        // Solo aplicamos el primer criterio de ordenación para evitar conflictos
+                        break;
+                    }
+                } else {
+                    $instance->orderBy($this->prefix4filter ? $this->prefix4filter . '.id' : 'id', 'ASC');
+                }
+            }
+
+            $totalCount = 0;
+            if ($request->requireTotalCount) {
+                $instance4count = clone $originalInstance;
+                $instance4count->getQuery()->groups = null;
+                if ($request->group != null) {
+                    $selector = $request->group[0]['selector'];
+                    if ($this->prefix4filter && !str_contains($selector, '.')) {
+                        $selector = $this->prefix4filter . '.' . $selector;
+                    }
+                    $totalCount = $instance4count->distinct()->count(DB::raw($selector));
+                } else {
+                    if ($this->prefix4filter) {
+                        $totalCount = $instance4count->distinct()->count($this->prefix4filter . '.id');
+                    } else {
+                        $totalCount = $instance4count->distinct()->count('id');
+                    }
+                }
+            }
+
+            $jpas = $request->isLoadingAll
+                ? $instance->get()
+                : $instance->skip($request->skip ?? 0)->take($request->take ?? 10)->get();
+
+            $response->status = 200;
+            $response->message = 'Operación correcta';
+            $response->data = $jpas;
+            $response->summary = $this->setPaginationSummary($request, $instance, $originalInstance);
+            $response->totalCount = $totalCount;
+
+        } catch (\Throwable $th) {
+            $response->message = $th->getMessage() . ' Ln.' . $th->getLine();
+        } finally {
+            return response($response->toArray(), $response->status);
         }
     }
 }

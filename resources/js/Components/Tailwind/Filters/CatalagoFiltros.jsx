@@ -482,10 +482,15 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     { value: "final_price:desc", label: "Precio: Mayor a Menor" },
     { value: "name:asc", label: "Nombre: A-Z" },
     { value: "name:desc", label: "Nombre: Z-A" },
-    { value: "is_new:desc", label: "Novedades" },
-    { value: "offering:desc", label: "Ofertas" },
-    { value: "recommended:desc", label: "Recomendados" },
-    { value: "featured:desc", label: "Destacados" },
+    { value: "most_sold:desc", label: "Más vendidos" },
+    { value: "views:desc", label: "Más visitados" },
+   // { value: "discount_percent:desc", label: "Mayores descuentos" },
+    { value: "best_discount:desc", label: "Mejores ofertas" },
+   // { value: "offering:desc", label: "En oferta" },
+ //   { value: "is_new:desc", label: "Nuevos productos" },
+   // { value: "featured:desc", label: "Destacados" },
+   
+   //{ value: "recommended:desc", label: "Recomendados por expertos" },
 ];
 
 
@@ -1527,6 +1532,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                             )}
                         </AnimatePresence>
                         {/* Paginación mejorada */}
+                        {Array.isArray(products) && products.length > 0 && (
                         <motion.div
                             className="flex flex-col md:flex-row justify-between items-center mb-4 w-full mt-12 gap-4 p-6 bg-gradient-to-r from-white via-gray-50/50 to-blue-50/50 rounded-2xl border border-gray-200/60 backdrop-blur-sm"
                             initial={{ opacity: 0, y: 20 }}
@@ -1606,6 +1612,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 </div>
                             </motion.div>
                         </motion.div>
+                        )}
                     </motion.div>
                 </div>
             </div>
