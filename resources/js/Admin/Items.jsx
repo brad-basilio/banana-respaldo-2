@@ -62,7 +62,7 @@ const Items = ({ categories, brands, collections }) => {
     const backCoverImageRef = useRef();
     const stockRef = useRef();
 
-    const featuresRef = useRef([]);
+   // const featuresRef = useRef([]);
     const specificationsRef = useRef([]);
 
     const [isEditing, setIsEditing] = useState(false);
@@ -1095,7 +1095,7 @@ const Items = ({ categories, brands, collections }) => {
                         </div>
                         <div className="card-body">
                             <div className="row">
-                                <div className="col-md-6">
+                              {/*  <div className="col-md-6">
                                     <DynamicField
                                         ref={featuresRef}
                                         label="Características"
@@ -1103,8 +1103,8 @@ const Items = ({ categories, brands, collections }) => {
                                         value={features}
                                         onChange={setFeatures}
                                     />
-                                </div>
-                                <div className="col-md-6">
+                                </div> */}
+                                <div className="col-md-12">
                                     <DynamicField
                                         ref={specificationsRef}
                                         label="Especificaciones"

@@ -125,7 +125,7 @@ const DynamicField = ({ label, structure, value = [], onChange, typeOptions = []
                 </div>
             ))}
 
-            <button type="button" className="btn btn-primary mt-2" onClick={handleAdd}>
+            <button type="button" className="btn btn-primary mt-2 d-block " onClick={handleAdd}>
                 + Agregar
             </button>
         </div>
