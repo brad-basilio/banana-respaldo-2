@@ -111,7 +111,7 @@ const MenuSimple = ({ pages = [], items, data }) => {
                                 <a
                                     href={`/catalogo?tag=${tag.id}`}
                                     className={
-                                        "font-medium bg-primary text-white rounded-full p-2 hover:brightness-125 cursor-pointer transition-all duration-300  relative flex items-center gap-2"
+                                        "font-medium bg-primary text-white rounded-full p-2 hover:bg-white hover:customtext-neutral-dark cursor-pointer transition-all duration-300  relative flex items-center gap-2"
                                     }
                                     title={tag.description || tag.name}
                                 >
