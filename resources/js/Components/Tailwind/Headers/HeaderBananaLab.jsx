@@ -8,6 +8,8 @@ import {
     UserRound,
     UserCircle,
     DoorClosed,
+    Settings,
+    Home,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,13 +28,54 @@ const HeaderBananaLab = ({
     pages,
     generals = [],
 }) => {
+      const menuVariants = {
+        hidden: {
+            opacity: 0,
+            y: -10,
+            scale: 0.95
+        },
+        visible: {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            transition: {
+                type: "spring",
+                stiffness: 400,
+                damping: 25
+            }
+        },
+        exit: {
+            opacity: 0,
+            y: -10,
+            scale: 0.95,
+            transition: {
+                duration: 0.15
+            }
+        }
+    };
     const menuItems = [
-        { name: "Inicio", href: "/" },
-        { name: "Productos", href: "/catalog" },
-        { name: "Colecciones", href: "/collections" },
-        { name: "Nosotros", href: "/about" },
-        { name: "Contacto", href: "/contact" },
+        {
+            icon: <User size={16} />,
+            label: "Mi Perfil",
+            href: "/profile"
+        },
+        {
+            icon: <ShoppingCart size={16} />,
+            label: "Mis Pedidos",
+            href: "/customer/dashboard"
+        },
+        {
+            icon: <Settings size={16} />,
+            label: "Configuración",
+            href: "/account"
+        },
+        {
+            icon: <DoorClosed size={16} />,
+            label: "Cerrar Sesión",
+            onClick: Logout
+        }
     ];
+
 
     const phoneWhatsappObj = generals.find(
         (item) => item.correlative === "phone_whatsapp"
@@ -84,7 +127,7 @@ const HeaderBananaLab = ({
     }, []);
 
     const [search, setSearch] = useState("");
-
+ const isCustomer = isUser && Array.isArray(isUser.roles) && isUser.roles.some(role => role.name === 'Customer');
     return (
         <motion.nav 
             className="bg-[#F8F9FA] shadow-md fonts-paragraph"
@@ -197,47 +240,66 @@ const HeaderBananaLab = ({
 
                             <AnimatePresence>
                                 {isMenuOpen && (
-                                    <motion.div 
-                                        className="absolute z-50 right-0 mt-2 bg-white shadow-xl rounded-xl w-48"
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <div className="p-2">
-                                            <ul className="space-y-2">
-                                                <motion.li
-                                                    whileHover={{ x: 3 }}
+                                                <motion.div
+                                                    initial="hidden"
+                                                    animate="visible"
+                                                    exit="exit"
+                                                    variants={menuVariants}
+                                                    className="absolute z-50 top-full right-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
                                                 >
-                                                    <a
-                                                        href="/mi-cuenta"
-                                                        className="flex items-center gap-2 px-3 py-2 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300 cursor-pointer"
-                                                    >
-                                                        <UserCircle
-                                                            className="customtext-primary"
-                                                            height="1rem"
-                                                        />
-                                                        <span>Mi cuenta</span>
-                                                    </a>
-                                                </motion.li>
-                                                <motion.li
-                                                    whileHover={{ x: 3 }}
-                                                >
-                                                    <button
-                                                        onClick={Logout}
-                                                        className="w-full flex items-center gap-2 px-3 py-2 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300 cursor-pointer"
-                                                    >
-                                                        <DoorClosed
-                                                            className="customtext-primary"
-                                                            height="1rem"
-                                                        />
-                                                        <span>Cerrar sesión</span>
-                                                    </button>
-                                                </motion.li>
-                                            </ul>
-                                        </div>
-                                    </motion.div>
-                                )}
+                                                    <div className="p-4">
+                                                        <ul className="space-y-3">
+                                                            {isCustomer ? (
+                                                                menuItems.map((item, index) => (
+                                                                    <li key={index}>
+                                                                        {item.onClick ? (
+                                                                            <button
+                                                                                aria-label="menu-items"
+                                                                                onClick={item.onClick}
+                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </button>
+                                                                        ) : (
+                                                                            <a
+                                                                                href={item.href}
+                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </a>
+                                                                        )}
+                                                                    </li>
+                                                                ))
+                                                            ) : (
+                                                                <>
+                                                                    <li>
+                                                                        <a
+                                                                            href="/admin/home"
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        >
+                                                                            <Home size={16} />
+                                                                            <span>Dashboard</span>
+                                                                        </a>
+                                                                    </li>
+                                                                    <li>
+                                                                        <a
+                                                                            href="#"
+                                                                            onClick={Logout}
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        >
+                                                                         
+                                                                            <DoorClosed size={16} />
+                                                                            <span>Cerrar Sesión</span>
+                                                                        </a>
+                                                                    </li>
+                                                                </>
+                                                            )}
+                                                        </ul>
+                                                    </div>
+                                                </motion.div>
+                                            )}
                             </AnimatePresence>
                         </div>
                         
