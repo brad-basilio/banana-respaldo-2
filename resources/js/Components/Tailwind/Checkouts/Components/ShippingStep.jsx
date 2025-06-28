@@ -190,6 +190,8 @@ export default function ShippingStep({
         lastname: user?.lastname || "",
         email: user?.email || "",
         phone: user?.phone || "",
+       // documentType: "DNI",
+        document: user?.dni || "", // Número de DNI (no obligatorio)
         department: user?.department || "",
         province: user?.province || "",
         district: user?.district || "",
@@ -583,6 +585,7 @@ export default function ShippingStep({
                 ...formData,
                 fullname: `${formData.name} ${formData.lastname}`,
                 country: "Perú",
+                documentType: "DNI", // Siempre DNI por defecto
                 amount: roundToTwoDecimals(finalTotalWithCoupon),
                 delivery: roundToTwoDecimals(envio),
                 cart: cart,
@@ -924,6 +927,21 @@ export default function ShippingStep({
                         placeholder="Ej: 987654321"
                         required
                         className={`border-gray-200 ${errors.phone ? 'border-red-500 bg-red-50' : ''}`}
+                    />
+
+                    <InputForm
+                        name="document"
+                        label="Número de DNI"
+                        type="text"
+                        value={formData.document}
+                        onChange={(e) => {
+                            // Solo permitir números, máximo 8 dígitos para DNI
+                            const value = e.target.value.replace(/\D/g, '');
+                            setFormData(prev => ({ ...prev, document: value }));
+                        }}
+                        maxLength="8"
+                        placeholder="Ej: 12345678 (opcional)"
+                        className="border-gray-200"
                     />
 
                     <div className="form-group">

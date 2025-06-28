@@ -256,6 +256,18 @@ const Sales = ({ statuses = [] }) => {
                                             <th>Teléfono:</th>
                                             <td>{saleLoaded?.phone}</td>
                                         </tr>
+                                        {saleLoaded?.document_type && (
+                                            <tr>
+                                                <th>Tipo de documento:</th>
+                                                <td>{saleLoaded?.document_type}</td>
+                                            </tr>
+                                        )}
+                                        {saleLoaded?.document && (
+                                            <tr>
+                                                <th>Número de documento:</th>
+                                                <td>{saleLoaded?.document}</td>
+                                            </tr>
+                                        )}
                                         
                                         {saleLoaded?.delivery_type &&
                                         //== "express"  (
