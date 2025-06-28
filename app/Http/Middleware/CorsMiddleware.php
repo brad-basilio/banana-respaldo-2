@@ -17,18 +17,23 @@ class CorsMiddleware
     {
         $response = $next($request);
         
-        // Para StreamedResponse y otros tipos que no tienen el método header()
-        if (method_exists($response, 'header')) {
-            return $response
-                ->header('Access-Control-Allow-Origin', '*')
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Xsrf-Token, X-Requested-With');
-        } else {
-            // Para StreamedResponse y otros tipos, usar headers directamente
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Xsrf-Token, X-Requested-With');
-            return $response;
-        }
+        $origin = $request->headers->get('Origin');
+        $allowedOrigins = [
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+            'http://localhost:3000',
+            env('APP_URL')
+        ];
+        
+        // Determinar el origin permitido
+        $allowOrigin = in_array($origin, $allowedOrigins) ? $origin : $allowedOrigins[0];
+        
+        // Configurar headers CORS
+        $response->headers->set('Access-Control-Allow-Origin', $allowOrigin);
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Xsrf-Token, X-Requested-With, X-CSRF-TOKEN');
+        $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        
+        return $response;
     }
 }
