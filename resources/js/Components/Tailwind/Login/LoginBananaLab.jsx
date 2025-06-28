@@ -291,19 +291,12 @@ export default function LoginBananaLab() {
                                 <span className="text-muted font-medium">¿Eres nuevo? </span>
                                 <motion.a
                                     href="/crear-cuenta"
-                                    className="border-b border-[#F93232] text-[#F93232] hover:opacity-80"
+                                    className="border-b border-primary customtext-primary hover:opacity-80"
                                     whileHover={{ scale: 1.05 }}
                                 >
                                     Registrate como persona
                                 </motion.a>
-                                <span className="text-muted font-medium"> o </span>
-                                <motion.a
-                                    href="/registro-comerciante"
-                                    className="border-b border-[#F93232] text-[#F93232] hover:opacity-80"
-                                    whileHover={{ scale: 1.05 }}
-                                >
-                                    Registrate como comerciante
-                                </motion.a>
+                               
                             </div>
                         </motion.div>
                     </form>
