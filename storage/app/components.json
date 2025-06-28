@@ -1512,7 +1512,11 @@
                         "brand",
                         "subcategory"
                     ]
-                }
+                },
+                "generals": [
+                    "phone_whatsapp",
+                    "message_whatsapp"
+                ]
             },
             {
                 "id": "ProductDetailBananaLab",
