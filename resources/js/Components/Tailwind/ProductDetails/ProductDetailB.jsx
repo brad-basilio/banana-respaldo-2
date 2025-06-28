@@ -17,6 +17,7 @@ import {
     MessageCircle,
     Truck,
     X,
+    ZoomIn,
 } from "lucide-react";
 
 import ItemsRest from "../../../Actions/ItemsRest";
@@ -47,6 +48,13 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
         type: "main",
     });
 
+    // Estados para la funcionalidad de zoom
+    const [isZoomEnabled, setIsZoomEnabled] = useState(false);
+    const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [lastMousePosition, setLastMousePosition] = useState({ x: 0, y: 0 });
+    const imageRef = useRef(null);
+
     const [quantity, setQuantity] = useState(1);
     const handleChange = (e) => {
         let value = parseInt(e.target.value, 10);
@@ -68,6 +76,67 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
 
     // Estados para modal de políticas de envío
     const [deliveryPolicyModalOpen, setDeliveryPolicyModalOpen] = useState(false);
+
+    // Funciones para manejar el zoom de la imagen
+    const handleZoomClick = () => {
+        console.log('Zoom clicked, current state:', isZoomEnabled);
+        setIsZoomEnabled(!isZoomEnabled);
+        if (!isZoomEnabled) {
+            // Centrar la imagen cuando se activa el zoom
+            setZoomPosition({ x: 50, y: 50 });
+        }
+        setIsDragging(false);
+    };
+
+    const handleMouseDown = (e) => {
+        if (!isZoomEnabled) return;
+        setIsDragging(true);
+        setLastMousePosition({ x: e.clientX, y: e.clientY });
+        e.preventDefault();
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isZoomEnabled || !imageRef.current) return;
+
+        if (isDragging) {
+            // Modo arrastre: mover el zoom basado en el delta del mouse
+            const deltaX = e.clientX - lastMousePosition.x;
+            const deltaY = e.clientY - lastMousePosition.y;
+            
+            setZoomPosition(prev => {
+                // Ajustar la sensibilidad para movimiento más suave
+                const sensitivity = 0.3; // Reducir para movimiento más suave
+                const newX = Math.max(0, Math.min(100, prev.x - deltaX * sensitivity));
+                const newY = Math.max(0, Math.min(100, prev.y - deltaY * sensitivity));
+                return { x: newX, y: newY };
+            });
+            
+            setLastMousePosition({ x: e.clientX, y: e.clientY });
+        } else {
+            // Modo hover: seguir el cursor suavemente cuando no se arrastra
+            const rect = imageRef.current.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            const limitedX = Math.max(10, Math.min(90, x)); // Evitar bordes extremos
+            const limitedY = Math.max(10, Math.min(90, y));
+            
+            // Interpolación muy suave para el hover
+            setZoomPosition(prev => ({
+                x: prev.x + (limitedX - prev.x) * 0.1,
+                y: prev.y + (limitedY - prev.y) * 0.1
+            }));
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+        // No desactivar el zoom automáticamente, permitir que el usuario lo controle
+    };
 
     // WhatsApp configuration
     const phone_whatsapp = generals?.find(
@@ -243,6 +312,40 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
     const thumbSwiperRef = useRef(null);
     const navigationPrevRef = useRef(null);
     const navigationNextRef = useRef(null);
+
+    // useEffect para manejar eventos globales del mouse (para el drag)
+    useEffect(() => {
+        const handleGlobalMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        const handleGlobalMouseMove = (e) => {
+            if (isDragging && isZoomEnabled && imageRef.current) {
+                const deltaX = e.clientX - lastMousePosition.x;
+                const deltaY = e.clientY - lastMousePosition.y;
+                
+                setZoomPosition(prev => {
+                    // Sensibilidad ajustada para movimiento más suave y controlado
+                    const sensitivity = 0.25;
+                    const newX = Math.max(5, Math.min(95, prev.x - deltaX * sensitivity));
+                    const newY = Math.max(5, Math.min(95, prev.y - deltaY * sensitivity));
+                    return { x: newX, y: newY };
+                });
+                
+                setLastMousePosition({ x: e.clientX, y: e.clientY });
+            }
+        };
+
+        if (isDragging) {
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+        }
+
+        return () => {
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+            document.removeEventListener('mousemove', handleGlobalMouseMove);
+        };
+    }, [isDragging, isZoomEnabled, lastMousePosition]);
 
     return (
         <>
@@ -556,20 +659,110 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                 </div>
 
                                 {/* Main Image */}
-                                <div className="flex-1">
-                                    <img
-                                        src={
-                                            selectedImage.type === "main"
-                                                ? `/storage/images/item/${selectedImage?.url}`
-                                                : `/storage/images/item/${selectedImage?.url}`
-                                        }
-                                        onError={(e) =>
-                                        (e.target.src =
-                                            "/api/cover/thumbnail/null")
-                                        }
-                                        alt="Product main"
-                                        className="w-full rounded-lg object-cover aspect-square"
-                                    />
+                                <div className="flex-1 relative group">
+                                    {/* Zoom Icon */}
+                                    <button
+                                        onClick={handleZoomClick}
+                                        className={`absolute top-3 right-3 z-10 p-2 rounded-full shadow-lg transition-all duration-200 ${
+                                            isZoomEnabled 
+                                                ? 'bg-primary text-white opacity-100' 
+                                                : 'bg-white/90 hover:bg-white text-gray-700 hover:text-primary group-hover:opacity-100 opacity-60'
+                                        }`}
+                                        title={isZoomEnabled ? "Desactivar zoom" : "Activar zoom"}
+                                    >
+                                        <ZoomIn className="w-5 h-5" />
+                                    </button>
+
+                                    <div
+                                        className={`relative overflow-hidden rounded-lg select-none ${
+                                            isZoomEnabled 
+                                                ? isDragging 
+                                                    ? 'cursor-grabbing' 
+                                                    : 'cursor-grab'
+                                                : 'cursor-pointer'
+                                        }`}
+                                        onMouseMove={handleMouseMove}
+                                        onMouseDown={handleMouseDown}
+                                        onMouseUp={handleMouseUp}
+                                        onMouseLeave={handleMouseLeave}
+                                        onClick={() => !isZoomEnabled && handleZoomClick()}
+                                        style={{
+                                            height: 'auto',
+                                            position: 'relative'
+                                        }}
+                                    >
+                                        <img
+                                            ref={imageRef}
+                                            src={
+                                                selectedImage.type === "main"
+                                                    ? `/storage/images/item/${selectedImage?.url}`
+                                                    : `/storage/images/item/${selectedImage?.url}`
+                                            }
+                                            onError={(e) =>
+                                            (e.target.src =
+                                                "/api/cover/thumbnail/null")
+                                            }
+                                            alt="Product main"
+                                            className="w-full rounded-lg object-cover aspect-square"
+                                            style={{
+                                                ...(isZoomEnabled
+                                                    ? {
+                                                          transform: `scale(2.5)`,
+                                                          transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                                                          transition: isDragging 
+                                                              ? 'none' 
+                                                              : 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform-origin 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                      }
+                                                    : {
+                                                          transform: 'scale(1)',
+                                                          transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                                                      }),
+                                                userSelect: 'none',
+                                                pointerEvents: 'auto'
+                                            }}
+                                            draggable={false}
+                                        />
+                                        
+                                        {/* Overlay visual para indicar que se puede hacer zoom */}
+                                        {!isZoomEnabled && (
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 rounded-lg flex items-center justify-center">
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/75 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                                                     Click para activar zoom
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Indicador cuando el zoom está activo */}
+                                        {isZoomEnabled && (
+                                            <div className="absolute bottom-3 left-3 bg-primary text-white px-3 py-2 rounded-lg text-xs font-medium shadow-lg border border-white/20">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                                    <span>
+                                                        {isDragging ? 'Arrastrando vista...' : 'Mantén presionado y arrastra'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Indicador de posición con mini-mapa */}
+                                        {isZoomEnabled && (
+                                            <div className="absolute top-4 left-4 bg-black/20 text-white p-2 rounded-lg shadow-lg">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    {/* Mini mapa */}
+                                                    <div className="relative w-12 h-12 bg-white/20 border border-white/40 rounded">
+                                                        <div 
+                                                            className="absolute w-3 h-3 bg-primary border border-white rounded-sm shadow-sm transition-all duration-200"
+                                                            style={{
+                                                                left: `${(zoomPosition.x / 100) * (48 - 12)}px`,
+                                                                top: `${(zoomPosition.y / 100) * (48 - 12)}px`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
