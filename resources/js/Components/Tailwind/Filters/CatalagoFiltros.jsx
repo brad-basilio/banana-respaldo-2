@@ -241,6 +241,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         category_id: GET.category ? GET.category.split(',') : [],
         brand_id: GET.brand ? GET.brand.split(',') : [],
         subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
+        tag_id: GET.tag ? GET.tag.split(',') : [], // Agregar soporte para tags
         price: [],
         name: GET.search || null,
         sort: [
@@ -352,6 +353,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 collection_id: collections
                     ? collections.filter(col => selectedFilters.collection_id.includes(col.slug)).map(col => col.id)
                     : [],
+                // Agregar soporte para tags
+                tag_id: selectedFilters.tag_id || [],
             };
             const response = await itemsRest.paginate(params);
             setProducts(response.data);
@@ -1342,6 +1345,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 category_id: [],
                                                 brand_id: [],
                                                 subcategory_id: [],
+                                                tag_id: [],
                                                 price: [],
                                                 name: null,
                                                 sort_by: "created_at",
@@ -1509,6 +1513,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                 category_id: [],
                                                                 brand_id: [],
                                                                 subcategory_id: [],
+                                                                tag_id: [],
                                                                 price: [],
                                                                 name: null,
                                                                 sort_by: "created_at",

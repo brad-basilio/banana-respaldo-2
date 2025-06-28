@@ -5360,7 +5360,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filter.jsx": {
-    "file": "assets/Filter-CKWvFS8P.js",
+    "file": "assets/Filter-CF-Vo9D0.js",
     "name": "Filter",
     "src": "resources/js/Components/Tailwind/Filter.jsx",
     "isDynamicEntry": true,
@@ -5381,7 +5381,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filters/CatalagoFiltros.jsx": {
-    "file": "assets/CatalagoFiltros-BCWLlKur.js",
+    "file": "assets/CatalagoFiltros-DvwMJkBI.js",
     "name": "CatalagoFiltros",
     "src": "resources/js/Components/Tailwind/Filters/CatalagoFiltros.jsx",
     "isDynamicEntry": true,
@@ -6546,7 +6546,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Menu.jsx": {
-    "file": "assets/Menu-BtPLKcm7.js",
+    "file": "assets/Menu-DhhUq2sO.js",
     "name": "Menu",
     "src": "resources/js/Components/Tailwind/Menu.jsx",
     "isDynamicEntry": true,
@@ -6573,14 +6573,20 @@
     ]
   },
   "resources/js/Components/Tailwind/Menu/MenuSimple.jsx": {
-    "file": "assets/MenuSimple-Co_3lRRe.js",
+    "file": "assets/MenuSimple-dzM5z5Kk.js",
     "name": "MenuSimple",
     "src": "resources/js/Components/Tailwind/Menu/MenuSimple.jsx",
     "isEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_index-yBjzXJbu.js"
+      "_main-BvVILmTO.js",
+      "_BasicRest-B3rfI5GY.js",
+      "_index-yBjzXJbu.js",
+      "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
+      "_index-CMHsc23u.js",
+      "_index-rimy3MAc.js",
+      "_index-fNjTmf9T.js"
     ]
   },
   "resources/js/Components/Tailwind/Partner.jsx": {
@@ -8406,7 +8412,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-D93MKtXg.js",
+    "file": "assets/System-BNyD5oe9.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

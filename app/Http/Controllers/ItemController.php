@@ -730,6 +730,16 @@ class ItemController extends BasicController
                 });
             }
 
+            // Custom filter handling for tags
+            if ($request->tag_id) {
+                $tagIds = is_array($request->tag_id) ? $request->tag_id : [$request->tag_id];
+                $instance->whereIn('items.id', function($query) use ($tagIds) {
+                    $query->select('item_id')
+                          ->from('item_tags')
+                          ->whereIn('tag_id', $tagIds);
+                });
+            }
+
             // CUSTOM SORTING LOGIC FOR PRODUCTS
             if ($request->group == null) {
                 if ($request->sort != null) {
@@ -846,6 +856,39 @@ class ItemController extends BasicController
             $response->totalCount = $totalCount;
 
         } catch (\Throwable $th) {
+            $response->message = $th->getMessage() . ' Ln.' . $th->getLine();
+        } finally {
+            return response($response->toArray(), $response->status);
+        }
+    }
+
+    /**
+     * Obtener tags que tienen productos visibles y activos
+     */
+    public function getTags()
+    {
+        $response = new Response();
+
+        try {
+            $tags = DB::table('tags')
+                ->join('item_tags', 'tags.id', '=', 'item_tags.tag_id')
+                ->join('items', 'item_tags.item_id', '=', 'items.id')
+                ->where('tags.status', true)
+                ->where('tags.visible', true)
+                ->where('items.status', true)
+                ->where('items.visible', true)
+                ->select('tags.id', 'tags.name', 'tags.description', DB::raw('COUNT(items.id) as items_count'))
+                ->groupBy('tags.id', 'tags.name', 'tags.description')
+                ->having('items_count', '>', 0)
+                ->orderBy('tags.name')
+                ->get();
+
+            $response->status = 200;
+            $response->message = 'Tags obtenidos correctamente';
+            $response->data = $tags;
+
+        } catch (\Throwable $th) {
+            $response->status = 400;
             $response->message = $th->getMessage() . ' Ln.' . $th->getLine();
         } finally {
             return response($response->toArray(), $response->status);
