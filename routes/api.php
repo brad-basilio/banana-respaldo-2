@@ -50,6 +50,7 @@ use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\CanvasPresetController as AdminCanvasPresetController;
 use App\Http\Controllers\CanvasController;
+use App\Http\Controllers\CanvasProjectController;
 use App\Http\Controllers\Api\Canvas\ProjectSaveController;
 use App\Http\Controllers\ProjectPDFController;
 use App\Http\Controllers\AuthClientController;
@@ -128,6 +129,7 @@ Route::get('/posts/media/{uuid}', [AdminPostController::class, 'media']);
 Route::get('/items/media/{uuid}', [AdminItemController::class, 'media']);
 
 Route::get('/item_images/media/{uuid}', [AdminItemImageController::class, 'media']);
+Route::get('/canvas_project/media/{uuid}', [CanvasProjectController::class, 'media']);
 
 Route::get('/indicators/media/{uuid}', [AdminIndicatorController::class, 'media']);
 
@@ -438,7 +440,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/canvas/create-project', [CanvasController::class, 'createProject']);
     Route::get('/canvas/projects/{id}', [CanvasController::class, 'getProject']);
     Route::post('/canvas/save', [CanvasController::class, 'save']);
-    Route::post('/canvas/projects/{id}/save', [CanvasController::class, 'save']);
+    Route::post('/canvas/projects/{id}/save', [ProjectSaveController::class, 'save']);
     Route::post('/canvas/export/{id}', [CanvasController::class, 'export']);
     Route::get('/canvas/projects', [CanvasController::class, 'list']);
     Route::delete('/canvas/projects/{id}', [CanvasController::class, 'delete']);
@@ -447,6 +449,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/canvas/upload-image', [ProjectSaveController::class, 'uploadImage']);
     Route::post('/canvas/auto-save', [ProjectSaveController::class, 'autoSave']);
     Route::post('/canvas/manual-save', [ProjectSaveController::class, 'manualSave']);
+    
+    // Enhanced auto-save system routes
+    Route::post('/canvas/projects/{id}/save-progress', [ProjectSaveController::class, 'saveProgress']);
+    Route::get('/canvas/projects/{id}/load-progress', [ProjectSaveController::class, 'loadProgress']);
+    Route::post('/canvas/projects/upload-image', [ProjectSaveController::class, 'uploadImage']);
 
     // Project PDF generation route (for frontend users)
     Route::post('/projects/{projectId}/generate-pdf', [ProjectPDFController::class, 'generatePDF']);

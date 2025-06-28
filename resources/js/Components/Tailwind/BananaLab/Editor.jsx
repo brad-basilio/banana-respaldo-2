@@ -44,7 +44,9 @@ import BookPreviewModal from "./components/Editor/BookPreview";
 import Global from "../../../Utils/Global";
 import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
 import { useSaveProject } from "./utils/useSaveProject";
+import { useAutoSave } from "./utils/useAutoSave";
 import SaveIndicator from "./components/UI/SaveIndicator";
+import ProgressRecoveryModal from "./components/UI/ProgressRecoveryModal";
 import domtoimage from 'dom-to-image-more';
 
 // Componente optimizado para miniaturas que evita re-renderizados innecesarios
@@ -550,8 +552,20 @@ export default function EditorLibro() {
         cellId: null,
     });
     const [isBookPreviewOpen, setIsBookPreviewOpen] = useState(false);
+    const [showProgressRecovery, setShowProgressRecovery] = useState(false);
+    const [savedProgress, setSavedProgress] = useState(null);
 
-    // Save system integration
+    // Enhanced Auto-Save system integration
+    const autoSave = useAutoSave(
+        pages, 
+        projectData, 
+        itemData, 
+        presetData, 
+        workspaceDimensions, 
+        pageThumbnails
+    );
+
+    // Save system integration (legacy support)
     const saveHook = useSaveProject(
         pages,
         projectData,
@@ -566,6 +580,118 @@ export default function EditorLibro() {
         return `editor_progress_project_${projectData?.id}`;
     };
 
+    // Función para verificar y cargar progreso guardado al inicializar
+    const checkAndLoadSavedProgress = useCallback(async () => {
+        if (!projectData?.id) return;
+
+        try {
+            // 1. Verificar localStorage primero
+            const localProgress = autoSave.loadFromLocalStorage();
+            
+            // 2. Verificar base de datos
+            const baseUrl = window.location.origin.includes('bananalab')
+                ? '/projects/bananalab/public'
+                : '';
+            
+            const response = await fetch(`${baseUrl}/api/canvas/projects/${projectData.id}/load-progress`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            let serverProgress = null;
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data?.design_data) {
+                    serverProgress = result.data;
+                }
+            }
+
+            // Determinar qué progreso usar (el más reciente)
+            let progressToUse = null;
+            
+            if (localProgress && serverProgress) {
+                const localTime = new Date(localProgress.savedAt).getTime();
+                const serverTime = new Date(serverProgress.saved_at).getTime();
+                progressToUse = localTime > serverTime ? localProgress : serverProgress;
+            } else if (localProgress) {
+                progressToUse = localProgress;
+            } else if (serverProgress) {
+                progressToUse = serverProgress;
+            }
+
+            // Si hay progreso guardado, mostrar modal de recuperación
+            if (progressToUse && 
+                (progressToUse.pages?.length > 0 || progressToUse.design_data?.pages?.length > 0)) {
+                
+                console.log('💾 [RECOVERY] Progreso encontrado, mostrando modal de recuperación');
+                setSavedProgress(progressToUse);
+                setShowProgressRecovery(true);
+            }
+
+        } catch (error) {
+            console.error('❌ [RECOVERY] Error verificando progreso guardado:', error);
+        }
+    }, [projectData?.id, autoSave]);
+
+    // Cargar progreso guardado
+    const handleLoadProgress = useCallback(async (progress) => {
+        try {
+            console.log('📂 [RECOVERY] Cargando progreso guardado...');
+            
+            let pagesToLoad = [];
+            
+            // Determinar el formato del progreso
+            if (progress.pages) {
+                // Formato localStorage
+                pagesToLoad = progress.pages;
+            } else if (progress.design_data?.pages) {
+                // Formato base de datos
+                pagesToLoad = progress.design_data.pages;
+            }
+
+            if (pagesToLoad.length > 0) {
+                setPages(pagesToLoad);
+                
+                // Actualizar el historial
+                const newHistory = [JSON.stringify(pagesToLoad)];
+                setHistory(newHistory);
+                setHistoryIndex(0);
+                
+                // Regenerar thumbnails para las páginas cargadas
+                setTimeout(() => {
+                    setPageThumbnails({});
+                }, 100);
+                
+                toast.success('✅ Progreso cargado exitosamente');
+                console.log('✅ [RECOVERY] Progreso cargado:', pagesToLoad.length, 'páginas');
+            }
+            
+        } catch (error) {
+            console.error('❌ [RECOVERY] Error cargando progreso:', error);
+            toast.error('Error al cargar el progreso guardado');
+        }
+    }, [setPages, setHistory, setHistoryIndex, setPageThumbnails]);
+
+    // Descartar progreso guardado
+    const handleDiscardProgress = useCallback(async () => {
+        try {
+            console.log('🗑️ [RECOVERY] Descartando progreso guardado...');
+            
+            // Limpiar localStorage
+            const storageKey = autoSave.getStorageKey();
+            localStorage.removeItem(storageKey);
+            
+            toast.success('Progreso anterior eliminado');
+            console.log('✅ [RECOVERY] Progreso descartado exitosamente');
+            
+        } catch (error) {
+            console.error('❌ [RECOVERY] Error descartando progreso:', error);
+        }
+    }, [autoSave]);
+
     // Efecto para inicializar páginas cuando se cargan los datos del proyecto
     useEffect(() => {
         if (projectData && itemData && presetData) {
@@ -579,6 +705,16 @@ export default function EditorLibro() {
             // Las páginas ya se configuran en el otro useEffect que maneja initialProject
         }
     }, [projectData, itemData, presetData, initialProject]);
+
+    // Verificar progreso guardado cuando se cargan los datos del proyecto
+    useEffect(() => {
+        if (projectData?.id && !isLoading && pages.length === 0) {
+            // Añadir un pequeño delay para asegurar que el componente esté completamente montado
+            setTimeout(() => {
+                checkAndLoadSavedProgress();
+            }, 500);
+        }
+    }, [projectData?.id, isLoading, pages.length, checkAndLoadSavedProgress]);
 
 
 
@@ -2104,11 +2240,15 @@ export default function EditorLibro() {
 
                             {/* Action buttons */}
                             <div className="flex gap-3 items-center">
-                                {/* Save indicator */}
+                                {/* Enhanced Auto-Save indicator */}
                                 <SaveIndicator
-                                    saveStatus={saveHook.saveStatus}
-                                    lastSaved={saveHook.lastSaved}
-                                    onManualSave={saveHook.manualSave}
+                                    saveStatus={autoSave.saveStatus}
+                                    lastSaved={autoSave.lastSaved}
+                                    lastAutoSaved={autoSave.lastAutoSaved}
+                                    hasUnsavedChanges={autoSave.hasUnsavedChanges}
+                                    isOnline={autoSave.isOnline}
+                                    saveError={autoSave.saveError}
+                                    onManualSave={autoSave.saveManually}
                                 />
 
                                 <Button
@@ -2953,6 +3093,15 @@ export default function EditorLibro() {
 
             {/* Toaster para notificaciones */}
             <Toaster />
+
+            {/* Modal de recuperación de progreso */}
+            <ProgressRecoveryModal
+                isOpen={showProgressRecovery}
+                onClose={() => setShowProgressRecovery(false)}
+                savedProgress={savedProgress}
+                onLoadProgress={handleLoadProgress}
+                onDiscardProgress={handleDiscardProgress}
+            />
         </DndProvider>
     );
 }
