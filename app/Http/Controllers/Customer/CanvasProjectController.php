@@ -39,10 +39,7 @@ class CanvasProjectController extends Controller
             ]);
 
             $user = Auth::user();
-   Log::info('Canvas project created', [
-                'project' => $request->all(),
-               
-            ]);
+
             // Crear el proyecto de canvas usando Eloquent
             $project = CanvasProject::create([
                 'user_id' => $user->id,
@@ -181,6 +178,11 @@ class CanvasProjectController extends Controller
     public function save(Request $request)
     {
         try {
+            Log::info('CanvasProjectController.save called', [
+                'request_data' => $request->all(),
+                'user_id' => Auth::id()
+            ]);
+
             if (!Auth::check()) {
                 return response()->json([
                     'status' => false,

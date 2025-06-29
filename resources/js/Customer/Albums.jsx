@@ -45,7 +45,10 @@ const Albums = ({ statuses = [] }) => {
     };
 
     const onEditProject = (projectId) => {
+        //que sea en un a neuva ventana abrir el href window.location.href = `/canvas/editor?project=${projectId}`;
+        
         window.location.href = `/canvas/editor?project=${projectId}`;
+        // 
     };
 
     const onEditProjectName = async (project) => {
@@ -54,7 +57,14 @@ const Albums = ({ statuses = [] }) => {
         $(editModalRef.current).modal("show");
     };
 
-    const onSaveProjectName = async () => {
+    const onSaveProjectName = async (e) => {
+        if (e) {
+            e.preventDefault();
+        }
+        
+        console.log('onSaveProjectName called with project:', editingProject);
+        console.log('onSaveProjectName called with projectName:', projectName);
+        
         if (!editingProject || !projectName.trim()) {
             Swal.fire({
                 title: "Error",
@@ -65,10 +75,17 @@ const Albums = ({ statuses = [] }) => {
         }
 
         try {
+            console.log('Saving project with data:', {
+                id: editingProject.id,
+                name: projectName.trim()
+            });
+
             const result = await projectsRest.save({
                 id: editingProject.id,
                 name: projectName.trim()
             });
+
+            console.log('Save result:', result);
 
             if (result) {
                 Swal.fire({
@@ -82,9 +99,10 @@ const Albums = ({ statuses = [] }) => {
                 $(gridRef.current).dxDataGrid("instance").refresh();
             }
         } catch (error) {
+            console.error('Error saving project:', error);
             Swal.fire({
                 title: "Error",
-                text: "No se pudo actualizar el nombre del proyecto",
+                text: error.message || "No se pudo actualizar el nombre del proyecto",
                 icon: "error"
             });
         }
@@ -440,9 +458,8 @@ const Albums = ({ statuses = [] }) => {
                 modalRef={editModalRef}
                 title="Editar Nombre del Proyecto"
                 size="md"
-                onClickSubmit={onSaveProjectName}
-                textSubmit="Guardar Cambios"
-                submitIcon="fa fa-save"
+                onSubmit={onSaveProjectName}
+                btnSubmitText="Guardar Cambios"
             >
                 <div className="mb-3">
                     <label htmlFor="projectName" className="form-label">

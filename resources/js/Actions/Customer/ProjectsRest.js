@@ -1,13 +1,13 @@
 import { Fetch } from "sode-extend-react";
 
 class ProjectsRest {
-    path = "customer/albums";
+    path = "customer/canvas-projects";
 
     // Método para paginación
     paginate = async (request) => {
         try {
             const { status, result } = await Fetch(
-                `/api/customer/canvas-projects/paginate`,
+                `/api/${this.path}/paginate`,
                 {
                     method: "POST",
                     body: JSON.stringify(request),
@@ -29,7 +29,7 @@ class ProjectsRest {
     get = async (id) => {
         try {
             const { status, result } = await Fetch(
-                `/api/customer/canvas-projects/${id}`,
+                `/api/${this.path}/${id}`,
                 {
                     method: "GET",
                 }
@@ -49,13 +49,19 @@ class ProjectsRest {
     // Método para actualizar un proyecto
     save = async (request) => {
         try {
+            console.log('ProjectsRest.save called with:', request);
+            console.log('Using URL:', `/api/${this.path}/save`);
+            
             const { status, result } = await Fetch(
-                `/api/customer/canvas-projects/save`,
+                `/api/${this.path}/save`,
                 {
                     method: "POST",
                     body: JSON.stringify(request),
                 }
             );
+            
+            console.log('Save response:', { status, result });
+            
             if (!status) {
                 throw new Error(
                     result?.message ?? "Error al actualizar el proyecto"
@@ -72,7 +78,7 @@ class ProjectsRest {
     delete = async (id) => {
         try {
             const { status, result } = await Fetch(
-                `/api/customer/canvas-projects/${id}`,
+                `/api/${this.path}/${id}`,
                 {
                     method: "DELETE",
                 }
@@ -93,7 +99,7 @@ class ProjectsRest {
     createCanvasProject = async (request) => {
         try {
             const { status, result } = await Fetch(
-                `/api/customer/canvas-projects/create`,
+                `/api/${this.path}/create`,
                 {
                     method: "POST",
                     body: JSON.stringify(request),

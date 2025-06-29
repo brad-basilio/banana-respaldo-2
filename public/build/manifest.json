@@ -387,8 +387,8 @@
       "resources/js/Components/Tailwind/Components/ProductCard.jsx"
     ]
   },
-  "_ProjectsRest-CAc2DcAm.js": {
-    "file": "assets/ProjectsRest-CAc2DcAm.js",
+  "_ProjectsRest-D-mIjs1h.js": {
+    "file": "assets/ProjectsRest-D-mIjs1h.js",
     "name": "ProjectsRest",
     "imports": [
       "_main-BvVILmTO.js"
@@ -7517,7 +7517,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-qaIYDWpH.js",
+    "file": "assets/ProductDetail-CKr9Old-.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -7643,7 +7643,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx": {
-    "file": "assets/ProductDetailBananaLab-Bo7jZze6.js",
+    "file": "assets/ProductDetailBananaLab-B1brm2Az.js",
     "name": "ProductDetailBananaLab",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx",
     "isDynamicEntry": true,
@@ -7651,7 +7651,7 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "_ItemsRest-CNHS84XX.js",
-      "_ProjectsRest-CAc2DcAm.js",
+      "_ProjectsRest-D-mIjs1h.js",
       "_main-BvVILmTO.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "resources/js/Components/Tailwind/Blogs/BlogCarousel.jsx",
@@ -9066,7 +9066,7 @@
     ]
   },
   "resources/js/Customer/Albums.jsx": {
-    "file": "assets/Albums-CDb2U7qv.js",
+    "file": "assets/Albums-BYwIA7qr.js",
     "name": "Albums",
     "src": "resources/js/Customer/Albums.jsx",
     "isEntry": true,
@@ -9080,7 +9080,7 @@
       "_DxButton-DV0H-ZcL.js",
       "_ReactAppend-D7S498fx.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
-      "_ProjectsRest-CAc2DcAm.js",
+      "_ProjectsRest-D-mIjs1h.js",
       "_Modal-CIqmjseY.js",
       "_tippy-react.esm-GxPckcbS.js",
       "_index-yBjzXJbu.js",
@@ -9467,7 +9467,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-DkNvk7Or.js",
+    "file": "assets/System-BiICORfw.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
