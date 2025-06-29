@@ -292,18 +292,11 @@ class ItemController extends BasicController
             $filterSequence = $request->input('filterSequence', []);
             $selectedBrands = $request->input('brand_id', []);
             $selectedCategories = $request->input('category_id', []);
+            $selectedSubcategories = $request->input('subcategory_id', []);
             $selectedCollections = $request->input('collection_id', []);
 
-            // DEBUG: Agregar logs temporales
-            \Illuminate\Support\Facades\Log::info('setPaginationSummary - Filtros iniciales:', [
-                'selectedBrands' => $selectedBrands,
-                'selectedCategories' => $selectedCategories,
-                'selectedCollections' => $selectedCollections,
-                'filter' => $request->filter
-            ]);
-
             // Extraer filtros del filtro complejo si no hay filtros directos
-            if (empty($selectedBrands) && empty($selectedCategories) && $request->filter) {
+            if ((empty($selectedBrands) && empty($selectedCategories) && empty($selectedSubcategories)) && $request->filter) {
                 $filter = $request->filter;
                 if (is_array($filter)) {
                     foreach ($filter as $f1) {
@@ -316,6 +309,8 @@ class ItemController extends BasicController
                                         $selectedBrands[] = $f2[2];
                                     } elseif (($f2[0] === 'category.slug' || $f2[0] === 'category.id') && $f2[1] === '=') {
                                         $selectedCategories[] = $f2[2];
+                                    } elseif (($f2[0] === 'subcategory.slug' || $f2[0] === 'subcategory.id') && $f2[1] === '=') {
+                                        $selectedSubcategories[] = $f2[2];
                                     } elseif (($f2[0] === 'collection.slug' || $f2[0] === 'collection.id') && $f2[1] === '=') {
                                         $selectedCollections[] = $f2[2];
                                     }
@@ -328,6 +323,8 @@ class ItemController extends BasicController
                                     $selectedBrands[] = $f1[2];
                                 } elseif (($f1[0] === 'category.slug' || $f1[0] === 'category.id') && $f1[1] === '=') {
                                     $selectedCategories[] = $f1[2];
+                                } elseif (($f1[0] === 'subcategory.slug' || $f1[0] === 'subcategory.id') && $f1[1] === '=') {
+                                    $selectedSubcategories[] = $f1[2];
                                 } elseif (($f1[0] === 'collection.slug' || $f1[0] === 'collection.id') && $f1[1] === '=') {
                                     $selectedCollections[] = $f1[2];
                                 }
@@ -336,13 +333,6 @@ class ItemController extends BasicController
                     }
                 }
             }
-
-            // DEBUG: Log después de extraer filtros
-            \Illuminate\Support\Facades\Log::info('setPaginationSummary - Filtros después de extraer:', [
-                'selectedBrands' => $selectedBrands,
-                'selectedCategories' => $selectedCategories,
-                'selectedCollections' => $selectedCollections
-            ]);
 
             // IMPORTANTE: Usar siempre originalBuilder para los filtros, nunca builder con paginación
             $i4collection = clone $originalBuilder;
@@ -360,42 +350,61 @@ class ItemController extends BasicController
                 ? Item::getForeign($originalBuilder, Brand::class, 'brand_id')
                 : Item::getForeign($i4brand, Brand::class, 'brand_id');
 
-            // CATEGORIAS: si hay marcas seleccionadas, filtrar categorías por esas marcas, SIEMPRE, aunque category_id esté en filterSequence
-            if (!empty($selectedBrands)) {
-                // Si hay marcas seleccionadas, solo mostrar categorías que tengan productos de esas marcas
+            // CATEGORIAS: lógica mejorada para soportar subcategorías independientes
+            if (!empty($selectedBrands) || !empty($selectedSubcategories)) {
+                // Si hay marcas o subcategorías seleccionadas, filtrar categorías
                 $catBuilder = clone $originalBuilder;
                 
-                // Determinar si los valores son IDs (UUIDs) o slugs
-                $brandIds = [];
-                foreach ($selectedBrands as $brandValue) {
-                    // Si parece un UUID (contiene guiones), buscar por ID
-                    if (strpos($brandValue, '-') !== false) {
-                        $brandIds[] = $brandValue;
-                    } else {
-                        // Si no, es un slug, convertir a ID
-                        $brand = Brand::where('slug', $brandValue)->first();
-                        if ($brand) {
-                            $brandIds[] = $brand->id;
+                if (!empty($selectedBrands)) {
+                    // Determinar si los valores son IDs (UUIDs) o slugs
+                    $brandIds = [];
+                    foreach ($selectedBrands as $brandValue) {
+                        // Si parece un UUID (contiene guiones), buscar por ID
+                        if (strpos($brandValue, '-') !== false) {
+                            $brandIds[] = $brandValue;
+                        } else {
+                            // Si no, es un slug, convertir a ID
+                            $brand = Brand::where('slug', $brandValue)->first();
+                            if ($brand) {
+                                $brandIds[] = $brand->id;
+                            }
                         }
+                    }
+                    if (!empty($brandIds)) {
+                        $catBuilder->whereIn('brand_id', $brandIds);
                     }
                 }
                 
-                if (!empty($brandIds)) {
-                    $catBuilder->whereIn('brand_id', $brandIds);
-                    $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
-                } else {
-                    $categories = Item::getForeign($originalBuilder, Category::class, 'category_id');
+                if (!empty($selectedSubcategories)) {
+                    // Si hay subcategorías seleccionadas, mostrar sus categorías padre
+                    $subcategoryIds = [];
+                    foreach ($selectedSubcategories as $subcategoryValue) {
+                        if (strpos($subcategoryValue, '-') !== false) {
+                            $subcategoryIds[] = $subcategoryValue;
+                        } else {
+                            $subcategory = SubCategory::where('slug', $subcategoryValue)->first();
+                            if ($subcategory) {
+                                $subcategoryIds[] = $subcategory->id;
+                            }
+                        }
+                    }
+                    if (!empty($subcategoryIds)) {
+                        $catBuilder->whereIn('subcategory_id', $subcategoryIds);
+                    }
                 }
+                
+                $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
             } else {
-                // Si NO hay marcas seleccionadas, usar la lógica del filterSequence
+                // Si NO hay marcas ni subcategorías seleccionadas, usar la lógica del filterSequence
                 $categories = in_array('category_id', $filterSequence)
                     ? Item::getForeign($originalBuilder, Category::class, 'category_id')
                     : Item::getForeign($i4category, Category::class, 'category_id');
             }
 
-            // HIJO: subcategoría sí se filtra por los padres activos
-            if (in_array('subcategory_id', $filterSequence)) {
+            // SUBCATEGORIAS: mejorada para soportar filtrado independiente
+            if (in_array('subcategory_id', $filterSequence) || !empty($selectedSubcategories)) {
                 $subcatBuilder = clone $originalBuilder;
+                
                 if (!empty($selectedBrands)) {
                     // Determinar si los valores son IDs (UUIDs) o slugs
                     $brandIds = [];

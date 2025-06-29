@@ -279,29 +279,74 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
 
         if (filters.category_id.length > 0) {
-            const categoryConditions = filters.category_id.map((slug) => [
-                "category.id", // Cambiar a ID en lugar de slug
-                "=",
-                categories.find(c => c.slug === slug)?.id || slug,
-            ]);
+            const categoryConditions = filters.category_id.map((slug) => {
+                // Buscar la categoría en el array para obtener su ID
+                const category = categories.find(c => c.slug === slug);
+                
+                if (category) {
+                    // Si encontramos la categoría, usar su ID
+                    return [
+                        "category.id",
+                        "=",
+                        category.id,
+                    ];
+                } else {
+                    // Si no la encontramos, usar slug
+                    return [
+                        "category.slug",
+                        "=",
+                        slug,
+                    ];
+                }
+            });
             transformedFilters.push(ArrayJoin(categoryConditions, 'or'));
         }
 
         if (filters.subcategory_id.length > 0) {
-            const subcategoryConditions = filters.subcategory_id.map((slug) => [
-                "subcategory.id", // Cambiar a ID en lugar de slug
-                "=",
-                subcategories.find(s => s.slug === slug)?.id || slug,
-            ]);
+            const subcategoryConditions = filters.subcategory_id.map((slug) => {
+                // Buscar la subcategoría en el array para obtener su ID
+                const subcategory = subcategories.find(s => s.slug === slug);
+                
+                if (subcategory) {
+                    // Si encontramos la subcategoría, usar su ID
+                    return [
+                        "subcategory.id",
+                        "=",
+                        subcategory.id,
+                    ];
+                } else {
+                    // Si no la encontramos (posiblemente porque aún no se han cargado), usar slug
+                    return [
+                        "subcategory.slug",
+                        "=",
+                        slug,
+                    ];
+                }
+            });
             transformedFilters.push(ArrayJoin(subcategoryConditions, 'or'));
         }
 
         if (filters.brand_id.length > 0) {
-            const brandConditions = filters.brand_id.map((slug) => [
-                "brand.id", // Cambiar a ID en lugar de slug
-                "=",
-                brands.find(b => b.slug === slug)?.id || slug,
-            ]);
+            const brandConditions = filters.brand_id.map((slug) => {
+                // Buscar la marca en el array para obtener su ID
+                const brand = brands.find(b => b.slug === slug);
+                
+                if (brand) {
+                    // Si encontramos la marca, usar su ID
+                    return [
+                        "brand.id",
+                        "=",
+                        brand.id,
+                    ];
+                } else {
+                    // Si no la encontramos, usar slug
+                    return [
+                        "brand.slug",
+                        "=",
+                        slug,
+                    ];
+                }
+            });
             transformedFilters.push(ArrayJoin(brandConditions, 'or'));
         }
 
@@ -578,13 +623,6 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             document.body.style.overflow = 'unset';
         };
     }, [filtersOpen]);
-
-    // Debug temporal para la paginación
-    console.log('🎯 RENDER DEBUG - Pagination state:', pagination);
-    console.log('🎯 RENDER DEBUG - Products length:', products?.length);
-    console.log('🎯 RENDER DEBUG - Selected filters:', Object.keys(selectedFilters).filter(key => 
-        Array.isArray(selectedFilters[key]) ? selectedFilters[key].length > 0 : selectedFilters[key]
-    ));
 
     return (
         <section className="py-4 lg:py-12 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
