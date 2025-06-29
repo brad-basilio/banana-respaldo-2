@@ -376,21 +376,30 @@ class ItemController extends BasicController
                 }
                 
                 if (!empty($selectedSubcategories)) {
-                    // Si hay subcategorías seleccionadas, mostrar sus categorías padre
+                    // Si hay subcategorías seleccionadas, obtener todas las categorías que tienen productos
+                    // pero priorizar las categorías padre de las subcategorías seleccionadas
                     $subcategoryIds = [];
+                    $parentCategoryIds = [];
+                    
                     foreach ($selectedSubcategories as $subcategoryValue) {
                         if (strpos($subcategoryValue, '-') !== false) {
-                            $subcategoryIds[] = $subcategoryValue;
+                            $subcategory = SubCategory::find($subcategoryValue);
                         } else {
                             $subcategory = SubCategory::where('slug', $subcategoryValue)->first();
-                            if ($subcategory) {
-                                $subcategoryIds[] = $subcategory->id;
+                        }
+                        
+                        if ($subcategory) {
+                            $subcategoryIds[] = $subcategory->id;
+                            if ($subcategory->category_id) {
+                                $parentCategoryIds[] = $subcategory->category_id;
                             }
                         }
                     }
-                    if (!empty($subcategoryIds)) {
-                        $catBuilder->whereIn('subcategory_id', $subcategoryIds);
-                    }
+                    
+                    // En lugar de filtrar solo por las subcategorías, mostrar todas las categorías
+                    // que tienen productos disponibles, pero esto incluirá las categorías padre
+                    // No filtrar por subcategory_id para mostrar más opciones de categorías
+                    // $catBuilder->whereIn('subcategory_id', $subcategoryIds);
                 }
                 
                 $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
@@ -405,58 +414,129 @@ class ItemController extends BasicController
             if (in_array('subcategory_id', $filterSequence) || !empty($selectedSubcategories)) {
                 $subcatBuilder = clone $originalBuilder;
                 
-                if (!empty($selectedBrands)) {
-                    // Determinar si los valores son IDs (UUIDs) o slugs
-                    $brandIds = [];
-                    foreach ($selectedBrands as $brandValue) {
-                        if (strpos($brandValue, '-') !== false) {
-                            $brandIds[] = $brandValue;
+                // Si hay subcategorías seleccionadas, obtener las categorías padre para mostrar todas las subcategorías relacionadas
+                if (!empty($selectedSubcategories)) {
+                    $subcategoryIds = [];
+                    $parentCategoryIds = [];
+                    
+                    foreach ($selectedSubcategories as $subcategoryValue) {
+                        if (strpos($subcategoryValue, '-') !== false) {
+                            $subcategory = SubCategory::find($subcategoryValue);
                         } else {
-                            $brand = Brand::where('slug', $brandValue)->first();
-                            if ($brand) {
-                                $brandIds[] = $brand->id;
+                            $subcategory = SubCategory::where('slug', $subcategoryValue)->first();
+                        }
+                        
+                        if ($subcategory) {
+                            $subcategoryIds[] = $subcategory->id;
+                            // Obtener la categoría padre de esta subcategoría
+                            if ($subcategory->category_id) {
+                                $parentCategoryIds[] = $subcategory->category_id;
                             }
                         }
                     }
-                    if (!empty($brandIds)) {
-                        $subcatBuilder->whereIn('brand_id', $brandIds);
-                    }
-                }
-                if (!empty($selectedCategories)) {
-                    // Determinar si los valores son IDs (UUIDs) o slugs
-                    $categoryIds = [];
-                    foreach ($selectedCategories as $categoryValue) {
-                        if (strpos($categoryValue, '-') !== false) {
-                            $categoryIds[] = $categoryValue;
-                        } else {
-                            $category = Category::where('slug', $categoryValue)->first();
-                            if ($category) {
-                                $categoryIds[] = $category->id;
+                    
+                    // Remover duplicados
+                    $parentCategoryIds = array_unique($parentCategoryIds);
+                    
+                    // En lugar de filtrar por las subcategorías seleccionadas, 
+                    // mostrar todas las subcategorías de las categorías padre
+                    if (!empty($parentCategoryIds)) {
+                        // Crear un builder especial que solo filtre por categorías padre
+                        $subcatForParentBuilder = clone $originalBuilder;
+                        $subcatForParentBuilder->whereIn('category_id', $parentCategoryIds);
+                        
+                        // Aplicar otros filtros que no sean de subcategoría
+                        if (!empty($selectedBrands)) {
+                            $brandIds = [];
+                            foreach ($selectedBrands as $brandValue) {
+                                if (strpos($brandValue, '-') !== false) {
+                                    $brandIds[] = $brandValue;
+                                } else {
+                                    $brand = Brand::where('slug', $brandValue)->first();
+                                    if ($brand) {
+                                        $brandIds[] = $brand->id;
+                                    }
+                                }
+                            }
+                            if (!empty($brandIds)) {
+                                $subcatForParentBuilder->whereIn('brand_id', $brandIds);
                             }
                         }
-                    }
-                    if (!empty($categoryIds)) {
-                        $subcatBuilder->whereIn('category_id', $categoryIds);
-                    }
-                }
-                if (!empty($selectedCollections)) {
-                    // Determinar si los valores son IDs (UUIDs) o slugs
-                    $collectionIds = [];
-                    foreach ($selectedCollections as $collectionValue) {
-                        if (strpos($collectionValue, '-') !== false) {
-                            $collectionIds[] = $collectionValue;
-                        } else {
-                            $collection = Collection::where('slug', $collectionValue)->first();
-                            if ($collection) {
-                                $collectionIds[] = $collection->id;
+                        
+                        if (!empty($selectedCollections)) {
+                            $collectionIds = [];
+                            foreach ($selectedCollections as $collectionValue) {
+                                if (strpos($collectionValue, '-') !== false) {
+                                    $collectionIds[] = $collectionValue;
+                                } else {
+                                    $collection = Collection::where('slug', $collectionValue)->first();
+                                    if ($collection) {
+                                        $collectionIds[] = $collection->id;
+                                    }
+                                }
+                            }
+                            if (!empty($collectionIds)) {
+                                $subcatForParentBuilder->whereIn('collection_id', $collectionIds);
                             }
                         }
+                        
+                        $subcategories = Item::getForeign($subcatForParentBuilder, SubCategory::class, 'subcategory_id');
+                    } else {
+                        // Fallback: usar el builder normal
+                        $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
                     }
-                    if (!empty($collectionIds)) {
-                        $subcatBuilder->whereIn('collection_id', $collectionIds);
+                } else {
+                    // Lógica normal cuando no hay subcategorías seleccionadas
+                    if (!empty($selectedBrands)) {
+                        $brandIds = [];
+                        foreach ($selectedBrands as $brandValue) {
+                            if (strpos($brandValue, '-') !== false) {
+                                $brandIds[] = $brandValue;
+                            } else {
+                                $brand = Brand::where('slug', $brandValue)->first();
+                                if ($brand) {
+                                    $brandIds[] = $brand->id;
+                                }
+                            }
+                        }
+                        if (!empty($brandIds)) {
+                            $subcatBuilder->whereIn('brand_id', $brandIds);
+                        }
                     }
+                    if (!empty($selectedCategories)) {
+                        $categoryIds = [];
+                        foreach ($selectedCategories as $categoryValue) {
+                            if (strpos($categoryValue, '-') !== false) {
+                                $categoryIds[] = $categoryValue;
+                            } else {
+                                $category = Category::where('slug', $categoryValue)->first();
+                                if ($category) {
+                                    $categoryIds[] = $category->id;
+                                }
+                            }
+                        }
+                        if (!empty($categoryIds)) {
+                            $subcatBuilder->whereIn('category_id', $categoryIds);
+                        }
+                    }
+                    if (!empty($selectedCollections)) {
+                        $collectionIds = [];
+                        foreach ($selectedCollections as $collectionValue) {
+                            if (strpos($collectionValue, '-') !== false) {
+                                $collectionIds[] = $collectionValue;
+                            } else {
+                                $collection = Collection::where('slug', $collectionValue)->first();
+                                if ($collection) {
+                                    $collectionIds[] = $collection->id;
+                                }
+                            }
+                        }
+                        if (!empty($collectionIds)) {
+                            $subcatBuilder->whereIn('collection_id', $collectionIds);
+                        }
+                    }
+                    $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
                 }
-                $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
             } else {
                 $subcategories = Item::getForeign($i4subcategory, SubCategory::class, 'subcategory_id');
             }
