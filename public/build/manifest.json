@@ -387,12 +387,11 @@
       "resources/js/Components/Tailwind/Components/ProductCard.jsx"
     ]
   },
-  "_ProjectsRest-CtLDg8Bp.js": {
-    "file": "assets/ProjectsRest-CtLDg8Bp.js",
+  "_ProjectsRest-CAc2DcAm.js": {
+    "file": "assets/ProjectsRest-CAc2DcAm.js",
     "name": "ProjectsRest",
     "imports": [
-      "_main-BvVILmTO.js",
-      "_BasicRest-b6WIUDlY.js"
+      "_main-BvVILmTO.js"
     ]
   },
   "_QuillFormGroup-D8zDHSfJ.js": {
@@ -7518,7 +7517,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-BJLWDM1U.js",
+    "file": "assets/ProductDetail-qaIYDWpH.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -7644,7 +7643,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx": {
-    "file": "assets/ProductDetailBananaLab-BPi5XpGy.js",
+    "file": "assets/ProductDetailBananaLab-Bo7jZze6.js",
     "name": "ProductDetailBananaLab",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx",
     "isDynamicEntry": true,
@@ -7652,7 +7651,7 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "_ItemsRest-CNHS84XX.js",
-      "_ProjectsRest-CtLDg8Bp.js",
+      "_ProjectsRest-CAc2DcAm.js",
       "_main-BvVILmTO.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "resources/js/Components/Tailwind/Blogs/BlogCarousel.jsx",
@@ -9067,7 +9066,7 @@
     ]
   },
   "resources/js/Customer/Albums.jsx": {
-    "file": "assets/Albums-BoVsyxM-.js",
+    "file": "assets/Albums-CDb2U7qv.js",
     "name": "Albums",
     "src": "resources/js/Customer/Albums.jsx",
     "isEntry": true,
@@ -9081,7 +9080,7 @@
       "_DxButton-DV0H-ZcL.js",
       "_ReactAppend-D7S498fx.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
-      "_ProjectsRest-CtLDg8Bp.js",
+      "_ProjectsRest-CAc2DcAm.js",
       "_Modal-CIqmjseY.js",
       "_tippy-react.esm-GxPckcbS.js",
       "_index-yBjzXJbu.js",
@@ -9095,8 +9094,6 @@
       "_index-xsH4HHeE.js",
       "_General-BmbBKdsB.js",
       "_LaravelSession-Dz9cpV3l.js",
-      "_BasicRest-b6WIUDlY.js",
-      "_index-Bx7_DjT0.js",
       "_index-BrXtjC9y.js"
     ],
     "css": [
@@ -9470,7 +9467,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-BMBA8G_L.js",
+    "file": "assets/System-DkNvk7Or.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

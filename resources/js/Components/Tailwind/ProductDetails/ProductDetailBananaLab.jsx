@@ -241,7 +241,7 @@ export default function ProductDetailBananaLab({
 
         setFavorites(newFavorites);
     };
-
+  console.log('Creating canvas project for item:', item);
     const handleCreateCanvasProject = async () => {
         // Verificar si el usuario está logueado
         if (!isUser) {
@@ -274,6 +274,8 @@ export default function ProductDetailBananaLab({
                     Swal.showLoading();
                 }
             });
+
+          
 
             // Crear el proyecto
             const projectRequest = {

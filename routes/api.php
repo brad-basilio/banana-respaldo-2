@@ -208,6 +208,10 @@ Route::middleware('auth')->group(function () {
 
     // Rutas específicas para proyectos de canvas
     Route::post('/canvas-projects/create', [CustomerCanvasProjectController::class, 'create']);
+    Route::post('/canvas-projects/paginate', [CustomerCanvasProjectController::class, 'paginate']);
+    Route::get('/canvas-projects/{id}', [CustomerCanvasProjectController::class, 'get']);
+    Route::post('/canvas-projects/save', [CustomerCanvasProjectController::class, 'save']);
+    Route::delete('/canvas-projects/{id}', [CustomerCanvasProjectController::class, 'delete']);
   });
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {

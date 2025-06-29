@@ -16,8 +16,11 @@ const projectsRest = new ProjectsRest();
 const Albums = ({ statuses = [] }) => {
     const gridRef = useRef();
     const modalRef = useRef();
+    const editModalRef = useRef();
 
     const [projectLoaded, setProjectLoaded] = useState(null);
+    const [editingProject, setEditingProject] = useState(null);
+    const [projectName, setProjectName] = useState("");
 
     const onDeleteClicked = async (id) => {
         const { isConfirmed } = await Swal.fire({
@@ -42,7 +45,49 @@ const Albums = ({ statuses = [] }) => {
     };
 
     const onEditProject = (projectId) => {
-        window.location.href = `/canva2?project=${projectId}`;
+        window.location.href = `/canvas/editor?project=${projectId}`;
+    };
+
+    const onEditProjectName = async (project) => {
+        setEditingProject(project);
+        setProjectName(project.name || '');
+        $(editModalRef.current).modal("show");
+    };
+
+    const onSaveProjectName = async () => {
+        if (!editingProject || !projectName.trim()) {
+            Swal.fire({
+                title: "Error",
+                text: "El nombre del proyecto no puede estar vacío",
+                icon: "error"
+            });
+            return;
+        }
+
+        try {
+            const result = await projectsRest.save({
+                id: editingProject.id,
+                name: projectName.trim()
+            });
+
+            if (result) {
+                Swal.fire({
+                    title: "Éxito",
+                    text: "Nombre del proyecto actualizado correctamente",
+                    icon: "success",
+                    timer: 2000
+                });
+                
+                $(editModalRef.current).modal("hide");
+                $(gridRef.current).dxDataGrid("instance").refresh();
+            }
+        } catch (error) {
+            Swal.fire({
+                title: "Error",
+                text: "No se pudo actualizar el nombre del proyecto",
+                icon: "error"
+            });
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -96,7 +141,7 @@ const Albums = ({ statuses = [] }) => {
                             text: "Catálogo",
                            
                             onClick: () => {
-                                window.location.href = "/catalago";
+                                window.location.href = "/catalogo";
                             },
                         },
                     });
@@ -204,10 +249,19 @@ const Albums = ({ statuses = [] }) => {
                             if (isEditable) {
                                 container.append(
                                     DxButton({
-                                        className: "btn btn-xs btn-primary me-1",
-                                        title: "Editar proyecto",
-                                        icon: "fa fa-edit",
+                                        className: "btn btn-xs btn-success me-1",
+                                        title: "Ir al editor",
+                                        icon: "fa fa-palette",
                                         onClick: () => onEditProject(data.id),
+                                    })
+                                );
+
+                                container.append(
+                                    DxButton({
+                                        className: "btn btn-xs btn-primary me-1",
+                                        title: "Editar nombre",
+                                        icon: "fa fa-edit",
+                                        onClick: () => onEditProjectName(data),
                                     })
                                 );
 
@@ -334,11 +388,21 @@ const Albums = ({ statuses = [] }) => {
                                 {canEdit(projectLoaded?.status) ? (
                                     <>
                                         <button
-                                            className="btn btn-primary"
+                                            className="btn btn-success"
                                             onClick={() => onEditProject(projectLoaded?.id)}
                                         >
+                                            <i className="fa fa-palette me-2"></i>
+                                            Ir al Editor
+                                        </button>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={() => {
+                                                $(modalRef.current).modal("hide");
+                                                onEditProjectName(projectLoaded);
+                                            }}
+                                        >
                                             <i className="fa fa-edit me-2"></i>
-                                            Continuar Editando
+                                            Editar Nombre
                                         </button>
                                         <button
                                             className="btn btn-danger"
@@ -369,6 +433,48 @@ const Albums = ({ statuses = [] }) => {
                         </div>
                     </div>
                 </div>
+            </Modal>
+
+            {/* Modal para editar nombre del proyecto */}
+            <Modal
+                modalRef={editModalRef}
+                title="Editar Nombre del Proyecto"
+                size="md"
+                onClickSubmit={onSaveProjectName}
+                textSubmit="Guardar Cambios"
+                submitIcon="fa fa-save"
+            >
+                <div className="mb-3">
+                    <label htmlFor="projectName" className="form-label">
+                        Nombre del Proyecto <span className="text-danger">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        id="projectName"
+                        value={projectName}
+                        onChange={(e) => setProjectName(e.target.value)}
+                        placeholder="Ingresa el nombre del proyecto"
+                        maxLength="255"
+                        onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                                onSaveProjectName();
+                            }
+                        }}
+                    />
+                    <div className="form-text">
+                        Máximo 255 caracteres. Este nombre se mostrará en tu lista de proyectos.
+                    </div>
+                </div>
+                
+                {editingProject && (
+                    <div className="alert alert-light">
+                        <small className="text-muted">
+                            <strong>Proyecto actual:</strong> {editingProject.name || 'Sin título'}<br/>
+                            <strong>Creado:</strong> {moment(editingProject.created_at).format("DD/MM/YYYY HH:mm")}
+                        </small>
+                    </div>
+                )}
             </Modal>
         </>
     );

@@ -39,7 +39,10 @@ class CanvasProjectController extends Controller
             ]);
 
             $user = Auth::user();
-
+   Log::info('Canvas project created', [
+                'project' => $request->all(),
+               
+            ]);
             // Crear el proyecto de canvas usando Eloquent
             $project = CanvasProject::create([
                 'user_id' => $user->id,
@@ -83,6 +86,209 @@ class CanvasProjectController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Error al crear el proyecto: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener proyectos del usuario con paginación
+     */
+    public function paginate(Request $request)
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Usuario no autenticado'
+                ], 401);
+            }
+
+            $user = Auth::user();
+            $perPage = $request->input('take', 15);
+            $page = $request->input('skip', 0) / $perPage + 1;
+
+            $query = CanvasProject::where('user_id', $user->id)
+                ->orderBy('updated_at', 'desc');
+
+            // Filtros opcionales
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('search') && $request->search) {
+                $query->where('name', 'like', '%' . $request->search . '%');
+            }
+
+            $projects = $query->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json([
+                'status' => true,
+                'data' => $projects->items(),
+                'totalCount' => $projects->total()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en paginación de proyectos: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener los proyectos'
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener un proyecto específico
+     */
+    public function get($id)
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Usuario no autenticado'
+                ], 401);
+            }
+
+            $user = Auth::user();
+            $project = CanvasProject::where('id', $id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$project) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Proyecto no encontrado'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'data' => $project
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener proyecto: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al obtener el proyecto'
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar un proyecto (solo metadatos como nombre)
+     */
+    public function save(Request $request)
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Usuario no autenticado'
+                ], 401);
+            }
+
+            $request->validate([
+                'id' => 'required|string',
+                'name' => 'required|string|max:255',
+            ]);
+
+            $user = Auth::user();
+            $project = CanvasProject::where('id', $request->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$project) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Proyecto no encontrado'
+                ], 404);
+            }
+
+            // Solo permitir editar si está en borrador
+            if (!$project->isEditable()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Este proyecto no se puede editar porque está finalizado'
+                ], 403);
+            }
+
+            $project->update([
+                'name' => $request->name
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Proyecto actualizado correctamente',
+                'data' => $project
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Datos inválidos',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar proyecto: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al actualizar el proyecto'
+            ], 500);
+        }
+    }
+
+    /**
+     * Eliminar un proyecto completamente
+     */
+    public function delete($id)
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Usuario no autenticado'
+                ], 401);
+            }
+
+            $user = Auth::user();
+            $project = CanvasProject::where('id', $id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$project) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Proyecto no encontrado'
+                ], 404);
+            }
+
+            // Solo permitir eliminar si está en borrador
+            if (!$project->isEditable()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Este proyecto no se puede eliminar porque está finalizado'
+                ], 403);
+            }
+
+            // Eliminar físicamente el proyecto
+            $project->delete();
+
+            Log::info('Proyecto eliminado', [
+                'project_id' => $id,
+                'user_id' => $user->id
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Proyecto eliminado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar proyecto: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Error al eliminar el proyecto'
             ], 500);
         }
     }
