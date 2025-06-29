@@ -512,7 +512,7 @@ const HeaderSearchB = ({
                                                     animate="visible"
                                                     exit="exit"
                                                     variants={menuVariants}
-                                                    className="absolute z-50 top-full right-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
+                                                    className="absolute z-50 top-full -left-20 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
                                                 >
                                                     <div className="p-4">
                                                         <ul className="space-y-3">
