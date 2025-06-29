@@ -806,23 +806,34 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
 
                                     {/* Quantity */}
                                     <div className="mt-4">
-                                        <div className="flex items-center gap-4 mb-2">
-                                            <div className="flex items-center space-x-4 customtext-neutral-light text-sm">
-                                                <span className="">
-                                                    Cantidad
-                                                </span>
-                                                <div className="relative flex items-center border rounded-md px-2 py-1">
-                                                    <input
-                                                        type="number"
-                                                        value={quantity}
-                                                        onChange={handleChange}
-                                                        min="1"
-                                                        max="10"
-                                                        className="w-10 py-1 customtext-neutral-dark text-center bg-transparent outline-none appearance-none"
-                                                    />
+                                        <div className="flex flex-col gap-3">
+                                            <span className="customtext-neutral-dark text-sm font-medium">
+                                                Cantidad
+                                            </span>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                                                    <button
+                                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity <= 1}
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <div className="w-12 h-10 flex items-center justify-center border-x border-gray-300 bg-gray-50">
+                                                        <span className="customtext-neutral-dark font-medium text-sm">
+                                                            {quantity}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity >= 10}
+                                                    >
+                                                        +
+                                                    </button>
                                                 </div>
-                                                <span className="">
-                                                    Máximo 10 unidades.
+                                                <span className="customtext-neutral-light text-xs">
+                                                    Máximo 10 unidades
                                                 </span>
                                             </div>
                                         </div>
@@ -1054,7 +1065,7 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                             </div>
                             <div className="flex gap-8 border-b-2 pb-8">
                                 {/* Specifications */}
-                                <div className="flex-1 w-6/12 ">
+                                <div className="flex-1 w-7/12 ">
                                     <div className="bg-[#F7F9FB] rounded-lg p-6">
                                         <h3 className="font-medium text-sm mb-4">
                                             Especificaciones principales
@@ -1062,7 +1073,7 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                         <ul
                                             className={`space-y-2  customtext-neutral-light mb-4 transition-all duration-300 ${expandedSpecificationMain
                                                 ? "max-h-full"
-                                                : "max-h-24 overflow-hidden"
+                                                : "max-h-28 overflow-hidden"
                                                 }`}
                                             style={{ listStyleType: "disc" }}
                                         >
@@ -1072,9 +1083,9 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                                     "principal" && (
                                                         <li
                                                             key={index}
-                                                            className="flex gap-2"
+                                                            className="flex gap-2 items-start"
                                                         >
-                                                            <CircleCheckIcon className="customtext-primary" />
+                                                            <CircleCheckIcon className="customtext-primary min-w-5 min-h-5 max-w-5 max-h-5 mt-1" />
                                                             {spec.description}
                                                         </li>
                                                     )
@@ -1101,7 +1112,7 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                 </div>
 
                                 {/* Price Section */}
-                                <div className=" w-6/12 ">
+                                <div className=" w-5/12 ">
                                     <p className="text-sm customtext-neutral-light mb-1">
                                         Precio:{" "}
                                         <span className="line-through">
@@ -1109,10 +1120,10 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                         </span>
                                     </p>
                                     <div className="flex items-center gap-4 relative ">
-                                        <span className="text-[40px] font-bold ">
+                                        <span className="text-[36px] font-bold ">
                                             S/ {item?.final_price}
                                         </span>
-                                        <span className=" absolute -top-8 right-0 bg-[#F93232] text-white font-bold px-3 py-2 rounded-xl">
+                                        <span className=" absolute text-sm -top-8 right-0 bg-[#F93232] text-white font-bold px-3 py-2 rounded-xl">
                                             -
                                             {Number(
                                                 item?.discount_percent
@@ -1123,23 +1134,34 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
 
                                     {/* Quantity */}
                                     <div className="mt-4">
-                                        <div className="flex items-center gap-4 mb-2">
-                                            <div className="flex items-center space-x-4 customtext-neutral-light text-sm">
-                                                <span className="">
-                                                    Cantidad
-                                                </span>
-                                                <div className="relative flex items-center border rounded-md px-2 py-1">
-                                                    <input
-                                                        type="number"
-                                                        value={quantity}
-                                                        onChange={handleChange}
-                                                        min="1"
-                                                        max="10"
-                                                        className="w-10 py-1 customtext-neutral-dark text-center bg-transparent outline-none appearance-none"
-                                                    />
+                                        <div className="flex flex-col gap-3">
+                                            <span className="customtext-neutral-dark text-sm font-medium">
+                                                Cantidad
+                                            </span>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                                                    <button
+                                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity <= 1}
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <div className="w-12 h-10 flex items-center justify-center border-x border-gray-300 bg-gray-50">
+                                                        <span className="customtext-neutral-dark font-medium text-sm">
+                                                            {quantity}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity >= 10}
+                                                    >
+                                                        +
+                                                    </button>
                                                 </div>
-                                                <span className="">
-                                                    Máximo 10 unidades.
+                                                <span className="customtext-neutral-light text-xs">
+                                                    Máximo 10 unidades
                                                 </span>
                                             </div>
                                         </div>
@@ -1242,7 +1264,7 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                         </div>
                     </div>
                 </div>
-                <div className=" grid gap-20 md:grid-cols-2 bg-white rounded-xl p-8 mt-12">
+                <div className=" grid gap-32 md:grid-cols-2 bg-white rounded-xl p-8 mt-12">
                     {/* Specifications Section */}
                     <div>
                         <h2 className="text-2xl font-bold customtext-neutral-dark mb-4 border-b pb-4">
@@ -1260,7 +1282,7 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                     spec.type === "general" && (
                                         <div
                                             key={index}
-                                            className={`grid grid-cols-2 gap-4 p-4 ${index % 2 === 0
+                                            className={`grid grid-cols-2 gap-4 px-4 py-1 ${index % 2 === 0
                                                 ? "bg-[#F7F9FB]"
                                                 : "bg-white"
                                                 }`}
@@ -1305,7 +1327,7 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                 Acerca de este artículo
                             </h3>
                             <div
-                                className="customtext-neutral-dark"
+                                className="customtext-neutral-dark prose prose-base"
                                 dangerouslySetInnerHTML={{
                                     __html: item?.description,
                                 }}
