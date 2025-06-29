@@ -166,7 +166,11 @@ const CardHoverBtn = ({
                             <motion.button
                                 aria-label="Agregar al carrito"
                                 className="py-0 px-3 border border-primary rounded-xl customtext-primary transition-all duration-300 hover:opacity-90 min-w-[48px] flex items-center justify-center"
-                                onClick={() => onAddClicked(product)}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onAddClicked(product);
+                                }}
                                 whileTap={{ scale: 0.95 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
                             >
@@ -203,7 +207,11 @@ const CardHoverBtn = ({
                         <motion.button
                             aria-label="Agregar al carrito"
                             className="py-3 px-3 border-2 border-primary rounded-xl customtext-primary transition-all duration-300 hover:opacity-90 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
-                            onClick={() => onAddClicked(product)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onAddClicked(product);
+                            }}
                             whileTap={{ scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
