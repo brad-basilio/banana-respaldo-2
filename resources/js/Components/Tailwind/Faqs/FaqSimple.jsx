@@ -36,7 +36,7 @@ const FaqSimple = ({ faqs }) => {
                         >
                             <div className="p-4 rounded-lg shadow-sm bg-[#F7F9FB]">
                                 <div className="flex justify-between items-start p-4">
-                                    <h3 className="text-lg font-semibold pr-8">
+                                    <h3 className="text-base font-semibold pr-8">
                                         {faq.question}
                                     </h3>
                                     <button className="customtext-primary flex-shrink-0">
@@ -48,7 +48,7 @@ const FaqSimple = ({ faqs }) => {
                                     </button>
                                 </div>
                                 {expandedFaqs.has(faq.id) && faq.answer && (
-                                    <p className="mt-4 p-4 customtext-neutral-light text-base">
+                                    <p className="mt-4 p-4 customtext-neutral-light text-sm">
                                         {faq.answer}
                                     </p>
                                 )}

@@ -436,11 +436,7 @@ const ContactGrid = ({ data, contacts }) => {
                         </motion.div>
                         <motion.p 
                             className="customtext-primary font-bold"
-                            whileHover={{ 
-                                x: 8,
-                                color: "#6d28d9",
-                                textShadow: "0 0 8px rgba(124, 58, 237, 0.3)"
-                            }}
+                         
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         >
                             {" "}
