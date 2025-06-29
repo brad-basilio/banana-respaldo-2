@@ -10,6 +10,7 @@ import {
     DoorClosed,
     Settings,
     Home,
+    BookHeart,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,6 +64,11 @@ const HeaderBananaLab = ({
             icon: <ShoppingCart size={16} />,
             label: "Mis Pedidos",
             href: "/customer/dashboard"
+        },
+         {
+            icon: <BookHeart size={16} />,
+            label: "Mis Projectos",
+            href: "/customer/albums"
         },
         {
             icon: <Settings size={16} />,

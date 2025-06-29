@@ -60,4 +60,76 @@ class CanvasProject extends Model
             'ordered' => 'Pedido realizado',
         ];
     }
+
+    /**
+     * Scope para proyectos por estado
+     */
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    /**
+     * Scope para proyectos finalizados
+     */
+    public function scopeFinalized($query)
+    {
+        return $query->whereIn('status', ['completed', 'exported', 'ordered']);
+    }
+
+    /**
+     * Scope para proyectos editables
+     */
+    public function scopeEditable($query)
+    {
+        return $query->whereIn('status', ['draft']);
+    }
+
+    /**
+     * Verificar si el proyecto puede ser editado
+     */
+    public function isEditable()
+    {
+        return in_array($this->status, ['draft']);
+    }
+
+    /**
+     * Verificar si el proyecto está finalizado
+     */
+    public function isFinalized()
+    {
+        return in_array($this->status, ['completed', 'exported', 'ordered']);
+    }
+
+    /**
+     * Obtener la URL de la imagen de vista previa
+     */
+    public function getPreviewImageUrlAttribute()
+    {
+        if ($this->thumbnail) {
+            // Si es una URL completa, devolverla tal como está
+            if (filter_var($this->thumbnail, FILTER_VALIDATE_URL)) {
+                return $this->thumbnail;
+            }
+            // Si es una ruta relativa, construir la URL completa
+            return asset('storage/' . $this->thumbnail);
+        }
+        // Imagen por defecto
+        return asset('assets/img/backgrounds/resources/default-image.png');
+    }
+
+    /**
+     * Obtener estado legible
+     */
+    public function getStatusTextAttribute()
+    {
+        $statusMap = [
+            'draft' => 'Borrador',
+            'completed' => 'Completado',
+            'exported' => 'Exportado',
+            'ordered' => 'Pedido realizado'
+        ];
+
+        return $statusMap[$this->status] ?? 'Desconocido';
+    }
 }

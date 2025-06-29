@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SaleController as AdminSaleController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
+use App\Http\Controllers\Customer\AlbumController as CustomerAlbumController;
 
 use App\Http\Controllers\Admin\SubCategoryController as AdminSubCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
@@ -195,6 +196,15 @@ Route::middleware('auth')->group(function () {
   Route::get('/profile/thumbnail/{uuid}', [AdminProfileController::class, 'thumbnail']);
   Route::post('/profile', [AdminProfileController::class, 'saveProfile']);
   Route::patch('/profile', [AdminProfileController::class, 'save']);
+
+  // Rutas para proyectos de cliente
+  Route::prefix('customer')->group(function () {
+    Route::get('/projects', [App\Http\Controllers\Customer\ProjectController::class, 'index']);
+    Route::get('/projects/{id}', [App\Http\Controllers\Customer\ProjectController::class, 'show']);
+    Route::post('/projects', [App\Http\Controllers\Customer\ProjectController::class, 'store']);
+    Route::put('/projects/{id}', [App\Http\Controllers\Customer\ProjectController::class, 'update']);
+    Route::delete('/projects/{id}', [App\Http\Controllers\Customer\ProjectController::class, 'destroy']);
+  });
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminHomeController::class, 'dashboard']);
@@ -470,6 +480,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/sales/status', [CustomerSaleController::class, 'status']);
     Route::patch('/sales/{field}', [CustomerSaleController::class, 'boolean']);
     Route::delete('/sales/{id}', [CustomerSaleController::class, 'delete']);
+
+    // Albums/Projects routes for the table
+    Route::get('/albums/{id}', [CustomerAlbumController::class, 'get']);
+    Route::post('/albums', [CustomerAlbumController::class, 'save']);
+    Route::post('/albums/paginate', [CustomerAlbumController::class, 'paginate']);
+    Route::patch('/albums/status', [CustomerAlbumController::class, 'status']);
+    Route::patch('/albums/{field}', [CustomerAlbumController::class, 'boolean']);
+    Route::delete('/albums/{id}', [CustomerAlbumController::class, 'delete']);
   });
 });
 

@@ -168,6 +168,8 @@ const Menu = ({ session, hasRole }) => {
                 <>
                   <MenuItem href="/customer/orders" icon="mdi mdi-cart-outline">
                     Mis Pedidos</MenuItem>
+                      <MenuItem href="/customer/albums" icon="mdi mdi-cart-outline">
+                    Mis Albums</MenuItem>
                 </>
               )}
             </ul>

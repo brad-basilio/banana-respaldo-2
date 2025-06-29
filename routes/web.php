@@ -39,7 +39,8 @@ use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
-use App\Http\Controllers\ProjectPDFController;
+use App\Http\Controllers\Customer\AlbumController as CustomerAlbumController;
+
 // Public 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RepositoryController;
@@ -157,7 +158,10 @@ Route::middleware(['can:Admin', 'auth'])->prefix('admin')->group(function () {
 Route::middleware(['can:Customer', 'auth'])->prefix('customer')->group(function () {
     Route::get('/dashboard', [CustomerSaleController::class, 'reactView'])->name('Customer/Sales.jsx');
     Route::get('/orders', [CustomerSaleController::class, 'reactView'])->name('Customer/Sales.jsx');
+    Route::get('/albums', [CustomerAlbumController::class, 'reactView'])->name('Customer/Albums.jsx');
 });
+
+
 
 // Canvas Routes - Authentication required
 Route::middleware(['auth'])->prefix('canvas')->group(function () {

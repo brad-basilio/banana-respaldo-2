@@ -185,6 +185,96 @@ class AuthClientRest {
             return false;
         }
     };
+
+    static get = async (url) => {
+        try {
+            const { status, result } = await Fetch(url, {
+                method: "GET",
+            });
+            
+            if (!status) {
+                throw new Error(result?.message || "Error en la petición");
+            }
+            
+            return result;
+        } catch (error) {
+            toast.error("Error", {
+                description: error.message || "Ocurrió un error inesperado.",
+                duration: 3000,
+                position: "top-right",
+                richColors: true,
+            });
+            throw error;
+        }
+    };
+
+    static delete = async (url) => {
+        try {
+            const { status, result } = await Fetch(url, {
+                method: "DELETE",
+            });
+            
+            if (!status) {
+                throw new Error(result?.message || "Error al eliminar");
+            }
+            
+            return result;
+        } catch (error) {
+            toast.error("Error al eliminar", {
+                description: error.message || "Ocurrió un error inesperado.",
+                duration: 3000,
+                position: "top-right",
+                richColors: true,
+            });
+            throw error;
+        }
+    };
+
+    static post = async (url, data) => {
+        try {
+            const { status, result } = await Fetch(url, {
+                method: "POST",
+                body: JSON.stringify(data),
+            });
+            
+            if (!status) {
+                throw new Error(result?.message || "Error al crear");
+            }
+            
+            return result;
+        } catch (error) {
+            toast.error("Error al crear", {
+                description: error.message || "Ocurrió un error inesperado.",
+                duration: 3000,
+                position: "top-right",
+                richColors: true,
+            });
+            throw error;
+        }
+    };
+
+    static put = async (url, data) => {
+        try {
+            const { status, result } = await Fetch(url, {
+                method: "PUT",
+                body: JSON.stringify(data),
+            });
+            
+            if (!status) {
+                throw new Error(result?.message || "Error al actualizar");
+            }
+            
+            return result;
+        } catch (error) {
+            toast.error("Error al actualizar", {
+                description: error.message || "Ocurrió un error inesperado.",
+                duration: 3000,
+                position: "top-right",
+                richColors: true,
+            });
+            throw error;
+        }
+    };
 }
 
 export default AuthClientRest;
