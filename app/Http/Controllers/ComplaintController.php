@@ -14,6 +14,23 @@ class ComplaintController extends BasicController
     public $model = Complaint::class;
     public $reactView = 'Complaint';
     public $reactRootView = 'public';
+    private function verifyCustomCaptcha($token)
+    {
+        // Si el token tiene el formato de nuestro captcha personalizado
+        if (preg_match('/^captcha_\d+_[a-z0-9]+$/', $token)) {
+            $parts = explode('_', $token);
+            if (count($parts) === 3) {
+                $timestamp = intval($parts[1]);
+                $currentTime = time() * 1000;
+                $maxAge = 10 * 60 * 1000; // 10 minutos
+                
+                // Verificar que no sea muy antiguo
+                return ($currentTime - $timestamp) <= $maxAge;
+            }
+        }
+        return false;
+    }
+
     private function verifyRecaptcha($recaptchaToken)
     {
         $secretKey = env('RECAPTCHA_SECRET_KEY');
@@ -57,11 +74,15 @@ class ComplaintController extends BasicController
                     'message' => 'Por favor aceptar los términos y condiciones'
                 ], 400);
             }
-            // Verificar reCAPTCHA
-            if (!$this->verifyRecaptcha($request->recaptcha_token)) {
+            
+            // Verificar captcha (personalizado o reCAPTCHA)
+            $token = $request->recaptcha_token;
+            $isValidCaptcha = $this->verifyCustomCaptcha($token) || $this->verifyRecaptcha($token);
+            
+            if (!$isValidCaptcha) {
                 return response()->json([
                     'type' => 'error',
-                    'message' => 'reCAPTCHA no válido'
+                    'message' => 'Verificación de seguridad no válida'
                 ], 400);
             }
 

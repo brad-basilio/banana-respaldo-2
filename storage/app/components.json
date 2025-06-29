@@ -21,7 +21,6 @@
                     "color",
                     "isCopyright",
                     "border_color"
-
                 ],
                 "using": {
                     "model": "Social"
@@ -112,8 +111,6 @@
                     "link_cart",
                     "showLoginCart",
                     "mobileSearch"
-                   
-                    
                 ],
                 "using": {
                     "model": "Category",
@@ -126,7 +123,7 @@
                     "message_whatsapp"
                 ]
             },
-             {
+            {
                 "id": "HeaderMakita",
                 "name": "HeaderMakita",
                 "image": "header-with-search.png",
@@ -254,7 +251,6 @@
             {
                 "id": "CarruselBenefitsPaani",
                 "name": "Beneficios Paani",
-               
                 "using": {
                     "model": "Indicator"
                 }
@@ -289,7 +285,6 @@
                     "model": "Indicator"
                 }
             }
-
         ]
     },
     {
@@ -373,7 +368,6 @@
                     "showNavigation",
                     "imageBgPosition",
                     "overlayMobile"
-                
                 ],
                 "using": {
                     "model": "Slider",
@@ -393,7 +387,6 @@
                 "data": [
                     "title",
                     "description"
-                 
                 ],
                 "using": {
                     "model": "Item",
@@ -640,8 +633,17 @@
                         "name": "Lista estándar",
                         "using": {
                             "model": "Item",
-                            "with": ["category", "subcategory", "brand","collection"],
-                            "relations": ["category", "tags","collection"],
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
                             "fields": [
                                 "id",
                                 "name",
@@ -658,8 +660,17 @@
                         "name": "Lista con variantes",
                         "using": {
                             "model": "Item",
-                            "with": ["category", "subcategory", "brand","collection"],
-                            "relations": ["category", "tags","collection"],
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
                             "fields": [
                                 "id",
                                 "name",
@@ -922,17 +933,26 @@
                 ],
                 "using": {
                     "model": "Category",
-                    "filters": ["featured"]
+                    "filters": [
+                        "featured"
+                    ]
                 }
             },
             {
                 "id": "CategoryGridInfinite",
                 "name": "CategoryGridInfinite",
                 "image": "categories-carousel.png",
-                "data": ["path", "title", "description", "link_catalog"],
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_catalog"
+                ],
                 "using": {
                     "model": "Category",
-                    "filters": ["featured"]
+                    "filters": [
+                        "featured"
+                    ]
                 }
             },
             {
@@ -1096,7 +1116,7 @@
                     "limit": 12
                 }
             },
-              {
+            {
                 "id": "ProductMakita",
                 "name": "ProductMakita",
                 "image": "products-list.png",
@@ -1172,7 +1192,11 @@
                         "is_new",
                         "views"
                     ],
-                    "with": ["category", "subcategory", "brand"],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
                     "limit": 20
                 }
             },
@@ -1196,7 +1220,11 @@
                         "is_new",
                         "views"
                     ],
-                    "with": ["category", "subcategory", "brand"],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
                     "limit": 20
                 }
             },
@@ -1220,7 +1248,12 @@
                         "is_new",
                         "views"
                     ],
-                    "with": ["category", "subcategory", "brand", "specifications"],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand",
+                        "specifications"
+                    ],
                     "limit": 20
                 }
             },
@@ -1300,15 +1333,14 @@
                     "image_position"
                 ]
             },
-             {
+            {
                 "id": "BannerCTAMakita",
                 "name": "BannerCTAMakita",
                 "using": {
                     "model": "Strength"
                 }
-               
             },
-             {
+            {
                 "id": "BannerContactMakita",
                 "name": "BannerContactMakita",
                 "data": [
@@ -1431,7 +1463,11 @@
                 "name": "Simple",
                 "using": {
                     "model": "Item",
-                    "with": ["category", "subcategory", "brand"]
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ]
                 }
             },
             {
@@ -1460,7 +1496,7 @@
                     "delivery_policy"
                 ]
             },
-             {
+            {
                 "id": "ProductDetailPaani",
                 "name": "ProductDetailPaani",
                 "data": [
@@ -1623,7 +1659,9 @@
             {
                 "id": "CheckoutStepsSF",
                 "name": "StepsSF",
-                "data": ["title"],
+                "data": [
+                    "title"
+                ],
                 "json": {
                     "prefixes": "./prefijocelular.json"
                 },
@@ -1766,7 +1804,7 @@
                     ]
                 }
             },
-             {
+            {
                 "id": "BlogSectionMakita",
                 "name": "BlogSectionMakita",
                 "data": [
@@ -1847,11 +1885,11 @@
                 "data": [
                     "title"
                 ],
-               "using": {
+                "using": {
                     "model": "Post",
                     "field": "slug",
                     "with": [
-                        "category"       
+                        "category"
                     ],
                     "relations": [
                         "category"
@@ -1976,8 +2014,8 @@
                     "support_phone",
                     "support_email"
                 ]
-            }, 
-             {
+            },
+            {
                 "id": "FooterMakita",
                 "name": "FooterMakita",
                 "image": "footer-simple.png",
@@ -1994,7 +2032,7 @@
                     "support_phone",
                     "support_email"
                 ]
-            }, 
+            },
             {
                 "id": "FooterPaani",
                 "name": "FooterPaani",
@@ -2105,6 +2143,9 @@
                 "data": [
                     "steps",
                     "selected"
+                ],
+                "generals": [
+                    "terms_conditions"
                 ]
             },
             {
@@ -2120,7 +2161,7 @@
             }
         ]
     },
-     {
+    {
         "id": "testimonials",
         "name": "Testimonials",
         "options": [
@@ -2128,9 +2169,8 @@
                 "id": "TestimonialsPaani",
                 "name": "Paani",
                 "using": {
-                        "model": "Testimony"
-                    
-                    }
+                    "model": "Testimony"
+                }
             }
         ]
     },

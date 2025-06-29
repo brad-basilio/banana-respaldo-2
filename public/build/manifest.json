@@ -410,6 +410,18 @@
       "_main-BvVILmTO.js"
     ]
   },
+  "_SelectForm-BO1YJpWs.js": {
+    "file": "assets/SelectForm-BO1YJpWs.js",
+    "name": "SelectForm",
+    "imports": [
+      "_createLucideIcon-Cy5Ya80P.js",
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
+      "_chevron-down-DS-mdh9v.js",
+      "_search-TwiiKGP5.js",
+      "_check-DQ7QoS0v.js"
+    ]
+  },
   "_SelectForm-DFP8Osy1.js": {
     "file": "assets/SelectForm-DFP8Osy1.js",
     "name": "SelectForm",
@@ -869,6 +881,13 @@
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js"
     ]
   },
+  "_message-square-DvtD2UDN.js": {
+    "file": "assets/message-square-DvtD2UDN.js",
+    "name": "message-square",
+    "imports": [
+      "_createLucideIcon-Cy5Ya80P.js"
+    ]
+  },
   "_navigation-cW_iC-Qg.js": {
     "file": "assets/navigation-cW_iC-Qg.js",
     "name": "navigation",
@@ -927,16 +946,16 @@
       "_hoist-non-react-statics.cjs-kbdZbs82.js"
     ]
   },
-  "_search-TwiiKGP5.js": {
-    "file": "assets/search-TwiiKGP5.js",
-    "name": "search",
+  "_refresh-cw-BrrGvxzH.js": {
+    "file": "assets/refresh-cw-BrrGvxzH.js",
+    "name": "refresh-cw",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js"
     ]
   },
-  "_send-BiBlJCqH.js": {
-    "file": "assets/send-BiBlJCqH.js",
-    "name": "send",
+  "_search-TwiiKGP5.js": {
+    "file": "assets/search-TwiiKGP5.js",
+    "name": "search",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js"
     ]
@@ -5053,7 +5072,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaint.jsx": {
-    "file": "assets/Complaint-C1oIYw5B.js",
+    "file": "assets/Complaint-DnNjJM5Z.js",
     "name": "Complaint",
     "src": "resources/js/Components/Tailwind/Complaint.jsx",
     "isDynamicEntry": true,
@@ -5069,7 +5088,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaints/ComplaintSimple.jsx": {
-    "file": "assets/ComplaintSimple-DxofPkKG.js",
+    "file": "assets/ComplaintSimple-mFwhSPbg.js",
     "name": "ComplaintSimple",
     "src": "resources/js/Components/Tailwind/Complaints/ComplaintSimple.jsx",
     "isDynamicEntry": true,
@@ -5078,40 +5097,62 @@
       "_recaptcha-wrapper-DoyLjbcj.js",
       "_index-BH53Isel.js",
       "_InputForm-ZnsQvLid.js",
-      "_chevron-down-DS-mdh9v.js",
-      "_search-TwiiKGP5.js",
-      "_check-DQ7QoS0v.js",
+      "_SelectForm-BO1YJpWs.js",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_HtmlContent-FTivcJrM.js",
       "_index-CMHsc23u.js",
       "_x-DBMwyD6F.js",
-      "_send-BiBlJCqH.js",
       "_index-yBjzXJbu.js",
       "_index-BVYA1enw.js",
       "_index-Chjiymov.js",
       "_hoist-non-react-statics.cjs-kbdZbs82.js",
       "_createLucideIcon-Cy5Ya80P.js",
+      "_chevron-down-DS-mdh9v.js",
+      "_search-TwiiKGP5.js",
+      "_check-DQ7QoS0v.js",
       "_index-fNjTmf9T.js",
       "_index-rimy3MAc.js"
     ]
   },
   "resources/js/Components/Tailwind/Complaints/ComplaintStech.jsx": {
-    "file": "assets/ComplaintStech-DwOb60ig.js",
+    "file": "assets/ComplaintStech-C0gbhFQF.js",
     "name": "ComplaintStech",
     "src": "resources/js/Components/Tailwind/Complaints/ComplaintStech.jsx",
-    "isDynamicEntry": true,
+    "isEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_InputForm-ZnsQvLid.js",
-      "_main-BvVILmTO.js",
+      "_refresh-cw-BrrGvxzH.js",
+      "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_index-CMHsc23u.js",
-      "_send-BiBlJCqH.js",
       "_index-yBjzXJbu.js",
-      "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
-      "_index-rimy3MAc.js",
+      "_createLucideIcon-Cy5Ya80P.js",
       "_index-fNjTmf9T.js",
+      "_index-Chjiymov.js",
+      "_index-rimy3MAc.js"
+    ]
+  },
+  "resources/js/Components/Tailwind/Complaints/CustomCaptcha.jsx": {
+    "file": "assets/CustomCaptcha-C6Ve2Ziv.js",
+    "name": "CustomCaptcha",
+    "src": "resources/js/Components/Tailwind/Complaints/CustomCaptcha.jsx",
+    "isEntry": true,
+    "imports": [
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
+      "_refresh-cw-BrrGvxzH.js",
+      "_index-yBjzXJbu.js",
       "_createLucideIcon-Cy5Ya80P.js"
+    ]
+  },
+  "resources/js/Components/Tailwind/Complaints/ThankYouPage.jsx": {
+    "file": "assets/ThankYouPage-DYlcHizO.js",
+    "name": "ThankYouPage",
+    "src": "resources/js/Components/Tailwind/Complaints/ThankYouPage.jsx",
+    "isEntry": true,
+    "imports": [
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-yBjzXJbu.js"
     ]
   },
   "resources/js/Components/Tailwind/Components/CartItemRow.jsx": {
@@ -8071,7 +8112,7 @@
     ]
   },
   "resources/js/Contact.jsx": {
-    "file": "assets/Contact-XYDiEunP.js",
+    "file": "assets/Contact-ZFxFGJ0_.js",
     "name": "Contact",
     "src": "resources/js/Contact.jsx",
     "isEntry": true,
@@ -8082,8 +8123,9 @@
       "resources/js/Utils/ReactAppend.jsx",
       "_Base-DawxtbOG.js",
       "_Global-ErywZRdd.js",
-      "_createLucideIcon-Cy5Ya80P.js",
+      "_message-square-DvtD2UDN.js",
       "_phone-BZ94M50k.js",
+      "_createLucideIcon-Cy5Ya80P.js",
       "_MessagesRest-CFTDG4sK.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "_user-BvYmyGTY.js",
@@ -8411,7 +8453,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-D-zDs9YV.js",
+    "file": "assets/System-aVwKxXly.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
