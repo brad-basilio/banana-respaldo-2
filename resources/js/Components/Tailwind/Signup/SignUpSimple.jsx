@@ -86,7 +86,7 @@ export default function SignUpSimple() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
                         </div>
-                        <div className="w-full lg:w-1/2 px-6 py-12 sm:px-12 lg:px-16">
+                        <div className="w-full lg:w-1/2 px-6 lg:py-12 sm:px-12 lg:px-16">
                             <div className="max-w-md mx-auto">
                                 <div className="space-y-2">
                                     <h5 className="customtext-primary font-medium">

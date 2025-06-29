@@ -98,7 +98,7 @@ export default function ResetPasswordSimple() {
                         </div>
 
 
-                        <div className="w-full lg:w-1/2 px-6 py-12 sm:px-12 lg:px-16">
+                        <div className="w-full lg:w-1/2 px-6 lg:py-12 sm:px-12 lg:px-16">
                             <div className="max-w-md mx-auto h-full flex flex-col justify-center">
                                 <div className="space-y-2">
                                     <h5 className="customtext-primary font-medium">
