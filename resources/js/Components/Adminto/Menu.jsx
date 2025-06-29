@@ -13,8 +13,7 @@ const Menu = ({ session, hasRole }) => {
       <div className="h-100" data-simplebar>
         <div className="user-box text-center">
           <img
-            src={`/api/admin/profile/thumbnail/${session.relative_id
-              }?v=${new Date(session.updated_at).getTime()}`}
+            src={`/api/profile/thumbnail/${session.uuid}?v=${new Date(session.updated_at).getTime()}`}
             alt={session.name}
             title={session.name}
             className="rounded-circle img-thumbnail avatar-md"

@@ -488,7 +488,21 @@ const HeaderSearchB = ({
                                             className="flex items-center gap-2 hover:customtext-primary transition-colors duration-300"
                                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                                         >
-                                            <CircleUser className="customtext-primary" width="1.5rem" />
+                                            {isUser.uuid ? (
+                                                <img
+                                                    src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
+                                                    alt={`${isUser.name} ${isUser.lastname}`}
+                                                    className="w-6 h-6 rounded-full object-cover border-2 border-primary"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextElementSibling.style.display = 'block';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <CircleUser 
+                                                className={`customtext-primary ${isUser.uuid ? 'hidden' : 'block'}`} 
+                                                width="1.5rem" 
+                                            />
                                         </button>
 
                                         <AnimatePresence>
@@ -666,7 +680,20 @@ const HeaderSearchB = ({
                                         className="customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-colors duration-300"
                                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                                     >
-                                        <CircleUser className="customtext-primary" />
+                                        {isUser.uuid ? (
+                                            <img
+                                                src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
+                                                alt={`${isUser.name} ${isUser.lastname}`}
+                                                className="w-8 h-8 rounded-full object-cover border-2 border-primary"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.nextElementSibling.style.display = 'inline-block';
+                                                }}
+                                            />
+                                        ) : null}
+                                        <CircleUser 
+                                            className={`customtext-primary ${isUser.uuid ? 'hidden' : 'inline-block'}`} 
+                                        />
                                         <span className="hidden md:inline">{isUser.name}</span>
                                     </button>
                                 ) : (
