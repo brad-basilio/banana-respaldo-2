@@ -176,7 +176,8 @@ class PaymentController extends Controller
             if (Auth::check()) {
                 $userJpa = User::find(Auth::user()->id);
                 $userJpa->phone = $request->phone;
-                $userJpa->dni = $request->document;
+                $userJpa->document_type = $request->documentType;
+                $userJpa->document_number = $request->document;
                 $userJpa->country = $request->country;
                 $userJpa->department = $request->department;
                 $userJpa->province = $request->province;

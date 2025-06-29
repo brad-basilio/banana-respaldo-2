@@ -7,6 +7,7 @@ import { processCulqiPayment } from "../../../../Actions/culqiPayment";
 import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
+import SelectForm from "./SelectForm";
 import OptionCard from "./OptionCard";
 import FreeItemsDisplay from "./FreeItemsDisplay";
 import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
@@ -185,13 +186,21 @@ export default function ShippingStep({
         }
     }, [cart, automaticDiscounts]);
     
+    // Tipos de documentos como en ComplaintStech
+    const typesDocument = [
+        { value: "dni", label: "DNI" },
+        { value: "ruc", label: "RUC" },
+        { value: "ce", label: "CE" },
+        { value: "pasaporte", label: "Pasaporte" },
+    ];
+    
     const [formData, setFormData] = useState({
         name: user?.name || "",
         lastname: user?.lastname || "",
         email: user?.email || "",
         phone: user?.phone || "",
-       // documentType: "DNI",
-        document: user?.dni || "", // Número de DNI (no obligatorio)
+        documentType:user?.document_type || "", // Tipo de documento obligatorio, por defecto DNI (en minúsculas como ComplaintStech)
+        document: user?.document_number || "", // Número de documento (obligatorio)
         department: user?.department || "",
         province: user?.province || "",
         district: user?.district || "",
@@ -257,6 +266,24 @@ export default function ShippingStep({
             newErrors.lastname = "Apellido es requerido";
             toast.error("Campo requerido", {
                 description: "Por favor ingrese su apellido",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!formData.documentType.trim()) {
+            newErrors.documentType = "Tipo de documento es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor seleccione el tipo de documento",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!formData.document.trim()) {
+            newErrors.document = "Número de documento es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor ingrese su número de documento",
                 icon: <XCircle className="h-5 w-5 text-red-500" />,
                 duration: 3000,
                 position: "top-center",
@@ -330,7 +357,7 @@ export default function ShippingStep({
 
     // Función para enfocar el primer campo con error y hacer scroll suave
     const focusFirstError = (errors) => {
-        const errorOrder = ['name', 'lastname', 'email', 'phone', 'ubigeo', 'address', 'shipping'];
+        const errorOrder = ['name', 'lastname', 'documentType', 'document', 'email', 'phone', 'ubigeo', 'address', 'shipping'];
         
         for (const fieldName of errorOrder) {
             if (errors[fieldName]) {
@@ -540,6 +567,8 @@ export default function ShippingStep({
         // Validación sin mostrar toast aún
         if (!formData.name.trim()) currentErrors.name = "Nombre es requerido";
         if (!formData.lastname.trim()) currentErrors.lastname = "Apellido es requerido";
+        if (!formData.documentType.trim()) currentErrors.documentType = "Tipo de documento es requerido";
+        if (!formData.document.trim()) currentErrors.document = "Número de documento es requerido";
         if (!formData.email.trim()) {
             currentErrors.email = "Email es requerido";
         } else if (!emailRegex.test(formData.email)) {
@@ -561,7 +590,9 @@ export default function ShippingStep({
             const firstErrorKey = Object.keys(currentErrors)[0];
             const errorMessages = {
                 name: "Por favor ingrese su nombre",
-                lastname: "Por favor ingrese su apellido", 
+                lastname: "Por favor ingrese su apellido",
+                documentType: "Por favor seleccione el tipo de documento",
+                document: "Por favor ingrese su número de documento",
                 email: currentErrors.email?.includes("inválido") ? "Por favor ingrese un correo electrónico válido" : "Por favor ingrese su correo electrónico",
                 phone: currentErrors.phone?.includes("9 dígitos") ? "El teléfono debe tener exactamente 9 dígitos" : "Por favor ingrese su número de teléfono",
                 ubigeo: "Por favor seleccione su ubicación de entrega",
@@ -589,7 +620,7 @@ export default function ShippingStep({
                 ...formData,
                 fullname: `${formData.name} ${formData.lastname}`,
                 country: "Perú",
-                documentType: "DNI", // Siempre DNI por defecto
+                documentType: formData.documentType, // Usar el tipo de documento seleccionado por el usuario
                 amount: roundToTwoDecimals(finalTotalWithCoupon),
                 delivery: roundToTwoDecimals(envio),
                 cart: cart,
@@ -689,6 +720,8 @@ export default function ShippingStep({
             // Limpiar errores de campos que ahora tienen valores válidos
             if (formData.name.trim()) delete newErrors.name;
             if (formData.lastname.trim()) delete newErrors.lastname;
+            if (formData.documentType.trim()) delete newErrors.documentType;
+            if (formData.document.trim()) delete newErrors.document;
             if (formData.email.trim()) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (emailRegex.test(formData.email)) delete newErrors.email;
@@ -893,6 +926,41 @@ export default function ShippingStep({
                         />
                     </div>
 
+                    {/* Campos de documento en una fila */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <SelectForm
+                                label="Tipo de documento"
+                                options={typesDocument}
+                                placeholder="Selecciona tu documento"
+                                labelClass="block text-sm 2xl:!text-base mb-1 customtext-neutral-dark"
+                                value={formData.documentType}
+                                error={errors.documentType}
+                                onChange={(value) => {
+                                    setFormData(prev => ({ ...prev, documentType: value }));
+                                    if (value && errors.documentType) {
+                                        setErrors(prev => ({ ...prev, documentType: '' }));
+                                    }
+                                }}
+                                required
+                            />
+                        </div>
+                        <InputForm
+                            name="document"
+                            label="Número de documento"
+                            value={formData.document}
+                            error={errors.document}
+                            onChange={(e) => {
+                                setFormData(prev => ({ ...prev, document: e.target.value }));
+                                if (e.target.value.trim() && errors.document) {
+                                    setErrors(prev => ({ ...prev, document: '' }));
+                                }
+                            }}
+                            required
+                            className={`border-gray-200 ${errors.document ? 'border-red-500 bg-red-50' : ''}`}
+                        />
+                    </div>
+
                     <InputForm
                         name="email"
                         label="Correo electrónico"
@@ -931,21 +999,6 @@ export default function ShippingStep({
                         placeholder="Ej: 987654321"
                         required
                         className={`border-gray-200 ${errors.phone ? 'border-red-500 bg-red-50' : ''}`}
-                    />
-
-                    <InputForm
-                        name="document"
-                        label="Número de DNI"
-                        type="text"
-                        value={formData.document}
-                        onChange={(e) => {
-                            // Solo permitir números, máximo 8 dígitos para DNI
-                            const value = e.target.value.replace(/\D/g, '');
-                            setFormData(prev => ({ ...prev, document: value }));
-                        }}
-                        maxLength="8"
-                        placeholder="Ej: 12345678 (opcional)"
-                        className="border-gray-200"
                     />
 
                     <div className="form-group">

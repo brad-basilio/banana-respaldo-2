@@ -410,11 +410,10 @@
       "_main-BvVILmTO.js"
     ]
   },
-  "_SelectForm-BO1YJpWs.js": {
-    "file": "assets/SelectForm-BO1YJpWs.js",
+  "_SelectForm-CWPk0TXJ.js": {
+    "file": "assets/SelectForm-CWPk0TXJ.js",
     "name": "SelectForm",
     "imports": [
-      "_createLucideIcon-Cy5Ya80P.js",
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "_chevron-down-DS-mdh9v.js",
@@ -1070,6 +1069,13 @@
   "_trending-up-BNyqqIMO.js": {
     "file": "assets/trending-up-BNyqqIMO.js",
     "name": "trending-up",
+    "imports": [
+      "_createLucideIcon-Cy5Ya80P.js"
+    ]
+  },
+  "_ubigeo-C_8-4EnP.js": {
+    "file": "assets/ubigeo-C_8-4EnP.js",
+    "name": "ubigeo",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js"
     ]
@@ -4567,7 +4573,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Checkout.jsx": {
-    "file": "assets/Checkout-B67Qoe7-.js",
+    "file": "assets/Checkout-DO8_O5F8.js",
     "name": "Checkout",
     "src": "resources/js/Components/Tailwind/Checkout.jsx",
     "isDynamicEntry": true,
@@ -4624,7 +4630,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Checkouts/CheckoutSteps.jsx": {
-    "file": "assets/CheckoutSteps-9Rzt5f2b.js",
+    "file": "assets/CheckoutSteps-B6kirNrK.js",
     "name": "CheckoutSteps",
     "src": "resources/js/Components/Tailwind/Checkouts/CheckoutSteps.jsx",
     "isDynamicEntry": true,
@@ -4644,6 +4650,7 @@
       "_Global-ErywZRdd.js",
       "_index-CMHsc23u.js",
       "_InputForm-ZnsQvLid.js",
+      "_SelectForm-CWPk0TXJ.js",
       "_lodash-CblvOeJM.js",
       "_circle-x-p-TkKhsF.js",
       "_proxy-BTYtmp9V.js",
@@ -4661,6 +4668,9 @@
       "_floating-ui.dom-8M2NmvqY.js",
       "_tippy-react.esm-BWiGTO87.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
+      "_chevron-down-DS-mdh9v.js",
+      "_search-TwiiKGP5.js",
+      "_check-DQ7QoS0v.js",
       "_ItemsRest-DGjwRLrz.js",
       "_BasicRest-B3rfI5GY.js",
       "resources/js/Components/Tailwind/Headers/HeaderSearch.jsx",
@@ -5072,7 +5082,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaint.jsx": {
-    "file": "assets/Complaint-DnNjJM5Z.js",
+    "file": "assets/Complaint-CaaLsCWf.js",
     "name": "Complaint",
     "src": "resources/js/Components/Tailwind/Complaint.jsx",
     "isDynamicEntry": true,
@@ -5088,7 +5098,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaints/ComplaintSimple.jsx": {
-    "file": "assets/ComplaintSimple-mFwhSPbg.js",
+    "file": "assets/ComplaintSimple-DIIG2zWf.js",
     "name": "ComplaintSimple",
     "src": "resources/js/Components/Tailwind/Complaints/ComplaintSimple.jsx",
     "isDynamicEntry": true,
@@ -5097,7 +5107,8 @@
       "_recaptcha-wrapper-DoyLjbcj.js",
       "_index-BH53Isel.js",
       "_InputForm-ZnsQvLid.js",
-      "_SelectForm-BO1YJpWs.js",
+      "_ubigeo-C_8-4EnP.js",
+      "_SelectForm-CWPk0TXJ.js",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_HtmlContent-FTivcJrM.js",
       "_index-CMHsc23u.js",
@@ -8453,7 +8464,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-Brj566Nb.js",
+    "file": "assets/System-BQavv7lV.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

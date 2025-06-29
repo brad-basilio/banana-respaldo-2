@@ -62,6 +62,7 @@ const SelectForm = ({
                 </label>
             )}
             <button
+                type="button"
                 className={`w-full relative text-start  px-4 py-3 border customtext-neutral-dark   rounded-xl focus:ring-0 focus:outline-0   transition-all duration-300 ${className}`}
                 onClick={() => setIsOpen(!isOpen)}
                 aria-haspopup="listbox"
