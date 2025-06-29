@@ -334,6 +334,26 @@ class ItemController extends BasicController
                 }
             }
 
+            // Variables para manejar la lógica de subcategoría seleccionada
+            $selectedSubcategoryInfo = null;
+            $parentCategoryId = null;
+            
+            // Si hay subcategoría seleccionada, obtener información de la categoría padre
+            if (!empty($selectedSubcategories)) {
+                $subcategorySlug = $selectedSubcategories[0]; // Tomar la primera subcategoría
+                
+                // Buscar la subcategoría por slug o ID
+                if (is_numeric($subcategorySlug)) {
+                    $selectedSubcategoryInfo = SubCategory::find($subcategorySlug);
+                } else {
+                    $selectedSubcategoryInfo = SubCategory::where('slug', $subcategorySlug)->first();
+                }
+                
+                if ($selectedSubcategoryInfo && $selectedSubcategoryInfo->category_id) {
+                    $parentCategoryId = $selectedSubcategoryInfo->category_id;
+                }
+            }
+
             // IMPORTANTE: Usar siempre originalBuilder para los filtros, nunca builder con paginación
             $i4collection = clone $originalBuilder;
             $i4category = clone $originalBuilder;
@@ -350,82 +370,21 @@ class ItemController extends BasicController
                 ? Item::getForeign($originalBuilder, Brand::class, 'brand_id')
                 : Item::getForeign($i4brand, Brand::class, 'brand_id');
 
-            // CATEGORIAS: lógica mejorada para mostrar solo categorías padre cuando hay subcategorías seleccionadas
-            if (!empty($selectedSubcategories)) {
-                // Si hay subcategorías seleccionadas, solo mostrar las categorías padre de esas subcategorías
-                $parentCategoryIds = [];
-                
-                foreach ($selectedSubcategories as $subcategoryValue) {
-                    if (strpos($subcategoryValue, '-') !== false) {
-                        $subcategory = SubCategory::find($subcategoryValue);
-                    } else {
-                        $subcategory = SubCategory::where('slug', $subcategoryValue)->first();
-                    }
-                    
-                    if ($subcategory && $subcategory->category_id) {
-                        $parentCategoryIds[] = $subcategory->category_id;
-                    }
-                }
-                
-                // Remover duplicados
-                $parentCategoryIds = array_unique($parentCategoryIds);
-                
-                if (!empty($parentCategoryIds)) {
-                    // No filtrar por category_id en el builder original, sino crear uno específico sin filtros de subcategoría
-                    $catBuilder = clone $originalBuilder;
-                    
-                    // Aplicar filtros adicionales (marcas, colecciones) pero NO subcategorías ni categorías
-                    if (!empty($selectedBrands)) {
-                        $brandIds = [];
-                        foreach ($selectedBrands as $brandValue) {
-                            if (strpos($brandValue, '-') !== false) {
-                                $brandIds[] = $brandValue;
-                            } else {
-                                $brand = Brand::where('slug', $brandValue)->first();
-                                if ($brand) {
-                                    $brandIds[] = $brand->id;
-                                }
-                            }
-                        }
-                        if (!empty($brandIds)) {
-                            $catBuilder->whereIn('brand_id', $brandIds);
-                        }
-                    }
-                    
-                    if (!empty($selectedCollections)) {
-                        $collectionIds = [];
-                        foreach ($selectedCollections as $collectionValue) {
-                            if (strpos($collectionValue, '-') !== false) {
-                                $collectionIds[] = $collectionValue;
-                            } else {
-                                $collection = Collection::where('slug', $collectionValue)->first();
-                                if ($collection) {
-                                    $collectionIds[] = $collection->id;
-                                }
-                            }
-                        }
-                        if (!empty($collectionIds)) {
-                            $catBuilder->whereIn('collection_id', $collectionIds);
-                        }
-                    }
-                    
-                    // Después obtener las categorías que tienen productos disponibles Y que están en nuestra lista de categorías padre
-                    $availableCategories = Item::getForeign($catBuilder, Category::class, 'category_id');
-                    
-                    // Filtrar solo las categorías padre que necesitamos
-                    $categories = $availableCategories->filter(function($category) use ($parentCategoryIds) {
-                        return in_array($category->id, $parentCategoryIds);
-                    })->values();
-                } else {
-                    $categories = collect([]);
-                }
+            // CATEGORIAS: lógica simplificada
+            if ($parentCategoryId) {
+                // Si hay una subcategoría seleccionada, solo mostrar la categoría padre
+                $parentCategory = Category::where('id', $parentCategoryId)
+                    ->where('status', true)
+                    ->where('visible', true)
+                    ->first();
+                $categories = $parentCategory ? collect([$parentCategory]) : collect([]);
             } elseif (!empty($selectedBrands)) {
                 // Si hay marcas seleccionadas pero no subcategorías, filtrar categorías por marcas
                 $catBuilder = clone $originalBuilder;
                 
                 $brandIds = [];
                 foreach ($selectedBrands as $brandValue) {
-                    if (strpos($brandValue, '-') !== false) {
+                    if (is_numeric($brandValue)) {
                         $brandIds[] = $brandValue;
                     } else {
                         $brand = Brand::where('slug', $brandValue)->first();
@@ -440,87 +399,29 @@ class ItemController extends BasicController
                 
                 $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
             } else {
-                // Si NO hay marcas ni subcategorías seleccionadas, usar la lógica del filterSequence
+                // Lógica normal - todas las categorías disponibles
                 $categories = in_array('category_id', $filterSequence)
                     ? Item::getForeign($originalBuilder, Category::class, 'category_id')
                     : Item::getForeign($i4category, Category::class, 'category_id');
             }
 
-            // SUBCATEGORIAS: mejorada para soportar filtrado independiente
-            if (!empty($selectedSubcategories)) {
-                // Si hay subcategorías seleccionadas, obtener las categorías padre y mostrar todas las subcategorías de esas categorías
-                $parentCategoryIds = [];
+            // SUBCATEGORIAS: lógica simplificada
+            if ($parentCategoryId) {
+                // Si hay una subcategoría seleccionada, mostrar todas las subcategorías de la categoría padre
+                $subcatBuilder = clone $originalBuilder;
                 
-                foreach ($selectedSubcategories as $subcategoryValue) {
-                    if (strpos($subcategoryValue, '-') !== false) {
-                        $subcategory = SubCategory::find($subcategoryValue);
-                    } else {
-                        $subcategory = SubCategory::where('slug', $subcategoryValue)->first();
-                    }
-                    
-                    if ($subcategory && $subcategory->category_id) {
-                        $parentCategoryIds[] = $subcategory->category_id;
-                    }
-                }
+                // Obtener todas las subcategorías de la categoría padre
+                $siblingSubcategoryIds = SubCategory::where('category_id', $parentCategoryId)
+                    ->where('status', true)
+                    ->where('visible', true)
+                    ->pluck('id')
+                    ->toArray();
                 
-                // Remover duplicados
-                $parentCategoryIds = array_unique($parentCategoryIds);
-                
-                if (!empty($parentCategoryIds)) {
-                    // Para subcategorías hermanas: crear un builder menos restrictivo
-                    // Solo aplicar filtros de marca/colección si realmente hay productos disponibles,
-                    // pero priorizar mostrar todas las subcategorías hermanas para navegación
-                    $subcatBuilder = clone $originalBuilder;
-                    $subcatBuilder->whereIn('category_id', $parentCategoryIds);
-                    
-                    // Intentar primero con todos los filtros aplicados
-                    $restrictiveSubcatBuilder = clone $subcatBuilder;
-                    
-                    if (!empty($selectedBrands)) {
-                        $brandIds = [];
-                        foreach ($selectedBrands as $brandValue) {
-                            if (strpos($brandValue, '-') !== false) {
-                                $brandIds[] = $brandValue;
-                            } else {
-                                $brand = Brand::where('slug', $brandValue)->first();
-                                if ($brand) {
-                                    $brandIds[] = $brand->id;
-                                }
-                            }
-                        }
-                        if (!empty($brandIds)) {
-                            $restrictiveSubcatBuilder->whereIn('brand_id', $brandIds);
-                        }
-                    }
-                    
-                    if (!empty($selectedCollections)) {
-                        $collectionIds = [];
-                        foreach ($selectedCollections as $collectionValue) {
-                            if (strpos($collectionValue, '-') !== false) {
-                                $collectionIds[] = $collectionValue;
-                            } else {
-                                $collection = Collection::where('slug', $collectionValue)->first();
-                                if ($collection) {
-                                    $collectionIds[] = $collection->id;
-                                }
-                            }
-                        }
-                        if (!empty($collectionIds)) {
-                            $restrictiveSubcatBuilder->whereIn('collection_id', $collectionIds);
-                        }
-                    }
-                    
-                    // Obtener subcategorías con filtros aplicados
-                    $restrictiveSubcategories = Item::getForeign($restrictiveSubcatBuilder, SubCategory::class, 'subcategory_id');
-                    
-                    // Si no hay suficientes subcategorías (menos de 2), usar builder menos restrictivo
-                    if ($restrictiveSubcategories->count() < 2) {
-                        $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
-                    } else {
-                        $subcategories = $restrictiveSubcategories;
-                    }
+                if (!empty($siblingSubcategoryIds)) {
+                    $subcatBuilder->whereIn('subcategory_id', $siblingSubcategoryIds);
+                    $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
                 } else {
-                    $subcategories = [];
+                    $subcategories = collect([]);
                 }
             } elseif (in_array('subcategory_id', $filterSequence)) {
                 // Lógica normal cuando hay otros filtros activos
@@ -529,7 +430,7 @@ class ItemController extends BasicController
                 if (!empty($selectedBrands)) {
                     $brandIds = [];
                     foreach ($selectedBrands as $brandValue) {
-                        if (strpos($brandValue, '-') !== false) {
+                        if (is_numeric($brandValue)) {
                             $brandIds[] = $brandValue;
                         } else {
                             $brand = Brand::where('slug', $brandValue)->first();
@@ -545,7 +446,7 @@ class ItemController extends BasicController
                 if (!empty($selectedCategories)) {
                     $categoryIds = [];
                     foreach ($selectedCategories as $categoryValue) {
-                        if (strpos($categoryValue, '-') !== false) {
+                        if (is_numeric($categoryValue)) {
                             $categoryIds[] = $categoryValue;
                         } else {
                             $category = Category::where('slug', $categoryValue)->first();
@@ -561,7 +462,7 @@ class ItemController extends BasicController
                 if (!empty($selectedCollections)) {
                     $collectionIds = [];
                     foreach ($selectedCollections as $collectionValue) {
-                        if (strpos($collectionValue, '-') !== false) {
+                        if (is_numeric($collectionValue)) {
                             $collectionIds[] = $collectionValue;
                         } else {
                             $collection = Collection::where('slug', $collectionValue)->first();
