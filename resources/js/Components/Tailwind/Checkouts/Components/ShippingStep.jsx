@@ -227,6 +227,8 @@ export default function ShippingStep({
     const [costsGet, setCostsGet] = useState(null);
     const [errors, setErrors] = useState({});
     const [searchInput, setSearchInput] = useState("");
+    const [expandedCharacteristics, setExpandedCharacteristics] = useState(false);
+    
     
     // Estados para cupones
     const [couponCode, setCouponCode] = useState("");
@@ -497,6 +499,7 @@ export default function ShippingStep({
             setShippingOptions(options);
             setSelectedOption(options[0].type);
             setEnvio(options[0].price);
+            setExpandedCharacteristics(false); // Reset expansion state when location changes
         } catch (error) {
             //console.error("Error al obtener precios de envío:", error);
             toast.error("Sin cobertura", {
@@ -509,6 +512,7 @@ export default function ShippingStep({
             setShippingOptions([]);
             setSelectedOption(null);
             setEnvio(0);
+            setExpandedCharacteristics(false); // Reset expansion state on error
         }
         setLoading(false);
     };
@@ -1041,24 +1045,62 @@ export default function ShippingStep({
                                             setSelectedOption(option.type);
                                             setEnvio(option.price);
                                             setErrors(prev => ({ ...prev, shipping: '' }));
+                                            setExpandedCharacteristics(false); // Reset expansion when changing shipping option
                                         }}
                                     />
                                 ))}
                             </div>
                             {selectedOption && shippingOptions.length > 0 && (
                                 <div className="space-y-3 mt-4">
-                                    {shippingOptions
-                                        .find((o) => o.type === selectedOption)
-                                        ?.characteristics?.map((char, index) => (
-                                            <div key={`char-${index}`} className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl">
-                                                <div className="w-5 flex-shrink-0">
-                                                    <InfoIcon className="customtext-primary" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium customtext-neutral-dark">{char}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    {(() => {
+                                        const characteristics = shippingOptions
+                                            .find((o) => o.type === selectedOption)
+                                            ?.characteristics || [];
+                                        
+                                        const shouldShowButton = characteristics.length > 3;
+                                        const displayedCharacteristics = shouldShowButton && !expandedCharacteristics 
+                                            ? characteristics.slice(0, 1) 
+                                            : characteristics;
+
+                                        return (
+                                            <>
+                                                {displayedCharacteristics.map((char, index) => (
+                                                    <div key={`char-${index}`} className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl">
+                                                        <div className="w-5 flex-shrink-0">
+                                                            <InfoIcon className="customtext-primary" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium customtext-neutral-dark">{char}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                
+                                                {shouldShowButton && (
+                                                    <div className="flex justify-center mt-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExpandedCharacteristics(!expandedCharacteristics)}
+                                                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium customtext-primary hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                                                        >
+                                                            <span>
+                                                                {expandedCharacteristics 
+                                                                    ? 'Ver menos información' 
+                                                                    : `Ver más información (${characteristics.length - 1} más)`}
+                                                            </span>
+                                                            <svg 
+                                                                className={`w-4 h-4 transition-transform duration-200 ${expandedCharacteristics ? 'rotate-180' : ''}`} 
+                                                                fill="none" 
+                                                                stroke="currentColor" 
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             )}
                         </div>

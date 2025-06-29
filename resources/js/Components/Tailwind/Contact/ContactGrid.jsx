@@ -319,7 +319,7 @@ const ContactGrid = ({ data, contacts }) => {
                             resolver tus dudas.
                         </p>
                         <a
-                            href="mailto:{getContact('email_contact')}"
+                            href={`mailto:${getContact('email_contact')}`}
                             className="customtext-primary font-bold hover:no-underline"
                         >
                             {getContact("email_contact")}
@@ -353,7 +353,7 @@ const ContactGrid = ({ data, contacts }) => {
                             profesional.
                         </p>
                         <a
-                            href="tel:+51987456324"
+                            href={`tel:${getContact("phone_contact")}`}
                             className="customtext-primary hover:no-underline font-bold"
                         >
                             {getContact("phone_contact")}
