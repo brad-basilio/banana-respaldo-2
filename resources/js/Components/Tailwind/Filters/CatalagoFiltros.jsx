@@ -587,32 +587,32 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     ));
 
     return (
-        <section className="py-6 lg:py-12 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
+        <section className="py-4 lg:py-12 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
             <div className="mx-auto px-primary 2xl:px-0 2xl:max-w-7xl">
                 {/* Header mejorado con estadísticas y acciones rápidas */}
                 <motion.div 
-                    className="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-8 pb-6 border-b-2 border-gradient-to-r from-blue-200 via-indigo-200 to-purple-200"
+                    className="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-6 lg:mb-8 lg:pb-6 lg:border-b-2 border-gradient-to-r from-blue-200 via-indigo-200 to-purple-200"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
                     <motion.div 
-                        className="md:w-6/12 mb-4 md:mb-0"
+                        className="md:w-6/12 mb-0 md:mb-0"
                         whileHover={{ scale: 1.02 }}
                     >
-                        <h2 className="text-[32px] md:text-4xl font-bold customtext-primary  mb-2">
+                        <h2 className="text-2xl lg:text-[32px] md:text-4xl font-bold customtext-primary  lg:mb-2">
                             {data?.title}
                         </h2>
                       
                     </motion.div>
                     
-                    <div className="flex flex-col w-full items-start md:items-cenrter justify-end gap-4 md:flex-row md:w-5/12">
+                    <div className="hidden md:flex flex-col w-full items-start md:items-center justify-end gap-4 md:flex-row md:w-5/12">
                         {/* Estadísticas mejoradas */}
                       
                         
-                        {/* Selector de ordenación mejorado */}
+                        {/* Selector de ordenación mejorado - Solo Desktop */}
                         <motion.div 
-                            className="w-full md:w-6/12  relative"
+                            className="w-full md:w-6/12 relative"
                          
                         >
                             <SelectForm
@@ -638,7 +638,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 }}
                                 labelKey="label"
                                 valueKey="value"
-                                className="customtext-neutral-dark border-primary  rounded-lg"
+                                className="customtext-neutral-dark border-primary rounded-lg"
                                 generalIcon={<ListFilter className="w-5 h-5 mr-2 customtext-primary" />}
                             />
                         </motion.div>
@@ -646,47 +646,76 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 </motion.div>
 
                 <div className="relative flex flex-col lg:flex-row gap-6">
-                    {/* Botón de filtros para móvil ultra mejorado */}
-                    <motion.div className="w-full lg:hidden mb-6">
-                        <Tooltip text="Abrir panel de filtros avanzados" position="bottom">
-                            <motion.button
-                                className="w-full flex items-center z-0 gap-2 py-2 px-4 bg-primary text-white rounded-2xl shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 overflow-hidden relative"
-                                onClick={() => setFiltersOpen(true)}
-                                whileHover={{ scale: 1.02, y: -3 }}
-                                whileTap={{ scale: 0.98 }}
-                                {...filterAnimations.container}
-                            >
-                                {/* Fondo animado */}
-                                <motion.div
-                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                                    animate={{ x: ['-100%', '100%'] }}
-                                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                                />
-                                
-                                <div className="flex items-center gap-4 relative z-10">
+                    {/* Fila para móvil: Filtros + Ordenación */}
+                    <div className="w-full flex lg:hidden lg:mb-6  items-stretch gap-3">
+                        {/* Botón de filtros para móvil */}
+                        <motion.div className="flex-1 max-w-max">
+                            <Tooltip text="Abrir panel de filtros avanzados" position="bottom">
+                                <motion.button
+                                    className="w-full h-12 flex items-center justify-center gap-2 px-4 bg-primary text-white rounded-2xl shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 overflow-hidden relative"
+                                    onClick={() => setFiltersOpen(true)}
+                                    whileHover={{ scale: 1.02, y: -3 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    {...filterAnimations.container}
+                                >
+                                    {/* Fondo animado */}
                                     <motion.div
-                                        className="p-3 bg-white/20 rounded-xl backdrop-blur-sm"
-                                        animate={{ 
-                                            rotate: [0, 10, 0],
-                                            scale: [1, 1.1, 1]
-                                        }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    >
-                                        <Sliders className="h-4 w-4" />
-                                    </motion.div>
-                                    <div className="text-left">
-                                        <h2 className="text-xl font-bold flex items-center gap-2">
-                                            Filtros
-                                           
-                                        </h2>
-                                       
+                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                                        animate={{ x: ['-100%', '100%'] }}
+                                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                    />
+                                    
+                                    <div className="flex items-center gap-2 relative z-10">
+                                        <motion.div
+                                            className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm"
+                                            animate={{ 
+                                                rotate: [0, 10, 0],
+                                                scale: [1, 1.1, 1]
+                                            }}
+                                            transition={{ duration: 2, repeat: Infinity }}
+                                        >
+                                            <Sliders className="h-4 w-4" />
+                                        </motion.div>
+                                        <span className="text-sm font-bold">Filtros</span>
                                     </div>
-                                </div>
-                                
-                               
-                            </motion.button>
-                        </Tooltip>
-                    </motion.div>
+                                </motion.button>
+                            </Tooltip>
+                        </motion.div>
+
+                        {/* Selector de ordenación para móvil */}
+                        <motion.div 
+                            className="flex-1"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            <SelectForm
+                                options={sortOptions}
+                                placeholder="Ordenar"
+                                value={
+                                    selectedFilters.sort?.[0]?.selector && selectedFilters.sort?.[0]?.desc !== undefined
+                                        ? `${selectedFilters.sort[0].selector}:${selectedFilters.sort[0].desc ? "desc" : "asc"}`
+                                        : "final_price:desc"
+                                }
+                                onChange={(value) => {
+                                    const [selector, order] = value.split(":");
+                                    const sort = [
+                                        {
+                                            selector: selector,
+                                            desc: order === "desc",
+                                        },
+                                    ];
+                                    setSelectedFilters((prev) => ({
+                                        ...prev,
+                                        sort,
+                                    }));
+                                }}
+                                labelKey="label"
+                                valueKey="value"
+                                className="!w-full customtext-neutral-dark border-primary rounded-2xl text-sm h-12"
+                            />
+                        </motion.div>
+                    </div>
 
                     {/* Panel de filtros mejorado */}
                     <motion.div 
