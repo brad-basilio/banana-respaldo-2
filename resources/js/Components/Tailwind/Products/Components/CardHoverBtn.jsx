@@ -44,7 +44,8 @@ const CardHoverBtn = ({
 
     return (
         <>
-            <motion.div
+            <motion.a
+            href={`/product/${product.slug}`}
                 key={product.id}
                 className={`group px-1 md:px-2 w-full flex-shrink-0 font-font-secondary cursor-pointer relative`}
                 initial={{ opacity: 0, y: 20 }}
@@ -262,7 +263,7 @@ const CardHoverBtn = ({
                         </div>
                     </div>
                 </motion.div>
-            </motion.div>
+            </motion.a>
             <CartModal
                 data={data}
                 cart={cart}

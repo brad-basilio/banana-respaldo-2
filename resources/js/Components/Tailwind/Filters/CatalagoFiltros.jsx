@@ -324,15 +324,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         return ArrayJoin(transformedFilters, 'and');
     };
     // Obtener productos filtrados desde el backend
-    const fetchProducts = async (page = 1, shouldScroll = false) => {
+    const fetchProducts = async (page = 1) => {
         setLoading(true);
-        // Si estamos cambiando los filtros (no solo la página), desplazar hacia arriba
-        if (shouldScroll) {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
         try {
             const filters = transformFilters(selectedFilters);
             // Extraer los IDs de los filtros seleccionados (no slugs)
@@ -433,17 +426,18 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
         
         // Initial fetch to get products and update summary data
-        fetchProducts(1, false);
+        // Cargar productos iniciales
+        fetchProducts(1);
     }, [filteredData]);
 
     useEffect(() => {
-        // Cuando cambian los filtros, volvemos a la primera página y desplazamos hacia arriba
-        fetchProducts(1, true);
+        // Cuando cambian los filtros, volvemos a la primera página SIN hacer scroll
+        fetchProducts(1);
     }, [selectedFilters]);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= pagination.totalPages) {
-            // Primero, desplazar hacia arriba suavemente
+            // Solo para la paginación: desplazar hacia arriba suavemente
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
@@ -1374,10 +1368,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                     className="flex-1 bg-primary text-white py-3 px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
                                     onClick={() => {
                                         setFiltersOpen(false);
-                                        window.scrollTo({
-                                            top: 0,
-                                            behavior: 'smooth'
-                                        });
+                                        // Removido el scroll automático - solo cerrar el panel
                                     }}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
