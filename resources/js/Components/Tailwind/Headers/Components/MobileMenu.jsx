@@ -83,7 +83,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                 <div className="animate-fade animate-duration-300">
                     {/* Categorías */}
                     <button
-                        className="px-4 py-2 mb-3 w-full flex justify-between items-center hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
+                        className="px-4 py-0 mb-3 w-full flex justify-between items-center hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
                         onClick={() => handleMainMenuItemClick("categories")}
                     >
                         <div className="flex items-center">
@@ -101,7 +101,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                                     <a
                                         key={index}
                                         href={page.path}
-                                        className="p-4 py-2 flex justify-between items-center w-full hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
+                                        className="p-4 py-0 flex justify-between items-center w-full hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
                                     >
                                         <span className="font-medium">{page.name}</span>
                                     </a>
@@ -117,7 +117,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                         {items.map((category) => (
                             <div
                                 key={category.id}
-                                className="px-4 py-2  rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 active:bg-primary transition-all"
+                                className="px-4 py-0  rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 active:bg-primary transition-all"
                                 onClick={() => handleCategoryClick(category)}
                             >
                                 <span className="font-medium">{category.name}</span>
@@ -138,7 +138,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                             <a
                                 href={`/catalogo?subcategory=${subcat.slug}`}
                                 key={index}
-                                className="flex w-full px-4  py-2 rounded-xl justify-between items-center hover:bg-gray-50 active:bg-primary transition-all"
+                                className="flex w-full px-4  py-0 rounded-xl justify-between items-center hover:bg-gray-50 active:bg-primary transition-all"
                             >
                                 <span className="font-medium">{subcat.name}</span>
                                 <ChevronRight className="h-5 w-5 customtext-neutral-light" />

@@ -23,6 +23,17 @@
       "_main-BvVILmTO.js"
     ]
   },
+  "_Base-8AOa_zHC.js": {
+    "file": "assets/Base-8AOa_zHC.js",
+    "name": "Base",
+    "imports": [
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
+      "resources/js/Components/Tailwind/Header.jsx",
+      "resources/js/Components/Tailwind/Footer.jsx",
+      "resources/js/Components/Tailwind/TopBar.jsx"
+    ]
+  },
   "_Base-BGtapwcN.js": {
     "file": "assets/Base-BGtapwcN.js",
     "name": "Base",
@@ -37,17 +48,6 @@
     ],
     "css": [
       "tippy.css"
-    ]
-  },
-  "_Base-DDc58sYl.js": {
-    "file": "assets/Base-DDc58sYl.js",
-    "name": "Base",
-    "imports": [
-      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
-      "_index-BH53Isel.js",
-      "resources/js/Components/Tailwind/Header.jsx",
-      "resources/js/Components/Tailwind/Footer.jsx",
-      "resources/js/Components/Tailwind/TopBar.jsx"
     ]
   },
   "_BasicEditing-Bzh0iG04.js": {
@@ -1111,7 +1111,7 @@
     "isEntry": true
   },
   "resources/js/About.jsx": {
-    "file": "assets/About-DzyFp0IW.js",
+    "file": "assets/About-B0OLyAFh.js",
     "name": "About",
     "src": "resources/js/About.jsx",
     "isEntry": true,
@@ -1120,7 +1120,7 @@
       "_index-BH53Isel.js",
       "_CreateReactScript-BoGwggCx.js",
       "resources/js/Utils/ReactAppend.jsx",
-      "_Base-DDc58sYl.js",
+      "_Base-8AOa_zHC.js",
       "_YouTube.esm-DfKjJDaL.js",
       "_em-DRiSFGEW.js",
       "_Weare-DJYJ0vNh.js",
@@ -2601,7 +2601,7 @@
     ]
   },
   "resources/js/Blog.jsx": {
-    "file": "assets/Blog-SkvAxZ25.js",
+    "file": "assets/Blog-CDJzGcFd.js",
     "name": "Blog",
     "src": "resources/js/Blog.jsx",
     "isEntry": true,
@@ -2610,7 +2610,7 @@
       "_index-BH53Isel.js",
       "_CreateReactScript-BoGwggCx.js",
       "resources/js/Utils/ReactAppend.jsx",
-      "_Base-DDc58sYl.js",
+      "_Base-8AOa_zHC.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "_SubscriptionsRest-D2mgT7KB.js",
       "_Global-ErywZRdd.js",
@@ -2643,7 +2643,7 @@
     ]
   },
   "resources/js/BlogArticle.jsx": {
-    "file": "assets/BlogArticle-NojTMFdm.js",
+    "file": "assets/BlogArticle-kgl82Tx_.js",
     "name": "BlogArticle",
     "src": "resources/js/BlogArticle.jsx",
     "isEntry": true,
@@ -2652,7 +2652,7 @@
       "_index-BH53Isel.js",
       "_CreateReactScript-BoGwggCx.js",
       "resources/js/Utils/ReactAppend.jsx",
-      "_Base-DDc58sYl.js",
+      "_Base-8AOa_zHC.js",
       "_HtmlContent-FTivcJrM.js",
       "_tippy-react.esm-BWiGTO87.js",
       "_proxy-BTYtmp9V.js",
@@ -4050,7 +4050,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Base.jsx": {
-    "file": "assets/Base-BGpL9TZD.js",
+    "file": "assets/Base-D0K4wIDK.js",
     "name": "Base",
     "src": "resources/js/Components/Tailwind/Base.jsx",
     "isEntry": true,
@@ -6159,7 +6159,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Header.jsx": {
-    "file": "assets/Header-yZSwpbgs.js",
+    "file": "assets/Header-Coz2ThmF.js",
     "name": "Header",
     "src": "resources/js/Components/Tailwind/Header.jsx",
     "isEntry": true,
@@ -6330,7 +6330,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Headers/HeaderSearchB.jsx": {
-    "file": "assets/HeaderSearchB-DLCSsOrz.js",
+    "file": "assets/HeaderSearchB-BnRo4eqz.js",
     "name": "HeaderSearchB",
     "src": "resources/js/Components/Tailwind/Headers/HeaderSearchB.jsx",
     "isDynamicEntry": true,
@@ -8112,7 +8112,7 @@
     ]
   },
   "resources/js/Contact.jsx": {
-    "file": "assets/Contact-BJ9xW46S.js",
+    "file": "assets/Contact-BOaJ1rHF.js",
     "name": "Contact",
     "src": "resources/js/Contact.jsx",
     "isEntry": true,
@@ -8121,7 +8121,7 @@
       "_index-BH53Isel.js",
       "_CreateReactScript-BoGwggCx.js",
       "resources/js/Utils/ReactAppend.jsx",
-      "_Base-DDc58sYl.js",
+      "_Base-8AOa_zHC.js",
       "_Global-ErywZRdd.js",
       "_message-square-DvtD2UDN.js",
       "_phone-BZ94M50k.js",
@@ -8152,7 +8152,7 @@
     ]
   },
   "resources/js/CourseDetails.jsx": {
-    "file": "assets/CourseDetails-P7ktynvv.js",
+    "file": "assets/CourseDetails-Ch7C73J1.js",
     "name": "CourseDetails",
     "src": "resources/js/CourseDetails.jsx",
     "isEntry": true,
@@ -8161,7 +8161,7 @@
       "_index-BH53Isel.js",
       "resources/js/Utils/ReactAppend.jsx",
       "_main-BvVILmTO.js",
-      "_Base-DDc58sYl.js",
+      "_Base-8AOa_zHC.js",
       "_CreateReactScript-BoGwggCx.js",
       "_HtmlContent-FTivcJrM.js",
       "_Number2Currency-e57Tgsuk.js",
@@ -8185,7 +8185,7 @@
     ]
   },
   "resources/js/Courses.jsx": {
-    "file": "assets/Courses-C53wx1Wg.js",
+    "file": "assets/Courses-DlQFcnpw.js",
     "name": "Courses",
     "src": "resources/js/Courses.jsx",
     "isEntry": true,
@@ -8194,7 +8194,7 @@
       "_index-BH53Isel.js",
       "resources/js/Utils/ReactAppend.jsx",
       "_CreateReactScript-BoGwggCx.js",
-      "_Base-DDc58sYl.js",
+      "_Base-8AOa_zHC.js",
       "_em-DRiSFGEW.js",
       "_FilterPagination-DCLrjB48.js",
       "_CourseCard-CbDLljRi.js",
@@ -8274,7 +8274,7 @@
     "isEntry": true
   },
   "resources/js/Home.jsx": {
-    "file": "assets/Home-x4H8cVNI.js",
+    "file": "assets/Home-D5WeTr9R.js",
     "name": "Home",
     "src": "resources/js/Home.jsx",
     "isEntry": true,
@@ -8282,7 +8282,7 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "resources/js/Utils/ReactAppend.jsx",
-      "_Base-DDc58sYl.js",
+      "_Base-8AOa_zHC.js",
       "_CreateReactScript-BoGwggCx.js",
       "_Weare-DJYJ0vNh.js",
       "resources/js/Components/Tailwind/Blogs/BlogCarousel.jsx",
@@ -8453,7 +8453,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-BHRe1Doy.js",
+    "file": "assets/System-sFUjzQpX.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
