@@ -296,7 +296,7 @@ class ItemController extends BasicController
             $selectedCollections = $request->input('collection_id', []);
 
             // Extraer filtros del filtro complejo si no hay filtros directos
-            if ((empty($selectedBrands) && empty($selectedCategories) && empty($selectedSubcategories)) && $request->filter) {
+            if ((empty($selectedBrands) && empty($selectedCategories) && empty($selectedSubcategories) && empty($selectedCollections)) && $request->filter) {
                 $filter = $request->filter;
                 if (is_array($filter)) {
                     foreach ($filter as $f1) {
@@ -371,11 +371,10 @@ class ItemController extends BasicController
                 $parentCategoryIds = array_unique($parentCategoryIds);
                 
                 if (!empty($parentCategoryIds)) {
-                    // Crear un builder que filtre las categorías padre pero que tengan productos disponibles
+                    // No filtrar por category_id en el builder original, sino crear uno específico sin filtros de subcategoría
                     $catBuilder = clone $originalBuilder;
-                    $catBuilder->whereIn('category_id', $parentCategoryIds);
                     
-                    // Aplicar filtros adicionales (marcas, colecciones) pero NO subcategorías
+                    // Aplicar filtros adicionales (marcas, colecciones) pero NO subcategorías ni categorías
                     if (!empty($selectedBrands)) {
                         $brandIds = [];
                         foreach ($selectedBrands as $brandValue) {
@@ -410,9 +409,15 @@ class ItemController extends BasicController
                         }
                     }
                     
-                    $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
+                    // Después obtener las categorías que tienen productos disponibles Y que están en nuestra lista de categorías padre
+                    $availableCategories = Item::getForeign($catBuilder, Category::class, 'category_id');
+                    
+                    // Filtrar solo las categorías padre que necesitamos
+                    $categories = $availableCategories->filter(function($category) use ($parentCategoryIds) {
+                        return in_array($category->id, $parentCategoryIds);
+                    })->values();
                 } else {
-                    $categories = [];
+                    $categories = collect([]);
                 }
             } elseif (!empty($selectedBrands)) {
                 // Si hay marcas seleccionadas pero no subcategorías, filtrar categorías por marcas
@@ -462,11 +467,15 @@ class ItemController extends BasicController
                 $parentCategoryIds = array_unique($parentCategoryIds);
                 
                 if (!empty($parentCategoryIds)) {
-                    // Obtener todas las subcategorías de las categorías padre, que tengan productos
+                    // Para subcategorías hermanas: crear un builder menos restrictivo
+                    // Solo aplicar filtros de marca/colección si realmente hay productos disponibles,
+                    // pero priorizar mostrar todas las subcategorías hermanas para navegación
                     $subcatBuilder = clone $originalBuilder;
                     $subcatBuilder->whereIn('category_id', $parentCategoryIds);
                     
-                    // Aplicar otros filtros que no sean de subcategoría
+                    // Intentar primero con todos los filtros aplicados
+                    $restrictiveSubcatBuilder = clone $subcatBuilder;
+                    
                     if (!empty($selectedBrands)) {
                         $brandIds = [];
                         foreach ($selectedBrands as $brandValue) {
@@ -480,7 +489,7 @@ class ItemController extends BasicController
                             }
                         }
                         if (!empty($brandIds)) {
-                            $subcatBuilder->whereIn('brand_id', $brandIds);
+                            $restrictiveSubcatBuilder->whereIn('brand_id', $brandIds);
                         }
                     }
                     
@@ -497,11 +506,19 @@ class ItemController extends BasicController
                             }
                         }
                         if (!empty($collectionIds)) {
-                            $subcatBuilder->whereIn('collection_id', $collectionIds);
+                            $restrictiveSubcatBuilder->whereIn('collection_id', $collectionIds);
                         }
                     }
                     
-                    $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
+                    // Obtener subcategorías con filtros aplicados
+                    $restrictiveSubcategories = Item::getForeign($restrictiveSubcatBuilder, SubCategory::class, 'subcategory_id');
+                    
+                    // Si no hay suficientes subcategorías (menos de 2), usar builder menos restrictivo
+                    if ($restrictiveSubcategories->count() < 2) {
+                        $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
+                    } else {
+                        $subcategories = $restrictiveSubcategories;
+                    }
                 } else {
                     $subcategories = [];
                 }
