@@ -45,10 +45,7 @@ const Albums = ({ statuses = [] }) => {
     };
 
     const onEditProject = (projectId) => {
-        //que sea en un a neuva ventana abrir el href window.location.href = `/canvas/editor?project=${projectId}`;
-        
-        window.location.href = `/canvas/editor?project=${projectId}`;
-        // 
+        window.open(`/canvas/editor?project=${projectId}`, '_blank');
     };
 
     const onEditProjectName = async (project) => {
