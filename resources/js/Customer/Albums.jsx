@@ -359,11 +359,11 @@ const Albums = ({ statuses = [] }) => {
                                 )}
                                 
                                 <a
-                                    href="/canva1"
+                                    href="/catalogo"
                                     className="btn btn-success"
                                 >
                                     <i className="fa fa-plus me-2"></i>
-                                    Crear Nuevo Proyecto
+                                    Ir a la web
                                 </a>
                             </div>
                         </div>

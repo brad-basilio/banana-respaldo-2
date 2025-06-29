@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 
 import ItemsRest from "../../../Actions/ItemsRest";
+import ProjectsRest from "../../../Actions/Customer/ProjectsRest";
+import AuthRest from "../../../Actions/AuthRest";
 import Swal from "sweetalert2";
 import { Notify } from "sode-extend-react";
 import ProductInfinite from "../Products/ProductInfinite";
@@ -37,8 +39,10 @@ export default function ProductDetailBananaLab({
     favorites,
     setFavorites,
     generals,
+    isUser,
 }) {
     const itemsRest = new ItemsRest();
+    const projectsRest = new ProjectsRest();
     const phone_whatsapp = generals?.find(
         (general) => general.correlative === "phone_whatsapp"
     );
@@ -237,6 +241,87 @@ export default function ProductDetailBananaLab({
 
         setFavorites(newFavorites);
     };
+
+    const handleCreateCanvasProject = async () => {
+        // Verificar si el usuario está logueado
+        if (!isUser) {
+            Swal.fire({
+                title: "Iniciar sesión requerido",
+                text: "Debes iniciar sesión para crear y editar tu regalo personalizado",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Iniciar sesión",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Redirigir al login
+                    window.location.href = "/login";
+                }
+            });
+            return;
+        }
+
+        try {
+            // Mostrar loading
+            Swal.fire({
+                title: "Creando proyecto...",
+                text: "Por favor espera mientras preparamos tu editor de diseño",
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Crear el proyecto
+            const projectRequest = {
+                item_id: item?.id,
+                name: `Proyecto - ${item?.name}`,
+                description: `Proyecto personalizado para ${item?.name}`,
+                item_name: item?.name,
+                item_image: item?.image,
+                item_price: item?.final_price,
+                canvas_preset_id: item?.canvas_preset_id, // Por defecto null, se puede configurar más tarde
+            };
+
+            console.log('Creating canvas project with data:', projectRequest);
+            const newProject = await projectsRest.createCanvasProject(projectRequest);
+            console.log('Created project response:', newProject);
+
+            if (newProject && newProject.id) {
+                Swal.close();
+                
+                // Mostrar éxito y redirigir
+                toast.success("Proyecto creado", {
+                    description: "Tu proyecto ha sido creado exitosamente. Serás redirigido al editor.",
+                    icon: <CheckCircleIcon className="h-5 w-5 text-green-500" />,
+                    duration: 2000,
+                    position: "bottom-center",
+                });
+
+                // Redirigir al editor después de un breve delay
+                setTimeout(() => {
+                    window.location.href = `/canvas/editor?project=${newProject.id}`;
+                }, 1000);
+            } else {
+                Swal.close();
+                throw new Error("No se pudo crear el proyecto. El servidor no devolvió datos del proyecto.");
+            }
+        } catch (error) {
+            Swal.close();
+            console.error('Error creating canvas project:', error);
+            
+            Swal.fire({
+                title: "Error",
+                text: error.message || "Ocurrió un error al crear el proyecto. Por favor intenta nuevamente.",
+                icon: "error",
+                confirmButtonText: "Entendido"
+            });
+        }
+    };
+
     //console.log(item);
     return (
         <>
@@ -589,15 +674,15 @@ export default function ProductDetailBananaLab({
                                 variants={slideUp}
                                 className="flex flex-col mt-4"
                             >
-                                <motion.a
-                                    href={`/canva1?item=${item?.id}`}
+                                <motion.button
+                                    onClick={handleCreateCanvasProject}
                                     className="w-full flex gap-4 items-center justify-center font-paragraph text-base 2xl:text-lg bg-primary text-white py-3 font-semibold rounded-3xl hover:opacity-90 transition-all duration-300 mt-3"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                 >
                                     Crea y edita tu regalo
                                     <Brush width={20} />
-                                </motion.a>
+                                </motion.button>
                                 <motion.button
                                     onClick={(e) =>
                                         onAddFavoritesClicked(e, item)

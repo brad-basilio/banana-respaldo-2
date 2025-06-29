@@ -11,7 +11,7 @@ const ProductDetailKuchara = React.lazy(() => import('./ProductDetails/ProductDe
 const ProductDetailPaani = React.lazy(() => import('./ProductDetails/ProductDetailPaani'))
 const ProductDetailAko = React.lazy(() => import('./ProductDetails/ProductDetailAko'))
 
-const ProductDetail = ({ which, item, cart, setCart,data, generals = [],favorites,setFavorites, textstatic, contacts ,session}) => {
+const ProductDetail = ({ which, item, cart, setCart,data, generals = [],favorites,setFavorites, textstatic, contacts ,session, isUser}) => {
   
   const getProductDetail = () => {
     switch (which) {
@@ -24,7 +24,7 @@ const ProductDetail = ({ which, item, cart, setCart,data, generals = [],favorite
       case 'ProductDetailSF':
         return <ProductDetailSF item={item} cart={cart} setCart={setCart} textstatic={textstatic} contacts={contacts} />
       case 'ProductDetailBananaLab':
-          return <ProductDetailBananaLab item={item} cart={cart} setCart={setCart} setFavorites={setFavorites} favorites={favorites} session={session} generals={generals} />
+          return <ProductDetailBananaLab item={item} cart={cart} setCart={setCart} setFavorites={setFavorites} favorites={favorites} session={session} generals={generals} isUser={isUser} />
       case 'ProductDetailKuchara':
           return <ProductDetailKuchara item={item} cart={cart} setCart={setCart} />
       case 'ProductDetailPaani':

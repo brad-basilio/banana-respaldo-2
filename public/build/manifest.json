@@ -387,6 +387,14 @@
       "resources/js/Components/Tailwind/Components/ProductCard.jsx"
     ]
   },
+  "_ProjectsRest-CtLDg8Bp.js": {
+    "file": "assets/ProjectsRest-CtLDg8Bp.js",
+    "name": "ProjectsRest",
+    "imports": [
+      "_main-BvVILmTO.js",
+      "_BasicRest-b6WIUDlY.js"
+    ]
+  },
   "_QuillFormGroup-D8zDHSfJ.js": {
     "file": "assets/QuillFormGroup-D8zDHSfJ.js",
     "name": "QuillFormGroup",
@@ -3939,7 +3947,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-p-uyTtUa.js",
+    "file": "assets/BananaLab-C_AGACRg.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -3998,7 +4006,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-J6wsa02U.js",
+    "file": "assets/Editor-_ycsFUFx.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -7510,7 +7518,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-BBfDupQK.js",
+    "file": "assets/ProductDetail-BJLWDM1U.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -7636,7 +7644,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx": {
-    "file": "assets/ProductDetailBananaLab-DPde2h_U.js",
+    "file": "assets/ProductDetailBananaLab-BPi5XpGy.js",
     "name": "ProductDetailBananaLab",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx",
     "isDynamicEntry": true,
@@ -7644,8 +7652,9 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "_ItemsRest-CNHS84XX.js",
-      "resources/js/Components/Tailwind/Components/ProductCard.jsx",
+      "_ProjectsRest-CtLDg8Bp.js",
       "_main-BvVILmTO.js",
+      "resources/js/Components/Tailwind/Components/ProductCard.jsx",
       "resources/js/Components/Tailwind/Blogs/BlogCarousel.jsx",
       "resources/js/Components/Tailwind/Categories/InfiniteCategory.jsx",
       "resources/js/Components/Tailwind/Products/ProductMakita.jsx",
@@ -9058,7 +9067,7 @@
     ]
   },
   "resources/js/Customer/Albums.jsx": {
-    "file": "assets/Albums-DFcUoxN9.js",
+    "file": "assets/Albums-BoVsyxM-.js",
     "name": "Albums",
     "src": "resources/js/Customer/Albums.jsx",
     "isEntry": true,
@@ -9072,7 +9081,7 @@
       "_DxButton-DV0H-ZcL.js",
       "_ReactAppend-D7S498fx.js",
       "resources/js/Components/Tailwind/Components/ProductCard.jsx",
-      "_BasicRest-b6WIUDlY.js",
+      "_ProjectsRest-CtLDg8Bp.js",
       "_Modal-CIqmjseY.js",
       "_tippy-react.esm-GxPckcbS.js",
       "_index-yBjzXJbu.js",
@@ -9086,6 +9095,7 @@
       "_index-xsH4HHeE.js",
       "_General-BmbBKdsB.js",
       "_LaravelSession-Dz9cpV3l.js",
+      "_BasicRest-b6WIUDlY.js",
       "_index-Bx7_DjT0.js",
       "_index-BrXtjC9y.js"
     ],
@@ -9252,7 +9262,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-CDRlMpEb.js",
+    "file": "assets/Editor-C_6Q8hup.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9460,7 +9470,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-Crz5SFD0.js",
+    "file": "assets/System-BMBA8G_L.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

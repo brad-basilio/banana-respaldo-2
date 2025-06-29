@@ -20,11 +20,6 @@ class AlbumController extends BasicController
     public function setPaginationInstance(Request $request, string $model)
     {
         $user = Auth::user();
-        
-        if (!$user) {
-            // Si no hay usuario autenticado, retornar una consulta vacía
-            return $model::whereRaw('1 = 0');
-        }
 
         // Filtrar solo los proyectos del usuario autenticado
         return $model::where('user_id', $user->id);

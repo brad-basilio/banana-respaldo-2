@@ -732,7 +732,7 @@ export default function EditorLibro() {
             console.log('   - Color de fondo del preset:', preset.background_color);
 
             const newPages = [];
-            const totalPages = preset.pages || item.pages || 20; // Usar páginas del preset primero
+            const totalPages = item.pages ||  preset.pages ||20; // Usar páginas del preset primero
 
             console.log('📄 Total pages to create:', totalPages);
 

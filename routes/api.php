@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\SaleController as AdminSaleController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 use App\Http\Controllers\Customer\AlbumController as CustomerAlbumController;
+use App\Http\Controllers\Customer\CanvasProjectController as CustomerCanvasProjectController;
 
 use App\Http\Controllers\Admin\SubCategoryController as AdminSubCategoryController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
@@ -204,6 +205,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects', [App\Http\Controllers\Customer\ProjectController::class, 'store']);
     Route::put('/projects/{id}', [App\Http\Controllers\Customer\ProjectController::class, 'update']);
     Route::delete('/projects/{id}', [App\Http\Controllers\Customer\ProjectController::class, 'destroy']);
+
+    // Rutas específicas para proyectos de canvas
+    Route::post('/canvas-projects/create', [CustomerCanvasProjectController::class, 'create']);
   });
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {
