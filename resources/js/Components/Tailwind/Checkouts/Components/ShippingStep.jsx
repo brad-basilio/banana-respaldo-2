@@ -620,7 +620,7 @@ export default function ShippingStep({
                 ...formData,
                 fullname: `${formData.name} ${formData.lastname}`,
                 country: "Perú",
-                documentType: formData.documentType, // Usar el tipo de documento seleccionado por el usuario
+                document_type: formData.documentType, // Cambiar a document_type para que coincida con lo que espera el backend
                 amount: roundToTwoDecimals(finalTotalWithCoupon),
                 delivery: roundToTwoDecimals(envio),
                 cart: cart,

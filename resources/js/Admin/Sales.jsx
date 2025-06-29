@@ -51,6 +51,7 @@ const Sales = ({ statuses = [] }) => {
 
     const onModalOpen = async (saleId) => {
         const newSale = await salesRest.get(saleId);
+        console.log("Sale data loaded:", newSale.data); // Debug: ver todos los datos que llegan
         setSaleLoaded(newSale.data);
         $(modalRef.current).modal("show");
     };
@@ -256,10 +257,10 @@ const Sales = ({ statuses = [] }) => {
                                             <th>Teléfono:</th>
                                             <td>{saleLoaded?.phone}</td>
                                         </tr>
-                                        {saleLoaded?.document_type && (
+                                        {(saleLoaded?.document_type || saleLoaded?.documentType) && (
                                             <tr>
                                                 <th>Tipo de documento:</th>
-                                                <td>{saleLoaded?.document_type}</td>
+                                                <td>{saleLoaded?.document_type || saleLoaded?.documentType}</td>
                                             </tr>
                                         )}
                                         {saleLoaded?.document && (
