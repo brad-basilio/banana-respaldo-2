@@ -293,7 +293,56 @@ class ItemController extends BasicController
             $selectedBrands = $request->input('brand_id', []);
             $selectedCategories = $request->input('category_id', []);
             $selectedCollections = $request->input('collection_id', []);
-            // $mainFilter = $request->filterSequence[0] ?? null;
+
+            // DEBUG: Agregar logs temporales
+            \Illuminate\Support\Facades\Log::info('setPaginationSummary - Filtros iniciales:', [
+                'selectedBrands' => $selectedBrands,
+                'selectedCategories' => $selectedCategories,
+                'selectedCollections' => $selectedCollections,
+                'filter' => $request->filter
+            ]);
+
+            // Extraer filtros del filtro complejo si no hay filtros directos
+            if (empty($selectedBrands) && empty($selectedCategories) && $request->filter) {
+                $filter = $request->filter;
+                if (is_array($filter)) {
+                    foreach ($filter as $f1) {
+                        if (is_array($f1)) {
+                            // Manejar tanto formato plano como anidado
+                            foreach ($f1 as $f2) {
+                                if (is_array($f2) && count($f2) >= 3) {
+                                    // Manejar tanto brand.id como brand.slug
+                                    if (($f2[0] === 'brand.slug' || $f2[0] === 'brand.id') && $f2[1] === '=') {
+                                        $selectedBrands[] = $f2[2];
+                                    } elseif (($f2[0] === 'category.slug' || $f2[0] === 'category.id') && $f2[1] === '=') {
+                                        $selectedCategories[] = $f2[2];
+                                    } elseif (($f2[0] === 'collection.slug' || $f2[0] === 'collection.id') && $f2[1] === '=') {
+                                        $selectedCollections[] = $f2[2];
+                                    }
+                                }
+                            }
+                            // También manejar formato plano directo
+                            if (count($f1) >= 3) {
+                                // Manejar tanto brand.id como brand.slug
+                                if (($f1[0] === 'brand.slug' || $f1[0] === 'brand.id') && $f1[1] === '=') {
+                                    $selectedBrands[] = $f1[2];
+                                } elseif (($f1[0] === 'category.slug' || $f1[0] === 'category.id') && $f1[1] === '=') {
+                                    $selectedCategories[] = $f1[2];
+                                } elseif (($f1[0] === 'collection.slug' || $f1[0] === 'collection.id') && $f1[1] === '=') {
+                                    $selectedCollections[] = $f1[2];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // DEBUG: Log después de extraer filtros
+            \Illuminate\Support\Facades\Log::info('setPaginationSummary - Filtros después de extraer:', [
+                'selectedBrands' => $selectedBrands,
+                'selectedCategories' => $selectedCategories,
+                'selectedCollections' => $selectedCollections
+            ]);
 
             // IMPORTANTE: Usar siempre originalBuilder para los filtros, nunca builder con paginación
             $i4collection = clone $originalBuilder;
@@ -315,8 +364,28 @@ class ItemController extends BasicController
             if (!empty($selectedBrands)) {
                 // Si hay marcas seleccionadas, solo mostrar categorías que tengan productos de esas marcas
                 $catBuilder = clone $originalBuilder;
-                $catBuilder->whereIn('brand_id', $selectedBrands);
-                $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
+                
+                // Determinar si los valores son IDs (UUIDs) o slugs
+                $brandIds = [];
+                foreach ($selectedBrands as $brandValue) {
+                    // Si parece un UUID (contiene guiones), buscar por ID
+                    if (strpos($brandValue, '-') !== false) {
+                        $brandIds[] = $brandValue;
+                    } else {
+                        // Si no, es un slug, convertir a ID
+                        $brand = Brand::where('slug', $brandValue)->first();
+                        if ($brand) {
+                            $brandIds[] = $brand->id;
+                        }
+                    }
+                }
+                
+                if (!empty($brandIds)) {
+                    $catBuilder->whereIn('brand_id', $brandIds);
+                    $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
+                } else {
+                    $categories = Item::getForeign($originalBuilder, Category::class, 'category_id');
+                }
             } else {
                 // Si NO hay marcas seleccionadas, usar la lógica del filterSequence
                 $categories = in_array('category_id', $filterSequence)
@@ -328,20 +397,64 @@ class ItemController extends BasicController
             if (in_array('subcategory_id', $filterSequence)) {
                 $subcatBuilder = clone $originalBuilder;
                 if (!empty($selectedBrands)) {
-                    $subcatBuilder->whereIn('brand_id', $selectedBrands);
+                    // Determinar si los valores son IDs (UUIDs) o slugs
+                    $brandIds = [];
+                    foreach ($selectedBrands as $brandValue) {
+                        if (strpos($brandValue, '-') !== false) {
+                            $brandIds[] = $brandValue;
+                        } else {
+                            $brand = Brand::where('slug', $brandValue)->first();
+                            if ($brand) {
+                                $brandIds[] = $brand->id;
+                            }
+                        }
+                    }
+                    if (!empty($brandIds)) {
+                        $subcatBuilder->whereIn('brand_id', $brandIds);
+                    }
                 }
                 if (!empty($selectedCategories)) {
-                    $subcatBuilder->whereIn('category_id', $selectedCategories);
+                    // Determinar si los valores son IDs (UUIDs) o slugs
+                    $categoryIds = [];
+                    foreach ($selectedCategories as $categoryValue) {
+                        if (strpos($categoryValue, '-') !== false) {
+                            $categoryIds[] = $categoryValue;
+                        } else {
+                            $category = Category::where('slug', $categoryValue)->first();
+                            if ($category) {
+                                $categoryIds[] = $category->id;
+                            }
+                        }
+                    }
+                    if (!empty($categoryIds)) {
+                        $subcatBuilder->whereIn('category_id', $categoryIds);
+                    }
                 }
                 if (!empty($selectedCollections)) {
-                    $subcatBuilder->whereIn('collection_id', $selectedCollections);
+                    // Determinar si los valores son IDs (UUIDs) o slugs
+                    $collectionIds = [];
+                    foreach ($selectedCollections as $collectionValue) {
+                        if (strpos($collectionValue, '-') !== false) {
+                            $collectionIds[] = $collectionValue;
+                        } else {
+                            $collection = Collection::where('slug', $collectionValue)->first();
+                            if ($collection) {
+                                $collectionIds[] = $collection->id;
+                            }
+                        }
+                    }
+                    if (!empty($collectionIds)) {
+                        $subcatBuilder->whereIn('collection_id', $collectionIds);
+                    }
                 }
                 $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
             } else {
                 $subcategories = Item::getForeign($i4subcategory, SubCategory::class, 'subcategory_id');
             }
            
-            $tags = Item::getForeignMany($i4tag, ItemTag::class, Tag::class);
+            // 5. TAGS: usar originalBuilder (independientes por ahora)
+            $tags = Item::getForeignMany($originalBuilder, ItemTag::class, Tag::class);
+            
             return [
                 'priceRanges' => $ranges,
                 'collections' => $collections,
@@ -828,7 +941,7 @@ class ItemController extends BasicController
 
             $totalCount = 0;
             if ($request->requireTotalCount) {
-                $instance4count = clone $originalInstance;
+                $instance4count = clone $instance;
                 $instance4count->getQuery()->groups = null;
                 if ($request->group != null) {
                     $selector = $request->group[0]['selector'];

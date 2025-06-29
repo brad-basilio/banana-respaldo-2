@@ -270,39 +270,39 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         const transformedFilters = [];
 
         if (filters.collection_id.length > 0) {
-            const collectionConditions = filters.collection_id.map((id) => [
-                "collection.slug",
+            const collectionConditions = filters.collection_id.map((slug) => [
+                "collection.id", // Cambiar a ID en lugar de slug
                 "=",
-                id,
+                collections.find(c => c.slug === slug)?.id || slug,
             ]);
             transformedFilters.push(ArrayJoin(collectionConditions, 'or'));
         }
 
         if (filters.category_id.length > 0) {
-            const categoryConditions = filters.category_id.map((id) => [
-                "category.slug",
+            const categoryConditions = filters.category_id.map((slug) => [
+                "category.id", // Cambiar a ID en lugar de slug
                 "=",
-                id,
+                categories.find(c => c.slug === slug)?.id || slug,
             ]);
             transformedFilters.push(ArrayJoin(categoryConditions, 'or'));
         }
 
         if (filters.subcategory_id.length > 0) {
-            const subcategoryConditions = filters.subcategory_id.map((id) => [
-                "subcategory.slug",
+            const subcategoryConditions = filters.subcategory_id.map((slug) => [
+                "subcategory.id", // Cambiar a ID en lugar de slug
                 "=",
-                id,
+                subcategories.find(s => s.slug === slug)?.id || slug,
             ]);
             transformedFilters.push(ArrayJoin(subcategoryConditions, 'or'));
         }
 
         if (filters.brand_id.length > 0) {
-            const brandConditions = filters.brand_id.map((id) => [
-                "brand.slug",
+            const brandConditions = filters.brand_id.map((slug) => [
+                "brand.id", // Cambiar a ID en lugar de slug
                 "=",
-                id,
+                brands.find(b => b.slug === slug)?.id || slug,
             ]);
-            transformedFilters.push([...brandConditions]);
+            transformedFilters.push(ArrayJoin(brandConditions, 'or'));
         }
 
         if (filters.price && filters.price.length > 0) {
@@ -328,56 +328,44 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         setLoading(true);
         try {
             const filters = transformFilters(selectedFilters);
+            const itemsPerPage = 24; // Valor constante para evitar problemas de estado
+            
             // Extraer los IDs de los filtros seleccionados (no slugs)
             const params = {
                 filter: filters,
                 sort: selectedFilters.sort,
-                skip: (page - 1) * pagination.itemsPerPage,
-                take: pagination.itemsPerPage,
+                skip: (page - 1) * itemsPerPage,
+                take: itemsPerPage,
                 requireTotalCount: true,
                 filterSequence: filterSequence,
-                // Enviar los IDs de marcas/categorías/colecciones seleccionadas
-                brand_id: brands
-                    .filter(b => selectedFilters.brand_id.includes(b.slug))
-                    .map(b => b.id),
-                category_id: categories
-                    .filter(c => selectedFilters.category_id.includes(c.slug))
-                    .map(c => c.id),
-                collection_id: collections
-                    ? collections.filter(col => selectedFilters.collection_id.includes(col.slug)).map(col => col.id)
-                    : [],
-                // Agregar soporte para tags
-                tag_id: selectedFilters.tag_id || [],
+                // Removido los filtros duplicados - solo usar el filtro complejo
             };
+            
             const response = await itemsRest.paginate(params);
+            
             setProducts(response.data);
-            console.log('🔍 DEBUG - Response:', response.data);
+            
+            // Actualizar paginación con los datos correctos del backend
+            const totalCount = response.totalCount || 0;
+            const totalPages = Math.ceil(totalCount / itemsPerPage);
+            
             setPagination({
                 currentPage: page,
-                totalPages: Math.ceil(
-                    response.totalCount / pagination.itemsPerPage
-                ),
-                totalItems: response.totalCount,
-                itemsPerPage: pagination.itemsPerPage,
-                from: (page - 1) * pagination.itemsPerPage + 1,
-                to: Math.min(
-                    page * pagination.itemsPerPage,
-                    response.totalCount
-                ),
+                totalPages: totalPages,
+                totalItems: totalCount,
+                itemsPerPage: itemsPerPage,
+                from: totalCount > 0 ? (page - 1) * itemsPerPage + 1 : 0,
+                to: Math.min(page * itemsPerPage, totalCount),
             });
-            // Update all filter options from backend summary
-            console.log('🔍 DEBUG - Response summary:', response?.summary);
-            console.log('🔍 DEBUG - Subcategories raw:', response?.summary.subcategories);
             
+            // Update all filter options from backend summary
             setBrands(response?.summary.brands || []);
             setCategories(response?.summary.categories || []);
             setSubcategories(response?.summary.subcategories || []);
             setCollections(response?.summary.collections || []);
             setPriceRanges(response?.summary.priceRanges || []);
-            
-            console.log('✅ DEBUG - Subcategories state set:', response?.summary.subcategories || []);
         } catch (error) {
-            console.log("Error fetching products:", error);
+            console.error("Error fetching products:", error);
         } finally {
             setLoading(false);
         }
@@ -385,48 +373,15 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
     useEffect(() => {
         // Initialize state from filteredData prop
-        console.log('🚀 DEBUG - filteredData prop:', filteredData);
-        
-        // Debug the complete filteredData object structure
-        console.log('🔍 FULL DEBUG - Complete filteredData object:');
-        console.log('Keys:', Object.keys(filteredData || {}));
-        Object.keys(filteredData || {}).forEach(key => {
-            console.log(`${key}:`, filteredData[key]);
-            if (Array.isArray(filteredData[key])) {
-                console.log(`${key} length:`, filteredData[key].length);
-                if (filteredData[key].length > 0) {
-                    console.log(`First ${key}:`, filteredData[key][0]);
-                }
-            }
-        });
-        
         if (filteredData) {
-            console.log('📊 DEBUG - Available data keys:', Object.keys(filteredData));
-            
             // Set initial data from SystemController
-            if (filteredData.categories) {
-                console.log('📂 DEBUG - Setting categories:', filteredData.categories);
-                setCategories(filteredData.categories || []);
-            }
-            
-            if (filteredData.brands) {
-                console.log('🏷️ DEBUG - Setting brands:', filteredData.brands);
-                setBrands(filteredData.brands || []);
-            }
-            
-            if (filteredData.subcategories) {
-                console.log('📋 DEBUG - Setting subcategories from filteredData:', filteredData.subcategories);
-                setSubcategories(filteredData.subcategories || []);
-            }
-            
-            if (filteredData.priceRanges) {
-                console.log('💰 DEBUG - Setting price ranges:', filteredData.priceRanges);
-                setPriceRanges(filteredData.priceRanges || []);
-            }
+            setCategories(filteredData.categories || []);
+            setBrands(filteredData.brands || []);
+            setSubcategories(filteredData.subcategories || []);
+            setPriceRanges(filteredData.priceRanges || []);
         }
         
         // Initial fetch to get products and update summary data
-        // Cargar productos iniciales
         fetchProducts(1);
     }, [filteredData]);
 
@@ -436,7 +391,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     }, [selectedFilters]);
 
     const handlePageChange = (page) => {
-        if (page >= 1 && page <= pagination.totalPages) {
+        if (page >= 1 && page <= pagination.totalPages && page !== pagination.currentPage) {
             // Solo para la paginación: desplazar hacia arriba suavemente
             window.scrollTo({
                 top: 0,
@@ -613,6 +568,13 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             document.body.style.overflow = 'unset';
         };
     }, [filtersOpen]);
+
+    // Debug temporal para la paginación
+    console.log('🎯 RENDER DEBUG - Pagination state:', pagination);
+    console.log('🎯 RENDER DEBUG - Products length:', products?.length);
+    console.log('🎯 RENDER DEBUG - Selected filters:', Object.keys(selectedFilters).filter(key => 
+        Array.isArray(selectedFilters[key]) ? selectedFilters[key].length > 0 : selectedFilters[key]
+    ));
 
     return (
         <section className="py-12 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
