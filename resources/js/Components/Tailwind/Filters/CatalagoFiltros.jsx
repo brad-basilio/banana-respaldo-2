@@ -535,9 +535,19 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         category.name.toLowerCase().includes(searchCategory.toLowerCase())
     );
     const filteredSubcategories = subcategories.filter((subcategory) => {
-        // Mostrar solo subcategorías de las categorías presentes en el array categories
-        const presentCategoryIds = categories.map(cat => cat.id);
-        return presentCategoryIds.includes(subcategory.category_id) &&
+        // Si hay categorías seleccionadas en los filtros, solo mostrar subcategorías de esas categorías
+        let categoryIds;
+        if (selectedFilters.category_id && selectedFilters.category_id.length > 0) {
+            // Hay categorías seleccionadas, solo mostrar subcategorías de esas categorías
+            categoryIds = categories
+                .filter(cat => selectedFilters.category_id.includes(cat.slug))
+                .map(cat => cat.id);
+        } else {
+            // No hay categorías seleccionadas, mostrar subcategorías de todas las categorías disponibles
+            categoryIds = categories.map(cat => cat.id);
+        }
+        
+        return categoryIds.includes(subcategory.category_id) &&
             subcategory.name.toLowerCase().includes(searchSubcategory.toLowerCase());
     });
     
