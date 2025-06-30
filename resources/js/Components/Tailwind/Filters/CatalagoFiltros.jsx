@@ -227,12 +227,12 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
         // En mobile/tablet puedes mantener el comportamiento anterior
         return {
-            marca: true,
-            precio: true,
-            categoria: true,
-            subcategoria: true,
+            marca: false,
+            precio: false,
+            categoria: false,
+            subcategoria: false,
             colores: false,
-            coleccion: true,
+            coleccion: false,
         };
     });
 
