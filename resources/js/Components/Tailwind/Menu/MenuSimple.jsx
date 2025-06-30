@@ -36,11 +36,24 @@ const MenuSimple = ({ pages = [], items, data }) => {
         fetchTags();
     }, []);
 
-    // Mostrar solo tags en mobile si existen y ocultar el resto
-    const showOnlyTagsMobile = tags.length > 0 && window.innerWidth < 1024;
+    // Detectar si estamos en mobile
+    const isMobile = window.innerWidth < 1024;
+    
+    // En mobile: mostrar solo si hay tags, en desktop: mostrar siempre
+    const shouldShowMenu = isMobile ? tags.length > 0 : true;
+    
+    // Mostrar solo tags en mobile si existen
+    const showOnlyTagsMobile = tags.length > 0 && isMobile;
 
     console.log("items", data)
     console.log("tags", tags)
+    console.log("isMobile", isMobile)
+    console.log("shouldShowMenu", shouldShowMenu)
+
+    // Si no debe mostrar el menú, retornar null (oculto)
+    if (!shouldShowMenu) {
+        return null;
+    }
 
     return (
         <nav
