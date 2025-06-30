@@ -748,7 +748,7 @@ const HeaderSearchB = ({
                                                     <img
                                                         src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
                                                         alt={`${isUser.name} ${isUser.lastname}`}
-                                                        className="w-8 h-8 rounded-full object-cover border-2 border-primary ring-2 ring-secondary transition-all duration-300 "
+                                                        className="w-8 h-8 rounded-full object-cover border-2 border-primary  ring-secondary transition-all duration-300 "
                                                         onLoad={(e) => {
                                                             // Verificar si la respuesta es un SVG (imagen por defecto)
                                                             fetch(e.target.src)

@@ -1,0 +1,9 @@
+# Configuración recomendada para .env
+
+# Opción 1: Usar Gmail como From address (más confiable)
+MAIL_FROM_ADDRESS=basiliohinostroza2003bradneve@gmail.com
+MAIL_FROM_NAME='Stech Peru - Notificaciones'
+
+# O mejor aún, crear una cuenta Gmail específica:
+# MAIL_FROM_ADDRESS=notificaciones.stech@gmail.com
+# MAIL_FROM_NAME='Stech Peru - Sistema'
