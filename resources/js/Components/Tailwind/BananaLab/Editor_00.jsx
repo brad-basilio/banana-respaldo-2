@@ -1401,13 +1401,8 @@ export default function EditorLibro({ albumId, itemId, presetId, pages: initialP
                 }
             }
 
-            // Determinar la URL base correcta
-            const baseUrl = window.location.origin.includes('bananalab')
-                ? '/projects/bananalab/public'
-                : '';
-
             // Enviar al backend
-            const response = await fetch(`${baseUrl}/api/albums/${params.albumId}/finalize-design`, {
+            const response = await fetch(`/api/albums/${params.albumId}/finalize-design`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

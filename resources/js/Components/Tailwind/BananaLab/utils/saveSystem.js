@@ -27,11 +27,7 @@ export const uploadImageToBackend = async (base64Data, elementId, projectId) => 
         formData.append('project_id', projectId);
         formData.append('element_id', elementId);
         
-        const baseUrl = window.location.origin.includes('bananalab')
-            ? '/projects/bananalab/public'
-            : '';
-        
-        const response = await fetch(`${baseUrl}/api/canvas/projects/upload-image`, {
+        const response = await fetch(`/api/canvas/projects/upload-image`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json'
@@ -152,13 +148,9 @@ export const saveProjectData = async (pages, projectData, itemData, presetData, 
             }
         };
         
-        const baseUrl = window.location.origin.includes('bananalab')
-            ? '/projects/bananalab/public'
-            : '';
-        
         const endpoint = isAutoSave ? 'save-progress' : 'save';
         
-        const response = await fetch(`${baseUrl}/api/canvas/projects/${projectData.id}/${endpoint}`, {
+        const response = await fetch(`/api/canvas/projects/${projectData.id}/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

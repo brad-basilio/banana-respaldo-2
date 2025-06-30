@@ -589,10 +589,6 @@ export default function EditorLibro() {
             const localProgress = autoSave.loadFromLocalStorage();
             
             // 2. Verificar base de datos
-            const baseUrl = window.location.origin.includes('bananalab')
-                ? '/projects/bananalab/public'
-                : '';
-            
             const response = await fetch(`/api/canvas/projects/${projectData.id}/load-progress`, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -1915,11 +1911,6 @@ export default function EditorLibro() {
                     return false;
                 }
             }
-
-            // Determinar la URL base correcta
-            const baseUrl = window.location.origin.includes('bananalab')
-                ? '/projects/bananalab/public'
-                : '';
 
             // Enviar al backend
             const response = await fetch(`/api/canvas/projects/${projectData.id}/save`, {
