@@ -777,7 +777,7 @@ const HeaderSearchB = ({
                                                         />
                                                     </div>
                                                     {/* Punto indicador online animado */}
-                                                    <div className="absolute -bottom-0.4 -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                    <div className="absolute -bottom-[-0.115rem] -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
                                                         <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
                                                         <div className="w-full h-full bg-primary rounded-full"></div>
                                                     </div>
