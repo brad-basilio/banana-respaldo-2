@@ -593,7 +593,7 @@ export default function EditorLibro() {
                 ? '/projects/bananalab/public'
                 : '';
             
-            const response = await fetch(`${baseUrl}/api/canvas/projects/${projectData.id}/load-progress`, {
+            const response = await fetch(`${Global.APP_URL}/api/canvas/projects/${projectData.id}/load-progress`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
@@ -1922,7 +1922,7 @@ export default function EditorLibro() {
                 : '';
 
             // Enviar al backend
-            const response = await fetch(`${baseUrl}/api/canvas/projects/${projectData.id}/save`, {
+            const response = await fetch(`${Global.APP_URL}/api/canvas/projects/${projectData.id}/save`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
