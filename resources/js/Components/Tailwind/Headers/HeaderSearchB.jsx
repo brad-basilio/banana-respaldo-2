@@ -519,7 +519,7 @@ const HeaderSearchB = ({
                                                         />
                                                         <div className="relative" style={{ display: 'none' }}>
                                                             <CircleUser 
-                                                                className="customtext-primary border-2 border-primary rounded-full p-0.5 ring-2 ring-secondary transition-all duration-300" 
+                                                                className="customtext-primary  border-primary rounded-full   ring-secondary transition-all duration-300" 
                                                                 width="1.5rem" 
                                                             />
                                                         </div>
