@@ -377,7 +377,7 @@ export default function EditorLibro() {
 
             // Opciones simplificadas y optimizadas para dom-to-image
             const options = {
-                quality: 0.8,
+                quality: 10,
                 bgcolor: pages[currentPage]?.backgroundColor || '#ffffff',
                 width: workspaceElement.offsetWidth,
                 height: workspaceElement.offsetHeight,

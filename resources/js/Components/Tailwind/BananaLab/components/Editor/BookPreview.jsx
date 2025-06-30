@@ -789,13 +789,17 @@ const BookPreviewModal = ({
                                     }
 
                                     // Configurar el PDF con las dimensiones del workspace
-                                    const pdfWidth = workspaceDimensions.width * 0.264583; // Convertir px a mm (1px = 0.264583mm)
-                                    const pdfHeight = workspaceDimensions.height * 0.264583;
+                                    const pdfWidth = workspaceDimensions.width*0.264583*10 ; // Convertir px a mm (1px = 0.264583mm)
+                                    const pdfHeight = workspaceDimensions.height*0.264583*10 ;
                                     
                                     const pdf = new jsPDF({
                                         orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
                                         unit: 'mm',
-                                        format: [pdfWidth, pdfHeight]
+                                        format: [pdfWidth, pdfHeight],
+                                        scale: 2, // Escala para alta resolución
+                                        hotfixes: ['px_scaling']
+                                     
+                                        
                                     });
 
                                     // Obtener solo las páginas con contenido (sin reversos)

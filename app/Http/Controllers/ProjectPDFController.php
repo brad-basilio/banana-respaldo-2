@@ -478,7 +478,7 @@ class ProjectPDFController extends Controller
                     'id' => $project->id,
                     'pdf_path' => $project->pdf_path,
                     'pdf_generated_at' => $project->pdf_generated_at,
-                    'item_data' => $project->item_data ? json_decode($project->item_data, true) : null,
+                    //'item_data' => $project->item_data,
                     'has_pdf' => !is_null($project->pdf_path),
                     'pdf_exists' => $pdfExists,
                     'name' => $project->name,
