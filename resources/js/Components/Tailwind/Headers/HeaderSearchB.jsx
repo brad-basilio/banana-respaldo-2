@@ -777,7 +777,7 @@ const HeaderSearchB = ({
                                                         />
                                                     </div>
                                                     {/* Punto indicador online animado */}
-                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                    <div className="absolute -bottom-0.4 -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
                                                         <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
                                                         <div className="w-full h-full bg-primary rounded-full"></div>
                                                     </div>
@@ -785,7 +785,7 @@ const HeaderSearchB = ({
                                             ) : (
                                                 <div className="relative">
                                                     <CircleUser 
-                                                        className="customtext-primary border-2 border-primary rounded-full p-0.5 ring-2 ring-secondary group-hover:ring-green-300 transition-all duration-300" 
+                                                        className="customtext-primary border-2 border-primary rounded-full  ring-secondary group-hover:ring-green-300 transition-all duration-300" 
                                                     />
                                                     {/* Punto indicador online animado */}
                                                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
