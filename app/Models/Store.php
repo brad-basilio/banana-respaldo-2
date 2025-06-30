@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Store extends Model
 {
-    use HasFactory, SoftDeletes;
-
+    use HasFactory, HasUuids;
+ public $incrementing = false;
+    protected $keyType = 'string';
     protected $fillable = [
         'name',
         'address',
@@ -21,6 +23,7 @@ class Store extends Model
         'longitude',
         'image',
         'status',
+        'visible',
         'business_hours',
         'manager',
         'capacity'

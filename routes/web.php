@@ -108,7 +108,7 @@ Route::middleware(['can:Admin', 'auth'])->prefix('admin')->group(function () {
     Route::get('/brands', [AdminBrandController::class, 'reactView'])->name('Admin/Brands.jsx');
     Route::get('/tags', [AdminTagController::class, 'reactView'])->name('Admin/Tags.jsx');
     Route::get('/prices', [AdminDeliveryPriceController::class, 'reactView'])->name('Admin/DeliveryPricesType.jsx');
-    Route::get('/stores', [AdminStoreController::class, 'index'])->name('Admin/Stores.jsx');
+    Route::get('/stores', [AdminStoreController::class, 'reactView'])->name('Admin/Stores.jsx');
     Route::get('/messages', [AdminSubscriptionController::class, 'reactView'])->name('Admin/Messages.jsx');
     Route::get('/subscriptions', [AdminSubscriptionController::class, 'reactView'])->name('Admin/Subscriptions.jsx');
 
