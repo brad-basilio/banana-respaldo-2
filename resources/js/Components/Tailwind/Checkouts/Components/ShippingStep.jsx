@@ -956,6 +956,7 @@ export default function ShippingStep({
                                     setErrors(prev => ({ ...prev, document: '' }));
                                 }
                             }}
+                            placeholder="Ej: 12345678"
                             required
                             className={`border-gray-200 ${errors.document ? 'border-red-500 bg-red-50' : ''}`}
                         />
