@@ -10,6 +10,7 @@ import InputForm from "./InputForm";
 import SelectForm from "./SelectForm";
 import OptionCard from "./OptionCard";
 import FreeItemsDisplay from "./FreeItemsDisplay";
+import StorePickupSelector from "./StorePickupSelector";
 import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { debounce } from "lodash";
@@ -247,6 +248,10 @@ export default function ShippingStep({
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState("");
 
+    // Estados para retiro en tienda
+    const [selectedStore, setSelectedStore] = useState(null);
+    const [showStoreSelector, setShowStoreSelector] = useState(false);
+
     // Función de validación mejorada con alertas específicas
     const validateForm = () => {
         const newErrors = {};
@@ -350,9 +355,26 @@ export default function ShippingStep({
                 position: "top-center",
             });
         }
+        
+        // Validar tienda seleccionada si es retiro en tienda
+        if (selectedOption === "store_pickup" && !selectedStore) {
+            newErrors.store = "Seleccione una tienda para el retiro";
+            toast.error("Tienda requerida", {
+                description: "Por favor seleccione una tienda para retirar su pedido",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    // Función para manejar la selección de tienda
+    const handleStoreSelect = (store) => {
+        setSelectedStore(store);
+        setErrors(prev => ({ ...prev, store: "" }));
     };
 
     // Función para enfocar el primer campo con error y hacer scroll suave
@@ -487,6 +509,8 @@ export default function ShippingStep({
             });
 
             const options = [];
+            let hasStorePickup = false;
+            
             if (response.data.is_free) {
                 options.push({
                     type: "free",
@@ -505,6 +529,9 @@ export default function ShippingStep({
                         characteristics: response.data.express.characteristics,
                     });
                 }
+
+                // Si hay delivery gratis, verificar si también hay retiro en tienda
+                hasStorePickup = response.data.is_store_pickup;
             } else if (response.data.is_agency) {
                 options.push({
                     type: "agency",
@@ -513,6 +540,9 @@ export default function ShippingStep({
                     deliveryType: response.data.agency.type,
                     characteristics: response.data.agency.characteristics,
                 });
+            } else if (response.data.is_store_pickup) {
+                // Retiro en tienda como opción principal
+                hasStorePickup = true;
             } else {
                 options.push({
                     type: "standard",
@@ -521,6 +551,21 @@ export default function ShippingStep({
                     deliveryType: response.data.standard.type,
                     characteristics: response.data.standard.characteristics,
                 });
+            }
+
+            // Si hay retiro en tienda disponible, agregar la opción
+            if (hasStorePickup) {
+                options.push({
+                    type: "store_pickup",
+                    price: 0,
+                    description: "Retira tu pedido en una de nuestras tiendas",
+                    deliveryType: "Retiro en Tienda",
+                    characteristics: ["Sin costo de envío", "Horarios flexibles", "Atención personalizada"],
+                });
+                setShowStoreSelector(true);
+            } else {
+                setShowStoreSelector(false);
+                setSelectedStore(null);
             }
 
             setShippingOptions(options);
@@ -623,6 +668,9 @@ export default function ShippingStep({
                 document_type: formData.documentType, // Cambiar a document_type para que coincida con lo que espera el backend
                 amount: roundToTwoDecimals(finalTotalWithCoupon),
                 delivery: roundToTwoDecimals(envio),
+                delivery_type: selectedOption, // Agregar tipo de entrega
+                store_id: selectedOption === "store_pickup" ? selectedStore?.id : null, // ID de tienda si es retiro en tienda
+                store_name: selectedOption === "store_pickup" ? selectedStore?.name : null, // Nombre de tienda para referencia
                 cart: cart,
                 // Información del cupón - todos redondeados a 2 decimales
                 coupon_id: appliedCoupon?.id || null,
@@ -1098,8 +1146,13 @@ export default function ShippingStep({
                                         onSelect={() => {
                                             setSelectedOption(option.type);
                                             setEnvio(option.price);
-                                            setErrors(prev => ({ ...prev, shipping: '' }));
+                                            setErrors(prev => ({ ...prev, shipping: '', store: '' }));
                                             setExpandedCharacteristics(false); // Reset expansion when changing shipping option
+                                            
+                                            // Reset tienda seleccionada si no es retiro en tienda
+                                            if (option.type !== "store_pickup") {
+                                                setSelectedStore(null);
+                                            }
                                         }}
                                     />
                                 ))}
@@ -1155,6 +1208,24 @@ export default function ShippingStep({
                                             </>
                                         );
                                     })()}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Selector de tienda para retiro en tienda */}
+                    {selectedOption === "store_pickup" && showStoreSelector && (
+                        <div className="space-y-4 mt-6">
+                            <StorePickupSelector 
+                                ubigeoCode={formData.ubigeo}
+                                onStoreSelect={handleStoreSelect}
+                                selectedStore={selectedStore}
+                                className="border border-gray-200 rounded-xl p-4"
+                            />
+                            {errors.store && (
+                                <div className="text-red-500 text-sm mt-2 flex items-center gap-2">
+                                    <XCircle className="h-4 w-4" />
+                                    {errors.store}
                                 </div>
                             )}
                         </div>

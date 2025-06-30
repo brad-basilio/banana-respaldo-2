@@ -60,8 +60,8 @@ const MenuSimple = ({ pages = [], items, data }) => {
             className={
                 `${
                 showOnlyTagsMobile
-                        ? "block w-full md:block bg-primary font-paragraph text-sm"
-                        : "overflow-x-hidden w-full md:block bg-secondary font-paragraph text-sm"
+                        ? "block w-full relative md:block bg-primary font-paragraph text-sm"
+                        : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
             }
             ref={menuRef}
@@ -88,9 +88,10 @@ const MenuSimple = ({ pages = [], items, data }) => {
                         </div>
                     ) : (
                         <>
-                            <div className="flex items-center gap-4 lg:gap-6 text-sm">
-                                <div className="flex items-center gap-4 lg:gap-6 text-sm">
-                                    {data?.showCategories && <li className="relative py-3">
+                          
+                                <ul className="flex items-center gap-4 lg:gap-6 text-sm">
+                                    {data?.showCategories && 
+                                    <li className="relative py-3">
                                         <button
                                             className="font-medium customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-colors duration-300 relative before:absolute before:right-0 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-[1px] before:bg-[#262624]"
                                             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -148,8 +149,8 @@ const MenuSimple = ({ pages = [], items, data }) => {
                                                 </a>
                                             </li>
                                         ))}
-                                </div>
-                            </div>
+                                </ul>
+                         
                             {/* Botones de Tags - Ahora al final */}
                             {tags.length > 0 && (
                                 <div className="flex items-center gap-4 lg:gap-4 text-sm">

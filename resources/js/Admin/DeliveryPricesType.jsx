@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 
 import DeliveryPricesRest from "@Rest/Admin/DeliveryPricesRest";
 import TypesDeliveryRest from "@Rest/Admin/TypesDeliveryRest";
+import StoresRest from "../Actions/Admin/StoresRest";
 import CreateReactScript from "@Utils/CreateReactScript";
 import Swal from "sweetalert2";
 import BaseAdminto from "../Components/Adminto/Base";
@@ -18,6 +19,7 @@ import Number2Currency from "../Utils/Number2Currency";
 
 const deliverypricesRest = new DeliveryPricesRest();
 const deliverypricesTypeRest = new TypesDeliveryRest();
+const storesRest = new StoresRest();
 
 const DeliveryPricesType = ({ ubigeo = [] }) => {
     const gridRef = useRef();
@@ -32,6 +34,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
     const descriptionRef = useRef();
     const is_freeRef = useRef();
     const is_agencyRef = useRef();
+    const is_store_pickupRef = useRef();
     const express_priceRef = useRef();
     const agency_priceRef = useRef();
     const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +42,10 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
     const [inHome, setInHome] = useState(false);
     const [isFreeChecked, setIsFreeChecked] = useState(false);
     const [isAgencyChecked, setIsAgencyChecked] = useState(false);
+    const [isStorePickupChecked, setIsStorePickupChecked] = useState(false);
     const [message, setMessage] = useState('');
+    const [stores, setStores] = useState([]);
+    const [availableStores, setAvailableStores] = useState([]);
 
     const onModalOpen = (data) => {
         console.log(data);
@@ -70,12 +76,51 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
             }
         }
 
+        if (is_store_pickupRef.current) {
+            is_store_pickupRef.current.checked = data?.is_store_pickup ?? false;
+            setIsStorePickupChecked(data?.is_store_pickup ?? false);
+            // Establecer mensaje si es retiro en tienda
+            if (data?.is_store_pickup) {
+                setMessage('Retiro en tienda disponible. Los clientes podrán recoger sus pedidos en nuestras sucursales.');
+                loadAvailableStores(data?.ubigeo);
+            }
+        }
+
         priceRef.current.value = data?.price ?? 0;
         express_priceRef.current.value = data?.express_price ?? 0;
         agency_priceRef.current.value = data?.agency_price ?? 0;
         descriptionRef.current.value = data?.description ?? "";
 
         $(modalRef.current).modal("show");
+    };
+
+    // Función para cargar tiendas disponibles en el ubigeo seleccionado
+    const loadAvailableStores = async (ubigeoCode) => {
+        if (!ubigeoCode) return;
+        
+        try {
+            const result = await storesRest.simpleGet(`/api/admin/stores/paginate`, {
+                filters: [
+                    {
+                        field: "ubigeo",
+                        operator: "=",
+                        value: ubigeoCode
+                    },
+                    {
+                        field: "status", 
+                        operator: "=",
+                        value: 1
+                    }
+                ]
+            });
+            
+            if (result && result.data) {
+                setAvailableStores(result.data);
+            }
+        } catch (error) {
+            console.error("Error loading stores:", error);
+            setAvailableStores([]);
+        }
     };
 
     const onModalSubmit = async (e) => {
@@ -90,6 +135,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
             price: isFreeChecked ? null : priceRef.current.value,
             is_free: is_freeRef.current.checked,
             is_agency: is_agencyRef.current.checked,
+            is_store_pickup: is_store_pickupRef.current.checked,
             express_price: express_priceRef.current.value,
             agency_price: agency_priceRef.current.value,
             description: descriptionRef.current.value,
@@ -325,6 +371,11 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                                             <span className="text-muted font-italic">
                                                 Delivery Express
                                             </span>
+                                            {data.is_store_pickup && (
+                                                <span className="text-primary font-italic">
+                                                    Retiro en Tienda
+                                                </span>
+                                            )}
                                         </div>
                                     )
                                 );
@@ -333,6 +384,14 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                                     renderToString(
                                         <span className="text-muted font-italic">
                                             Recojo en agencia
+                                        </span>
+                                    )
+                                );
+                            } else if (data.is_store_pickup) {
+                                container.html(
+                                    renderToString(
+                                        <span className="text-primary font-italic">
+                                            Retiro en Tienda
                                         </span>
                                     )
                                 );
@@ -455,13 +514,16 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             <SwitchFormGroup
                                 eRef={is_freeRef}
                                 label="¿Delivery gratis?"
-                                col="col-6"
+                                col="col-4"
                                 onChange={(e) => {
                                     setIsFreeChecked(e.target.checked);
                                     if (e.target.checked) {
                                         setIsAgencyChecked(false);
+                                        setIsStorePickupChecked(false);
                                         is_agencyRef.current.checked = false;
+                                        is_store_pickupRef.current.checked = false;
                                         setMessage('El envío gratis tiene costo 0. Puede agregar un costo adicional para delivery express.');
+                                        loadAvailableStores(ubigeoRef.current.value);
                                     } else {
                                         setMessage('');
                                     }
@@ -472,12 +534,14 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             <SwitchFormGroup
                                 eRef={is_agencyRef}
                                 label="¿Recojo en agencia?"
-                                col="col-6"
+                                col="col-4"
                                 onChange={(e) => {
                                     setIsAgencyChecked(e.target.checked);
                                     if (e.target.checked) {
                                         setIsFreeChecked(false);
+                                        setIsStorePickupChecked(false);
                                         is_freeRef.current.checked = false;
+                                        is_store_pickupRef.current.checked = false;
                                         setMessage('Este es un envío que se realizará por empresas de envío como Shalom, Olva Currier u otros, el cliente realizara el pago en destino.');
                                     } else {
                                         setMessage('');
@@ -485,6 +549,26 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                                 }}
                                 checked={isAgencyChecked}
                                 refreshable={[isAgencyChecked]}
+                            />
+                            <SwitchFormGroup
+                                eRef={is_store_pickupRef}
+                                label="¿Retiro en tienda?"
+                                col="col-4"
+                                onChange={(e) => {
+                                    setIsStorePickupChecked(e.target.checked);
+                                    if (e.target.checked) {
+                                        setIsFreeChecked(false);
+                                        setIsAgencyChecked(false);
+                                        is_freeRef.current.checked = false;
+                                        is_agencyRef.current.checked = false;
+                                        setMessage('Retiro en tienda disponible. Los clientes podrán recoger sus pedidos en nuestras sucursales.');
+                                        loadAvailableStores(ubigeoRef.current.value);
+                                    } else {
+                                        setMessage('');
+                                    }
+                                }}
+                                checked={isStorePickupChecked}
+                                refreshable={[isStorePickupChecked]}
                             />
                         </div>
                         {message && (
@@ -497,7 +581,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                   
                     <div
                         className="col-12"
-                        hidden={isFreeChecked || isAgencyChecked}
+                        hidden={isFreeChecked || isAgencyChecked || isStorePickupChecked}
                     >
                         <InputFormGroup
                             eRef={priceRef}
@@ -528,6 +612,62 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             required
                         />
                     </div>
+                    
+                    {/* Mostrar tiendas disponibles cuando se selecciona retiro en tienda */}
+                    {isStorePickupChecked && (
+                        <div className="col-12 mb-3">
+                            <label className="form-label">Tiendas disponibles en esta ubicación</label>
+                            {availableStores.length > 0 ? (
+                                <div className="row">
+                                    {availableStores.map((store) => (
+                                        <div key={store.id} className="col-md-6 mb-2">
+                                            <div className="card border">
+                                                <div className="card-body p-3">
+                                                    <div className="d-flex">
+                                                        <div className="flex-shrink-0">
+                                                            {store.image ? (
+                                                                <img 
+                                                                    src={`/storage/images/stores/${store.image}`}
+                                                                    alt={store.name}
+                                                                    className="rounded"
+                                                                    style={{width: "40px", height: "40px", objectFit: "cover"}}
+                                                                />
+                                                            ) : (
+                                                                <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{width: "40px", height: "40px"}}>
+                                                                    <i className="fas fa-store text-muted"></i>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-grow-1 ms-3">
+                                                            <h6 className="mb-1">{store.name}</h6>
+                                                            <small className="text-muted d-block">{store.address}</small>
+                                                            {store.phone && (
+                                                                <small className="text-muted d-block">📞 {store.phone}</small>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-shrink-0">
+                                                            <span className={`badge ${store.status ? 'bg-success' : 'bg-danger'}`}>
+                                                                {store.status ? 'Activa' : 'Inactiva'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="alert alert-warning">
+                                    <i className="fas fa-exclamation-triangle me-2"></i>
+                                    No hay tiendas disponibles en esta ubicación. 
+                                    <a href="/admin/stores" target="_blank" className="alert-link ms-1">
+                                        Administrar tiendas
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
                     <TextareaFormGroup
                         eRef={descriptionRef}
                         label="Descripción"

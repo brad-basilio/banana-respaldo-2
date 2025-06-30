@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesCont
 
 use App\Http\Controllers\Admin\DeliveryPriceController as AdminDeliveryPriceController;
 use App\Http\Controllers\Admin\TypesDeliveryController as AdminTypesDeliveryController;
+use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SaleController as AdminSaleController;
@@ -81,6 +82,11 @@ use App\Http\Controllers\UnifiedImportController;
 */
 
 Route::get('/ubigeo/search', [DeliveryPriceController::class, 'search'])->name('ubigeo.search');
+
+// Rutas públicas para tiendas (checkout)
+Route::get('/stores', [AdminStoreController::class, 'getActiveStores']);
+Route::get('/stores/by-ubigeo/{ubigeo}', [AdminStoreController::class, 'getByUbigeo']);
+
 Route::post('/scrap', [ScrapController::class, 'scrap']);
 Route::post('/scrap-shopsimon', [ScrapController::class, 'scrapShopSimon']);
 
@@ -132,6 +138,7 @@ Route::get('/strengths/media/{uuid}', [AdminStrengthController::class, 'media'])
 Route::get('/certifications/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/partners/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/ads/media/{uuid}', [AdminAdController::class, 'media'])->withoutMiddleware('throttle');
+Route::get('/stores/media/{uuid}', [AdminStoreController::class, 'media']);
 
 Route::post('/posts/paginate', [PostController::class, 'paginate']);
 Route::post('/items/paginate', [ItemController::class, 'paginate']);
@@ -345,6 +352,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/types_delivery/status', [AdminTypesDeliveryController::class, 'status']);
     Route::patch('/types_delivery/{field}', [AdminTypesDeliveryController::class, 'boolean']);
     Route::delete('/types_delivery/{id}', [AdminTypesDeliveryController::class, 'delete']);
+
+    Route::post('/stores', [AdminStoreController::class, 'save']);
+    Route::post('/stores/paginate', [AdminStoreController::class, 'paginate']);
+    Route::patch('/stores/status', [AdminStoreController::class, 'status']);
+    Route::patch('/stores/{field}', [AdminStoreController::class, 'boolean']);
+    Route::delete('/stores/{id}', [AdminStoreController::class, 'delete']);
+    Route::get('/stores/{id}', [AdminStoreController::class, 'show']);
 
     Route::post('/tags', [AdminTagController::class, 'save']);
     Route::post('/tags/paginate', [AdminTagController::class, 'paginate']);
