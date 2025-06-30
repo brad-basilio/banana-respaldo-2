@@ -9,6 +9,7 @@ use App\Notifications\PurchaseSummaryNotification;
 use App\Notifications\MessageContactNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 
 class NotificationHelper
 {
@@ -217,6 +218,60 @@ class NotificationHelper
             Log::info('NotificationHelper - Notificaciones de contacto enviadas exitosamente');
         } catch (\Exception $e) {
             Log::error('NotificationHelper - Error enviando notificaciones de contacto', [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Envía un correo optimizado para Zoho Mail
+     */
+    public static function sendZohoOptimizedEmail($to, $subject, $content, $isHtml = false)
+    {
+        try {
+            Log::info('NotificationHelper - Enviando correo optimizado para Zoho', [
+                'to' => $to,
+                'subject' => $subject,
+                'is_zoho' => self::isZohoEmail($to)
+            ]);
+
+            if ($isHtml) {
+                Mail::html($content, function ($message) use ($to, $subject) {
+                    $message->to($to)
+                            ->subject($subject)
+                            ->from(config('mail.from.address'), config('mail.from.name'))
+                            ->replyTo(config('mail.from.address'), config('mail.from.name'));
+                    
+                    // Headers optimizados para Zoho
+                    $message->getHeaders()
+                            ->addTextHeader('X-Mailer', 'Laravel-STP')
+                            ->addTextHeader('X-Priority', '3')
+                            ->addTextHeader('List-Unsubscribe', '<mailto:' . config('mail.from.address') . '>')
+                            ->addTextHeader('Precedence', 'bulk');
+                });
+            } else {
+                Mail::raw($content, function ($message) use ($to, $subject) {
+                    $message->to($to)
+                            ->subject($subject)
+                            ->from(config('mail.from.address'), config('mail.from.name'))
+                            ->replyTo(config('mail.from.address'), config('mail.from.name'));
+                    
+                    // Headers optimizados para Zoho
+                    $message->getHeaders()
+                            ->addTextHeader('X-Mailer', 'Laravel-STP')
+                            ->addTextHeader('X-Priority', '3');
+                });
+            }
+
+            Log::info('NotificationHelper - Correo optimizado enviado exitosamente', [
+                'to' => $to
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('NotificationHelper - Error enviando correo optimizado', [
+                'to' => $to,
                 'error' => $e->getMessage()
             ]);
             throw $e;
