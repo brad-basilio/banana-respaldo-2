@@ -485,24 +485,41 @@ const HeaderSearchB = ({
                                     <div ref={menuRef} className="relative">
                                         <button
                                             aria-label="user"
-                                            className="flex items-center gap-2 hover:customtext-primary transition-colors duration-300"
+                                            className="flex items-center gap-2 hover:customtext-primary transition-all duration-300 relative group"
                                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                                         >
-                                            {isUser.uuid ? (
-                                                <img
-                                                    src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
-                                                    alt={`${isUser.name} ${isUser.lastname}`}
-                                                    className="w-6 h-6 rounded-full object-cover border-2 border-primary"
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        e.target.nextElementSibling.style.display = 'block';
-                                                    }}
-                                                />
-                                            ) : null}
-                                            <CircleUser 
-                                                className={`customtext-primary ${isUser.uuid ? 'hidden' : 'block'}`} 
-                                                width="1.5rem" 
-                                            />
+                                            <div className="relative transform group-hover:scale-105 transition-transform duration-200">
+                                                {isUser.uuid ? (
+                                                    <div className="relative">
+                                                        <img
+                                                            src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
+                                                            alt={`${isUser.name} ${isUser.lastname}`}
+                                                            className="w-6 h-6 rounded-full object-cover border-2 border-green-500 ring-2 ring-green-200 transition-all duration-300 group-hover:ring-green-300"
+                                                            onError={(e) => {
+                                                                e.target.style.display = 'none';
+                                                                e.target.nextElementSibling.style.display = 'block';
+                                                            }}
+                                                        />
+                                                        {/* Punto indicador online animado */}
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full animate-pulse">
+                                                            <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75 absolute"></div>
+                                                            <div className="w-full h-full bg-green-500 rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="relative">
+                                                        <CircleUser 
+                                                            className="customtext-primary border-2 border-green-500 rounded-full p-0.5 ring-2 ring-green-200 group-hover:ring-green-300 transition-all duration-300" 
+                                                            width="1.5rem" 
+                                                        />
+                                                        {/* Punto indicador online animado */}
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full animate-pulse">
+                                                            <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75 absolute"></div>
+                                                            <div className="w-full h-full bg-green-500 rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </button>
 
                                         <AnimatePresence>
@@ -522,8 +539,16 @@ const HeaderSearchB = ({
                                                                         {item.onClick ? (
                                                                             <button
                                                                                 aria-label="menu-items"
-                                                                                onClick={item.onClick}
-                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    setIsMenuOpen(false);
+                                                                                    // Pequeño delay para que la animación se complete
+                                                                                    setTimeout(() => {
+                                                                                        item.onClick();
+                                                                                    }, 150);
+                                                                                }}
+                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                             >
                                                                                 {item.icon}
                                                                                 <span>{item.label}</span>
@@ -531,7 +556,11 @@ const HeaderSearchB = ({
                                                                         ) : (
                                                                             <a
                                                                                 href={item.href}
-                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setIsMenuOpen(false);
+                                                                                }}
+                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                             >
                                                                                 {item.icon}
                                                                                 <span>{item.label}</span>
@@ -544,22 +573,32 @@ const HeaderSearchB = ({
                                                                     <li>
                                                                         <a
                                                                             href="/admin/home"
-                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setIsMenuOpen(false);
+                                                                            }}
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                         >
                                                                             <Home size={16} />
                                                                             <span>Dashboard</span>
                                                                         </a>
                                                                     </li>
                                                                     <li>
-                                                                        <a
-                                                                            href="#"
-                                                                            onClick={Logout}
-                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setIsMenuOpen(false);
+                                                                                // Pequeño delay para que la animación se complete
+                                                                                setTimeout(() => {
+                                                                                    Logout();
+                                                                                }, 150);
+                                                                            }}
+                                                                            className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                         >
-                                                                            <Home />
                                                                             <DoorClosed size={16} />
                                                                             <span>Cerrar Sesión</span>
-                                                                        </a>
+                                                                        </button>
                                                                     </li>
                                                                 </>
                                                             )}
@@ -677,23 +716,40 @@ const HeaderSearchB = ({
                                 {isUser ? (
                                     <button
                                         aria-label="user"
-                                        className="customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-colors duration-300"
+                                        className="customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-all duration-300 relative group"
                                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                                     >
-                                        {isUser.uuid ? (
-                                            <img
-                                                src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
-                                                alt={`${isUser.name} ${isUser.lastname}`}
-                                                className="w-8 h-8 rounded-full object-cover border-2 border-primary"
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    e.target.nextElementSibling.style.display = 'inline-block';
-                                                }}
-                                            />
-                                        ) : null}
-                                        <CircleUser 
-                                            className={`customtext-primary ${isUser.uuid ? 'hidden' : 'inline-block'}`} 
-                                        />
+                                        <div className="relative transform group-hover:scale-105 transition-transform duration-200">
+                                            {isUser.uuid ? (
+                                                <div className="relative">
+                                                    <img
+                                                        src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
+                                                        alt={`${isUser.name} ${isUser.lastname}`}
+                                                        className="w-8 h-8 rounded-full object-cover border-2 border-green-500 ring-2 ring-green-200 transition-all duration-300 group-hover:ring-green-300"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextElementSibling.style.display = 'inline-block';
+                                                        }}
+                                                    />
+                                                    {/* Punto indicador online animado */}
+                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse">
+                                                        <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75 absolute"></div>
+                                                        <div className="w-full h-full bg-green-500 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="relative">
+                                                    <CircleUser 
+                                                        className="customtext-primary border-2 border-green-500 rounded-full p-0.5 ring-2 ring-green-200 group-hover:ring-green-300 transition-all duration-300" 
+                                                    />
+                                                    {/* Punto indicador online animado */}
+                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse">
+                                                        <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75 absolute"></div>
+                                                        <div className="w-full h-full bg-green-500 rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                         <span className="hidden md:inline">{isUser.name}</span>
                                     </button>
                                 ) : (
@@ -720,8 +776,16 @@ const HeaderSearchB = ({
                                                                 {item.onClick ? (
                                                                     <button
                                                                         aria-label="menu-items"
-                                                                        onClick={item.onClick}
-                                                                        className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            setIsMenuOpen(false);
+                                                                            // Pequeño delay para que la animación se complete
+                                                                            setTimeout(() => {
+                                                                                item.onClick();
+                                                                            }, 150);
+                                                                        }}
+                                                                        className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                     >
                                                                         {item.icon}
                                                                         <span>{item.label}</span>
@@ -729,7 +793,11 @@ const HeaderSearchB = ({
                                                                 ) : (
                                                                     <a
                                                                         href={item.href}
-                                                                        className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setIsMenuOpen(false);
+                                                                        }}
+                                                                        className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                     >
                                                                         {item.icon}
                                                                         <span>{item.label}</span>
@@ -742,21 +810,32 @@ const HeaderSearchB = ({
                                                             <li>
                                                                 <a
                                                                     href="/admin/home"
-                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setIsMenuOpen(false);
+                                                                    }}
+                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                 >
                                                                     <Home size={16} />
                                                                     <span>Dashboard</span>
                                                                 </a>
                                                             </li>
                                                             <li>
-                                                                <a
-                                                                    href="#"
-                                                                    onClick={Logout}
-                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        setIsMenuOpen(false);
+                                                                        // Pequeño delay para que la animación se complete
+                                                                        setTimeout(() => {
+                                                                            Logout();
+                                                                        }, 150);
+                                                                    }}
+                                                                    className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                 >
                                                                     <DoorClosed size={16} />
                                                                     <span>Cerrar Sesión</span>
-                                                                </a>
+                                                                </button>
                                                             </li>
                                                         </>
                                                     )}
