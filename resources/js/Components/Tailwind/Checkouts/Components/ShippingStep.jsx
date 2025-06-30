@@ -1110,7 +1110,7 @@ export default function ShippingStep({
                                             .find((o) => o.type === selectedOption)
                                             ?.characteristics || [];
                                         
-                                        const shouldShowButton = characteristics.length > 3;
+                                        const shouldShowButton = characteristics.length > 1;
                                         const displayedCharacteristics = shouldShowButton && !expandedCharacteristics 
                                             ? characteristics.slice(0, 1) 
                                             : characteristics;
