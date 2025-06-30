@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X, ChevronRight, ChevronLeft, Home, ShoppingCart, User, Menu } from "lucide-react";
+import MenuSimple from "../../Menu/MenuSimple";
 
 export default function MobileMenu({ search, setSearch, pages, items, onClose }) {
     const [menuLevel, setMenuLevel] = useState("main");
@@ -245,6 +246,9 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                         {/* Lista de ítems */}
                         <div className="pb-16">
                             {renderMenuItems()}
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0  flex justify-center">
+                            <MenuSimple/>
                         </div>
                     </div>
 
