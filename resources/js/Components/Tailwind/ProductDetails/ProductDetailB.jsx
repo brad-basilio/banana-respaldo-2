@@ -76,6 +76,11 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
 
     // Estados para modal de políticas de envío
     const [deliveryPolicyModalOpen, setDeliveryPolicyModalOpen] = useState(false);
+    
+    // Estados para modal de tiendas
+    const [storeListModalOpen, setStoreListModalOpen] = useState(false);
+    const [stores, setStores] = useState([]);
+    const [loadingStores, setLoadingStores] = useState(false);
 
     // Funciones para manejar el zoom de la imagen
     const handleZoomClick = () => {
@@ -151,6 +156,31 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
 
     const handleClickWhatsApp = () => {
         window.open(linkWhatsApp, "_blank");
+    };
+
+    // Función para cargar las tiendas
+    const loadStores = async () => {
+        setLoadingStores(true);
+        try {
+            const response = await fetch('/api/stores');
+            const result = await response.json();
+            if (result.status) {
+                setStores(result.data || []);
+            }
+        } catch (error) {
+            console.error('Error loading stores:', error);
+            setStores([]);
+        } finally {
+            setLoadingStores(false);
+        }
+    };
+
+    // Función para abrir el modal de tiendas
+    const handleStoreListModal = () => {
+        setStoreListModalOpen(true);
+        if (stores.length === 0) {
+            loadStores();
+        }
     };
 
     const onAddClicked = (product) => {
@@ -514,24 +544,37 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                     </div>
 
                     {/* Entrega y Soporte */}
-                      {/* Delivery Options - Mejoradas */}
-                            <div className="border rounded-lg overflow-hidden flex flex-col mt-8 justify-center">
-                                <button
-                                    onClick={() => setDeliveryPolicyModalOpen(true)}
-                                    className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center  gap-4"
-                                >
-                                    <div className=" flex gap-2 items-center">
-                                        <div className="bg-secondary min-w-12 min-h-12 rounded-full mx-auto mb-2 flex items-center justify-center">
-                                            <Truck className="w-8 h-8 customtext-primary" />
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-sm customtext-neutral-dark">Envío a domicilio</p>
-                                            <p className="text-start text-xs customtext-neutral-light mt-1" style={{textDecoration:'underline', textDecorationStyle:'dashed', textUnderlineOffset:'2px'}}>Consultar </p>
-                                        </div>
-                                    </div>
-
-                                </button>
-
+                    {/* Delivery Options - Mejoradas */}
+                    <div className="border rounded-lg overflow-hidden flex flex-col mt-8 justify-center">
+                        <button
+                            onClick={() => setDeliveryPolicyModalOpen(true)}
+                            className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-4"
+                        >
+                            <div className="flex gap-2 items-center">
+                                <div className="bg-secondary min-w-12 min-h-12 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                    <Truck className="w-8 h-8 customtext-primary" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-sm text-start customtext-neutral-dark">Envío a domicilio</p>
+                                    <p className="text-start text-xs customtext-neutral-light mt-1 underline">Consultar</p>
+                                </div>
+                            </div>
+                        </button>
+                        
+                        <button
+                            onClick={handleStoreListModal}
+                            className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-4"
+                        >
+                            <div className="flex gap-2 items-center">
+                                <div className="bg-secondary min-w-12 min-h-12 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                    <Store className="w-8 h-8 customtext-primary" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-start text-sm customtext-neutral-dark">Retiro en tienda</p>
+                                    <p className="text-start text-xs customtext-neutral-light mt-1 underline">Consultar tiendas disponibles</p>
+                                </div>
+                            </div>
+                        </button>
                                 {/* Support - Mejorado */}
                                 <motion.div
 
@@ -981,15 +1024,30 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                     className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center  gap-4"
                                 >
                                     <div className=" flex gap-2 items-center">
-                                        <div className="bg-secondary min-w-12 min-h-12 rounded-full mx-auto mb-2 flex items-center justify-center">
-                                            <Truck className="w-8 h-8 customtext-primary" />
+                                        <div className="bg-secondary min-w-10 min-h-10 rounded-full mx-auto  flex items-center justify-center">
+                                            <Truck className="w-6 h-6 customtext-primary" />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-sm customtext-neutral-dark">Envío a domicilio</p>
-                                            <p className="text-start text-xs customtext-neutral-light mt-1" style={{textDecoration:'underline', textDecorationStyle:'dashed', textUnderlineOffset:'2px'}}>Consultar </p>
+                                            <p className="font-semibold text-start text-sm customtext-neutral-dark">Envío a domicilio</p>
+                                            <p className="text-start text-xs customtext-neutral-light mt-1 underline" >Consultar </p>
                                         </div>
                                     </div>
 
+                                </button>
+
+                                <button
+                                    onClick={handleStoreListModal}
+                                    className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-4"
+                                >
+                                    <div className="flex gap-2 items-center">
+                                        <div className="bg-secondary min-w-10 min-h-10 rounded-full mx-auto flex items-center justify-center">
+                                            <Store className="w-6 h-6 customtext-primary" />
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-start text-sm customtext-neutral-dark">Retiro en tienda</p>
+                                            <p className="text-start text-xs customtext-neutral-light mt-1 underline">Consultar</p>
+                                        </div>
+                                    </div>
                                 </button>
 
                                 {/* Support - Mejorado */}
@@ -1002,9 +1060,9 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                       
                                     >
 
-                                        <div className="bg-secondary min-w-12 max-w-12 min-h-12 max-h-12 flex items-center justify-center rounded-full flex-shrink-0">
+                                        <div className="bg-secondary min-w-10 max-w-10 min-h-10 max-h-10 flex items-center justify-center rounded-full flex-shrink-0">
                                             <svg
-                                                className="w-8 h-8 customtext-primary"
+                                                className="w-6 h-6 customtext-primary"
                                                 fill="currentColor"
                                                 viewBox="0 0 24 24"
                                             >
@@ -1021,7 +1079,7 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                                 >
                                                     clic aquí
                                                 </a>{" "}
-                                                y chatea con nosotros
+                                             
                                             </p>
                                         </div>
                                     </motion.div>
@@ -1412,6 +1470,211 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                     </ReactModal>
 
           
+            )}
+
+            {/* Modal de Listado de Tiendas */}
+            {storeListModalOpen && (
+                <ReactModal
+                    isOpen={storeListModalOpen}
+                    onRequestClose={() => setStoreListModalOpen(false)}
+                    contentLabel={"Tiendas Disponibles"}
+                    className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center p-4 z-50"
+                    overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-[999]"
+                    ariaHideApp={false}
+                >
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <Store className="w-8 h-8 text-primary" />
+                                <h2 className="text-2xl font-bold text-gray-900">Nuestras Tiendas</h2>
+                            </div>
+                            <button
+                                onClick={() => setStoreListModalOpen(false)}
+                                className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full"
+                                aria-label="Cerrar modal"
+                            >
+                                <X size={24} strokeWidth={2} />
+                            </button>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {loadingStores ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                        <p className="text-gray-600">Cargando tiendas...</p>
+                                    </div>
+                                </div>
+                            ) : stores.length === 0 ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="text-center">
+                                        <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay tiendas disponibles</h3>
+                                        <p className="text-gray-500">Por el momento no tenemos tiendas registradas.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                    {stores.map((store) => (
+                                        <div key={store.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                                            {/* Store Image */}
+                                            <div className="mb-4">
+                                                {store.image ? (
+                                                    <img 
+                                                        src={`/storage/images/stores/${store.image}`}
+                                                        alt={store.name}
+                                                        className="w-full h-32 object-cover rounded-lg"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextElementSibling.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div className={`w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center ${store.image ? 'hidden' : 'flex'}`}>
+                                                    <Store className="w-12 h-12 text-gray-400" />
+                                                </div>
+                                            </div>
+
+                                            {/* Store Header */}
+                                            <div className="mb-4">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <h3 className="font-bold text-lg text-gray-900 flex-1">{store.name}</h3>
+                                                    {/* Badge del tipo de establecimiento */}
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        store.type === 'tienda' ? 'bg-green-100 text-green-800' :
+                                                        store.type === 'oficina' ? 'bg-blue-100 text-blue-800' :
+                                                        store.type === 'almacen' ? 'bg-yellow-100 text-yellow-800' :
+                                                        store.type === 'showroom' ? 'bg-purple-100 text-purple-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                        {store.type === 'tienda' ? 'Tienda' :
+                                                         store.type === 'oficina' ? 'Oficina' :
+                                                         store.type === 'almacen' ? 'Almacén' :
+                                                         store.type === 'showroom' ? 'Showroom' :
+                                                         store.type || 'Otro'}
+                                                    </span>
+                                                </div>
+                                                
+                                              
+                                            </div>
+
+                                            {/* Store Details */}
+                                            <div className="space-y-3">
+                                                {/* Address */}
+                                                <div className="flex items-start gap-2">
+                                                    <Home className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                                                    <p className="text-sm text-gray-700 leading-relaxed">{store.address}</p>
+                                                </div>
+
+                                                {/* Phone */}
+                                                {store.phone && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <p className="text-sm text-gray-700">{store.phone}</p>
+                                                    </div>
+                                                )}
+
+                                                {/* Manager */}
+                                                {store.manager && (
+                                                    <div className="flex items-center gap-2">
+                                                        <CircleUserRound className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <p className="text-sm text-gray-700">Encargado: {store.manager}</p>
+                                                    </div>
+                                                )}
+
+                                                {/* Business Hours */}
+                                                {store.business_hours && (
+                                                    <div className="bg-white rounded-md p-3 mt-3">
+                                                        <div className="text-xs font-medium text-gray-700 mb-2">Horarios de atención:</div>
+                                                        <div className="text-xs text-gray-600">
+                                                            {(() => {
+                                                                try {
+                                                                    const hours = typeof store.business_hours === 'string' 
+                                                                        ? JSON.parse(store.business_hours) 
+                                                                        : store.business_hours;
+                                                                    
+                                                                    const today = new Date().toLocaleDateString('es-PE', { weekday: 'long' });
+                                                                    const todayMap = {
+                                                                        'lunes': 'Lunes',
+                                                                        'martes': 'Martes',
+                                                                        'miércoles': 'Miércoles',
+                                                                        'jueves': 'Jueves',
+                                                                        'viernes': 'Viernes',
+                                                                        'sábado': 'Sábado',
+                                                                        'domingo': 'Domingo'
+                                                                    };
+                                                                    
+                                                                    const todaySpanish = todayMap[today.toLowerCase()] || today;
+                                                                    const todaySchedule = hours.find(h => 
+                                                                        h.day.toLowerCase() === todaySpanish.toLowerCase()
+                                                                    );
+                                                                    
+                                                                    if (todaySchedule) {
+                                                                        const status = todaySchedule.closed 
+                                                                            ? `Hoy: Cerrado` 
+                                                                            : `Hoy: ${todaySchedule.open} - ${todaySchedule.close}`;
+                                                                        
+                                                                        const isOpen = !todaySchedule.closed && (() => {
+                                                                            const now = new Date();
+                                                                            const currentTime = now.getHours() * 60 + now.getMinutes();
+                                                                            const [openHour, openMin] = todaySchedule.open.split(':').map(Number);
+                                                                            const [closeHour, closeMin] = todaySchedule.close.split(':').map(Number);
+                                                                            const openTime = openHour * 60 + openMin;
+                                                                            const closeTime = closeHour * 60 + closeMin;
+                                                                            return currentTime >= openTime && currentTime <= closeTime;
+                                                                        })();
+
+                                                                        return (
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span>{status}</span>
+                                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                                    isOpen 
+                                                                                        ? 'bg-green-100 text-green-800' 
+                                                                                        : 'bg-red-100 text-red-800'
+                                                                                }`}>
+                                                                                    {isOpen ? 'Abierto' : 'Cerrado'}
+                                                                                </span>
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    return "Horarios disponibles";
+                                                                } catch (e) {
+                                                                    return "Horarios disponibles";
+                                                                }
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Description */}
+                                                {store.description && (
+                                                    <div className="pt-2 border-t border-gray-200">
+                                                        <p className="text-xs text-gray-600 leading-relaxed">{store.description}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+                            <p className="text-sm text-gray-600">
+                                {stores.length > 0 && `${stores.length} tienda${stores.length !== 1 ? 's' : ''} disponible${stores.length !== 1 ? 's' : ''}`}
+                            </p>
+                            <button
+                                onClick={() => setStoreListModalOpen(false)}
+                                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors duration-200 font-medium"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </ReactModal>
             )}
 
             <CartModal

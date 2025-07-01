@@ -1008,8 +1008,8 @@
       "_createLucideIcon-Cy5Ya80P.js"
     ]
   },
-  "_square-check-big-B2ZD1gds.js": {
-    "file": "assets/square-check-big-B2ZD1gds.js",
+  "_square-check-big-BHvkmId8.js": {
+    "file": "assets/square-check-big-BHvkmId8.js",
     "name": "square-check-big",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js"
@@ -5309,7 +5309,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Contact.jsx": {
-    "file": "assets/Contact-DvY8ijIm.js",
+    "file": "assets/Contact-yONhPOE6.js",
     "name": "Contact",
     "src": "resources/js/Components/Tailwind/Contact.jsx",
     "isDynamicEntry": true,
@@ -5353,7 +5353,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Contact/ContactGrid.jsx": {
-    "file": "assets/ContactGrid-CqUkTI3F.js",
+    "file": "assets/ContactGrid-C8ctHNBl.js",
     "name": "ContactGrid",
     "src": "resources/js/Components/Tailwind/Contact/ContactGrid.jsx",
     "isDynamicEntry": true,
@@ -6806,7 +6806,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-XBBDYEL6.js",
+    "file": "assets/ProductDetail-DZ-ExPiY.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -6875,7 +6875,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailB.jsx": {
-    "file": "assets/ProductDetailB-B4jRMkLp.js",
+    "file": "assets/ProductDetailB-BbDXrm2F.js",
     "name": "ProductDetailB",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailB.jsx",
     "isDynamicEntry": true,
@@ -6899,12 +6899,15 @@
       "_chevron-down-DS-mdh9v.js",
       "_circle-check-CPWcvHtC.js",
       "_createLucideIcon-Cy5Ya80P.js",
+      "_store-BlkTk2Px.js",
       "_proxy-BTYtmp9V.js",
       "_chevron-up-D78jyEhP.js",
       "_shopping-cart-CZEUxbmv.js",
       "_plus-Bot15Khs.js",
-      "_square-check-big-B2ZD1gds.js",
+      "_square-check-big-BHvkmId8.js",
       "_x-DBMwyD6F.js",
+      "_house-D_ORqlIe.js",
+      "_phone-BZ94M50k.js",
       "_index-yBjzXJbu.js",
       "_BasicRest-B3rfI5GY.js",
       "_index-CMHsc23u.js",
@@ -7656,7 +7659,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Scraping/ScrapingProductDetail.jsx": {
-    "file": "assets/ScrapingProductDetail-D4mt6AQA.js",
+    "file": "assets/ScrapingProductDetail-B5xJQIkM.js",
     "name": "ScrapingProductDetail",
     "src": "resources/js/Components/Tailwind/Scraping/ScrapingProductDetail.jsx",
     "isDynamicEntry": true,
@@ -7670,20 +7673,20 @@
       "_house-D_ORqlIe.js",
       "_store-BlkTk2Px.js",
       "_phone-BZ94M50k.js",
-      "_createLucideIcon-Cy5Ya80P.js",
+      "_square-check-big-BHvkmId8.js",
       "_circle-check-CPWcvHtC.js",
       "_chevron-up-D78jyEhP.js",
       "_chevron-down-DS-mdh9v.js",
       "_shopping-cart-CZEUxbmv.js",
       "_plus-Bot15Khs.js",
-      "_square-check-big-B2ZD1gds.js",
       "_index-yBjzXJbu.js",
       "_BasicRest-B3rfI5GY.js",
       "_index-CMHsc23u.js",
       "_index-rimy3MAc.js",
       "_index-fNjTmf9T.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
-      "_index-xsH4HHeE.js"
+      "_index-xsH4HHeE.js",
+      "_createLucideIcon-Cy5Ya80P.js"
     ]
   },
   "resources/js/Components/Tailwind/Scraping/ScrapingSimple.jsx": {
@@ -8551,7 +8554,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-BdyJcrVf.js",
+    "file": "assets/System-CLUpVNQR.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

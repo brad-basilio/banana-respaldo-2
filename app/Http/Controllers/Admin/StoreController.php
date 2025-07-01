@@ -86,7 +86,7 @@ class StoreController extends BasicController
             $stores = Store::active()
                 ->select([
                     'id', 'name', 'address', 'phone', 'email', 'image',
-                    'latitude', 'longitude', 'business_hours', 'manager', 'description', 'ubigeo', 'type'
+                    'latitude', 'longitude', 'business_hours', 'manager', 'description', 'ubigeo', 'type', 'status'
                 ])
                 ->get();
 

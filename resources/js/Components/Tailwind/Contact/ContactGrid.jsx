@@ -1,5 +1,5 @@
 import { Mail, Phone, Building2, Store } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import MessagesRest from "../../../Actions/MessagesRest";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
@@ -33,6 +33,46 @@ const ContactGrid = ({ data, contacts }) => {
     const [sending, setSending] = useState(false);
     const [phoneValue, setPhoneValue] = useState("");
     const [phoneError, setPhoneError] = useState("");
+    const [offices, setOffices] = useState([]);
+    const [loadingOffices, setLoadingOffices] = useState(true);
+
+    // Cargar oficinas desde la API
+    useEffect(() => {
+        const loadOffices = async () => {
+            try {
+                setLoadingOffices(true);
+                const response = await fetch('/api/stores');
+                const result = await response.json();
+                
+                console.log('API Response:', result); // Para debug
+                
+                // La respuesta puede venir envuelta en un objeto con una propiedad 'data'
+                let data = result;
+                if (result.data) {
+                    data = result.data;
+                } else if (result.body) {
+                    data = result.body;
+                }
+                
+                // Verificar que data sea un array antes de filtrar
+                if (Array.isArray(data)) {
+                    // Filtrar solo las oficinas
+                    const officesData = data.filter(store => store.type === 'oficina' && store.status !== false);
+                    setOffices(officesData);
+                } else {
+                    console.error('API response is not an array:', result);
+                    setOffices([]);
+                }
+            } catch (error) {
+                console.error('Error loading offices:', error);
+                setOffices([]);
+            } finally {
+                setLoadingOffices(false);
+            }
+        };
+        
+        loadOffices();
+    }, []);
 
     // Formatea el teléfono en formato 999 999 999
     const formatPhone = (value) => {
@@ -370,11 +410,10 @@ const ContactGrid = ({ data, contacts }) => {
                             scale: 1.02,
                             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
                             backgroundColor: "#ffffff",
-                           
                         }}
                     >
                         <motion.div 
-                            className="flex items-center gap-3 customtext-primary mb-2"
+                            className="flex items-center gap-3 customtext-primary mb-4"
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ duration: 0.5, delay: 1.4 }}
@@ -388,21 +427,64 @@ const ContactGrid = ({ data, contacts }) => {
                             <motion.h3 
                                 className="customtext-neutral-dark font-bold text-lg"
                             >
-                                Oficinas
+                                Nuestras Oficinas
                             </motion.h3>
                         </motion.div>
-                        <motion.p 
-                            className="customtext-neutral-light mb-2"
-                            whileHover={{ x: 3, opacity: 0.8 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                        >
-                            Visítanos en nuestra oficina para conocer nuestras
-                            soluciones de tratamiento en persona.
-                        </motion.p>
-                        <p className="customtext-primary font-bold">
-                            {" "}
-                            {getContact("address")}
-                        </p>
+                        
+                        {loadingOffices ? (
+                            <div className="flex items-center justify-center py-4">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                <span className="ml-2 text-sm customtext-neutral-light">Cargando oficinas...</span>
+                            </div>
+                        ) : offices.length === 0 ? (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <motion.p 
+                                    className="customtext-neutral-light mb-2"
+                                    whileHover={{ x: 3, opacity: 0.8 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                >
+                                    Visítanos en nuestra oficina para conocer nuestras
+                                    soluciones de tratamiento en persona.
+                                </motion.p>
+                                <p className="customtext-primary font-bold">
+                                    {getContact("address")}
+                                </p>
+                            </motion.div>
+                        ) : (
+                            <div className="space-y-4">
+                                <motion.p 
+                                    className="customtext-neutral-light mb-3"
+                                    whileHover={{ x: 3, opacity: 0.8 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                >
+                                    Visítanos en cualquiera de nuestras oficinas para atención personalizada.
+                                </motion.p>
+                                
+                                {offices.map((office, index) => (
+                                    <motion.div
+                                        key={office.id}
+                                        className="bg-white p-4 rounded-lg border border-gray-100 hover:shadow-md transition-shadow duration-200"
+                                        initial={{ x: -20, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ duration: 0.4, delay: 1.5 + (index * 0.1) }}
+                                        whileHover={{ x: 2, scale: 1.01 }}
+                                    >
+                                        <h4 className="customtext-neutral-dark font-bold mb-2">
+                                            {office.name}
+                                        </h4>
+                                        <p  className="customtext-primary font-bold">
+                                            {office.address}
+                                        </p>
+                                       
+                                       
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
                     </motion.div>
 
                     <motion.div 
