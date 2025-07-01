@@ -39,11 +39,10 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
     // Detectar si estamos en mobile
     const isMobile = window.innerWidth < 1024;
     
-    // En mobile: mostrar solo si hay tags, en desktop: mostrar siempre
-    const shouldShowMenu = isMobile ? tags.length > 0 : true;
-    
-    // Mostrar solo tags en mobile si existen
-    const showOnlyTagsMobile = tags.length > 0 && isMobile;
+    // En desktop: siempre mostrar el menú. En mobile: mostrar solo si visible es true y hay tags
+    const shouldShowMenu = isMobile ? (visible && tags.length > 0) : true;
+    // Mostrar solo tags en mobile si existen Y visible es true
+    const showOnlyTagsMobile = tags.length > 0 && isMobile && visible;
 
     console.log("items", data)
     console.log("tags", tags)
@@ -59,7 +58,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
         <nav
             className={
                 `${
-                showOnlyTagsMobile && visible
+                showOnlyTagsMobile
                         ? " block w-full relative md:block bg-primary font-paragraph text-sm"
                         : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
