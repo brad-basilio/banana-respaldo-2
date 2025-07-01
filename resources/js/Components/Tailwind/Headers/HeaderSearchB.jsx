@@ -770,7 +770,7 @@ const HeaderSearchB = ({
                                             className="absolute z-50 top-full left-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
                                         >
                                             <div className="p-4">
-                                                <ul className="space-y-3">
+                                                <ul className="space-y-4">
                                                     {isCustomer ? (
                                                         menuItems.map((item, index) => (
                                                             <li key={index}>
