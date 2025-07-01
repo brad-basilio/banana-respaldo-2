@@ -170,7 +170,7 @@ const FooterB = ({ pages, generals }) => {
                 </div>
 
                 {/* Newsletter Column */}
-                <div className="col-span-1 md:col-span-2">
+                <div className="mt-4 lg:mt-0 col-span-1 md:col-span-2">
                     <h3 className="customtext-primary font-bold mb-4 text-base ">
                         Únete a nuestro blog
                     </h3>
