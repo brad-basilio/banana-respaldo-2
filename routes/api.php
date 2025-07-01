@@ -57,6 +57,7 @@ use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\CoverController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeliveryPriceController;
+use App\Http\Controllers\TypeDeliveryController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ItemImportController;
 use App\Http\Controllers\MessageController;
@@ -82,6 +83,9 @@ use App\Http\Controllers\UnifiedImportController;
 */
 
 Route::get('/ubigeo/search', [DeliveryPriceController::class, 'search'])->name('ubigeo.search');
+
+// Type Delivery routes
+Route::get('/type-delivery/{slug}', [TypeDeliveryController::class, 'getBySlug']);
 
 // Rutas públicas para tiendas (checkout)
 Route::get('/stores', [AdminStoreController::class, 'getActiveStores']);

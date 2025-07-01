@@ -121,6 +121,8 @@ class PaymentController extends Controller
                 'comment' => $request->comment,
                 'amount' => $request->amount,
                 'delivery' => $request->delivery,
+                'delivery_type' => $request->delivery_type,
+                'store_id' => $request->store_id,
                 'coupon_id' => $request->coupon_id,
                 'coupon_code' => $request->coupon_code,
                 'coupon_discount' => $request->coupon_discount ?? 0,

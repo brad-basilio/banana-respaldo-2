@@ -17,7 +17,7 @@ class SaleController extends BasicController
 {
     public $model = Sale::class;
     public $reactView = 'Customer/Sales';
-    public $with4get = ['status', 'details'];
+    public $with4get = ['status', 'details', 'store'];
 
     public function setReactViewProperties(Request $request)
     {
@@ -29,6 +29,6 @@ class SaleController extends BasicController
     public function setPaginationInstance(Request $request, string $model)
     {
         $userId = Auth::user()->id;
-        return $model::with('status')->where('user_id', $userId);
+        return $model::with(['status', 'store'])->where('user_id', $userId);
     }
 }

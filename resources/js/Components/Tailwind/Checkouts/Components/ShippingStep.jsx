@@ -510,7 +510,7 @@ export default function ShippingStep({
 
             const options = [];
             let hasStorePickup = false;
-            
+
             if (response.data.is_free) {
                 options.push({
                     type: "free",
@@ -530,8 +530,8 @@ export default function ShippingStep({
                     });
                 }
 
-                // Si hay delivery gratis, verificar si también hay retiro en tienda
-                hasStorePickup = response.data.is_store_pickup;
+                // Si hay delivery gratis, forzar retiro en tienda
+                hasStorePickup = true;
             } else if (response.data.is_agency) {
                 options.push({
                     type: "agency",
@@ -553,15 +553,31 @@ export default function ShippingStep({
                 });
             }
 
-            // Si hay retiro en tienda disponible, agregar la opción
-            if (hasStorePickup) {
-                options.push({
-                    type: "store_pickup",
-                    price: 0,
-                    description: "Retira tu pedido en una de nuestras tiendas",
-                    deliveryType: "Retiro en Tienda",
-                    characteristics: ["Sin costo de envío", "Horarios flexibles", "Atención personalizada"],
-                });
+            // Si hay retiro en tienda disponible, agregar la opción usando los datos que ya vienen en la respuesta
+            if (hasStorePickup || response.data.is_store_pickup) {
+                // Evitar duplicados si ya existe la opción
+                const alreadyHasStorePickup = options.some(opt => opt.type === "store_pickup");
+                if (!alreadyHasStorePickup) {
+                    // Usar los datos que ya vienen en la respuesta de DeliveryPricesRest.getShippingCost()
+                    if (response.data.store_pickup) {
+                        options.push({
+                            type: "store_pickup",
+                            price: response.data.store_pickup.price,
+                            description: response.data.store_pickup.description,
+                            deliveryType: response.data.store_pickup.type,
+                            characteristics: response.data.store_pickup.characteristics,
+                        });
+                    } else {
+                        // Si no hay datos específicos de store_pickup, usar valores por defecto
+                        options.push({
+                            type: "store_pickup",
+                            price: 0,
+                            description: "Retira tu pedido en una de nuestras tiendas",
+                            deliveryType: "Retiro en Tienda",
+                            characteristics: ["Sin costo de envío", "Horarios flexibles", "Atención personalizada"],
+                        });
+                    }
+                }
                 setShowStoreSelector(true);
             } else {
                 setShowStoreSelector(false);
@@ -569,8 +585,8 @@ export default function ShippingStep({
             }
 
             setShippingOptions(options);
-            setSelectedOption(options[0].type);
-            setEnvio(options[0].price);
+            setSelectedOption(options[0]?.type || null);
+            setEnvio(options[0]?.price || 0);
             setExpandedCharacteristics(false); // Reset expansion state when location changes
         } catch (error) {
             //console.error("Error al obtener precios de envío:", error);
@@ -670,7 +686,6 @@ export default function ShippingStep({
                 delivery: roundToTwoDecimals(envio),
                 delivery_type: selectedOption, // Agregar tipo de entrega
                 store_id: selectedOption === "store_pickup" ? selectedStore?.id : null, // ID de tienda si es retiro en tienda
-                store_name: selectedOption === "store_pickup" ? selectedStore?.name : null, // Nombre de tienda para referencia
                 cart: cart,
                 // Información del cupón - todos redondeados a 2 decimales
                 coupon_id: appliedCoupon?.id || null,

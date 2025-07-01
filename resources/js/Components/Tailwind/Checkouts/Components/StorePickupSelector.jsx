@@ -21,16 +21,11 @@ const StorePickupSelector = ({
         setError(null);
         
         try {
-            const response = await fetch(`/api/stores/by-ubigeo/${ubigeoCode}`);
+            // Traer todas las tiendas, sin importar el ubigeo
+            const response = await fetch(`/api/stores`);
             const result = await response.json();
-            
-            if (response.ok) {
-                setStores(result.data || []);
-            } else {
-                throw new Error(result.message || 'Error al cargar tiendas');
-            }
-        } catch (err) {
-            setError(err.message);
+            setStores(result.data || []);
+        } catch (error) {
             setStores([]);
         } finally {
             setLoading(false);

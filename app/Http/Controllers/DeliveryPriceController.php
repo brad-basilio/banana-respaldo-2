@@ -103,6 +103,22 @@ class DeliveryPriceController extends BasicController
                     'characteristics' => $agencyType->characteristics,
                 ];
             }
+
+            // 5. Verificar si hay retiro en tienda disponible
+            // Obtener directamente el TypeDelivery de retiro en tienda
+            $storePickupType = TypeDelivery::where('slug', 'retiro-en-tienda')->first();
+
+            if ($storePickupType) {
+                $result['is_store_pickup'] = true;
+                $result['store_pickup'] = [
+                    'price' => 0,
+                    'description' => $storePickupType->description,
+                    'type' => $storePickupType->name,
+                    'characteristics' => $storePickupType->characteristics ?? ['Sin costo de envío', 'Horarios flexibles', 'Atención personalizada'],
+                ];
+            } else {
+                $result['is_store_pickup'] = false;
+            }
             //dump($result);
             $response->data = $result;
             $response->status = 200;

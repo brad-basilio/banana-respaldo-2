@@ -115,4 +115,51 @@ class Store extends Model
 
         return null;
     }
+
+    // Método para obtener información de ubicación
+    public function getLocationInfo()
+    {
+        if (!$this->ubigeo) return null;
+
+        $ubigeoData = collect(config('app.ubigeo'))
+            ->firstWhere('reniec', $this->ubigeo);
+
+        return $ubigeoData ? [
+            'distrito' => $ubigeoData['distrito'],
+            'provincia' => $ubigeoData['provincia'],
+            'departamento' => $ubigeoData['departamento']
+        ] : null;
+    }
+
+    // Accessor para obtener el distrito
+    public function getDistrictAttribute()
+    {
+        $location = $this->getLocationInfo();
+        return $location ? $location['distrito'] : null;
+    }
+
+    // Accessor para obtener la provincia
+    public function getProvinceAttribute()
+    {
+        $location = $this->getLocationInfo();
+        return $location ? $location['provincia'] : null;
+    }
+
+    // Accessor para obtener el departamento  
+    public function getDepartmentAttribute()
+    {
+        $location = $this->getLocationInfo();
+        return $location ? $location['departamento'] : null;
+    }
+
+    // Accessor para obtener horario formateado
+    public function getScheduleAttribute()
+    {
+        $schedule = $this->getTodaySchedule();
+        if (!$schedule) return 'Horario no disponible';
+        
+        if ($schedule['closed']) return 'Cerrado hoy';
+        
+        return "Hoy: {$schedule['open']} - {$schedule['close']}";
+    }
 }
