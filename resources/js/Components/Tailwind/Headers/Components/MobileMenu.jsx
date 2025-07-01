@@ -112,10 +112,15 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                 </div>
             );
         } else if (menuLevel === "categories") {
+            // Ordenar categorías alfabéticamente
+            const sortedCategories = [...items].sort((a, b) => 
+                a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+            );
+            
             return (
                 <div className={animationDirection === "right" ? "animate-fade-left animate-duration-300" : "animate-fade-right animate-duration-300"}>
                     <div className="space-y-2">
-                        {items.map((category) => (
+                        {sortedCategories.map((category) => (
                             <div
                                 key={category.id}
                                 className="px-4 py-2  rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 active:bg-primary transition-all"
@@ -132,10 +137,18 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
             const selectedSubcategory = items.find(
                 (category) => category.name === selectedCategory
             );
+            
+            // Ordenar subcategorías alfabéticamente
+            const sortedSubcategories = selectedSubcategory.subcategories 
+                ? [...selectedSubcategory.subcategories].sort((a, b) => 
+                    a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+                  )
+                : [];
+                
             return (
                 <div className={animationDirection === "right" ? "animate-fade-left animate-duration-300" : "animate-fade-right animate-duration-300"}>
                     <div className="space-y-2">
-                        {selectedSubcategory.subcategories.map((subcat, index) => (
+                        {sortedSubcategories.map((subcat, index) => (
                             <a
                                 href={`/catalogo?subcategory=${subcat.slug}`}
                                 key={index}
