@@ -14,6 +14,7 @@ import {
 import CartModal from "../Components/CartModal";
 import Logout from "../../../Actions/Logout";
 import MobileMenu from "./Components/MobileMenu";
+import ProfileImage from "./Components/ProfileImage";
 import { motion, AnimatePresence } from "framer-motion";
 
 const HeaderSearchB = ({
@@ -491,31 +492,11 @@ const HeaderSearchB = ({
                                             <div className="relative transform group-hover:scale-105 transition-transform duration-200">
                                                 {isUser.uuid ? (
                                                     <div className="relative">
-                                                        <img
-                                                            src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
-                                                            alt={`${isUser.name} ${isUser.lastname}`}
-                                                            className="w-6 h-6 rounded-full object-cover border-2 border-primary  ring-secondary transition-all duration-300 "
-                                                            onLoad={(e) => {
-                                                                // Verificar si la respuesta es un SVG (imagen por defecto)
-                                                                fetch(e.target.src)
-                                                                    .then(response => response.text())
-                                                                    .then(text => {
-                                                                        if (text.includes('<svg') || text.includes('<?xml')) {
-                                                                            // Es un SVG, mostrar CircleUser en su lugar
-                                                                            e.target.style.display = 'none';
-                                                                            e.target.nextElementSibling.style.display = 'block';
-                                                                        }
-                                                                    })
-                                                                    .catch(() => {
-                                                                        // Error al verificar, mostrar CircleUser
-                                                                        e.target.style.display = 'none';
-                                                                        e.target.nextElementSibling.style.display = 'block';
-                                                                    });
-                                                            }}
-                                                            onError={(e) => {
-                                                                e.target.style.display = 'none';
-                                                                e.target.nextElementSibling.style.display = 'block';
-                                                            }}
+                                                        <ProfileImage 
+                                                            uuid={isUser.uuid}
+                                                            name={isUser.name}
+                                                            lastname={isUser.lastname}
+                                                            className="!w-6 !h-6 rounded-full object-cover border-2 border-primary ring-secondary transition-all duration-300"
                                                         />
                                                         <div className="relative" style={{ display: 'none' }}>
                                                             <CircleUser 
@@ -745,37 +726,12 @@ const HeaderSearchB = ({
                                         <div className="relative transform group-hover:scale-105 transition-transform duration-200">
                                             {isUser.uuid ? (
                                                 <div className="relative">
-                                                    <img
-                                                        src={`/api/profile/thumbnail/${isUser.uuid}?v=${new Date().getTime()}`}
-                                                        alt={`${isUser.name} ${isUser.lastname}`}
-                                                        className="w-8 h-8 rounded-full object-cover border-2 border-primary  ring-secondary transition-all duration-300 "
-                                                        onLoad={(e) => {
-                                                            // Verificar si la respuesta es un SVG (imagen por defecto)
-                                                            fetch(e.target.src)
-                                                                .then(response => response.text())
-                                                                .then(text => {
-                                                                    if (text.includes('<svg') || text.includes('<?xml')) {
-                                                                        // Es un SVG, mostrar CircleUser en su lugar
-                                                                        e.target.style.display = 'none';
-                                                                        e.target.nextElementSibling.style.display = 'inline-block';
-                                                                    }
-                                                                })
-                                                                .catch(() => {
-                                                                    // Error al verificar, mostrar CircleUser
-                                                                    e.target.style.display = 'none';
-                                                                    e.target.nextElementSibling.style.display = 'inline-block';
-                                                                });
-                                                        }}
-                                                        onError={(e) => {
-                                                            e.target.style.display = 'none';
-                                                            e.target.nextElementSibling.style.display = 'inline-block';
-                                                        }}
+                                                    <ProfileImage 
+                                                        uuid={isUser.uuid}
+                                                        name={isUser.name}
+                                                        lastname={isUser.lastname}
+                                                        className="w-8 h-8 rounded-full object-cover border-2 border-primary ring-secondary transition-all duration-300"
                                                     />
-                                                    <div className="relative" style={{ display: 'none' }}>
-                                                        <CircleUser 
-                                                            className="customtext-primary  border-primary rounded-full  ring-secondary group-hover:ring-green-300 transition-all duration-300" 
-                                                        />
-                                                    </div>
                                                     {/* Punto indicador online animado */}
                                                     <div className="absolute -bottom-[-0.115rem] -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
                                                         <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
