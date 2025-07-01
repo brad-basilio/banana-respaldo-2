@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Global from "../../../Utils/Global";
 import tagsItemsRest from "../../../Utils/Services/tagsItemsRest";
 
-const MenuSimple = ({ pages = [], items, data }) => {
+const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [tags, setTags] = useState([]);
     const menuRef = useRef(null);
@@ -59,8 +59,8 @@ const MenuSimple = ({ pages = [], items, data }) => {
         <nav
             className={
                 `${
-                showOnlyTagsMobile
-                        ? " hidden w-full relative md:block bg-primary font-paragraph text-sm"
+                showOnlyTagsMobile && visible
+                        ? " block w-full relative md:block bg-primary font-paragraph text-sm"
                         : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
             }

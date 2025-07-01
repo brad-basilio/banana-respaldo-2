@@ -261,7 +261,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                             {renderMenuItems()}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0  flex justify-center">
-                            <MenuSimple/>
+                            <MenuSimple visible={true}/>
                         </div>
                     </div>
 
