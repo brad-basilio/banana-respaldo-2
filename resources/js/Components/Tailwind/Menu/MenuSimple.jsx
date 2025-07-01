@@ -138,10 +138,10 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                                                 <a
                                                     href={page.path}
                                                     className={
-                                                        "font-medium hover:customtext-primary cursor-pointer transition-all duration-300 pr-6 relative" +
-                                                        (index !== arr.length - 1 || tags.length > 0
-                                                            ? " before:absolute before:right-0 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-[1px] before:bg-[#262624]"
-                                                            : "")
+                                                        "font-medium hover:customtext-primary cursor-pointer transition-all duration-300" +
+                                                        (index !== arr.length - 1 
+                                                            ? " pr-6 relative before:absolute before:right-0 before:top-1/2 before:-translate-y-1/2 before:h-3 before:w-[1px] before:bg-[#262624]"
+                                                            : " pr-6")
                                                     }
                                                 >
                                                     {page.name}

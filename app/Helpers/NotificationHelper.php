@@ -5,8 +5,10 @@ namespace App\Helpers;
 use App\Models\General;
 use App\Notifications\AdminPurchaseNotification;
 use App\Notifications\AdminContactNotification;
+use App\Notifications\AdminClaimNotification;
 use App\Notifications\PurchaseSummaryNotification;
 use App\Notifications\MessageContactNotification;
+use App\Notifications\ClaimNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Mail;
@@ -64,13 +66,14 @@ class NotificationHelper
     }    /**
      * Envía una notificación tanto al destinatario original como al administrador
      */
-    public static function sendToClientAndAdmin($originalNotifiable, $notification)
+    public static function sendToClientAndAdmin($originalNotifiable, $notification, $adminNotification = null)
     {
         try {
             // Enviar al cliente/destinatario original
-            if ($originalNotifiable->email) {
+            if ($originalNotifiable->email ?? $originalNotifiable->correo_electronico ?? null) {
+                $clientEmail = $originalNotifiable->email ?? $originalNotifiable->correo_electronico;
                 Log::info('NotificationHelper - Enviando notificación al cliente', [
-                    'client_email' => $originalNotifiable->email,
+                    'client_email' => $clientEmail,
                     'notification_type' => get_class($notification)
                 ]);
                 
@@ -95,21 +98,32 @@ class NotificationHelper
                     ]
                 ]);
 
-                $adminNotification = self::createAdminNotification($notification);
+                // Si se proporciona una notificación específica para admin, usarla
                 if ($adminNotification) {
-                    Log::info('NotificationHelper - Enviando notificación específica al administrador');
+                    Log::info('NotificationHelper - Enviando notificación específica proporcionada al administrador');
                     Notification::route('mail', $corporateEmail)->notify($adminNotification);
                     Log::info('NotificationHelper - Notificación específica enviada al administrador exitosamente', [
                         'admin_email' => $corporateEmail,
                         'notification_type' => get_class($adminNotification)
                     ]);
                 } else {
-                    // Fallback: usar la misma notificación
-                    Log::info('NotificationHelper - Enviando notificación genérica al administrador');
-                    Notification::route('mail', $corporateEmail)->notify($notification);
-                    Log::info('NotificationHelper - Notificación genérica enviada al administrador exitosamente', [
-                        'admin_email' => $corporateEmail
-                    ]);
+                    // Crear notificación específica basada en la original
+                    $autoAdminNotification = self::createAdminNotification($notification);
+                    if ($autoAdminNotification) {
+                        Log::info('NotificationHelper - Enviando notificación auto-generada al administrador');
+                        Notification::route('mail', $corporateEmail)->notify($autoAdminNotification);
+                        Log::info('NotificationHelper - Notificación auto-generada enviada al administrador exitosamente', [
+                            'admin_email' => $corporateEmail,
+                            'notification_type' => get_class($autoAdminNotification)
+                        ]);
+                    } else {
+                        // Fallback: usar la misma notificación
+                        Log::info('NotificationHelper - Enviando notificación genérica al administrador');
+                        Notification::route('mail', $corporateEmail)->notify($notification);
+                        Log::info('NotificationHelper - Notificación genérica enviada al administrador exitosamente', [
+                            'admin_email' => $corporateEmail
+                        ]);
+                    }
                 }
 
                 // Verificación adicional para Zoho
@@ -162,6 +176,13 @@ class NotificationHelper
                 $message = $messageProperty->getValue($originalNotification);
                 
                 return new AdminContactNotification($message);
+                
+            } elseif ($originalNotification instanceof ClaimNotification) {
+                $complaintProperty = $reflection->getProperty('complaint');
+                $complaintProperty->setAccessible(true);
+                $complaint = $complaintProperty->getValue($originalNotification);
+                
+                return new AdminClaimNotification($complaint);
             }
             
             return null;
