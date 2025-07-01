@@ -200,7 +200,7 @@ export default function ShippingStep({
         lastname: user?.lastname || "",
         email: user?.email || "",
         phone: user?.phone || "",
-        documentType:user?.document_type || "", // Tipo de documento obligatorio, por defecto DNI (en minúsculas como ComplaintStech)
+        documentType: user?.document_type?.toLowerCase() || "", // Normalizar a minúsculas para que coincida con las opciones
         document: user?.document_number || "", // Número de documento (obligatorio)
         department: user?.department || "",
         province: user?.province || "",
@@ -209,8 +209,7 @@ export default function ShippingStep({
         number: user?.number || "",
         comment: "",
         reference: user?.reference || "",
-        ubigeo: user?.ubigeo || null,
-    });
+        ubigeo: user?.ubigeo || null,    });
    
     useEffect(() => {
         if (user?.ubigeo && user?.district && user?.province && user?.department) {
@@ -228,7 +227,29 @@ export default function ShippingStep({
           setSelectedUbigeo(defaultOption); // Actualiza el estado del ubigeo seleccionado
           handleUbigeoChange(defaultOption);
         }
-      }, [user]);
+    }, [user]);
+
+    // Efecto para actualizar formData cuando cambien los datos del usuario
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.name || prev.name,
+                lastname: user.lastname || prev.lastname,
+                email: user.email || prev.email,
+                phone: user.phone || prev.phone,
+                documentType: user.document_type?.toLowerCase() || prev.documentType,
+                document: user.document_number || prev.document,
+                department: user.department || prev.department,
+                province: user.province || prev.province,
+                district: user.district || prev.district,
+                address: user.address || prev.address,
+                number: user.number || prev.number,
+                reference: user.reference || prev.reference,
+                ubigeo: user.ubigeo || prev.ubigeo,
+            }));
+        }
+    }, [user]);
 
     const [loading, setLoading] = useState(false);
     const [paymentLoading, setPaymentLoading] = useState(false);

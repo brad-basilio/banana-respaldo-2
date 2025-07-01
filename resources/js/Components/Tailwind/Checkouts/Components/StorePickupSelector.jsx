@@ -127,7 +127,23 @@ const StorePickupSelector = ({
                             
                             {/* Store Info */}
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-gray-900 mb-1 truncate">{store.name}</h4>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-semibold text-gray-900 truncate">{store.name}</h4>
+                                    {/* Badge del tipo de establecimiento */}
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        store.type === 'tienda' ? 'bg-green-100 text-green-800' :
+                                        store.type === 'oficina' ? 'bg-blue-100 text-blue-800' :
+                                        store.type === 'almacen' ? 'bg-yellow-100 text-yellow-800' :
+                                        store.type === 'showroom' ? 'bg-purple-100 text-purple-800' :
+                                        'bg-gray-100 text-gray-800'
+                                    }`}>
+                                        {store.type === 'tienda' ? 'Tienda' :
+                                         store.type === 'oficina' ? 'Oficina' :
+                                         store.type === 'almacen' ? 'Almacén' :
+                                         store.type === 'showroom' ? 'Showroom' :
+                                         store.type || 'Otro'}
+                                    </span>
+                                </div>
                                 <p className="text-sm text-gray-600 mb-2 line-clamp-2">{store.address}</p>
                                 
                                 <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Store extends Model
 {
@@ -26,21 +27,63 @@ class Store extends Model
         'visible',
         'business_hours',
         'manager',
-        'capacity'
+        'capacity',
+        'type',
+        'slug',
+        'gallery'
     ];
 
     protected $casts = [
         'status' => 'boolean',
         'business_hours' => 'array',
+        'gallery' => 'array',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'capacity' => 'integer'
     ];
 
+    // Scope para filtrar por tipo
+    public function scopeByType($query, $type)
+    {
+        return $query->where('type', $type);
+    }
+
     // Scope para tiendas activas
     public function scopeActive($query)
     {
         return $query->where('status', true);
+    }
+
+    // Boot method para generar slug automáticamente
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($store) {
+            if (empty($store->slug)) {
+                $store->slug = Str::slug($store->name);
+                
+                // Verificar si el slug ya existe y agregar un número si es necesario
+                $count = static::where('slug', 'like', $store->slug . '%')->count();
+                if ($count > 0) {
+                    $store->slug = $store->slug . '-' . ($count + 1);
+                }
+            }
+        });
+        
+        static::updating(function ($store) {
+            if ($store->isDirty('name') && empty($store->slug)) {
+                $store->slug = Str::slug($store->name);
+                
+                // Verificar si el slug ya existe y agregar un número si es necesario
+                $count = static::where('slug', 'like', $store->slug . '%')
+                    ->where('id', '!=', $store->id)
+                    ->count();
+                if ($count > 0) {
+                    $store->slug = $store->slug . '-' . ($count + 1);
+                }
+            }
+        });
     }
 
     // Scope para filtrar por ubigeo
@@ -161,5 +204,31 @@ class Store extends Model
         if ($schedule['closed']) return 'Cerrado hoy';
         
         return "Hoy: {$schedule['open']} - {$schedule['close']}";
+    }
+
+    // Accessor para obtener el tipo formateado
+    public function getTypeFormattedAttribute()
+    {
+        $types = [
+            'tienda' => 'Tienda',
+            'oficina' => 'Oficina',
+            'almacen' => 'Almacén',
+            'showroom' => 'Showroom',
+            'otro' => 'Otro'
+        ];
+        
+        return $types[$this->type] ?? 'No especificado';
+    }
+
+    // Método para obtener todos los tipos disponibles
+    public static function getTypes()
+    {
+        return [
+            'tienda' => 'Tienda',
+            'oficina' => 'Oficina', 
+            'almacen' => 'Almacén',
+            'showroom' => 'Showroom',
+            'otro' => 'Otro'
+        ];
     }
 }

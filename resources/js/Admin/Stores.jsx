@@ -36,6 +36,7 @@ const Stores = ({ ubigeos = [] }) => {
     const business_hoursRef = useRef();
     const managerRef = useRef();
     const capacityRef = useRef();
+    const typeRef = useRef();
 
     const [isEditing, setIsEditing] = useState(false);
     
@@ -68,6 +69,10 @@ const Stores = ({ ubigeos = [] }) => {
 
         $(ubigeoRef.current)
             .val(data?.ubigeo ?? null)
+            .trigger("change");
+
+        $(typeRef.current)
+            .val(data?.type ?? "tienda")
             .trigger("change");
 
         if (statusRef.current) {
@@ -123,6 +128,7 @@ const Stores = ({ ubigeos = [] }) => {
         formData.append("longitude", longitudeRef.current.value);
         formData.append("manager", managerRef.current.value);
         formData.append("capacity", capacityRef.current.value);
+        formData.append("type", typeRef.current.value);
         formData.append("status", statusRef.current.checked ? 1 : 0);
         formData.append("business_hours", JSON.stringify(businessHours));
 
@@ -247,6 +253,32 @@ const Stores = ({ ubigeos = [] }) => {
                         width: "200px",
                     },
                     {
+                        dataField: "type",
+                        caption: "Tipo",
+                        width: "100px",
+                        cellTemplate: (container, { data }) => {
+                            const typeLabels = {
+                                'tienda': 'Tienda',
+                                'oficina': 'Oficina',
+                                'almacen': 'Almacén',
+                                'showroom': 'Showroom',
+                                'otro': 'Otro'
+                            };
+                            const typeColors = {
+                                'tienda': 'success',
+                                'oficina': 'primary',
+                                'almacen': 'warning',
+                                'showroom': 'info',
+                                'otro': 'secondary'
+                            };
+                            const label = typeLabels[data.type] || 'No especificado';
+                            const color = typeColors[data.type] || 'secondary';
+                            container.append(
+                                `<span class="badge bg-${color}">${label}</span>`
+                            );
+                        },
+                    },
+                    {
                         dataField: "address",
                         caption: "Dirección",
                         width: "250px",
@@ -343,6 +375,21 @@ const Stores = ({ ubigeos = [] }) => {
                             col="col-12"
                             required
                         />
+                    </div>
+                    <div className="col-md-6">
+                        <SelectFormGroup
+                            eRef={typeRef}
+                            label="Tipo de establecimiento"
+                            col="col-12"
+                            required
+                            dropdownParent={'#form-container'}
+                        >
+                            <option value="tienda">Tienda</option>
+                            <option value="oficina">Oficina</option>
+                            <option value="almacen">Almacén</option>
+                            <option value="showroom">Showroom</option>
+                            <option value="otro">Otro</option>
+                        </SelectFormGroup>
                     </div>
                     <div className="col-md-6">
                         <InputFormGroup

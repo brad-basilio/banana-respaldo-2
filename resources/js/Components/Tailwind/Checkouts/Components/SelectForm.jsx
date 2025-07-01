@@ -12,7 +12,8 @@ const SelectForm = ({
     label,
     labelClass,
     className,
-    disabled = false
+    disabled = false,
+    value = null // Agregamos la prop value para el valor inicial
 }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedOption, setSelectedOption] = useState(null)
@@ -37,6 +38,18 @@ const SelectForm = ({
     const filteredOptions = normalizedOptions.filter((option) =>
         option.label.toLowerCase().includes(searchTerm.toLowerCase())
     )
+
+    // Efecto para establecer la opción seleccionada basada en la prop value
+    useEffect(() => {
+        if (value && normalizedOptions.length > 0) {
+            const option = normalizedOptions.find(opt => opt.value === value);
+            if (option) {
+                setSelectedOption(option);
+            }
+        } else {
+            setSelectedOption(null);
+        }
+    }, [value, normalizedOptions]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

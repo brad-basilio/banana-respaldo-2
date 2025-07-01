@@ -43,7 +43,7 @@ class StoreController extends BasicController
     {
         $data = $request->only([
             'name', 'address', 'phone', 'email', 'description',
-            'ubigeo', 'latitude', 'longitude', 'manager', 'capacity'
+            'ubigeo', 'latitude', 'longitude', 'manager', 'capacity', 'type'
         ]);
 
         $data['status'] = $request->boolean('status', true);
@@ -69,7 +69,7 @@ class StoreController extends BasicController
                 ->byUbigeo($ubigeo)
                 ->select([
                     'id', 'name', 'address', 'phone', 'email', 'image',
-                    'latitude', 'longitude', 'business_hours', 'manager', 'description'
+                    'latitude', 'longitude', 'business_hours', 'manager', 'description', 'type'
                 ])
                 ->get();
 
@@ -86,7 +86,7 @@ class StoreController extends BasicController
             $stores = Store::active()
                 ->select([
                     'id', 'name', 'address', 'phone', 'email', 'image',
-                    'latitude', 'longitude', 'business_hours', 'manager', 'description', 'ubigeo'
+                    'latitude', 'longitude', 'business_hours', 'manager', 'description', 'ubigeo', 'type'
                 ])
                 ->get();
 
