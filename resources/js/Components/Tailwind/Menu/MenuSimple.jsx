@@ -60,7 +60,7 @@ const MenuSimple = ({ pages = [], items, data }) => {
             className={
                 `${
                 showOnlyTagsMobile
-                        ? "block w-full relative md:block bg-primary font-paragraph text-sm"
+                        ? " hidden w-full relative md:block bg-primary font-paragraph text-sm"
                         : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
             }
