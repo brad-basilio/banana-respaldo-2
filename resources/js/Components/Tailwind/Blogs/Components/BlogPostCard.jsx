@@ -7,7 +7,7 @@ export default function BlogPostCard({ data, flex = false, post, featured = fals
     <article className={`group relative font-paragraph ${featured ? "h-full" : ""}`}>
       <a href={`/post/${post?.slug}`} className={`block ${flex && "flex gap-4 "}`}>
         <div
-          className={`relative overflow-hidden rounded-lg ${flex && "aspect-square  w-1/2"
+          className={`relative aspect-[3/2] overflow-hidden rounded-lg ${flex && "w-1/2"
             } `}
         >
           <img
