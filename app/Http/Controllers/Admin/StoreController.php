@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use SoDe\Extend\Response;
 use Exception;
+use Illuminate\Support\Facades\File;
+use SoDe\Extend\JSON;
 
 class StoreController extends BasicController
 {
@@ -19,10 +21,12 @@ class StoreController extends BasicController
     public $imageFields = ['image'];
     public $prefix4filter = 'stores';
 
-    public function index()
+      public function setReactViewProperties(Request $request)
     {
-        $ubigeos = $this->getUbigeos();
-        return view($this->reactView, compact('ubigeos'));
+        $ubigeo = JSON::parse(File::get('../storage/app/utils/ubigeo.json'));
+        return [
+            'ubigeo' => $ubigeo
+        ];
     }
 
     private function getUbigeos()
