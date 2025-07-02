@@ -724,7 +724,11 @@ export default function ShippingStep({
 
             const response = await processCulqiPayment(request);
 
+            console.log('📋 Respuesta completa del procesamiento:', response);
+
             if (response.status) {
+                console.log('✅ Pago exitoso, procesando respuesta...');
+                
                 setSale(response.sale);
                 setDelivery(response.delivery);
                 setCode(response.code);
@@ -736,13 +740,22 @@ export default function ShippingStep({
                     
                     // Llamar al callback de compra completada si está disponible
                     if (onPurchaseComplete) {
-                        onPurchaseComplete(response.sale_id, response.conversion_scripts);
+                        console.log('🎯 Ejecutando callback onPurchaseComplete...');
+                        try {
+                            await onPurchaseComplete(response.sale_id, response.conversion_scripts);
+                            console.log('✅ Callback onPurchaseComplete ejecutado exitosamente');
+                        } catch (callbackError) {
+                            console.error('❌ Error en callback onPurchaseComplete:', callbackError);
+                            // No lanzar el error para que continúe el flujo
+                        }
                     }
                 }
                 
+                console.log('🛒 Limpiando carrito y continuando...');
                 setCart([]);
                 onContinue();
             } else {
+                console.log('❌ Pago rechazado:', response);
                 toast.error("Error en el pago", {
                     description: response.message || "Pago rechazado",
                     icon: <XOctagonIcon className="h-5 w-5 text-red-500" />,
@@ -751,8 +764,13 @@ export default function ShippingStep({
                 });
             }
         } catch (error) {
+            console.error('💥 Error completo en handlePayment:', error);
+            console.error('💥 Stack trace:', error.stack);
+            console.error('💥 Error name:', error.name);
+            console.error('💥 Error message:', error.message);
+            
             toast.error("Lo sentimos, no puede continuar con la compra", {
-                description: `Ocurrió un error al procesar el pedido.`,
+                description: `Ocurrió un error al procesar el pedido: ${error.message}`,
                 icon: <XOctagonIcon className="h-5 w-5 text-red-500" />,
                 duration: 3000,
                 position: "bottom-center",
