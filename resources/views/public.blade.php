@@ -10,10 +10,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>{{ $data['name'] ?? 'Página' }} | {{ env('APP_NAME', 'Sala Fabulosa') }}</title>
+    <title>{{ $data['name'] ?? 'Página' }} | {{ env('APP_NAME', 'xcleretor') }}</title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v={{ uniqid() }}" type="image/png">
-    <meta name="description" content="Sala Fabulosa">
+    <meta name="description" content="xcleretor">
     @isset($data['description'])
         <meta name="description" content="{{ $data['description'] }}">
     @endisset
@@ -21,7 +21,7 @@
         <meta name="keywords" content="{{ implode(', ', $data['keywords']) }}">
     @endisset
 
-    <meta name="author" content="Powered by Manuel Gamboa">
+    <meta name="author" content="Powered by Mundo Web">
 
     <!-- Carga diferida de select2 CSS -->
     <link rel="preload" href="/lte/assets/libs/select2/css/select2.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">

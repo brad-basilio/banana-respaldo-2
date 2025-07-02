@@ -4,7 +4,7 @@ import CreateReactScript from "./Utils/CreateReactScript";
 
 // Componente de carga para usar con Suspense
 const LoadingFallback = () => (
-    <div className="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
+    <div className="fixed inset-0 flex flex-col justify-center items-center bg-black/90 backdrop-blur-sm z-50">
 
         <div className="animate-bounce">
             <img
