@@ -17,14 +17,14 @@ export default function BlogPostCard({ data, flex = false, post, featured = fals
             className={`object-cover transition-transform duration-300 group-hover:scale-105 w-full`}
           />
         </div>
-        <div className={`mt-4 space-y-1 ${flex && "w-1/2 mt-0 gap-2"}`}>
-          <span className="customtext-neutral-dark opacity-90 font-semibold text-sm 2xl:text-lg line-clamp-1 ">
+        <div className={`flex flex-col justify-center py-2 space-y-1 ${flex && "w-1/2 mt-0 gap-1"}`}>
+          <span className="customtext-neutral-dark opacity-90 font-semibold text-base 2xl:text-lg line-clamp-1">
             {post?.category.name}
           </span>
-          <h3 className="text-lg line-clamp-3 lg:line-clamp-4 2xl:text-2xl font-semibold customtext-neutral-dark group-hover:customtext-primary leading-tight">
+          <h3 className="text-base md:text-lg xl:text-xl line-clamp-3 lg:line-clamp-4 2xl:text-2xl font-semibold customtext-neutral-dark group-hover:customtext-primary leading-tight">
             {post?.name}
           </h3>
-          <p className="line-clamp-3  customtext-neutral-dark opacity-85 text-sm 2xl:text-xl leading-tight">
+          <p className="line-clamp-3  customtext-neutral-dark opacity-85 text-sm md:text-base font-title 2xl:text-xl !leading-snug">
             {post?.summary}
           </p>
           <div className="flex items-center gap-2 text-sm text-gray-500">
