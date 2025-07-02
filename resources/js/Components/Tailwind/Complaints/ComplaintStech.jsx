@@ -366,11 +366,12 @@ export default function ComplaintSimple({ generals = [] }) {
                                     label="Departamento"
                                     options={departamentos}
                                     placeholder="Selecciona departamento"
+                                    value={departamento}
                                     onChange={(value) => {
                                         setDepartamento(value);
                                         setFormData((prev) => ({
                                             ...prev,
-                                            departmento: value,
+                                            departamento: value,
                                         }));
                                     }}
                                 />
@@ -380,6 +381,7 @@ export default function ComplaintSimple({ generals = [] }) {
                                     label="Provincia"
                                     options={provincias}
                                     placeholder="Selecciona provincia"
+                                    value={provincia}
                                     onChange={(value) => {
                                         setProvincia(value);
                                         setFormData((prev) => ({
@@ -394,6 +396,7 @@ export default function ComplaintSimple({ generals = [] }) {
                                     label="Distrito"
                                     options={distritos}
                                     placeholder="Selecciona distrito"
+                                    value={distrito}
                                     onChange={(value) => {
                                         setDistrito(value);
                                         setFormData((prev) => ({
@@ -435,6 +438,7 @@ export default function ComplaintSimple({ generals = [] }) {
                                     label="Tipo de contratación"
                                     options={typesContract}
                                     placeholder="¿Fue un producto o servicio?"
+                                    value={formData.tipo_producto}
                                     onChange={(value) => {
                                         setFormData((prev) => ({
                                             ...prev,
@@ -488,6 +492,7 @@ export default function ComplaintSimple({ generals = [] }) {
                                     label="Tipo de solicitud"
                                     options={typesClaim}
                                     placeholder="¿Es un reclamo o queja?"
+                                    value={formData.tipo_reclamo}
                                     onChange={(value) => {
                                         setFormData((prev) => ({
                                             ...prev,
