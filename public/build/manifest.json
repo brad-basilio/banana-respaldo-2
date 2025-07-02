@@ -4039,7 +4039,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blog.jsx": {
-    "file": "assets/Blog-SrNt1Pd4.js",
+    "file": "assets/Blog-CbjLEwdX.js",
     "name": "Blog",
     "src": "resources/js/Components/Tailwind/Blog.jsx",
     "isDynamicEntry": true,
@@ -4104,7 +4104,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blogs/BlogSimple.jsx": {
-    "file": "assets/BlogSimple--byhoUaj.js",
+    "file": "assets/BlogSimple-CsgwBCVA.js",
     "name": "BlogSimple",
     "src": "resources/js/Components/Tailwind/Blogs/BlogSimple.jsx",
     "isEntry": true,
@@ -8396,7 +8396,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-DTogL0CY.js",
+    "file": "assets/System-ClvmpOLv.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
