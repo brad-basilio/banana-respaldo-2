@@ -295,7 +295,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                     return [
                         "category.slug",
                         "=",
-                        slug,
+                        category.slug,
                     ];
                 }
             });
@@ -334,9 +334,9 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 if (brand) {
                     // Si encontramos la marca, usar su ID
                     return [
-                        "brand.id",
+                        "brand.slug",
                         "=",
-                        brand.id,
+                        brand.slug,
                     ];
                 } else {
                     // Si no la encontramos, usar slug
