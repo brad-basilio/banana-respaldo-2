@@ -408,20 +408,23 @@ const Stores = ({ ubigeos = [] }) => {
                         />
                     </div>
 
-                    <SelectFormGroup
-                        eRef={ubigeoRef}
-                        label="Distrito/Ubigeo"
-                        templateResult={ubigeoTemplate}
-                        templateSelection={ubigeoTemplate}
-                        dropdownParent="#form-container"
-                        required
-                    >
-                        {ubigeos.map((x, index) => (
-                            <option key={index} value={x.reniec}>
-                                {x.reniec} {x.distrito} {x.provincia} {x.departamento}
-                            </option>
-                        ))}
-                    </SelectFormGroup>
+                    <div className="col-12">
+                        <SelectFormGroup
+                            eRef={ubigeoRef}
+                            label="Distrito/Ubigeo"
+                            col="col-12"
+                            templateResult={ubigeoTemplate}
+                            templateSelection={ubigeoTemplate}
+                            dropdownParent="#form-container"
+                            required
+                        >
+                            {ubigeos.map((x, index) => (
+                                <option key={index} value={x.reniec}>
+                                    {x.reniec} {x.distrito} {x.provincia} {x.departamento}
+                                </option>
+                            ))}
+                        </SelectFormGroup>
+                    </div>
 
                     <div className="col-md-6">
                         <InputFormGroup
