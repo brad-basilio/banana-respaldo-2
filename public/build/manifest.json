@@ -4039,7 +4039,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blog.jsx": {
-    "file": "assets/Blog-iXUUZigt.js",
+    "file": "assets/Blog-AENJ07yQ.js",
     "name": "Blog",
     "src": "resources/js/Components/Tailwind/Blog.jsx",
     "isDynamicEntry": true,
@@ -4104,7 +4104,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blogs/BlogSimple.jsx": {
-    "file": "assets/BlogSimple-rA9u40SM.js",
+    "file": "assets/BlogSimple-3v53cVL7.js",
     "name": "BlogSimple",
     "src": "resources/js/Components/Tailwind/Blogs/BlogSimple.jsx",
     "isEntry": true,
@@ -8338,7 +8338,7 @@
     ]
   },
   "resources/js/Reutilizables/Businesses/BusinessIWorkCard.jsx": {
-    "file": "assets/BusinessIWorkCard-BXt_cQEq.js",
+    "file": "assets/BusinessIWorkCard-DFxOgdnb.js",
     "name": "BusinessIWorkCard",
     "src": "resources/js/Reutilizables/Businesses/BusinessIWorkCard.jsx",
     "isEntry": true,
@@ -8346,9 +8346,10 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "_main-BSEyQEJW.js",
-      "_index-CMHsc23u.js",
+      "_BasicRest-CtWwZ3Gl.js",
       "_index-yBjzXJbu.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
+      "_index-CMHsc23u.js",
       "_index-rimy3MAc.js",
       "_index-fNjTmf9T.js"
     ]
@@ -8395,7 +8396,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-LIiV9iby.js",
+    "file": "assets/System-DDybli71.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
