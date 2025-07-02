@@ -112,7 +112,7 @@ const StorePickupSelector = ({
                             <div className="flex-shrink-0">
                                 {store.image ? (
                                     <img 
-                                        src={`/storage/images/stores/${store.image}`}
+                                        src={`/storage/images/store/${store.image}`}
                                         alt={store.name}
                                         className="w-16 h-16 object-cover rounded-lg border"
                                     />

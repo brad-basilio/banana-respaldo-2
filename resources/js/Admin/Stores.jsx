@@ -228,7 +228,7 @@ const Stores = ({ ubigeos = [] }) => {
                                 container.html(
                                     renderToString(
                                         <img 
-                                            src={`/storage/images/stores/${data.image}`}
+                                            src={`/storage/images/store/${data.image}`}
                                             alt={data.name}
                                             className="img-thumbnail"
                                             style={{width: "50px", height: "50px", objectFit: "cover"}}
