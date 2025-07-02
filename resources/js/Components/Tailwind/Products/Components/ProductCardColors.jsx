@@ -78,7 +78,7 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
                                 -{Math.abs(Number(100 - Number((product?.discount * 100 / product?.price)))).toFixed(0)}%
                             </span>
                         )}
-                        <div className="aspect-square rounded-3xl overflow-hidden flex items-center justify-center  bg-secondary border bg-white">
+                        <div className="aspect-square rounded-3xl overflow-hidden flex items-center justify-center  bg-secondary  bg-white">
                             <img
                                 src={`/storage/images/item/${product.image}`}
                                 onError={e => e.target.src = '/assets/img/noimage/no_img.jpg'}
