@@ -1080,8 +1080,8 @@ class ItemController extends BasicController
                 ->where('tags.visible', true)
                 ->where('items.status', true)
                 ->where('items.visible', true)
-                ->select('tags.id', 'tags.name', 'tags.description', DB::raw('COUNT(items.id) as items_count'))
-                ->groupBy('tags.id', 'tags.name', 'tags.description')
+                ->select('tags.id', 'tags.name', 'tags.description',"tags.icon","tags.background_color","tags.text_color","tags.image", DB::raw('COUNT(items.id) as items_count'))
+                ->groupBy('tags.id', 'tags.name', 'tags.description',"tags.icon","tags.background_color","tags.text_color","tags.image")
                 ->having('items_count', '>', 0)
                 ->orderBy('tags.name')
                 ->get();

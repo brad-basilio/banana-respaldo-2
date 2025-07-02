@@ -158,11 +158,20 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                                             <a
                                                 href={`/catalogo?tag=${tag.id}`}
                                                 className={
-                                                    "font-medium bg-primary text-white rounded-full p-2 hover:brightness-105 cursor-pointer transition-all duration-300  relative flex items-center gap-2"
+                                                    `font-medium ${tag.background_color} ${tag.text_color} rounded-full p-2 hover:brightness-105 cursor-pointer transition-all duration-300  relative flex items-center gap-2`
                                                 }
+                                                style={{
+                                                    backgroundColor: tag.background_color || '#3b82f6',
+                                                    color: tag.text_color || '#ffffff',
+                                                    
+            }}
                                                 title={tag.description || tag.name}
                                             >
-                                                <Tag size={16} className="text-white" />
+                                                {tag.icon && <img src={`/storage/images/tag/${tag.icon}`} alt={tag.name} className="w-4 h-4"   onError={(e) =>
+                                        (e.target.src =
+                                            "/api/cover/thumbnail/null")
+                                    }/>}
+                                              
                                                 {tag.name}
                                             </a>
                                         </li>
