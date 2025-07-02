@@ -205,6 +205,8 @@ class PaymentController extends Controller
                 'total' => $sale->amount,
                 'product_ids' => collect($request->cart)->pluck('id')->toArray(),
                 'user_id' => $sale->user_id,
+                'email' => $sale->email,
+                'phone' => $sale->phone,
                 'items' => collect($request->cart)->map(function ($item) {
                     return [
                         'item_id' => is_array($item) ? $item['id'] : $item->id,
