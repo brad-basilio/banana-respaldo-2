@@ -59,7 +59,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
             className={
                 `${
                 showOnlyTagsMobile
-                        ? " block w-full relative md:block bg-primary font-paragraph text-sm"
+                        ? " block w-full relative md:block bg-red-600 font-paragraph text-sm"
                         : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
             }
@@ -158,7 +158,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                                             <a
                                                 href={`/catalogo?tag=${tag.id}`}
                                                 className={
-                                                    "font-medium bg-primary text-white rounded-full p-2 hover:brightness-105 cursor-pointer transition-all duration-300  relative flex items-center gap-2"
+                                                    "font-medium bg-red-600 text-white rounded-full p-2 hover:brightness-105 cursor-pointer transition-all duration-300  relative flex items-center gap-2"
                                                 }
                                                 title={tag.description || tag.name}
                                             >
