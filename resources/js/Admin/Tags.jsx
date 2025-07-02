@@ -12,6 +12,7 @@ import Table from '../Components/Adminto/Table';
 import DxButton from '../Components/dx/DxButton';
 import CreateReactScript from '../Utils/CreateReactScript';
 import ReactAppend from '../Utils/ReactAppend';
+import Global from '../Utils/Global';
 
 const tagsRest = new TagsRest()
 
@@ -38,7 +39,7 @@ const Tags = () => {
     idRef.current.value = data?.id ?? ''
     nameRef.current.value = data?.name ?? ''
     descriptionRef.current.value = data?.description ?? ''
-    backgroundColorRef.current.value = data?.background_color ?? '#3b82f6'
+    backgroundColorRef.current.value = data?.background_color ?? Global.APP_COLOR_PRIMARY
     textColorRef.current.value = data?.text_color ?? '#ffffff'
     
     // Para el icono (imagen pequeña que va al lado del texto)
