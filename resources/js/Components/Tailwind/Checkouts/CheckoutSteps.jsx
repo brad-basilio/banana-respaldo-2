@@ -168,6 +168,11 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         automaticDiscounts={automaticDiscounts}
                         automaticDiscountTotal={automaticDiscountTotal}
                         totalWithoutDiscounts={totalWithoutDiscounts}
+                        conversionScripts={conversionScripts}
+                        setConversionScripts={setConversionScripts}
+                        onPurchaseComplete={(orderId, scripts) => {
+                            trackPurchase(orderId, scripts);
+                        }}
                     />
                 )}
 
