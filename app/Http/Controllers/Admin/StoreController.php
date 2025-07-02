@@ -25,7 +25,7 @@ class StoreController extends BasicController
     {
         $ubigeo = JSON::parse(File::get('../storage/app/utils/ubigeo.json'));
         return [
-            'ubigeo' => $ubigeo
+            'ubigeos' => $ubigeo
         ];
     }
 
