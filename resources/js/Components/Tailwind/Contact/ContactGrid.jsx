@@ -692,30 +692,7 @@ const ContactGrid = ({ data, contacts }) => {
                         Encuentra nuestras tiendas, oficinas y agencias más cercanas a tu ubicación.
                     </motion.p>
                     
-                    {/* Leyenda de tipos de ubicación */}
-                    <motion.div 
-                        className="flex flex-wrap gap-4 mb-6"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.6, delay: 1.7 }}
-                    >
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                            <span className="text-sm customtext-neutral-light">Tiendas</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                            <span className="text-sm customtext-neutral-light">Oficinas</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-amber-500"></div>
-                            <span className="text-sm customtext-neutral-light">Agencias</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-                            <span className="text-sm customtext-neutral-light">Almacenes</span>
-                        </div>
-                    </motion.div>
+               
                 </motion.div>
 
                 <motion.div
@@ -797,23 +774,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 />
                             ))}
                             
-                            {/* Marcador de ubicación principal (si existe) */}
-                            {locationGps.lat !== 0 && locationGps.lng !== 0 && (
-                                <Marker 
-                                    position={locationGps}
-                                    icon={{
-                                        url: 'data:image/svg+xml;base64,' + btoa(`
-                                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                                                <circle cx="20" cy="20" r="18" fill="#ef4444" stroke="#fff" stroke-width="3"/>
-                                                <path d="M20 10c-4.4 0-8 3.6-8 8 0 6 8 14 8 14s8-8 8-14c0-4.4-3.6-8-8-8zm0 11c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z" fill="#fff"/>
-                                            </svg>
-                                        `),
-                                        scaledSize: { width: 50, height: 50 },
-                                        anchor: { x: 25, y: 50 }
-                                    }}
-                                    title="Ubicación Principal"
-                                />
-                            )}
+                         
                         </GoogleMap>
                     </LoadScript>
                 </motion.div>
