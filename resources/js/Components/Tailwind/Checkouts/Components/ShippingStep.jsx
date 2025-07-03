@@ -11,10 +11,11 @@ import SelectForm from "./SelectForm";
 import OptionCard from "./OptionCard";
 import FreeItemsDisplay from "./FreeItemsDisplay";
 import StorePickupSelector from "./StorePickupSelector";
-import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
+import { Globe, InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { debounce } from "lodash";
 import { toast } from "sonner";
+import Global from "../../../../Utils/Global";
 
 export default function ShippingStep({
     cart,
@@ -703,6 +704,16 @@ export default function ShippingStep({
                     onClick: () => {
                         window.location.href = "/iniciar-sesion";
                     }
+                },
+                actionButtonStyle: {
+                    backgroundColor: Global.APP_COLOR_PRIMARY, // Azul
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px 16px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    fontSize: "14px"
                 }
             });
             return;
