@@ -45,12 +45,53 @@ class StoreController extends BasicController
 
     public function beforeSave(Request $request)
     {
+        // Validar datos
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'address' => 'nullable|string',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'description' => 'nullable|string',
+            'ubigeo' => 'nullable|string|max:10',
+            'latitude' => 'nullable|numeric|between:-18.5,-0.1',
+            'longitude' => 'nullable|numeric|between:-81.5,-68.5',
+            'manager' => 'nullable|string|max:255',
+            'capacity' => 'nullable|integer|min:1',
+            'type' => 'required|in:tienda,oficina,almacen,showroom,otro',
+            'status' => 'boolean',
+        ], [
+            'latitude.between' => 'La latitud debe estar entre -18.5 y -0.1 para ubicaciones en Perú',
+            'longitude.between' => 'La longitud debe estar entre -81.5 y -68.5 para ubicaciones en Perú',
+            'name.required' => 'El nombre de la tienda es obligatorio',
+            'type.required' => 'El tipo de establecimiento es obligatorio',
+            'type.in' => 'El tipo debe ser: tienda, oficina, almacén, showroom u otro',
+        ]);
+
         $data = $request->only([
             'name', 'address', 'phone', 'email', 'description',
             'ubigeo', 'latitude', 'longitude', 'manager', 'capacity', 'type'
         ]);
 
         $data['status'] = $request->boolean('status', true);
+        
+        // Validar coordenadas adicionales (formato decimal)
+        if (!empty($data['latitude'])) {
+            $latitude = (float) $data['latitude'];
+            if (!$this->isValidCoordinate($latitude, 10, 8)) {
+                throw new \Exception('La latitud excede el formato permitido (máximo 10 dígitos con 8 decimales)');
+            }
+            // Truncar a 8 decimales automáticamente
+            $data['latitude'] = round($latitude, 8);
+        }
+
+        if (!empty($data['longitude'])) {
+            $longitude = (float) $data['longitude'];
+            if (!$this->isValidCoordinate($longitude, 11, 8)) {
+                throw new \Exception('La longitud excede el formato permitido (máximo 11 dígitos con 8 decimales)');
+            }
+            // Truncar a 8 decimales automáticamente
+            $data['longitude'] = round($longitude, 8);
+        }
         
         // Parse business hours if provided
         if ($request->has('business_hours')) {
@@ -63,6 +104,27 @@ class StoreController extends BasicController
         }
 
         return $data;
+    }
+
+    /**
+     * Valida que un valor decimal cumpla con las restricciones de base de datos
+     */
+    private function isValidCoordinate($value, $totalDigits, $decimalPlaces)
+    {
+        if ($value === null || !is_numeric($value)) return false;
+        
+        $valueStr = (string) abs($value);
+        $parts = explode('.', $valueStr);
+        $integerPart = $parts[0];
+        $decimalPart = $parts[1] ?? '';
+        
+        // Verificar que no exceda los dígitos enteros permitidos
+        $maxIntegerDigits = $totalDigits - $decimalPlaces;
+        if (strlen($integerPart) > $maxIntegerDigits) return false;
+        
+        // Para decimales, permitir truncamiento automático
+        // No fallar si hay demasiados decimales, solo truncar
+        return true;
     }
 
     // Método para obtener tiendas por ubigeo (para el checkout)

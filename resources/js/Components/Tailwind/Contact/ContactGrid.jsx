@@ -32,9 +32,11 @@ const ContactGrid = ({ data, contacts }) => {
 
     const [sending, setSending] = useState(false);
     const [phoneValue, setPhoneValue] = useState("");
-    const [phoneError, setPhoneError] = useState("");
+    const [phoneError, setPhoneError] = "";
     const [offices, setOffices] = useState([]);
     const [loadingOffices, setLoadingOffices] = useState(true);
+    const [stores, setStores] = useState([]);
+    const [loadingStores, setLoadingStores] = useState(true);
 
     // Cargar oficinas desde la API
     useEffect(() => {
@@ -73,6 +75,145 @@ const ContactGrid = ({ data, contacts }) => {
         
         loadOffices();
     }, []);
+
+    // Cargar todas las tiendas para el mapa
+    useEffect(() => {
+        const loadStores = async () => {
+            try {
+                setLoadingStores(true);
+                const response = await fetch('/api/stores');
+                const result = await response.json();
+                
+                console.log('Stores API Response:', result);
+                
+                let data = result;
+                if (result.data) {
+                    data = result.data;
+                } else if (result.body) {
+                    data = result.body;
+                }
+                
+                if (Array.isArray(data)) {
+                    // Filtrar tiendas activas que tengan coordenadas válidas
+                    const validStores = data.filter(store => 
+                        store.status !== false && 
+                        store.latitude && 
+                        store.longitude &&
+                        store.latitude !== "0" && 
+                        store.longitude !== "0"
+                    );
+                    setStores(validStores);
+                    console.log('Valid stores loaded:', validStores);
+                } else {
+                    console.error('Stores API response is not an array:', result);
+                    setStores([]);
+                }
+            } catch (error) {
+                console.error('Error loading stores:', error);
+                setStores([]);
+            } finally {
+                setLoadingStores(false);
+            }
+        };
+        
+        loadStores();
+    }, []);
+
+    // Función para crear iconos personalizados según el tipo de tienda
+    const getStoreIcon = (type) => {
+        const iconBase = {
+            url: '',
+            scaledSize: { width: 40, height: 40 },
+            origin: { x: 0, y: 0 },
+            anchor: { x: 20, y: 40 }
+        };
+
+        switch (type?.toLowerCase()) {
+            case 'tienda':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#10b981" stroke="#fff" stroke-width="3"/>
+                            <path d="M12 18h16v12H12V18zm4-6h8v6h-8v-6z" fill="#fff"/>
+                            <rect x="14" y="20" width="2" height="2" fill="#10b981"/>
+                            <rect x="18" y="20" width="2" height="2" fill="#10b981"/>
+                            <rect x="22" y="20" width="2" height="2" fill="#10b981"/>
+                            <rect x="26" y="20" width="2" height="2" fill="#10b981"/>
+                        </svg>
+                    `)
+                };
+            case 'oficina':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#3b82f6" stroke="#fff" stroke-width="3"/>
+                            <rect x="12" y="14" width="16" height="14" fill="#fff" rx="1"/>
+                            <rect x="14" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="18" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="22" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="26" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="14" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="18" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="22" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="26" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="18" y="24" width="4" height="4" fill="#3b82f6"/>
+                        </svg>
+                    `)
+                };
+            case 'agencia':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#f59e0b" stroke="#fff" stroke-width="3"/>
+                            <path d="M20 12l8 6v12h-6v-8h-4v8h-6V18l8-6z" fill="#fff"/>
+                            <circle cx="20" cy="16" r="2" fill="#f59e0b"/>
+                        </svg>
+                    `)
+                };
+            case 'almacen':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#8b5cf6" stroke="#fff" stroke-width="3"/>
+                            <rect x="10" y="16" width="20" height="12" fill="#fff" rx="1"/>
+                            <rect x="12" y="18" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="17" y="18" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="22" y="18" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="12" y="22" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="17" y="22" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="22" y="22" width="4" height="3" fill="#8b5cf6"/>
+                            <path d="M20 10l8 4v2H12v-2l8-4z" fill="#fff"/>
+                        </svg>
+                    `)
+                };
+            default:
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#6b7280" stroke="#fff" stroke-width="3"/>
+                            <circle cx="20" cy="20" r="8" fill="#fff"/>
+                            <circle cx="20" cy="20" r="4" fill="#6b7280"/>
+                        </svg>
+                    `)
+                };
+        }
+    };
+
+    // Función para obtener el color del tipo de tienda
+    const getStoreTypeColor = (type) => {
+        switch (type?.toLowerCase()) {
+            case 'tienda': return '#10b981';
+            case 'oficina': return '#3b82f6';
+            case 'agencia': return '#f59e0b';
+            case 'almacen': return '#8b5cf6';
+            default: return '#6b7280';
+        }
+    };
 
     // Formatea el teléfono en formato 999 999 999
     const formatPhone = (value) => {
@@ -528,27 +669,151 @@ const ContactGrid = ({ data, contacts }) => {
                 </motion.div>
             </motion.div>
             <motion.div 
-                className="mx-auto 2xl:max-w-7xl   gap-12 bg-white rounded-xl px-8 py-8"
+                className="mx-auto 2xl:max-w-7xl gap-12 bg-white rounded-xl px-8 py-8"
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 1.4 }}
             >
-                {console.log(getContact("location"))}
+                <motion.div className="mb-6">
+                    <motion.h3 
+                        className="text-2xl font-bold customtext-neutral-dark mb-2"
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 1.5 }}
+                    >
+                        Nuestras Ubicaciones
+                    </motion.h3>
+                    <motion.p 
+                        className="customtext-neutral-light mb-4"
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 1.6 }}
+                    >
+                        Encuentra nuestras tiendas, oficinas y agencias más cercanas a tu ubicación.
+                    </motion.p>
+                    
+                    {/* Leyenda de tipos de ubicación */}
+                    <motion.div 
+                        className="flex flex-wrap gap-4 mb-6"
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 1.7 }}
+                    >
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                            <span className="text-sm customtext-neutral-light">Tiendas</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                            <span className="text-sm customtext-neutral-light">Oficinas</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-amber-500"></div>
+                            <span className="text-sm customtext-neutral-light">Agencias</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+                            <span className="text-sm customtext-neutral-light">Almacenes</span>
+                        </div>
+                    </motion.div>
+                </motion.div>
+
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 1.6 }}
+                    transition={{ duration: 0.6, delay: 1.8 }}
+                    className="relative"
                 >
+                    {loadingStores && (
+                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-xl">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                <span className="customtext-neutral-light">Cargando ubicaciones...</span>
+                            </div>
+                        </div>
+                    )}
+                    
                     <LoadScript
                         googleMapsApiKey={Global.GMAPS_API_KEY}
                         className="rounded-xl"
                     >
                         <GoogleMap
-                            mapContainerStyle={{ width: "100%", height: "400px" }}
-                            zoom={15}
-                            center={locationGps}
+                            mapContainerStyle={{ width: "100%", height: "500px", borderRadius: "12px" }}
+                            zoom={stores.length > 0 ? 10 : 15}
+                            center={stores.length > 0 ? {
+                                lat: stores.reduce((sum, store) => sum + parseFloat(store.latitude), 0) / stores.length,
+                                lng: stores.reduce((sum, store) => sum + parseFloat(store.longitude), 0) / stores.length
+                            } : locationGps}
+                            options={{
+                                styles: [
+                                    {
+                                        featureType: "poi",
+                                        elementType: "labels",
+                                        stylers: [{ visibility: "off" }]
+                                    }
+                                ]
+                            }}
                         >
-                            <Marker position={locationGps} />
+                            {/* Marcadores de todas las tiendas */}
+                            {stores.map((store) => (
+                                <Marker
+                                    key={store.id}
+                                    position={{
+                                        lat: parseFloat(store.latitude),
+                                        lng: parseFloat(store.longitude)
+                                    }}
+                                    icon={getStoreIcon(store.type)}
+                                    title={`${store.name} (${store.type})`}
+                                    onClick={() => {
+                                        // Crear un InfoWindow personalizado
+                                        const infoWindow = new window.google.maps.InfoWindow({
+                                            content: `
+                                                <div style="padding: 10px; max-width: 250px;">
+                                                    <h4 style="margin: 0 0 8px 0; color: ${getStoreTypeColor(store.type)}; font-weight: bold;">
+                                                        ${store.name}
+                                                    </h4>
+                                                    <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; font-weight: 500;">
+                                                        ${store.type}
+                                                    </p>
+                                                    <p style="margin: 0 0 8px 0; color: #374151; line-height: 1.4;">
+                                                        📍 ${store.address}
+                                                    </p>
+                                                    ${store.phone ? `
+                                                        <p style="margin: 0 0 8px 0; color: #374151;">
+                                                            📞 <a href="tel:${store.phone}" style="color: ${getStoreTypeColor(store.type)}; text-decoration: none;">${store.phone}</a>
+                                                        </p>
+                                                    ` : ''}
+                                                    ${store.schedule ? `
+                                                        <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                                                            🕒 ${store.schedule}
+                                                        </p>
+                                                    ` : ''}
+                                                </div>
+                                            `
+                                        });
+                                        
+                                        infoWindow.open(window.google.maps, this);
+                                    }}
+                                />
+                            ))}
+                            
+                            {/* Marcador de ubicación principal (si existe) */}
+                            {locationGps.lat !== 0 && locationGps.lng !== 0 && (
+                                <Marker 
+                                    position={locationGps}
+                                    icon={{
+                                        url: 'data:image/svg+xml;base64,' + btoa(`
+                                            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                                                <circle cx="20" cy="20" r="18" fill="#ef4444" stroke="#fff" stroke-width="3"/>
+                                                <path d="M20 10c-4.4 0-8 3.6-8 8 0 6 8 14 8 14s8-8 8-14c0-4.4-3.6-8-8-8zm0 11c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z" fill="#fff"/>
+                                            </svg>
+                                        `),
+                                        scaledSize: { width: 50, height: 50 },
+                                        anchor: { x: 25, y: 50 }
+                                    }}
+                                    title="Ubicación Principal"
+                                />
+                            )}
                         </GoogleMap>
                     </LoadScript>
                 </motion.div>

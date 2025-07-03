@@ -66,6 +66,10 @@ const Stores = ({ ubigeos = [] }) => {
         longitudeRef.current.value = data?.longitude ?? "";
         managerRef.current.value = data?.manager ?? "";
         capacityRef.current.value = data?.capacity ?? "";
+  imageRef.current.value = null;
+         imageRef.image.src = `/storage/images/store/${
+                    data?.image ?? "undefined"
+                }`;
 
         $(ubigeoRef.current)
             .val(data?.ubigeo ?? null)
@@ -108,6 +112,72 @@ const Stores = ({ ubigeos = [] }) => {
     const onModalSubmit = async (e) => {
         e.preventDefault();
 
+        // Validar y procesar coordenadas antes de enviar
+        const latitudeValue = latitudeRef.current.value.trim();
+        const longitudeValue = longitudeRef.current.value.trim();
+        
+        let latitude = null;
+        let longitude = null;
+        
+        // Procesar latitud si existe
+        if (latitudeValue) {
+            latitude = parseFloat(latitudeValue);
+            console.log("Latitud procesada:", latitude, "desde:", latitudeValue);
+            
+            // Validación de coordenadas para Perú
+            if (latitude < -18.5 || latitude > -0.1) {
+                Swal.fire({
+                    title: "Error de validación",
+                    text: "La latitud debe estar entre -18.5 y -0.1 para ubicaciones en Perú",
+                    icon: "error"
+                });
+                return;
+            }
+            
+            // Validar formato decimal (máximo 10 dígitos totales, 8 decimales)
+            if (!isValidCoordinate(latitude, 10, 8)) {
+                Swal.fire({
+                    title: "Error de validación",
+                    text: "La latitud excede el formato permitido (máximo 10 dígitos con 8 decimales)",
+                    icon: "error"
+                });
+                return;
+            }
+            
+            // Truncar a 8 decimales para cumplir con la BD
+            latitude = Math.round(latitude * 100000000) / 100000000;
+            console.log("Latitud truncada:", latitude);
+        }
+        
+        // Procesar longitud si existe
+        if (longitudeValue) {
+            longitude = parseFloat(longitudeValue);
+            console.log("Longitud procesada:", longitude, "desde:", longitudeValue);
+            
+            if (longitude < -81.5 || longitude > -68.5) {
+                Swal.fire({
+                    title: "Error de validación",
+                    text: "La longitud debe estar entre -81.5 y -68.5 para ubicaciones en Perú",
+                    icon: "error"
+                });
+                return;
+            }
+            
+            // Validar formato decimal (máximo 11 dígitos totales, 8 decimales)
+            if (!isValidCoordinate(longitude, 11, 8)) {
+                Swal.fire({
+                    title: "Error de validación",
+                    text: "La longitud excede el formato permitido (máximo 11 dígitos con 8 decimales)",
+                    icon: "error"
+                });
+                return;
+            }
+            
+            // Truncar a 8 decimales para cumplir con la BD
+            longitude = Math.round(longitude * 100000000) / 100000000;
+            console.log("Longitud truncada:", longitude);
+        }
+
         const selectedUbigeo = ubigeos.find(
             (x) => x.reniec == ubigeoRef.current.value
         );
@@ -124,8 +194,8 @@ const Stores = ({ ubigeos = [] }) => {
         formData.append("email", emailRef.current.value);
         formData.append("description", descriptionRef.current.value);
         formData.append("ubigeo", ubigeoRef.current.value);
-        formData.append("latitude", latitudeRef.current.value);
-        formData.append("longitude", longitudeRef.current.value);
+        formData.append("latitude", latitude !== null ? latitude.toString() : "");
+        formData.append("longitude", longitude !== null ? longitude.toString() : "");
         formData.append("manager", managerRef.current.value);
         formData.append("capacity", capacityRef.current.value);
         formData.append("type", typeRef.current.value);
@@ -135,6 +205,14 @@ const Stores = ({ ubigeos = [] }) => {
         // Agregar imagen si existe
         if (imageRef.current && imageRef.current.files[0]) {
             formData.append("image", imageRef.current.files[0]);
+        }
+
+        // Debug: Mostrar los datos que se van a enviar
+        console.log("Datos a enviar:");
+        console.log("- Latitud:", latitude);
+        console.log("- Longitud:", longitude);
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
         }
 
         const result = await storesRest.save(formData);
@@ -165,6 +243,38 @@ const Stores = ({ ubigeos = [] }) => {
         const newHours = [...businessHours];
         newHours[index][field] = value;
         setBusinessHours(newHours);
+    };
+
+    // Función para validar formato de coordenadas según restricciones de base de datos
+    const isValidCoordinate = (value, totalDigits, decimalPlaces) => {
+        if (value === null || value === undefined || isNaN(value)) return false;
+        
+        const valueStr = Math.abs(value).toString();
+        const parts = valueStr.split('.');
+        const integerPart = parts[0];
+        const decimalPart = parts[1] || '';
+        
+        console.log(`Validando coordenada: ${value}`);
+        console.log(`Parte entera: ${integerPart} (${integerPart.length} dígitos)`);
+        console.log(`Parte decimal: ${decimalPart} (${decimalPart.length} dígitos)`);
+        console.log(`Total permitido: ${totalDigits}, decimales permitidos: ${decimalPlaces}`);
+        
+        // Para coordenadas geográficas, ser más flexible con los decimales
+        // Truncar los decimales si exceden el límite permitido
+        if (decimalPart.length > decimalPlaces) {
+            console.log(`Advertencia: Truncando decimales de ${decimalPart.length} a ${decimalPlaces} dígitos`);
+            // No retornar false, sino permitir el truncamiento automático
+        }
+        
+        // Verificar que no exceda los dígitos enteros permitidos
+        const maxIntegerDigits = totalDigits - decimalPlaces;
+        if (integerPart.length > maxIntegerDigits) {
+            console.log(`Error: Excede dígitos enteros permitidos (${integerPart.length} > ${maxIntegerDigits})`);
+            return false;
+        }
+        
+        console.log("Coordenada válida (se truncará automáticamente si es necesario)");
+        return true;
     };
 
     const ubigeoTemplate = (e) => {
@@ -443,15 +553,38 @@ const Stores = ({ ubigeos = [] }) => {
                         />
                     </div>
 
+                    <div className="col-12">
+                        <div className="alert alert-info">
+                            <h6><i className="fas fa-map-marker-alt"></i> Cómo obtener coordenadas exactas:</h6>
+                            <ol className="mb-2">
+                                <li>Ve a <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Google Maps</a></li>
+                                <li>Busca la dirección exacta de tu tienda</li>
+                                <li>Haz clic derecho en el marcador del lugar</li>
+                                <li>Selecciona "¿Qué hay aquí?" o haz clic en las coordenadas que aparecen</li>
+                                <li>Copia los valores que aparecen (ej: -12.0464, -77.0428)</li>
+                            </ol>
+                            <small>
+                                <strong>Importante:</strong> Las coordenadas deben estar en formato decimal, no en grados/minutos/segundos.
+                                Para Lima, la latitud típica es alrededor de -12 y la longitud alrededor de -77.
+                            </small>
+                        </div>
+                    </div>
+
                     <div className="col-md-6">
                         <InputFormGroup
                             eRef={latitudeRef}
                             label="Latitud (Google Maps)"
                             col="col-12"
                             type="number"
-                            step="any"
-                            placeholder="Ej: -12.0464"
+                            step="0.000000000000001"
+                            min="-18.5"
+                            max="-0.1"
+                            placeholder="Ej: -12.042626777544823"
                         />
+                        <small className="text-muted">
+                            Rango válido para Perú: -18.5 a -0.1<br/>
+                            Acepta hasta 15 dígitos decimales de precisión
+                        </small>
                     </div>
                     <div className="col-md-6">
                         <InputFormGroup
@@ -459,9 +592,15 @@ const Stores = ({ ubigeos = [] }) => {
                             label="Longitud (Google Maps)"
                             col="col-12"
                             type="number"
-                            step="any"
-                            placeholder="Ej: -77.0428"
+                            step="0.000000000000001"
+                            min="-81.5"
+                            max="-68.5"
+                            placeholder="Ej: -77.04753389161506"
                         />
+                        <small className="text-muted">
+                            Rango válido para Perú: -81.5 a -68.5<br/>
+                            Acepta hasta 15 dígitos decimales de precisión
+                        </small>
                     </div>
 
                     <div className="col-md-6">
