@@ -410,8 +410,8 @@
       "_main-BvVILmTO.js"
     ]
   },
-  "_SelectForm-DFP8Osy1.js": {
-    "file": "assets/SelectForm-DFP8Osy1.js",
+  "_SelectForm-CuEL0BKa.js": {
+    "file": "assets/SelectForm-CuEL0BKa.js",
     "name": "SelectForm",
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
@@ -421,8 +421,8 @@
       "_check-DQ7QoS0v.js"
     ]
   },
-  "_SelectForm-yNqolDMW.js": {
-    "file": "assets/SelectForm-yNqolDMW.js",
+  "_SelectForm-DFP8Osy1.js": {
+    "file": "assets/SelectForm-DFP8Osy1.js",
     "name": "SelectForm",
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
@@ -1639,7 +1639,7 @@
     ]
   },
   "resources/js/Admin/DeliveryPricesType.jsx": {
-    "file": "assets/DeliveryPricesType-BiMIbD5b.js",
+    "file": "assets/DeliveryPricesType-Bg0Ct7EX.js",
     "name": "DeliveryPricesType",
     "src": "resources/js/Admin/DeliveryPricesType.jsx",
     "isEntry": true,
@@ -4618,7 +4618,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Checkout.jsx": {
-    "file": "assets/Checkout-CsWOz-Xd.js",
+    "file": "assets/Checkout-C2p4q3Xg.js",
     "name": "Checkout",
     "src": "resources/js/Components/Tailwind/Checkout.jsx",
     "isDynamicEntry": true,
@@ -4675,7 +4675,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Checkouts/CheckoutSteps.jsx": {
-    "file": "assets/CheckoutSteps-QodnDUtX.js",
+    "file": "assets/CheckoutSteps-CCkbqfEJ.js",
     "name": "CheckoutSteps",
     "src": "resources/js/Components/Tailwind/Checkouts/CheckoutSteps.jsx",
     "isDynamicEntry": true,
@@ -4695,7 +4695,7 @@
       "_Global-ErywZRdd.js",
       "_index-CMHsc23u.js",
       "_InputForm-ZnsQvLid.js",
-      "_SelectForm-yNqolDMW.js",
+      "_SelectForm-CuEL0BKa.js",
       "resources/js/Components/Tailwind/Checkouts/Components/ShippingStep.jsx",
       "_circle-x-p-TkKhsF.js",
       "_proxy-BTYtmp9V.js",
@@ -5137,7 +5137,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaint.jsx": {
-    "file": "assets/Complaint-DLhOMEUP.js",
+    "file": "assets/Complaint-M0AZFlZM.js",
     "name": "Complaint",
     "src": "resources/js/Components/Tailwind/Complaint.jsx",
     "isDynamicEntry": true,
@@ -5153,7 +5153,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaints/ComplaintSimple.jsx": {
-    "file": "assets/ComplaintSimple-CNBHOfD8.js",
+    "file": "assets/ComplaintSimple-CesoBzhg.js",
     "name": "ComplaintSimple",
     "src": "resources/js/Components/Tailwind/Complaints/ComplaintSimple.jsx",
     "isDynamicEntry": true,
@@ -5163,7 +5163,7 @@
       "_index-BH53Isel.js",
       "_InputForm-ZnsQvLid.js",
       "_ubigeo-C_8-4EnP.js",
-      "_SelectForm-yNqolDMW.js",
+      "_SelectForm-CuEL0BKa.js",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_HtmlContent-FTivcJrM.js",
       "_index-CMHsc23u.js",
@@ -8555,7 +8555,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System--ox03FMK.js",
+    "file": "assets/System-B1tQsdPa.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

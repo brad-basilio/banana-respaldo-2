@@ -26,7 +26,8 @@ class DeliveryPrice extends Model
         'is_store_pickup',
         'express_price',
         'agency_price',
-        'type_id'
+        'type_id',
+        'selected_stores'
     ];
 
     protected $appends = [
@@ -35,7 +36,8 @@ class DeliveryPrice extends Model
     protected $casts = [
         'is_free' => 'boolean',
         'is_agency' => 'boolean',
-        'is_store_pickup' => 'boolean'
+        'is_store_pickup' => 'boolean',
+        'selected_stores' => 'array'
     ];
 
     protected function getDataAttribute()

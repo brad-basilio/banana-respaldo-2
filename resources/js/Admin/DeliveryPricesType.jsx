@@ -37,6 +37,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
     const is_store_pickupRef = useRef();
     const express_priceRef = useRef();
     const agency_priceRef = useRef();
+    const standard_priceRef = useRef(); // Nuevo campo para precio estándar en delivery gratis
     const [isEditing, setIsEditing] = useState(false);
     const [isEditingType, setIsEditingType] = useState(false);
     const [inHome, setInHome] = useState(false);
@@ -46,11 +47,19 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
     const [message, setMessage] = useState('');
     const [stores, setStores] = useState([]);
     const [availableStores, setAvailableStores] = useState([]);
+    const [selectedStores, setSelectedStores] = useState([]); // Tiendas seleccionadas específicamente
+
+    // No necesitamos cargar cache de tiendas para la tabla
+
+    // No necesitamos cargar cache de tiendas para la tabla
 
     const onModalOpen = (data) => {
         console.log(data);
         if (data?.id) setIsEditing(true);
         else setIsEditing(false);
+
+        // Limpiar tiendas seleccionadas al abrir el modal
+        setSelectedStores([]);
 
         idRef.current.value = data?.id ?? "";
         $(ubigeoRef.current)
@@ -61,9 +70,16 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
         if (is_freeRef.current) {
             is_freeRef.current.checked = data?.is_free ?? false;
             setIsFreeChecked(data?.is_free ?? false);
-            // Establecer mensaje si es delivery gratis
+            // Si es delivery gratis, también activar retiro en tienda automáticamente
             if (data?.is_free) {
-                setMessage('El envío gratis tiene costo 0. Puede agregar un costo adicional para delivery express.');
+                is_store_pickupRef.current.checked = true;
+                setIsStorePickupChecked(true);
+                setMessage('Delivery gratis incluye retiro en tienda automáticamente. Configure precio normal y express.');
+                loadAvailableStores();
+                // Cargar tiendas seleccionadas existentes
+                if (data?.selected_stores && Array.isArray(data.selected_stores)) {
+                    setSelectedStores(data.selected_stores);
+                }
             }
         }
 
@@ -82,11 +98,16 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
             // Establecer mensaje si es retiro en tienda
             if (data?.is_store_pickup) {
                 setMessage('Retiro en tienda disponible. Los clientes podrán recoger sus pedidos en nuestras sucursales.');
-                loadAvailableStores(data?.ubigeo);
+                loadAvailableStores();
+                // Cargar tiendas seleccionadas existentes
+                if (data?.selected_stores && Array.isArray(data.selected_stores)) {
+                    setSelectedStores(data.selected_stores);
+                }
             }
         }
 
         priceRef.current.value = data?.price ?? 0;
+        standard_priceRef.current.value = data?.price ?? 0; // Para delivery gratis, usar price como precio estándar
         express_priceRef.current.value = data?.express_price ?? 0;
         agency_priceRef.current.value = data?.agency_price ?? 0;
         descriptionRef.current.value = data?.description ?? "";
@@ -94,28 +115,28 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
         $(modalRef.current).modal("show");
     };
 
-    // Función para cargar tiendas disponibles en el ubigeo seleccionado
-    const loadAvailableStores = async (ubigeoCode) => {
-        if (!ubigeoCode) return;
-        
+    // Función para cargar todas las tiendas disponibles
+    const loadAvailableStores = async () => {        
         try {
-            const result = await storesRest.simpleGet(`/api/admin/stores/paginate`, {
-                filters: [
+            // Cargar todas las tiendas activas desde el endpoint correcto
+            const result = await storesRest.paginate({
+                page: 1,
+                per_page: 100, // Cargar hasta 100 tiendas
+                filters: JSON.stringify([
                     {
-                        field: "ubigeo",
-                        operator: "=",
-                        value: ubigeoCode
-                    },
-                    {
-                        field: "status", 
+                        field: "status",
                         operator: "=",
                         value: 1
                     }
-                ]
+                ])
             });
             
-            if (result && result.data) {
+            console.log('Cargando todas las tiendas disponibles:', result);
+            
+            if (result && result.data && Array.isArray(result.data)) {
                 setAvailableStores(result.data);
+            } else {
+                setAvailableStores([]);
             }
         } catch (error) {
             console.error("Error loading stores:", error);
@@ -132,7 +153,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
         const request = {
             id: idRef.current.value || undefined,
             name: `${selected.distrito}, ${selected.departamento}`.toTitleCase(),
-            price: isFreeChecked ? null : priceRef.current.value,
+            price: isFreeChecked ? standard_priceRef.current.value : priceRef.current.value, // Si es delivery gratis, usar precio estándar
             is_free: is_freeRef.current.checked,
             is_agency: is_agencyRef.current.checked,
             is_store_pickup: is_store_pickupRef.current.checked,
@@ -140,10 +161,20 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
             agency_price: agency_priceRef.current.value,
             description: descriptionRef.current.value,
             ubigeo: ubigeoRef.current.value,
+            // Si el retiro en tienda está habilitado y hay tiendas seleccionadas específicamente,
+            // enviar solo esas tiendas. Si no hay ninguna seleccionada, significa "todas las tiendas"
+            selected_stores: is_store_pickupRef.current.checked ? 
+                (selectedStores.length > 0 ? selectedStores : null) : 
+                null
         };
+
+        console.log('Datos a enviar:', request);
 
         const result = await deliverypricesRest.save(request);
         if (!result) return;
+
+        // Limpiar tiendas seleccionadas después de guardar
+        setSelectedStores([]);
 
         $(gridRef.current).dxDataGrid("instance").refresh();
         $(modalRef.current).modal("hide");
@@ -238,6 +269,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
         if (!isConfirmed) return;
         const result = await deliverypricesRest.delete(id);
         if (!result) return;
+        
         $(gridRef.current).dxDataGrid("instance").refresh();
     };
 
@@ -364,33 +396,31 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             if (data.is_free) {
                                 container.html(
                                     renderToString(
-                                        <div className="d-flex gap-2">
-                                            <span className="text-muted font-italic">
+                                        <div className="d-flex flex-column gap-1">
+                                            <span className="badge bg-success">
                                                 Delivery Gratis
                                             </span>
-                                            <span className="text-muted font-italic">
+                                            <span className="badge bg-warning">
                                                 Delivery Express
                                             </span>
-                                            {data.is_store_pickup && (
-                                                <span className="text-primary font-italic">
-                                                    Retiro en Tienda
-                                                </span>
-                                            )}
+                                            <span className="badge bg-primary">
+                                                Retiro en Tienda
+                                            </span>
                                         </div>
                                     )
                                 );
                             } else if (data.is_agency) {
                                 container.html(
                                     renderToString(
-                                        <span className="text-muted font-italic">
-                                            Recojo en agencia
+                                        <span className="badge bg-info">
+                                            Recojo en Agencia
                                         </span>
                                     )
                                 );
                             } else if (data.is_store_pickup) {
                                 container.html(
                                     renderToString(
-                                        <span className="text-primary font-italic">
+                                        <span className="badge bg-primary">
                                             Retiro en Tienda
                                         </span>
                                     )
@@ -398,8 +428,8 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             } else {
                                 container.html(
                                     renderToString(
-                                        <span className="text-muted font-italic">
-                                            Delivery
+                                        <span className="badge bg-secondary">
+                                            Delivery Normal
                                         </span>
                                     )
                                 );
@@ -415,43 +445,99 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             if (data.is_free) {
                                 container.html(
                                     renderToString(
-                                        <div className="row">
-                                            {" "}
-                                            <span className="text-muted font-italic">
-                                                Delivery Gratis
+                                        <div className="d-flex flex-column">
+                                            <span className="text-success font-weight-bold">
+                                                Delivery Gratis (Condicional)
                                             </span>
-                                            <span className="text-muted">
-                                                Express:{" "}
-                                                <span className="font-monospace text-reset">
-                                                    S/.{" "}
-                                                    {Number2Currency(
-                                                        data.express_price
-                                                    )}
-                                                </span>
-                                            </span>
+                                            <small className="text-muted">
+                                                Normal: S/ {Number2Currency(data.price)} | 
+                                                Express: S/ {Number2Currency(data.express_price)}
+                                            </small>
+                                            <small className="text-primary">
+                                                + Retiro en Tienda
+                                            </small>
                                         </div>
                                     )
                                 );
-                            } else if (data.price > 0) {
+                            } else if (data.is_agency) {
                                 container.html(
                                     renderToString(
-                                        <span>
-                                            S/. {Number2Currency(data.price)}
-                                        </span>
+                                        <div>
+                                            <span className="text-muted font-italic">
+                                                Recojo en Agencia
+                                            </span>
+                                            <br/>
+                                            <small className="text-muted">
+                                                S/ {Number2Currency(data.agency_price)}
+                                            </small>
+                                        </div>
                                     )
                                 );
-                            } else if (data.is_agency > 0) {
+                            } else if (data.is_store_pickup && !data.is_free) {
                                 container.html(
                                     renderToString(
-                                        <span>
-                                            S/. {Number2Currency(data.agency_price)}
+                                        <span className="text-primary font-italic">
+                                            Solo Retiro en Tienda
                                         </span>
                                     )
                                 );
                             } else {
-                                container.text("Gratis");
+                                container.html(
+                                    renderToString(
+                                        <div>
+                                            <span className="text-muted font-italic">
+                                                Delivery Normal
+                                            </span>
+                                            <br/>
+                                            <small className="text-muted">
+                                                S/ {Number2Currency(data.price)}
+                                            </small>
+                                        </div>
+                                    )
+                                );
                             }
                         },
+                    },
+                    {
+                        dataField: "selected_stores",
+                        caption: "Tiendas",
+                        width: "200px",
+                        cellTemplate: (container, { data }) => {
+                            if (data.is_store_pickup || data.is_free) {
+                                if (data.selected_stores && Array.isArray(data.selected_stores) && data.selected_stores.length > 0) {
+                                    // Solo mostrar número de tiendas específicas
+                                    container.html(
+                                        renderToString(
+                                            <div>
+                                                <span className="badge bg-primary">
+                                                    {data.selected_stores.length} tienda{data.selected_stores.length > 1 ? 's' : ''} específica{data.selected_stores.length > 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+                                        )
+                                    );
+                                } else {
+                                    // Todas las tiendas
+                                    container.html(
+                                        renderToString(
+                                            <span className="badge bg-success">
+                                                Todas las tiendas
+                                            </span>
+                                        )
+                                    );
+                                }
+                            } else {
+                                // No aplica
+                                container.html(
+                                    renderToString(
+                                        <span className="text-muted font-italic">
+                                            No aplica
+                                        </span>
+                                    )
+                                );
+                            }
+                        },
+                        allowFiltering: false,
+                        allowExporting: false,
                     },
                     {
                         caption: "Acciones",
@@ -488,7 +574,7 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                         : "Agregar Costo de envío"
                 }
                 onSubmit={onModalSubmit}
-                size="md"
+                size="lg"
             >
                 <input ref={idRef} type="hidden" />
                 <div id="form-container" className="row">
@@ -518,13 +604,17 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                                 onChange={(e) => {
                                     setIsFreeChecked(e.target.checked);
                                     if (e.target.checked) {
+                                        // Cuando se marca delivery gratis, automáticamente marcar retiro en tienda
                                         setIsAgencyChecked(false);
-                                        setIsStorePickupChecked(false);
+                                        setIsStorePickupChecked(true); // Auto-activar retiro en tienda
                                         is_agencyRef.current.checked = false;
-                                        is_store_pickupRef.current.checked = false;
-                                        setMessage('El envío gratis tiene costo 0. Puede agregar un costo adicional para delivery express.');
-                                        loadAvailableStores(ubigeoRef.current.value);
+                                        is_store_pickupRef.current.checked = true; // Auto-activar retiro en tienda
+                                        setMessage('Delivery gratis incluye retiro en tienda automáticamente. Configure precio normal y express.');
+                                        loadAvailableStores();
                                     } else {
+                                        // Si se desmarca delivery gratis, también desmarcar retiro en tienda
+                                        setIsStorePickupChecked(false);
+                                        is_store_pickupRef.current.checked = false;
                                         setMessage('');
                                     }
                                 }}
@@ -557,14 +647,17 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                                 onChange={(e) => {
                                     setIsStorePickupChecked(e.target.checked);
                                     if (e.target.checked) {
-                                        setIsFreeChecked(false);
-                                        setIsAgencyChecked(false);
-                                        is_freeRef.current.checked = false;
-                                        is_agencyRef.current.checked = false;
-                                        setMessage('Retiro en tienda disponible. Los clientes podrán recoger sus pedidos en nuestras sucursales.');
-                                        loadAvailableStores(ubigeoRef.current.value);
+                                        // Cargar tiendas cuando se activa retiro en tienda
+                                        loadAvailableStores();
+                                        if (!isFreeChecked) {
+                                            // Solo afectar otros switches si no es delivery gratis
+                                            setIsAgencyChecked(false);
+                                            is_agencyRef.current.checked = false;
+                                        }
+                                        setMessage('Retiro en tienda disponible. Seleccione tiendas específicas o deje sin seleccionar para permitir retiro en cualquier tienda.');
                                     } else {
                                         setMessage('');
+                                        setSelectedStores([]); // Limpiar tiendas seleccionadas
                                     }
                                 }}
                                 checked={isStorePickupChecked}
@@ -572,13 +665,25 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             />
                         </div>
                         {message && (
-                            <div className="alert alert-info mt-2">
+                            <div className={`alert ${isFreeChecked ? 'alert-success' : 'alert-info'} mt-2`}>
+                                <i className={`fas ${isFreeChecked ? 'fa-check-circle' : 'fa-info-circle'} me-2`}></i>
                                 {message}
                             </div>
                         )}
                     </div>
                     
-                  
+                    {/* Mostrar retiro en tienda como información cuando es delivery gratis */}
+                    {isFreeChecked && (
+                        <div className="col-12 mb-3">
+                            <div className="alert alert-info">
+                                <i className="fas fa-info-circle me-2"></i>
+                                <strong>Delivery gratis incluye automáticamente retiro en tienda.</strong>
+                                <br/>Configure el precio normal (cuando no califica para envío gratuito) y el precio express.
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Campos de precio según el tipo de envío */}
                     <div
                         className="col-12"
                         hidden={isFreeChecked || isAgencyChecked || isStorePickupChecked}
@@ -592,16 +697,33 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                             required
                         />
                     </div>
+                    
+                    {/* Campos específicos para delivery gratis */}
                     <div className="col-12" hidden={!isFreeChecked}>
-                        <InputFormGroup
-                            eRef={express_priceRef}
-                            label="Costo de envío Express"
-                            col="col-12"
-                            type="number"
-                            step={0.01}
-                            required
-                        />
+                        <div className="row">
+                            <div className="col-md-6">
+                                <InputFormGroup
+                                    eRef={standard_priceRef}
+                                    label="Precio Normal (cuando no califica gratis)"
+                                    col="col-12"
+                                    type="number"
+                                    step={0.01}
+                                    required
+                                />
+                            </div>
+                            <div className="col-md-6">
+                                <InputFormGroup
+                                    eRef={express_priceRef}
+                                    label="Precio Express"
+                                    col="col-12"
+                                    type="number"
+                                    step={0.01}
+                                    required
+                                />
+                            </div>
+                        </div>
                     </div>
+                    
                     <div className="col-12" hidden={!isAgencyChecked}>
                         <InputFormGroup
                             eRef={agency_priceRef}
@@ -616,45 +738,83 @@ const DeliveryPricesType = ({ ubigeo = [] }) => {
                     {/* Mostrar tiendas disponibles cuando se selecciona retiro en tienda */}
                     {isStorePickupChecked && (
                         <div className="col-12 mb-3">
-                            <label className="form-label">Tiendas disponibles en esta ubicación</label>
+                            <label className="form-label">Tiendas disponibles para retiro</label>
                             {availableStores.length > 0 ? (
-                                <div className="row">
-                                    {availableStores.map((store) => (
-                                        <div key={store.id} className="col-md-6 mb-2">
-                                            <div className="card border">
-                                                <div className="card-body p-3">
-                                                    <div className="d-flex">
-                                                        <div className="flex-shrink-0">
-                                                            {store.image ? (
-                                                                <img 
-                                                                    src={`/storage/images/stores/${store.image}`}
-                                                                    alt={store.name}
-                                                                    className="rounded"
-                                                                    style={{width: "40px", height: "40px", objectFit: "cover"}}
-                                                                />
-                                                            ) : (
-                                                                <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{width: "40px", height: "40px"}}>
-                                                                    <i className="fas fa-store text-muted"></i>
+                                <div>
+                                    <div className="alert alert-info mb-3">
+                                        <i className="fas fa-info-circle me-2"></i>
+                                        <strong>Instrucciones:</strong>
+                                        <ul className="mb-0 mt-2">
+                                            <li>Si no selecciona ninguna tienda, el retiro estará disponible en <strong>todas las tiendas</strong> de esta ubicación.</li>
+                                            <li>Si selecciona tiendas específicas, el retiro solo estará disponible en las tiendas marcadas.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div className="row">
+                                        {availableStores.map((store) => (
+                                            <div key={store.id} className="col-md-6 mb-3">
+                                                <div className={`card border ${selectedStores.includes(store.id) ? 'border-primary bg-light' : ''}`}>
+                                                    <div className="card-body p-3">
+                                                        <div className="form-check">
+                                                            <input 
+                                                                className="form-check-input" 
+                                                                type="checkbox" 
+                                                                id={`store_${store.id}`}
+                                                                checked={selectedStores.includes(store.id)}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedStores([...selectedStores, store.id]);
+                                                                    } else {
+                                                                        setSelectedStores(selectedStores.filter(id => id !== store.id));
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <label className="form-check-label w-100" htmlFor={`store_${store.id}`}>
+                                                                <div className="d-flex">
+                                                                    <div className="flex-shrink-0">
+                                                                        {store.image ? (
+                                                                            <img 
+                                                                                src={`/storage/images/stores/${store.image}`}
+                                                                                alt={store.name}
+                                                                                className="rounded"
+                                                                                style={{width: "40px", height: "40px", objectFit: "cover"}}
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="bg-secondary rounded d-flex align-items-center justify-content-center text-white" style={{width: "40px", height: "40px"}}>
+                                                                                <i className="fas fa-store"></i>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-grow-1 ms-3">
+                                                                        <h6 className="mb-1">{store.name}</h6>
+                                                                        <small className="text-muted d-block">{store.address}</small>
+                                                                        {store.phone && (
+                                                                            <small className="text-muted d-block">📞 {store.phone}</small>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-shrink-0">
+                                                                        <span className={`badge ${store.status ? 'bg-success' : 'bg-danger'}`}>
+                                                                            {store.status ? 'Activa' : 'Inactiva'}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-grow-1 ms-3">
-                                                            <h6 className="mb-1">{store.name}</h6>
-                                                            <small className="text-muted d-block">{store.address}</small>
-                                                            {store.phone && (
-                                                                <small className="text-muted d-block">📞 {store.phone}</small>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-shrink-0">
-                                                            <span className={`badge ${store.status ? 'bg-success' : 'bg-danger'}`}>
-                                                                {store.status ? 'Activa' : 'Inactiva'}
-                                                            </span>
+                                                            </label>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
+                                    
+                                    <div className="mt-3">
+                                        <small className="text-muted">
+                                            <strong>Tiendas seleccionadas:</strong> 
+                                            {selectedStores.length === 0 ? 
+                                                <span className="text-success"> Todas las tiendas disponibles ({availableStores.length})</span> :
+                                                <span className="text-primary"> {selectedStores.length} de {availableStores.length} tiendas</span>
+                                            }
+                                        </small>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="alert alert-warning">

@@ -525,34 +525,91 @@ export default function ShippingStep({
 
         setLoading(true);
         try {
+            // Calcular el total del carrito para la lógica condicional
+            const cartTotal = cart.reduce((sum, item) => sum + (item.final_price * item.quantity), 0);
+            
+            console.log('🛒 ShippingStep - Cart total calculado:', cartTotal);
+            console.log('🛒 ShippingStep - Cart items:', cart.map(item => ({
+                name: item.name,
+                price: item.final_price,
+                quantity: item.quantity,
+                total: item.final_price * item.quantity
+            })));
+            console.log('💰 ShippingStep - Comparación de totales:');
+            console.log('   - Cart total (solo productos):', cartTotal);
+            console.log('   - SubTotal prop:', subTotal);
+            console.log('   - IGV prop:', igv);
+            console.log('   - Total con IGV:', subTotal + igv);
+            console.log('   - Total final prop:', totalFinal);
+            
             const response = await DeliveryPricesRest.getShippingCost({
                 ubigeo: data.reniec,
+                cart_total: cartTotal, // Enviar el total del carrito
             });
+
+            console.log('📦 ShippingStep - Respuesta del backend:', response.data);
+            console.log('✅ ShippingStep - Califica para envío gratis?', response.data.qualifies_free_shipping);
+            console.log('💰 ShippingStep - Umbral requerido:', response.data.free_shipping_threshold);
 
             const options = [];
             let hasStorePickup = false;
 
             if (response.data.is_free) {
-                options.push({
-                    type: "free",
-                    price: 0,
-                    description: response.data.standard.description,
-                    deliveryType: response.data.standard.type,
-                    characteristics: response.data.standard.characteristics,
-                });
-
-                if (response.data.express.price > 0) {
+                console.log('🔥 ShippingStep - Es zona de delivery gratis (is_free=true)');
+                
+                // Verificar si el carrito califica para envío gratis condicional
+                if (response.data.qualifies_free_shipping) {
+                    console.log('✅ ShippingStep - SÍ califica para envío gratis');
+                    // El carrito califica, mostrar delivery gratis
                     options.push({
-                        type: "express",
-                        price: response.data.express.price,
-                        description: response.data.express.description,
-                        deliveryType: response.data.express.type,
-                        characteristics: response.data.express.characteristics,
+                        type: "free",
+                        price: 0,
+                        description: response.data.standard.description,
+                        deliveryType: response.data.standard.type,
+                        characteristics: response.data.standard.characteristics,
                     });
-                }
 
-                // Si hay delivery gratis, forzar retiro en tienda
-                hasStorePickup = true;
+                    if (response.data.express && response.data.express.price > 0) {
+                        options.push({
+                            type: "express",
+                            price: response.data.express.price,
+                            description: response.data.express.description,
+                            deliveryType: response.data.express.type,
+                            characteristics: response.data.express.characteristics,
+                        });
+                    }
+
+                    // Si hay delivery gratis, forzar retiro en tienda
+                    hasStorePickup = true;
+                } else {
+                    console.log('❌ ShippingStep - NO califica para envío gratis, mostrar precios normales');
+                    console.log('💰 ShippingStep - Total carrito:', response.data.cart_total);
+                    console.log('🎯 ShippingStep - Umbral requerido:', response.data.free_shipping_threshold);
+                    
+                    // El carrito NO califica, mostrar precios normales (NO como "gratis")
+                    options.push({
+                        type: "standard",
+                        price: response.data.standard.price,
+                        description: response.data.standard.description,
+                        deliveryType: response.data.standard.type,
+                        characteristics: response.data.standard.characteristics,
+                    });
+
+                    if (response.data.express && response.data.express.price > 0) {
+                        options.push({
+                            type: "express",
+                            price: response.data.express.price,
+                            description: response.data.express.description,
+                            deliveryType: response.data.express.type,
+                            characteristics: response.data.express.characteristics,
+                        });
+                    }
+
+                    // Si hay configuración de retiro en tienda disponible, agregarlo también
+                    if (response.data.is_store_pickup) {
+                        hasStorePickup = true;
+                    }
+                }
             } else if (response.data.is_agency) {
                 options.push({
                     type: "agency",
@@ -609,6 +666,9 @@ export default function ShippingStep({
             setSelectedOption(options[0]?.type || null);
             setEnvio(options[0]?.price || 0);
             setExpandedCharacteristics(false); // Reset expansion state when location changes
+            
+            console.log('📋 ShippingStep - Opciones finales de envío:', options);
+            console.log('🚚 ShippingStep - Precio de envío seleccionado:', options[0]?.price || 0);
         } catch (error) {
             //console.error("Error al obtener precios de envío:", error);
             toast.error("Sin cobertura", {
