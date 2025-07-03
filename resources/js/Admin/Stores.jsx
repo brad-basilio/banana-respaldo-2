@@ -69,7 +69,9 @@ const Stores = ({ ubigeos = [] }) => {
 
         // Limpiar el input de imagen
         if (imageRef.current) {
-            imageRef.current.value = "";
+           imageRef.image.src = `/storage/images/store/${
+                      data?.image ?? "undefined"
+                  }`;
         }
 
         $(ubigeoRef.current)
