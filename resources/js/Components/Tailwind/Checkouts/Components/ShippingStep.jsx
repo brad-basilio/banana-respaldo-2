@@ -696,8 +696,14 @@ export default function ShippingStep({
             toast.error("Acceso requerido", {
                 description: `Debe iniciar sesión para continuar.`,
                 icon: <UserRoundX className="h-5 w-5 text-red-500" />,
-                duration: 3000,
+                duration: 5000,
                 position: "bottom-center",
+                action: {
+                    label: "Iniciar sesión",
+                    onClick: () => {
+                        window.location.href = "/iniciar-sesion";
+                    }
+                }
             });
             return;
         }
