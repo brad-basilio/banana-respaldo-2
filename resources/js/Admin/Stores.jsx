@@ -66,10 +66,11 @@ const Stores = ({ ubigeos = [] }) => {
         longitudeRef.current.value = data?.longitude ?? "";
         managerRef.current.value = data?.manager ?? "";
         capacityRef.current.value = data?.capacity ?? "";
-  imageRef.current.value = null;
-         imageRef.image.src = `/storage/images/store/${
-                    data?.image ?? "undefined"
-                }`;
+
+        // Limpiar el input de imagen
+        if (imageRef.current) {
+            imageRef.current.value = "";
+        }
 
         $(ubigeoRef.current)
             .val(data?.ubigeo ?? null)
@@ -184,8 +185,15 @@ const Stores = ({ ubigeos = [] }) => {
 
         const formData = new FormData();
         
+        // Debug: Verificar ID antes de enviarlo
+        const idValue = idRef.current.value;
+        console.log("DEBUG ID - Valor del ID a enviar:", idValue, "Tipo:", typeof idValue, "Vacío?:", !idValue);
+        
         if (idRef.current.value) {
             formData.append("id", idRef.current.value);
+            console.log("DEBUG ID - ID agregado al FormData:", idRef.current.value);
+        } else {
+            console.log("DEBUG ID - No se agrega ID al FormData (valor vacío)");
         }
         
         formData.append("name", nameRef.current.value);

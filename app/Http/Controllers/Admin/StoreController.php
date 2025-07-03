@@ -13,13 +13,14 @@ use SoDe\Extend\Response;
 use Exception;
 use Illuminate\Support\Facades\File;
 use SoDe\Extend\JSON;
-
+use SoDe\Extend\Text;
 class StoreController extends BasicController
 {
     public $model = Store::class;
     public $reactView = 'Admin/Stores';
     public $imageFields = ['image'];
     public $prefix4filter = 'stores';
+    
 
       public function setReactViewProperties(Request $request)
     {
@@ -45,6 +46,9 @@ class StoreController extends BasicController
 
     public function beforeSave(Request $request)
     {
+        // Debug: Log para verificar qué datos están llegando
+        Log::info('StoreController beforeSave - Request data:', $request->all());
+        
         // Validar datos
         $request->validate([
             'name' => 'required|string|max:255',
@@ -68,11 +72,18 @@ class StoreController extends BasicController
         ]);
 
         $data = $request->only([
-            'name', 'address', 'phone', 'email', 'description',
+            'id', 'name', 'address', 'phone', 'email', 'description',
             'ubigeo', 'latitude', 'longitude', 'manager', 'capacity', 'type'
         ]);
 
         $data['status'] = $request->boolean('status', true);
+        
+        // Debug: Log para verificar si el ID está en los datos procesados
+        if (isset($data['id']) && !empty($data['id'])) {
+            Log::info('StoreController: ID encontrado para actualización: ' . $data['id']);
+        } else {
+            Log::info('StoreController: No se encontró ID, será creación nueva');
+        }
         
         // Validar coordenadas adicionales (formato decimal)
         if (!empty($data['latitude'])) {
@@ -196,4 +207,49 @@ class StoreController extends BasicController
             ]);
         }
     }
+
+  public function delete(Request $request, string $id)
+  {
+    $response = new Response();
+    try {
+     
+
+      $dataBeforeDelete = $this->model::find($id);
+      if (!$dataBeforeDelete) throw new Exception('El registro que intenta eliminar no existe');
+      
+      // Verificar si la tabla tiene el campo 'status' antes de hacer soft delete
+      $table = (new $this->model)->getTable();
+      
+    $deleted = $this->model::where('id', $id)
+          ->delete();
+      
+      if ($deleted) {
+        $snake_case = Text::camelToSnakeCase(str_replace('App\\Models\\', '', $this->model));
+        foreach ($this->imageFields as $field) {
+          $filename = $dataBeforeDelete->{$field} ?? '';
+          if (!Text::has($filename, '.')) {
+            $filename = "{$filename}.enc";
+          }
+          $path = "images/{$snake_case}/{$filename}";
+          Storage::delete($path);
+        }
+      }
+
+      $this->afterDelete($dataBeforeDelete);
+
+      if (!$deleted) throw new Exception('No se ha eliminado ningun registro');
+
+      $response->status = 200;
+      $response->message = 'Operacion correcta';
+    } catch (\Throwable $th) {
+      $response->status = 400;
+      $response->message = $th->getMessage();
+    } finally {
+      return response(
+        $response->toArray(),
+        $response->status
+      );
+    }
+  }
+
 }
