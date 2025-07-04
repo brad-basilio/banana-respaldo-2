@@ -274,6 +274,9 @@ export default function ShippingStep({
     const [selectedStore, setSelectedStore] = useState(null);
     const [showStoreSelector, setShowStoreSelector] = useState(false);
 
+    // Estado para modal de login
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
     // Función de validación mejorada con alertas específicas
     const validateForm = () => {
         const newErrors = {};
@@ -694,28 +697,7 @@ export default function ShippingStep({
         if (paymentLoading) return;
 
         if (!user) {
-            toast.error("Acceso requerido", {
-                description: `Debe iniciar sesión para continuar.`,
-                icon: <UserRoundX className="h-5 w-5 text-red-500" />,
-                duration: 5000,
-                position: "bottom-center",
-                action: {
-                    label: "Iniciar sesión",
-                    onClick: () => {
-                        window.location.href = "/iniciar-sesion";
-                    }
-                },
-                actionButtonStyle: {
-                    backgroundColor: Global.APP_COLOR_PRIMARY, // Azul
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 16px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    fontSize: "14px"
-                }
-            });
+            setShowLoginModal(true);
             return;
         }
 
@@ -1069,8 +1051,74 @@ export default function ShippingStep({
 
     const finalTotalWithCoupon = Math.max(0, roundToTwoDecimals(totalBase - calculatedCouponDiscount));
 
+    // Componente Modal de Login
+    const LoginModal = () => {
+        if (!showLoginModal) return null;
+
+        // Función para cerrar modal al hacer clic en el backdrop
+        const handleBackdropClick = (e) => {
+            if (e.target === e.currentTarget) {
+                setShowLoginModal(false);
+            }
+        };
+
+        return (
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                onClick={handleBackdropClick}
+            >
+                <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl transform transition-all">
+                    <div className="text-center">
+                        <div className="mb-6">
+                            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+                                <UserRoundX className="h-8 w-8 customtext-primary" />
+                            </div>
+                            <h2 className="text-2xl font-bold customtext-neutral-dark mb-3">
+                                Acceso requerido
+                            </h2>
+                            <p className="customtext-neutral-light text-sm leading-relaxed">
+                                Para continuar con su compra necesita iniciar sesión o crear una cuenta nueva.
+                            </p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => {
+                                    window.location.href = "/iniciar-sesion";
+                                }}
+                                className="w-full py-3 px-6 bg-primary text-white font-semibold rounded-lg  focus:outline-none focus:ring-2  focus:ring-offset-2 transition duration-200 transform hover:scale-[1.02]"
+                            >
+                                Iniciar sesión
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    window.location.href = "/crear-cuenta";
+                                }}
+                                className="w-full py-3 px-6 bg-accent text-white font-semibold rounded-lg  focus:outline-none focus:ring-2  focus:ring-offset-2 transition duration-200 transform hover:scale-[1.02]"
+                            >
+                                Crear cuenta nueva
+                            </button>
+                            
+                            <button
+                                onClick={() => setShowLoginModal(false)}
+                                className="w-full py-3 px-6 customtext-neutral-light hover:customtext-neutral-dark border border-secondary rounded-lg hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
+        <>
+            {/* Modal de Login */}
+            <LoginModal />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
             <div className="lg:col-span-3">
                 <form className="space-y-4 md:space-y-6 bg-white p-4 md:p-6 rounded-xl shadow-sm" onSubmit={handlePayment}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1393,8 +1441,8 @@ export default function ShippingStep({
                             />
                             <div>
                                 <h4 className="font-medium">{item.name}</h4>
-                                <p className="text-sm text-gray-600">Cantidad: {item.quantity}</p>
-                                <p className="text-sm text-gray-600">S/ {Number2Currency(item.final_price)}</p>
+                                <p className="text-sm customtext-neutral-light">Cantidad: {item.quantity}</p>
+                                <p className="text-sm customtext-neutral-light">S/ {Number2Currency(item.final_price)}</p>
                             </div>
                         </div>
                     ))}
@@ -1579,5 +1627,6 @@ export default function ShippingStep({
                 </div>
             </div>
         </div>
+        </>
     );
 }
