@@ -716,7 +716,7 @@ const ContactGrid = ({ data, contacts }) => {
                     >
                         <GoogleMap
                             mapContainerStyle={{ width: "100%", height: "500px", borderRadius: "12px" }}
-                            zoom={stores.length > 0 ? 15 : 20}
+                            zoom={stores.length > 0 ? 12 : 20}
                             center={stores.length > 0 ? {
                                 lat: stores.reduce((sum, store) => sum + parseFloat(store.latitude), 0) / stores.length,
                                 lng: stores.reduce((sum, store) => sum + parseFloat(store.longitude), 0) / stores.length
