@@ -1621,6 +1621,14 @@ export default function ShippingStep({
                         {paymentLoading ? "Procesando..." : `Pagar S/ ${Number2Currency(roundToTwoDecimals(finalTotalWithCoupon))}`}
                     </ButtonPrimary>
 
+                    <ButtonSecondary 
+                        onClick={noContinue} 
+                        className="w-full mt-3"
+                        disabled={paymentLoading}
+                    >
+                        Regresar al carrito
+                    </ButtonSecondary>
+
                     <p className="text-xs md:text-sm customtext-neutral-dark">
                             Al realizar tu pedido, aceptas los <a href="#" onClick={() => openModal(1)} className="customtext-primary font-bold">Términos y Condiciones</a>, y que nosotros usaremos sus datos personales de acuerdo con nuestra <a href="#" onClick={() => openModal(0)} className="customtext-primary font-bold">Política de Privacidad</a>.
                         </p>
