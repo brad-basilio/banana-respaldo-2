@@ -1317,7 +1317,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                     
                                                     {/* Chips de categorías con AnimatedBadge */}
                                                     {selectedFilters.category_id?.map((categorySlug) => {
-                                                        const category = categories.find(c => c.slug === categorySlug);
+                                                        const category = categories.find(c => c.id === categorySlug);
                                                         return category ? (
                                                             <AnimatedBadge
                                                                 key={categorySlug}
