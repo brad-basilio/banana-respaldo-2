@@ -20,7 +20,8 @@ import {
     Sliders,
     Trash,
     List,
-    ListFilter
+    ListFilter,
+    Hash
 } from "lucide-react";
 import ItemsRest from "../../../Actions/ItemsRest";
 import ArrayJoin from "../../../Utils/ArrayJoin";
@@ -199,6 +200,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const [categories, setCategories] = useState([]);
     const [collections, setCollections] = useState([]);
     const [priceRanges, setPriceRanges] = useState([]);
+    const [tags, setTags] = useState([]);
     const [activeSection, setActiveSection] = useState(null);
 
     // Rangos de precios estáticos
@@ -427,6 +429,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             setSubcategories(response?.summary.subcategories || []);
             setCollections(response?.summary.collections || []);
             setPriceRanges(response?.summary.priceRanges || []);
+            setTags(response?.summary.tags || []);
         } catch (error) {
             console.error("Error fetching products:", error);
         } finally {
@@ -1276,6 +1279,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                         {(selectedFilters.brand_id?.length > 0 || 
                                           selectedFilters.category_id?.length > 0 || 
                                           selectedFilters.subcategory_id?.length > 0 || 
+                                          selectedFilters.tag_id?.length > 0 ||
                                           (selectedFilters.price && selectedFilters.price.length > 0)) && (
                                             <motion.div
                                                 className="mb-4"
@@ -1335,7 +1339,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
                                                     {/* Chips de subcategorías con AnimatedBadge */}
                                                     {selectedFilters.subcategory_id?.map((subcategorySlug) => {
-                                                        const subcategory = subcategories.find(sub => sub.slug === subcategorySlug);
+                                                        const subcategory = subcategories.find(sub => sub.id === subcategorySlug);
                                                         return subcategory ? (
                                                             <AnimatedBadge
                                                                 key={subcategorySlug}
@@ -1343,6 +1347,27 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                             >
                                                                 <Grid3X3 className="h-3 w-3" />
                                                                 <span>{subcategory.name}</span>
+                                                                <motion.div
+                                                                    className="ml-1 rounded-full p-0.5 transition-colors duration-200"
+                                                                    whileHover={{ scale: 1.2 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </motion.div>
+                                                            </AnimatedBadge>
+                                                        ) : null;
+                                                    })}
+
+                                                    {/* Chips de tags con AnimatedBadge */}
+                                                    {selectedFilters.tag_id?.map((tagId) => {
+                                                        const tag = tags.find(t => t.id === tagId);
+                                                        return tag ? (
+                                                            <AnimatedBadge
+                                                                key={tagId}
+                                                                onClick={() => handleFilterChange("tag_id", tagId)}
+                                                            >
+                                                                <Hash className="h-3 w-3" />
+                                                                <span>{tag.name}</span>
                                                                 <motion.div
                                                                     className="ml-1 rounded-full p-0.5 transition-colors duration-200"
                                                                     whileHover={{ scale: 1.2 }}
