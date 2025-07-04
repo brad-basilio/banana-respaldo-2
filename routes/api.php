@@ -146,6 +146,7 @@ Route::get('/stores/media/{uuid}', [AdminStoreController::class, 'media']);
 
 Route::post('/posts/paginate', [PostController::class, 'paginate']);
 Route::post('/items/paginate', [ItemController::class, 'paginate']);
+Route::post('/items/convert-slugs', [ItemController::class, 'convertSlugsToIds']);
 
 Route::post('/messages', [MessageController::class, 'save']);
 Route::post('/subscriptions', [SubscriptionController::class, 'save']);

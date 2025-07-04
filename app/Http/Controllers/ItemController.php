@@ -1066,7 +1066,59 @@ class ItemController extends BasicController
     }
 
     /**
-     * Obtener tags que tienen productos visibles y activos
+     * Convert slugs to IDs for filters
+     */
+    public function convertSlugsToIds(Request $request)
+    {
+        $response = new Response();
+        try {
+            $result = [];
+            
+            // Convert category slugs to IDs
+           
+            if ($request->has('category_slugs') && !empty($request->category_slugs)) {
+                $categorySlugs = is_array($request->category_slugs) ? $request->category_slugs : explode(',', $request->category_slugs);
+                $categoryIds = Category::whereIn('slug', $categorySlugs)->pluck('id')->toArray();
+                $result['category_ids'] = $categoryIds;
+            }
+            
+            // Convert brand slugs to IDs
+            if ($request->has('brand_slugs') && !empty($request->brand_slugs)) {
+                $brandSlugs = is_array($request->brand_slugs) ? $request->brand_slugs : explode(',', $request->brand_slugs);
+                $brandIds = Brand::whereIn('slug', $brandSlugs)->pluck('id')->toArray();
+                $result['brand_ids'] = $brandIds;
+            }
+            
+            // Convert subcategory slugs to IDs
+            if ($request->has('subcategory_slugs') && !empty($request->subcategory_slugs)) {
+           
+                $subcategorySlugs = is_array($request->subcategory_slugs) ? $request->subcategory_slugs : explode(',', $request->subcategory_slugs);
+            
+                $subcategoryIds = SubCategory::whereIn('slug', $subcategorySlugs)->pluck('id')->toArray();
+              
+                $result['subcategory_ids'] = $subcategoryIds; // Devolver el array completo, no solo el primer elemento
+            }
+            
+            // Convert collection slugs to IDs
+            if ($request->has('collection_slugs') && !empty($request->collection_slugs)) {
+                $collectionSlugs = is_array($request->collection_slugs) ? $request->collection_slugs : explode(',', $request->collection_slugs);
+                $collectionIds = Collection::whereIn('slug', $collectionSlugs)->pluck('id')->toArray();
+                $result['collection_ids'] = $collectionIds;
+            }
+            
+            $response->status = 200;
+            $response->message = 'Slugs convertidos correctamente';
+            $response->data = $result;
+        } catch (\Throwable $th) {
+            $response->status = 400;
+            $response->message = $th->getMessage();
+        }
+        
+        return response($response->toArray(), $response->status);
+    }
+
+    /**
+     * Get tags that have visible and active products
      */
     public function getTags()
     {

@@ -237,10 +237,10 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     });
 
     const [selectedFilters, setSelectedFilters] = useState({
-        collection_id: GET.collection ? GET.collection.split(',') : [],
-        category_id: GET.category ? GET.category.split(',') : [],
-        brand_id: GET.brand ? GET.brand.split(',') : [],
-        subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
+        collection_id: [],
+        category_id: [],
+        brand_id: [],
+        subcategory_id:  [],
         tag_id: GET.tag ? GET.tag.split(',') : [], // Agregar soporte para tags
         price: [],
         name: GET.search || null,
@@ -251,6 +251,45 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             },
         ],
     });
+
+    // Función para convertir slugs a IDs
+    const convertSlugsToIds = async () => {
+        try {
+            const params = {};
+            
+            if (GET.category) {
+                params.category_slugs = GET.category;
+            }
+            {/*if (GET.brand) {
+                params.brand_slugs = GET.brand;
+            } */}
+        if (GET.subcategory) {
+                params.subcategory_slugs = GET.subcategory;
+            }
+            if (GET.collection) {
+                params.collection_slugs = GET.collection;
+            }
+            
+            // Solo hacer la petición si hay slugs que convertir
+            if (Object.keys(params).length > 0) {
+                const response = await itemsRest.convertSlugs(params);
+                            console.log("Estamos fuera de estatus 200")
+                if (response.status === 200) {
+                    console.log("Estamos dentro de estatus 200")
+                    console.log("Response data:", response.data);
+                    setSelectedFilters(prev => ({
+                        ...prev,
+                        category_id: Array.isArray(response.data.category_ids) ? response.data.category_ids : (response.data.category_ids ? [response.data.category_ids] : []),
+                        brand_id: GET.brand || [],
+                        subcategory_id: Array.isArray(response.data.subcategory_ids) ? response.data.subcategory_ids : (response.data.subcategory_ids ? [response.data.subcategory_ids] : []),
+                        collection_id: Array.isArray(response.data.collection_ids) ? response.data.collection_ids : (response.data.collection_ids ? [response.data.collection_ids] : []),
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error converting slugs to IDs:', error);
+        }
+    };
 
     // Track the order in which filters are activated
     const [filterSequence, setFilterSequence] = useState([]);
@@ -279,50 +318,20 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
 
         if (filters.category_id.length > 0) {
-            const categoryConditions = filters.category_id.map((slug) => {
-                // Buscar la categoría en el array para obtener su ID
-                const category = categories.find(c => c.slug === slug);
-                
-                if (category) {
-                    // Si encontramos la categoría, usar su ID
-                    return [
-                        "category.id",
-                        "=",
-                        category.id,
-                    ];
-                } else {
-                    // Si no la encontramos, usar slug
-                    return [
-                        "category.slug",
-                        "=",
-                        category.slug,
-                    ];
-                }
-            });
+            const categoryConditions = filters.category_id.map((id) => [
+                "category.id",
+                "=",
+                id,
+            ]);
             transformedFilters.push(ArrayJoin(categoryConditions, 'or'));
         }
 
         if (filters.subcategory_id.length > 0) {
-            const subcategoryConditions = filters.subcategory_id.map((slug) => {
-                // Buscar la subcategoría en el array para obtener su ID
-                const subcategory = subcategories.find(s => s.slug === slug);
-                
-                if (subcategory) {
-                    // Si encontramos la subcategoría, usar su ID
-                    return [
-                        "subcategory.id",
-                        "=",
-                        subcategory.id,
-                    ];
-                } else {
-                    // Si no la encontramos (posiblemente porque aún no se han cargado), usar slug
-                    return [
-                        "subcategory.slug",
-                        "=",
-                        slug,
-                    ];
-                }
-            });
+            const subcategoryConditions = filters.subcategory_id.map((id) => [
+                "subcategory.id",
+                "=",
+                id,
+            ]);
             transformedFilters.push(ArrayJoin(subcategoryConditions, 'or'));
         }
 
@@ -425,6 +434,9 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             setSubcategories(filteredData.subcategories || []);
             setPriceRanges(filteredData.priceRanges || []);
         }
+        
+        // Convert slugs from GET parameters to IDs
+        convertSlugsToIds();
         
         // Initial fetch to get products and update summary data
         fetchProducts(1);
@@ -582,10 +594,11 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const filteredSubcategories = subcategories.filter((subcategory) => {
         // Si hay categorías seleccionadas en los filtros, solo mostrar subcategorías de esas categorías
         let categoryIds;
+        console.log("selectedFilters.category_id", selectedFilters.category_id);
         if (selectedFilters.category_id && selectedFilters.category_id.length > 0) {
             // Hay categorías seleccionadas, solo mostrar subcategorías de esas categorías
             categoryIds = categories
-                .filter(cat => selectedFilters.category_id.includes(cat.slug))
+                .filter(cat => selectedFilters.category_id.includes(cat.id))
                 .map(cat => cat.id);
         } else {
             // No hay categorías seleccionadas, mostrar subcategorías de todas las categorías disponibles
@@ -988,8 +1001,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                     <input
                                                                         type="checkbox"
                                                                         className={modernFilterStyles.checkbox}
-                                                                        onChange={() => handleFilterChange("category_id", category.slug)}
-                                                                        checked={selectedFilters.category_id?.includes(category.slug)}
+                                                                        onChange={() => handleFilterChange("category_id", category.id)}
+                                                                        checked={selectedFilters.category_id?.includes(category.id)}
                                                                     />
                                                                     <span className="text-sm line-clamp-1 customtext-neutral-dark  transition-colors duration-200">
                                                                         {category.name}
@@ -1120,13 +1133,13 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                    
                                                                         type="checkbox"
                                                                         className={modernFilterStyles.checkbox}
-                                                                        onChange={() => handleFilterChange("subcategory_id", subcategory.slug)}
-                                                                        checked={selectedFilters.subcategory_id?.includes(subcategory.slug)}
+                                                                        onChange={() => handleFilterChange("subcategory_id", subcategory.id)}
+                                                                        checked={selectedFilters.subcategory_id?.includes(subcategory.id)}
                                                                     />
                                                                     <span className="text-sm line-clamp-1 font-medium customtext-neutral-dark transition-colors duration-200">
                                                                         {subcategory.name}
                                                                     </span>
-                                                                    {selectedFilters.subcategory_id?.includes(subcategory.slug) && (
+                                                                    {selectedFilters.subcategory_id?.includes(subcategory.id) && (
                                                                         <motion.div
                                                                             className="ml-auto"
                                                                             initial={{ scale: 0 }}
