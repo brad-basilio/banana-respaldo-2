@@ -294,6 +294,7 @@ class ItemController extends BasicController
             $selectedCategories = $request->input('category_id', []);
             $selectedSubcategories = $request->input('subcategory_id', []);
             $selectedCollections = $request->input('collection_id', []);
+            $selectedTags = []; // Inicializar array para tags seleccionados
 
             // Extraer filtros del filtro complejo si no hay filtros directos
             if ((empty($selectedBrands) && empty($selectedCategories) && empty($selectedSubcategories) && empty($selectedCollections)) && $request->filter) {
@@ -313,6 +314,8 @@ class ItemController extends BasicController
                                         $selectedSubcategories[] = $f2[2];
                                     } elseif (($f2[0] === 'collection.slug' || $f2[0] === 'collection.id') && $f2[1] === '=') {
                                         $selectedCollections[] = $f2[2];
+                                    } elseif ($f2[0] === 'item_tag.tag_id' && $f2[1] === '=') {
+                                        $selectedTags[] = $f2[2];
                                     }
                                 }
                             }
@@ -327,6 +330,8 @@ class ItemController extends BasicController
                                     $selectedSubcategories[] = $f1[2];
                                 } elseif (($f1[0] === 'collection.slug' || $f1[0] === 'collection.id') && $f1[1] === '=') {
                                     $selectedCollections[] = $f1[2];
+                                } elseif ($f1[0] === 'item_tag.tag_id' && $f1[1] === '=') {
+                                    $selectedTags[] = $f1[2];
                                 }
                             }
                         }
@@ -367,7 +372,12 @@ class ItemController extends BasicController
                 : Item::getForeign($i4collection, Collection::class, 'collection_id');
 
             // BRANDS: Filtrar marcas según el contexto
-            if ($parentCategoryId && !in_array('brand_id', $filterSequence)) {
+            if (!empty($selectedTags)) {
+                // FILTRADO DINÁMICO POR TAGS: Solo mostrar marcas de productos que tienen el tag seleccionado
+                $brandBuilder = clone $originalBuilder;
+                $brandBuilder->whereIn('item_tag.tag_id', $selectedTags);
+                $brands = Item::getForeign($brandBuilder, Brand::class, 'brand_id');
+            } elseif ($parentCategoryId && !in_array('brand_id', $filterSequence)) {
                 // Si hay subcategoría seleccionada, filtrar marcas por la categoría padre
                 $brandBuilder = clone $originalBuilder;
                 Log::info('Filtrando marcas por categoría padre de subcategoría', ['parent_category_id' => $parentCategoryId]);
@@ -427,7 +437,12 @@ class ItemController extends BasicController
             }
 
             // CATEGORIAS: lógica mejorada con filtros cruzados
-            if ($parentCategoryId) {
+            if (!empty($selectedTags)) {
+                // FILTRADO DINÁMICO POR TAGS: Solo mostrar categorías de productos que tienen el tag seleccionado
+                $catBuilder = clone $originalBuilder;
+                $catBuilder->whereIn('item_tag.tag_id', $selectedTags);
+                $categories = Item::getForeign($catBuilder, Category::class, 'category_id');
+            } elseif ($parentCategoryId) {
                 // Si hay una subcategoría seleccionada, solo mostrar la categoría padre
                 $parentCategory = Category::where('id', $parentCategoryId)
                     ->where('status', true)
@@ -462,7 +477,12 @@ class ItemController extends BasicController
             }
 
             // SUBCATEGORIAS: lógica mejorada con filtros cruzados
-            if ($parentCategoryId) {
+            if (!empty($selectedTags)) {
+                // FILTRADO DINÁMICO POR TAGS: Solo mostrar subcategorías de productos que tienen el tag seleccionado
+                $subcatBuilder = clone $originalBuilder;
+                $subcatBuilder->whereIn('item_tag.tag_id', $selectedTags);
+                $subcategories = Item::getForeign($subcatBuilder, SubCategory::class, 'subcategory_id');
+            } elseif ($parentCategoryId) {
                 // Si hay una subcategoría seleccionada, mostrar todas las subcategorías de la categoría padre
                 $subcatBuilder = clone $originalBuilder;
                 
