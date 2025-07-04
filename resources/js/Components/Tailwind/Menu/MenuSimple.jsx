@@ -74,7 +74,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
             className={
                 `${
                 showOnlyTagsMobile
-                        ? " block w-full relative md:block bg-accent font-paragraph text-sm"
+                        ? " block w-full relative md:block bg-secondary font-paragraph text-sm"
                         : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
             }
@@ -142,8 +142,8 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                                                 onClick={() => setCurrentTagIndex(i * 2)}
                                                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                                                     Math.floor(currentTagIndex / 2) === i 
-                                                        ? 'bg-white shadow-lg' 
-                                                        : 'bg-white/40 hover:bg-white/60'
+                                                        ? 'bg-primary shadow-lg' 
+                                                        : 'bg-neutral-light hover:bg-white/60'
                                                 }`}
                                             />
                                         ))}
