@@ -6,6 +6,7 @@ import tagsItemsRest from "../../../Utils/Services/tagsItemsRest";
 const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [tags, setTags] = useState([]);
+    const [currentTagIndex, setCurrentTagIndex] = useState(0);
     const menuRef = useRef(null);
 
     useEffect(() => {
@@ -36,6 +37,20 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
         fetchTags();
     }, []);
 
+    // Auto-advance carousel for mobile tags
+    useEffect(() => {
+        if (tags.length > 2 && window.innerWidth < 1024) {
+            const interval = setInterval(() => {
+                setCurrentTagIndex(prev => {
+                    const nextIndex = prev + 2;
+                    return nextIndex >= tags.length ? 0 : nextIndex;
+                });
+            }, 3000); // Avanza cada 3 segundos
+
+            return () => clearInterval(interval);
+        }
+    }, [tags.length]);
+
     // Detectar si estamos en mobile
     const isMobile = window.innerWidth < 1024;
     
@@ -59,7 +74,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
             className={
                 `${
                 showOnlyTagsMobile
-                        ? " block w-full relative md:block bg-primary font-paragraph text-sm"
+                        ? " block w-full relative md:block bg-accent font-paragraph text-sm"
                         : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
             }
@@ -69,21 +84,72 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                 <ul className="flex items-center gap-4 lg:gap-6 text-sm justify-between">
                     {/* Mostrar solo tags en mobile si corresponde */}
                     {showOnlyTagsMobile ? (
-                        <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                            <ul className="flex py-2 items-center gap-4 text-sm min-w-max w-fit mx-auto">
-                                {tags.map((tag, index) => (
-                                    <li key={tag.id} className="flex-shrink-0">
-                                        <a
-                                            href={`/catalogo?tag=${tag.id}`}
-                                            className="font-medium bg-primary text-white rounded-full p-2 hover:brightness-105 cursor-pointer transition-all duration-300 relative flex items-center gap-2 whitespace-nowrap"
-                                            title={tag.description || tag.name}
-                                        >
-                                            <Tag size={16} className="text-white" />
-                                            {tag.name}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="w-full py-3 px-4">
+                            {/* Carrusel de tags para mobile */}
+                            <div className="relative">
+                                <div className="grid grid-cols-2 gap-3 h-10">
+                                    {tags.slice(currentTagIndex, currentTagIndex + 2).map((tag, index) => {
+                                        const actualIndex = currentTagIndex + index;
+                                        return (
+                                            <a
+                                                key={`${tag.id}-${actualIndex}`}
+                                                href={`/catalogo?tag=${tag.id}`}
+                                                className="group relative border-white border-2 overflow-hidden rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${tag.background_color || '#3b82f6'}, ${tag.background_color || '#3b82f6'}dd)`,
+                                                }}
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                                                <div className="relative h-full flex items-center justify-center p-3">
+                                                    <div className="flex items-center gap-2 text-center">
+                                                        {tag.icon ? (
+                                                            <img 
+                                                                src={`/storage/images/tag/${tag.icon}`} 
+                                                                alt={tag.name} 
+                                                                className="w-6 h-6 object-contain filter brightness-0 invert"
+                                                                onError={(e) => e.target.src = "/api/cover/thumbnail/null"}
+                                                            />
+                                                        ) : (
+                                                            <Tag size={20} style={{ color: tag.text_color || '#ffffff' }} />
+                                                        )}
+                                                        <span 
+                                                            className="text-xs font-semibold leading-tight"
+                                                            style={{ color: tag.text_color || '#ffffff' }}
+                                                        >
+                                                            {tag.name}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300"></div>
+                                            </a>
+                                        );
+                                    })}
+                                    
+                                    {/* Rellenar espacios vacíos si hay menos de 2 tags */}
+                                    {tags.slice(currentTagIndex, currentTagIndex + 2).length < 2 && (
+                                        <div className="rounded-2xl bg-white/10 flex items-center justify-center">
+                                            <div className="text-white/50 text-xs">Más próximamente</div>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Indicadores de posición */}
+                                {tags.length > 2 && (
+                                    <div className="flex justify-center mt-2 gap-1">
+                                        {Array.from({ length: Math.ceil(tags.length / 2) }).map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentTagIndex(i * 2)}
+                                                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                                    Math.floor(currentTagIndex / 2) === i 
+                                                        ? 'bg-white shadow-lg' 
+                                                        : 'bg-white/40 hover:bg-white/60'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <>
