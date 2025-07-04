@@ -298,6 +298,9 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isFiltering, setIsFiltering] = useState(false); // Nuevo estado para filtros
+    const [hasSearched, setHasSearched] = useState(false); // Para saber si ya se hizo una búsqueda
+    const [showNoResults, setShowNoResults] = useState(false); // Para controlar cuándo mostrar "sin resultados"
     const [pagination, setPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -389,8 +392,17 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         return ArrayJoin(transformedFilters, 'and');
     };
     // Obtener productos filtrados desde el backend
-    const fetchProducts = async (page = 1) => {
-        setLoading(true);
+    const fetchProducts = async (page = 1, isNewFilter = false) => {
+        // Resetear el estado de "sin resultados" al comenzar una nueva búsqueda
+        setShowNoResults(false);
+        
+        // Diferentes estados para carga inicial vs filtrado
+        if (isNewFilter) {
+            setIsFiltering(true);
+        } else {
+            setLoading(true);
+        }
+        
         try {
             const filters = transformFilters(selectedFilters);
             const itemsPerPage = 24; // Valor constante para evitar problemas de estado
@@ -409,6 +421,14 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             const response = await itemsRest.paginate(params);
             
             setProducts(response.data);
+            setHasSearched(true); // Marcamos que ya se hizo una búsqueda
+            
+            // Si no hay productos, mostrar mensaje después de un pequeño delay
+            if (!response.data || response.data.length === 0) {
+                setTimeout(() => {
+                    setShowNoResults(true);
+                }, 300); // Delay de 300ms para evitar parpadeo
+            }
             
             // Actualizar paginación con los datos correctos del backend
             const totalCount = response.totalCount || 0;
@@ -432,8 +452,13 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             setTags(response?.summary.tags || []);
         } catch (error) {
             console.error("Error fetching products:", error);
+            // En caso de error, también mostrar el mensaje después de un delay
+            setTimeout(() => {
+                setShowNoResults(true);
+            }, 300);
         } finally {
             setLoading(false);
+            setIsFiltering(false);
         }
     };
 
@@ -450,14 +475,17 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         // Convert slugs from GET parameters to IDs
         convertSlugsToIds();
         
-        // Initial fetch to get products and update summary data
-        fetchProducts(1);
+        // Initial fetch to get products and update summary data (no es filtrado)
+        fetchProducts(1, false);
     }, [filteredData]);
 
     useEffect(() => {
         // Cuando cambian los filtros, volvemos a la primera página SIN hacer scroll
-        fetchProducts(1);
-    }, [selectedFilters]);
+        // Solo si ya se hizo la búsqueda inicial
+        if (hasSearched) {
+            fetchProducts(1, true); // Es un filtrado
+        }
+    }, [selectedFilters, hasSearched]);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= pagination.totalPages && page !== pagination.currentPage) {
@@ -467,8 +495,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 behavior: 'smooth'
             });
 
-            // Luego, obtener productos de la nueva página
-            fetchProducts(page);
+            // Luego, obtener productos de la nueva página (no es filtrado)
+            fetchProducts(page, false);
         }
     };
 
@@ -1489,7 +1517,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
                         {/* Grid de productos con animaciones mejoradas */}
                         <AnimatePresence mode="wait">
-                            {loading ? (
+                            {(loading && !hasSearched) || isFiltering ? (
                                 <motion.div 
                                     className="w-full"
                                     key="loading"
@@ -1517,8 +1545,12 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                         >
                                             <Sparkles className="h-8 w-8 customtext-primary" />
                                         </motion.div>
-                                        <h3 className="text-xl font-bold customtext-neutral-dark mb-2">Cargando productos increíbles</h3>
-                                        <p className="customtext-neutral-dark">Preparando la mejor selección para ti...</p>
+                                        <h3 className="text-xl font-bold customtext-neutral-dark mb-2">
+                                            {isFiltering ? "Aplicando filtros..." : "Cargando productos increíbles"}
+                                        </h3>
+                                        <p className="customtext-neutral-dark">
+                                            {isFiltering ? "Encontrando los mejores resultados para ti..." : "Preparando la mejor selección para ti..."}
+                                        </p>
                                     </motion.div>
 
                                     {/* Grid de skeleton cards */}
@@ -1532,12 +1564,32 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 </motion.div>
                             ) : (
                                 <motion.div 
-                                    className="flex items-center flex-wrap gap-y-8 transition-all duration-300 ease-in-out"
+                                    className="flex items-center flex-wrap gap-y-8 transition-all duration-300 ease-in-out relative"
                                     key="products"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                 >
+                                    {/* Overlay de loading cuando se están aplicando filtros */}
+                                    {isFiltering && (
+                                        <motion.div
+                                            className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                        >
+                                            <div className="flex flex-col items-center gap-3">
+                                                <motion.div
+                                                    animate={{ rotate: 360 }}
+                                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                >
+                                                    <Sparkles className="h-8 w-8 customtext-primary" />
+                                                </motion.div>
+                                                <p className="text-sm font-semibold customtext-primary">Aplicando filtros...</p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                    
                                     {Array.isArray(products) && products.length > 0 ? (
                                         products.map((product, index) => (
                                             <motion.div
@@ -1565,7 +1617,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 />
                                             </motion.div>
                                         ))
-                                    ) : (
+                                    ) : hasSearched && !loading && !isFiltering && showNoResults ? (
                                         <motion.div
                                             className="w-full flex items-center justify-center py-16"
                                             initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -1609,7 +1661,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 </motion.div>
                                             </div>
                                         </motion.div>
-                                    )}
+                                    ) : null}
                                 </motion.div>
                             )}
                         </AnimatePresence>
