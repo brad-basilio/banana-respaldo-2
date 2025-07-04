@@ -359,6 +359,15 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             transformedFilters.push(ArrayJoin(brandConditions, 'or'));
         }
 
+        if (filters.tag_id && filters.tag_id.length > 0) {
+            const tagConditions = filters.tag_id.map((tagId) => [
+                "item_tag.tag_id",
+                "=",
+                tagId,
+            ]);
+            transformedFilters.push(ArrayJoin(tagConditions, 'or'));
+        }
+
         if (filters.price && filters.price.length > 0) {
             const priceConditions = filters.price.map((priceRange) => [
                 "and",
