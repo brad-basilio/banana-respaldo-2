@@ -143,7 +143,7 @@ const StorePickupSelector = ({
                                          store.type || 'Otro'}
                                     </span>
                                 </div>
-                                <p className="text-sm customtext-neutral-light mb-3 line-clamp-2">{store.address}</p>
+                                <p className="text-sm customtext-neutral-light mb-3 line-clamp-3">{store.address}</p>
                                 
                                 <div className="flex flex-col md:flex-row md:flex-wrap gap-2 md:gap-4 text-sm customtext-neutral-light mb-3">
                                     {store.phone && (
