@@ -36,6 +36,7 @@
         "fontfaceobserver": "^2.3.0",
         "formik": "^2.4.6",
         "framer-motion": "^11.5.6",
+        "html-to-image": "^1.11.13",
         "html2canvas": "^1.4.1",
         "jquery": "^3.7.1",
         "jsencrypt": "^3.3.2",

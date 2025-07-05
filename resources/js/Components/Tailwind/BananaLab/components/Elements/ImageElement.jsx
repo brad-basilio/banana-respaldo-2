@@ -22,7 +22,32 @@ export default function ImageElement({
 
     const elementRef = useRef(null);
     const imageRef = useRef(null);
-    
+
+    // --- FUNCIONES Y VARIABLES DE POSICIÓN Y TAMAÑO (deben ir antes de cualquier uso) ---
+    const toPixels = useCallback((val, total) => {
+        if (typeof val === 'number') {
+            return val <= 1 ? val * total : val;
+        }
+        return 0;
+    }, []);
+
+    const toRelative = useCallback((val, total) => {
+        if (typeof val === 'number' && total > 0) {
+            return val > 1 ? Math.min(val / total, 1) : val;
+        }
+        return 0;
+    }, []);
+
+    const currentPosition = {
+        x: Math.max(0, toPixels(element.position?.x || 0, workspaceSize.width)),
+        y: Math.max(0, toPixels(element.position?.y || 0, workspaceSize.height)),
+    };
+
+    const currentSize = {
+        width: Math.max(50, element.size?.width ? toPixels(element.size.width, workspaceSize.width) : 200),
+        height: Math.max(50, element.size?.height ? toPixels(element.size.height, workspaceSize.height) : 200),
+    };
+
     // Estados para manipulación robusta de imagen
     const [isManipulating, setIsManipulating] = useState(false);
     const [manipulationType, setManipulationType] = useState(null); // 'move', 'resize'
@@ -65,7 +90,7 @@ export default function ImageElement({
         }
     }, [element.filters]);
 
-    // Aplicar filtros CSS mejorados - optimizado para mejor renderizado
+    // Aplicar filtros CSS mejorados y forzar estilos de recorte en línea
     const filterStyle = {
         filter: `
             brightness(${(element.filters?.brightness || 100) / 100})
@@ -82,66 +107,23 @@ export default function ImageElement({
         }`.replace(/\s+/g, ' ').trim(),
         mixBlendMode: element.filters?.blendMode || "normal",
         opacity: (element.filters?.opacity || 100) / 100,
-        // Forzar repaint para asegurar que los filtros se apliquen
         willChange: 'filter, transform, opacity',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
+        // CRÍTICO: Forzar recorte y proporción en línea para máxima compatibilidad
+        objectFit: 'cover',
+        objectPosition: 'center',
+        width: '100%',
+        height: '100%'
     };
 
     const mask = imageMasks.find((m) => m.id === element.mask) || imageMasks[0];
 
-    // Funciones de conversión mejoradas
-    const toPixels = useCallback((val, total) => {
-        if (typeof val === 'number') {
-            return val <= 1 ? val * total : val;
-        }
-        return 0;
-    }, []);
-    
-    const toRelative = useCallback((val, total) => {
-        if (typeof val === 'number' && total > 0) {
-            return val > 1 ? Math.min(val / total, 1) : val;
-        }
-        return 0;
-    }, []);
-
-    // Calcular posición y tamaño actuales con validación
-    const currentPosition = {
-        x: Math.max(0, toPixels(element.position?.x || 0, workspaceSize.width)),
-        y: Math.max(0, toPixels(element.position?.y || 0, workspaceSize.height)),
-    };
-    
-    const currentSize = {
-        width: Math.max(50, element.size?.width ? toPixels(element.size.width, workspaceSize.width) : 200),
-        height: Math.max(50, element.size?.height ? toPixels(element.size.height, workspaceSize.height) : 200),
-    };
-
-    // Función para iniciar manipulación (mover)
-    const handleStartMove = useCallback((e) => {
-        if (!isSelected) return;
-        
-        e.stopPropagation();
-        e.preventDefault();
-        
-        setIsManipulating(true);
-        setManipulationType('move');
-        setStartState({
-            mouseX: e.clientX,
-            mouseY: e.clientY,
-            elementX: currentPosition.x,
-            elementY: currentPosition.y,
-            elementWidth: currentSize.width,
-            elementHeight: currentSize.height,
-        });
-    }, [isSelected, currentPosition, currentSize]);
-
     // Función para iniciar redimensionamiento
     const handleStartResize = useCallback((e, handle) => {
         if (!isSelected) return;
-        
         e.stopPropagation();
         e.preventDefault();
-        
         setIsManipulating(true);
         setManipulationType('resize');
         setResizeHandle(handle);
@@ -155,41 +137,51 @@ export default function ImageElement({
         });
     }, [isSelected, currentPosition, currentSize]);
 
-    // Función para manejar el movimiento durante la manipulación
+    // Función para iniciar movimiento
+    const handleStartMove = useCallback((e) => {
+        if (!isSelected || e.target.closest('.resize-handle')) return;
+        e.stopPropagation();
+        e.preventDefault();
+        setIsManipulating(true);
+        setManipulationType('move');
+        setStartState({
+            mouseX: e.clientX,
+            mouseY: e.clientY,
+            elementX: currentPosition.x,
+            elementY: currentPosition.y,
+            elementWidth: currentSize.width,
+            elementHeight: currentSize.height,
+        });
+    }, [isSelected, currentPosition, currentSize]);
+
+    // Función para manejar manipulación (mover/redimensionar)
     const handleManipulate = useCallback((e) => {
-        if (!isManipulating) return;
-        
+        if (!isManipulating || !startState) return;
+
         const deltaX = e.clientX - startState.mouseX;
         const deltaY = e.clientY - startState.mouseY;
-        
+
         if (manipulationType === 'move') {
-            // Movimiento con límites
-            const newX = Math.max(0, Math.min(
-                workspaceSize.width - currentSize.width,
-                startState.elementX + deltaX
-            ));
-            const newY = Math.max(0, Math.min(
-                workspaceSize.height - currentSize.height,
-                startState.elementY + deltaY
-            ));
+            // Movimiento
+            const newX = Math.max(0, Math.min(workspaceSize.width - currentSize.width, startState.elementX + deltaX));
+            const newY = Math.max(0, Math.min(workspaceSize.height - currentSize.height, startState.elementY + deltaY));
             
             const updates = {
-                position: {
-                    x: toRelative(newX, workspaceSize.width),
-                    y: toRelative(newY, workspaceSize.height),
+                position: { 
+                    x: toRelative(newX, workspaceSize.width), 
+                    y: toRelative(newY, workspaceSize.height) 
                 },
             };
             
             onUpdate(updates);
         } else if (manipulationType === 'resize') {
-            // Redimensionamiento con límites y proporciones
+            // Redimensionamiento
+            const minSize = 20;
+            const aspectRatio = startState.elementWidth / startState.elementHeight;
             let newWidth = startState.elementWidth;
             let newHeight = startState.elementHeight;
             let newX = startState.elementX;
             let newY = startState.elementY;
-            
-            const minSize = 50;
-            const aspectRatio = startState.elementWidth / startState.elementHeight;
             
             switch (resizeHandle) {
                 case "nw": // Esquina superior izquierda
@@ -449,6 +441,7 @@ export default function ImageElement({
     };    return (
         <div
             ref={ref}
+            data-element-type="image"
             className={`absolute ${mask.class} ${
                 isSelected ? "ring-2 ring-blue-500 ring-opacity-75" : ""
             } ${isDragging ? "opacity-50" : "opacity-100"}`}            style={{
@@ -472,12 +465,12 @@ export default function ImageElement({
             onDoubleClick={handleDoubleClick}
         >
             {/* Contenedor de la imagen */}
-            <div className="w-full h-full overflow-hidden relative bg-transparent">
+            <div className="w-full h-full overflow-hidden relative bg-transparent image-element">
                 <img
                     ref={imageRef}
                     src={element.content}
                     alt="Imagen editada"
-                    className="w-full h-full object-cover select-none"
+                    className="w-full h-full object-cover select-none workspace-image"
                     style={filterStyle}
                     draggable={false}
                     onLoad={() => {

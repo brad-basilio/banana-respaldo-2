@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import html2canvas from 'html2canvas'; // Para captura de alta calidad
 import LayerPanel from "./components/Elements/LayerPanel";
 import {
     Undo2,
@@ -20,7 +21,7 @@ import {
     CheckCircleIcon,
 } from "lucide-react";
 import { saveAs } from "file-saver";
-import html2canvas from "html2canvas";
+
 import jsPDF from "jspdf";
 import { toast, Toaster } from "sonner";
 import { Local } from "sode-extend-react";
@@ -357,103 +358,444 @@ export default function EditorLibro() {
     // Estado para las dimensiones calculadas
     const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
     
-    // Función para capturar el workspace actual usando dom-to-image
-    const captureCurrentWorkspace = useCallback(async () => {
+    // Función para capturar el workspace actual con alta calidad y sin bordes
+    const captureCurrentWorkspace = useCallback(async (options = { type: 'thumbnail' }) => {
         if (!pages[currentPage]) return null;
         
         try {
-            const workspaceElement = document.querySelector(`#page-${pages[currentPage].id}`);
+            // CORRECCIÓN THUMBNAIL: Buscar específicamente el elemento de la página que tiene las dimensiones correctas de la BD
+            let workspaceElement = document.querySelector(`#page-${pages[currentPage].id}`);
+            
             if (!workspaceElement) {
-                console.warn('Workspace element not found for page:', pages[currentPage].id);
+                console.warn('❌ THUMBNAIL: No se encontró el elemento de página específico');
                 return null;
             }
 
-            console.log('📸 [DEBUG] Elemento workspace encontrado:', workspaceElement);
-            console.log('📸 [DEBUG] Dimensiones del elemento:', {
-                width: workspaceElement.offsetWidth,
-                height: workspaceElement.offsetHeight,
-                background: getComputedStyle(workspaceElement).backgroundColor
+            console.log('📸 [THUMBNAIL-FIX] Elemento workspace encontrado:', workspaceElement);
+            console.log('📸 [THUMBNAIL-FIX] Dimensiones del elemento:', {
+                offsetWidth: workspaceElement.offsetWidth,
+                offsetHeight: workspaceElement.offsetHeight,
+                style_width: workspaceElement.style.width,
+                style_height: workspaceElement.style.height,
+                background: getComputedStyle(workspaceElement).backgroundColor,
+                backgroundImage: getComputedStyle(workspaceElement).backgroundImage
+            });
+            
+            // CORRECCIÓN THUMBNAIL: Usar las dimensiones exactas del workspace que vienen de la BD
+            console.log('📐 [THUMBNAIL-FIX] Dimensiones del workspace desde BD:', workspaceDimensions);
+            
+            // Debug adicional para la página actual
+            const currentPageData = pages[currentPage];
+            console.log('📸 [THUMBNAIL-FIX] Datos de la página actual:', {
+                id: currentPageData?.id,
+                type: currentPageData?.type,
+                backgroundImage: currentPageData?.backgroundImage,
+                backgroundColor: currentPageData?.backgroundColor
             });
 
-            // Opciones simplificadas y optimizadas para dom-to-image
-            const options = {
-                quality: 10,
-                bgcolor: pages[currentPage]?.backgroundColor || '#ffffff',
-                width: workspaceElement.offsetWidth,
-                height: workspaceElement.offsetHeight,
-                style: {
-                    transform: 'scale(1)',
-                    transformOrigin: 'top left'
-                },
-                // Configuración básica para evitar errores de CORS
+            // Configuración según el tipo de captura (thumbnail vs PDF)
+            const isPDF = options.type === 'pdf';
+            const scaleFactor = isPDF ? 3 : 1; // 3x para PDF de alta calidad
+            const quality = isPDF ? 1 : 0.9;
+
+            // CORRECCIÓN THUMBNAIL: Obtener las dimensiones reales del workspace de la BD
+            const workspaceStyle = getComputedStyle(workspaceElement);
+            
+            // CORRECCIÓN THUMBNAIL: Determinar el color de fondo correcto del workspace/página
+            let workspaceBackground = currentPageData?.backgroundColor || '#ffffff'; // Default a blanco
+            
+            // Si el elemento de página tiene un background específico, usarlo
+            if (workspaceStyle.backgroundColor && workspaceStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                workspaceBackground = workspaceStyle.backgroundColor;
+            }
+            
+            console.log('🎨 [THUMBNAIL-FIX] Background detectado:', workspaceBackground);
+
+            // CORRECCIÓN THUMBNAIL: Opciones para capturar workspace con dimensiones exactas de la BD
+            const captureOptions = {
+                scale: scaleFactor,
                 useCORS: true,
                 allowTaint: false,
-                skipFonts: true,
-                filter: (node) => {
-                    // Filtrar elementos de UI que no son parte del diseño
-                    if (node.classList) {
-                        const excludedClasses = [
-                            'toolbar', 'ui-element', 'floating', 
-                            'overlay', 'modal', 'popover', 
-                            'text-toolbar', 'element-selector', 
-                            'element-controls', 'resize-handle',
-                            'sidebar', 'panel', 'btn', 'button',
-                            'control', 'menu', 'dropdown',
-                            'tooltip', 'pointer-events-none'
-                        ];
-                        
-                        if (excludedClasses.some(cls => node.classList.contains(cls))) {
-                            return false;
+                backgroundColor: workspaceBackground, // Usar el background correcto del workspace
+                // CORRECCIÓN THUMBNAIL: Usar las dimensiones exactas del workspace que vienen de la BD
+                width: workspaceDimensions.width,
+                height: workspaceDimensions.height,
+                // CORRECCIÓN THUMBNAIL: Asegurar que capture desde la posición correcta
+                x: 0,
+                y: 0,
+                scrollX: 0,
+                scrollY: 0,
+                foreignObjectRendering: false,
+                removeContainer: false, // CAMBIO: No remover contenedor para mantener estructura
+                logging: false,
+                imageTimeout: 15000,
+                onclone: async (clonedDoc) => {
+                    console.log('🔍 [THUMBNAIL-FIX] Iniciando proceso de clonado para elemento de página específico...');
+                    
+                    // CORRECCIÓN THUMBNAIL: Limpiar elementos de UI que no pertenecen al workspace
+                    const excludedSelectors = [
+                        '.toolbar', 
+                        '.ui-element', 
+                        '.floating', 
+                        '.overlay', 
+                        '.modal', 
+                        '.popover', 
+                        '.text-toolbar', 
+                        '.element-selector', 
+                        '.element-controls', 
+                        '.resize-handle',
+                        '.sidebar', 
+                        '.panel', 
+                        '.btn', 
+                        '.button',
+                        '.control', 
+                        '.menu', 
+                        '.dropdown',
+                        '.tooltip', 
+                        '.pointer-events-none',
+                        '[data-exclude-thumbnail="true"]'
+                    ];
+                    
+                    excludedSelectors.forEach(selector => {
+                        try {
+                            const elements = clonedDoc.querySelectorAll(selector);
+                            elements.forEach(el => el.remove());
+                        } catch (e) {
+                            console.warn('Error removing selector:', selector, e);
                         }
+                    });
+
+                    // CORRECCIÓN THUMBNAIL: Configurar específicamente el elemento de página clonado
+                    try {
+                        const clonedPageElement = clonedDoc.querySelector(`#page-${pages[currentPage].id}`);
+                        
+                        console.log('🖼️ [THUMBNAIL-FIX] Elemento de página clonado encontrado:', clonedPageElement);
+                        
+                        if (clonedPageElement) {
+                            // CORRECCIÓN THUMBNAIL: Asegurar dimensiones exactas del workspace de la BD
+                            clonedPageElement.style.width = workspaceDimensions.width + 'px';
+                            clonedPageElement.style.height = workspaceDimensions.height + 'px';
+                            clonedPageElement.style.position = 'relative';
+                            clonedPageElement.style.overflow = 'hidden';
+                            
+                            // Aplicar backgrounds de la página si existen
+                            if (currentPageData?.backgroundImage) {
+                                console.log('🖼️ [THUMBNAIL-FIX] Aplicando backgroundImage de página:', currentPageData.backgroundImage);
+                                clonedPageElement.style.backgroundImage = `url(${currentPageData.backgroundImage})`;
+                                clonedPageElement.style.backgroundSize = 'cover';
+                                clonedPageElement.style.backgroundPosition = 'center';
+                                clonedPageElement.style.backgroundRepeat = 'no-repeat';
+                            }
+                            
+                            if (currentPageData?.backgroundColor) {
+                                console.log('🎨 [THUMBNAIL-FIX] Aplicando backgroundColor de página:', currentPageData.backgroundColor);
+                                clonedPageElement.style.backgroundColor = currentPageData.backgroundColor;
+                            }
+                            
+                            console.log('🎨 [THUMBNAIL-FIX] Dimensiones del elemento de página aplicadas:', {
+                                width: clonedPageElement.style.width,
+                                height: clonedPageElement.style.height,
+                                backgroundColor: clonedPageElement.style.backgroundColor,
+                                backgroundImage: clonedPageElement.style.backgroundImage
+                            });
+                        }
+                    } catch (e) {
+                        console.error('❌ [THUMBNAIL-FIX] Error configurando elemento de página:', e);
+                    }
+
+                    // 🚀 SOLUCIÓN AVANZADA SENIOR: PRE-PROCESAMIENTO DE IMÁGENES PARA html2canvas
+                    try {
+                        console.log('🔧 [ADVANCED-THUMBNAIL] Iniciando pre-procesamiento avanzado de imágenes...');
+                        
+                        // 1. CAPTURAR DATOS ORIGINALES DE IMÁGENES ANTES DEL CLONADO
+                        const originalImageData = new Map();
+                        const originalImages = workspaceElement.querySelectorAll('[data-element-type="image"] img, .workspace-image, img');
+                        
+                        originalImages.forEach((img, index) => {
+                            if (img.complete && img.naturalWidth > 0) {
+                                const container = img.closest('[data-element-type="image"]') || img.parentElement;
+                                const containerRect = container.getBoundingClientRect();
+                                const imgRect = img.getBoundingClientRect();
+                                
+                                originalImageData.set(img.src, {
+                                    src: img.src,
+                                    naturalWidth: img.naturalWidth,
+                                    naturalHeight: img.naturalHeight,
+                                    containerWidth: containerRect.width,
+                                    containerHeight: containerRect.height,
+                                    objectFit: getComputedStyle(img).objectFit || 'cover',
+                                    objectPosition: getComputedStyle(img).objectPosition || 'center',
+                                    crossOrigin: img.crossOrigin
+                                });
+                                
+                                console.log(`📊 [ADVANCED-THUMBNAIL] Imagen ${index} datos capturados:`, originalImageData.get(img.src));
+                            }
+                        });
+
+                        // 2. FUNCIÓN AVANZADA PARA SIMULAR object-fit: cover MANUALMENTE
+                        const simulateObjectFitCover = async (img, containerWidth, containerHeight, naturalWidth, naturalHeight) => {
+                            return new Promise((resolve) => {
+                                try {
+                                    // Calcular las dimensiones para object-fit: cover
+                                    const containerAspect = containerWidth / containerHeight;
+                                    const imageAspect = naturalWidth / naturalHeight;
+                                    
+                                    let cropWidth, cropHeight, cropX, cropY;
+                                    let displayWidth, displayHeight;
+                                    
+                                    if (imageAspect > containerAspect) {
+                                        // Imagen más ancha que el contenedor - recortar por los lados
+                                        displayHeight = containerHeight;
+                                        displayWidth = containerHeight * imageAspect;
+                                        cropHeight = naturalHeight;
+                                        cropWidth = naturalHeight * containerAspect;
+                                        cropX = (naturalWidth - cropWidth) / 2;
+                                        cropY = 0;
+                                    } else {
+                                        // Imagen más alta que el contenedor - recortar por arriba/abajo
+                                        displayWidth = containerWidth;
+                                        displayHeight = containerWidth / imageAspect;
+                                        cropWidth = naturalWidth;
+                                        cropHeight = naturalWidth / containerAspect;
+                                        cropX = 0;
+                                        cropY = (naturalHeight - cropHeight) / 2;
+                                    }
+                                    
+                                    // Crear canvas temporal para el recorte
+                                    const tempCanvas = clonedDoc.createElement('canvas');
+                                    tempCanvas.width = containerWidth;
+                                    tempCanvas.height = containerHeight;
+                                    const tempCtx = tempCanvas.getContext('2d');
+                                    
+                                    // Crear nueva imagen para el canvas
+                                    const tempImg = new Image();
+                                    tempImg.crossOrigin = 'anonymous';
+                                    
+                                    tempImg.onload = () => {
+                                        try {
+                                            // Dibujar la imagen recortada simulando object-fit: cover
+                                            tempCtx.drawImage(
+                                                tempImg,
+                                                cropX, cropY, cropWidth, cropHeight,  // Source rectangle (crop)
+                                                0, 0, containerWidth, containerHeight  // Destination rectangle
+                                            );
+                                            
+                                            // Convertir a dataURL y reemplazar la imagen original
+                                            const croppedDataUrl = tempCanvas.toDataURL('image/png', 0.9);
+                                            
+                                            // Aplicar la imagen pre-procesada
+                                            img.src = croppedDataUrl;
+                                            img.style.objectFit = 'fill'; // Cambiar a fill ya que ya está recortada
+                                            img.style.objectPosition = 'center';
+                                            img.style.width = '100%';
+                                            img.style.height = '100%';
+                                            
+                                            console.log(`✅ [ADVANCED-THUMBNAIL] Imagen pre-procesada con object-fit cover simulado`);
+                                            resolve();
+                                        } catch (e) {
+                                            console.warn('⚠️ [ADVANCED-THUMBNAIL] Error en canvas processing:', e);
+                                            resolve(); // Continuar aunque falle
+                                        }
+                                    };
+                                    
+                                    tempImg.onerror = () => {
+                                        console.warn('⚠️ [ADVANCED-THUMBNAIL] Error cargando imagen temporal');
+                                        resolve(); // Continuar aunque falle
+                                    };
+                                    
+                                    tempImg.src = img.src;
+                                    
+                                } catch (e) {
+                                    console.warn('⚠️ [ADVANCED-THUMBNAIL] Error en simulateObjectFitCover:', e);
+                                    resolve();
+                                }
+                            });
+                        };
+                        
+                        // 3. PROCESAR TODAS LAS IMÁGENES EN EL DOCUMENTO CLONADO
+                        const clonedImages = clonedDoc.querySelectorAll('[data-element-type="image"] img, .workspace-image, img');
+                        const imageProcessingPromises = [];
+                        
+                        clonedImages.forEach((img, index) => {
+                            if (img.src && originalImageData.has(img.src)) {
+                                const data = originalImageData.get(img.src);
+                                const container = img.closest('[data-element-type="image"]') || img.parentElement;
+                                
+                                // Asegurar que el contenedor tenga las dimensiones correctas
+                                if (container) {
+                                    container.style.overflow = 'hidden';
+                                    container.style.position = 'relative';
+                                }
+                                
+                                // Solo procesar si la imagen necesita object-fit: cover
+                                if (data.objectFit === 'cover' || img.classList.contains('object-cover') || img.classList.contains('workspace-image')) {
+                                    console.log(`🔄 [ADVANCED-THUMBNAIL] Procesando imagen ${index} con pre-procesamiento...`);
+                                    
+                                    const promise = simulateObjectFitCover(
+                                        img,
+                                        data.containerWidth,
+                                        data.containerHeight,
+                                        data.naturalWidth,
+                                        data.naturalHeight
+                                    );
+                                    
+                                    imageProcessingPromises.push(promise);
+                                } else {
+                                    // Para imágenes que no necesitan cover, mantener comportamiento normal
+                                    img.style.width = '100%';
+                                    img.style.height = '100%';
+                                    img.style.objectFit = 'fill';
+                                }
+                            }
+                        });
+                        
+                        // 4. ESPERAR A QUE TODAS LAS IMÁGENES SE PROCESEN
+                        if (imageProcessingPromises.length > 0) {
+                            console.log(`⏳ [ADVANCED-THUMBNAIL] Esperando procesamiento de ${imageProcessingPromises.length} imágenes...`);
+                            await Promise.all(imageProcessingPromises);
+                            console.log(`✅ [ADVANCED-THUMBNAIL] Todas las imágenes pre-procesadas exitosamente`);
+                        }
+
+                        
+                        // 5. CSS SIMPLIFICADO PARA IMÁGENES PRE-PROCESADAS
+                        const style = clonedDoc.createElement('style');
+                        style.textContent = `
+                            /* CORRECCIÓN THUMBNAIL: Estructura del elemento de página */
+                            #page-${pages[currentPage].id} {
+                                width: ${workspaceDimensions.width}px !important;
+                                height: ${workspaceDimensions.height}px !important;
+                                position: relative !important;
+                                overflow: hidden !important;
+                                box-sizing: border-box !important;
+                            }
+                            
+                            /* Imágenes ya pre-procesadas - mantener dimensiones */
+                            img {
+                                width: 100% !important;
+                                height: 100% !important;
+                                object-fit: fill !important; /* fill porque ya están recortadas */
+                                object-position: center !important;
+                                display: block !important;
+                            }
+                            
+                            /* Contenedores de imagen */
+                            [data-element-type="image"] {
+                                overflow: hidden !important;
+                                position: relative !important;
+                            }
+                            
+                            [data-element-type="image"] > div {
+                                width: 100% !important;
+                                height: 100% !important;
+                                overflow: hidden !important;
+                            }
+                            
+                            /* Backgrounds de página */
+                            #page-${pages[currentPage].id} {
+                                background-size: cover !important;
+                                background-position: center !important;
+                                background-repeat: no-repeat !important;
+                            }
+                            
+                            /* Resetear estilos que puedan interferir */
+                            img {
+                                max-width: none !important;
+                                max-height: none !important;
+                                border: none !important;
+                                outline: none !important;
+                            }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                        console.log('✅ [ADVANCED-THUMBNAIL] CSS para imágenes pre-procesadas aplicado');
+                        
+                        console.log('🎯 [ADVANCED-THUMBNAIL] Pre-procesamiento avanzado completado - listo para html2canvas');
+                        
+                    } catch (e) {
+                        console.error('❌ [ADVANCED-THUMBNAIL] Error en pre-procesamiento avanzado:', e);
+                        
+                        // Fallback: CSS básico si falla el pre-procesamiento
+                        const fallbackStyle = clonedDoc.createElement('style');
+                        fallbackStyle.textContent = `
+                            img { object-fit: cover !important; object-position: center !important; }
+                            [data-element-type="image"] { overflow: hidden !important; }
+                        `;
+                        clonedDoc.head.appendChild(fallbackStyle);
                     }
                     
-                    // Excluir inputs editables y elementos problemáticos
-                    if (node.tagName === 'INPUT' || 
-                        node.tagName === 'TEXTAREA' ||
-                        node.tagName === 'SCRIPT' ||
-                        node.tagName === 'STYLE' ||
-                        node.contentEditable === 'true') {
-                        return false;
-                    }
-                    
-                    // Excluir elementos con data-exclude-thumbnail
-                    if (node.dataset && node.dataset.excludeThumbnail === 'true') {
-                        return false;
-                    }
-                    
-                    return true;
+                    console.log('✅ [THUMBNAIL-FIX] Proceso de clonado completado - elemento de página con dimensiones exactas');
                 }
             };
 
-            console.log('📸 [DEBUG] Iniciando captura con opciones:', options);
-            const dataUrl = await domtoimage.toPng(workspaceElement, options);
-            console.log('✅ [DEBUG] Thumbnail capturado exitosamente para página:', pages[currentPage].id);
-            return dataUrl;
-        } catch (error) {
-            console.error('❌ [DEBUG] Error capturando workspace:', error);
+            console.log('📸 [THUMBNAIL-FIX] Iniciando captura de elemento de página con dimensiones exactas de BD:', captureOptions);
             
-            // Fallback: crear thumbnail básico con canvas
+            // CORRECCIÓN THUMBNAIL: Usar html2canvas para capturar elemento de página con dimensiones exactas
+            const canvas = await html2canvas(workspaceElement, captureOptions);
+            
+            if (!canvas) {
+                throw new Error('html2canvas no devolvió un canvas válido para el elemento de página');
+            }
+            
+            // CORRECCIÓN THUMBNAIL: Verificar que el canvas tenga las dimensiones correctas del workspace
+            if (canvas.width === 0 || canvas.height === 0) {
+                throw new Error('Canvas del elemento de página tiene dimensiones inválidas');
+            }
+            
+            // Convertir a dataURL con la calidad apropiada
+            const dataUrl = canvas.toDataURL('image/png', quality);
+            
+            if (!dataUrl || dataUrl === 'data:,') {
+                throw new Error('No se pudo generar dataURL del elemento de página');
+            }
+            
+            console.log('✅ [THUMBNAIL-FIX] Captura de elemento de página exitosa para página:', pages[currentPage].id, 'Tipo:', options.type);
+            console.log('📊 [THUMBNAIL-FIX] Canvas del elemento de página generado:', {
+                width: canvas.width,
+                height: canvas.height,
+                expectedWidth: workspaceDimensions.width * scaleFactor,
+                expectedHeight: workspaceDimensions.height * scaleFactor,
+                dataUrlLength: dataUrl.length,
+                workspaceBackground: workspaceBackground
+            });
+            
+            return isPDF ? canvas : dataUrl; // Retornar canvas para PDF, dataURL para thumbnail
+            
+        } catch (error) {
+            console.error('❌ [THUMBNAIL-FIX] Error capturando elemento de página:', error);
+            
+            // Fallback: crear thumbnail con las dimensiones exactas del workspace de la BD
             try {
-                console.log('🔄 [DEBUG] Intentando fallback con canvas...');
+                console.log('🔄 [THUMBNAIL-FIX] Intentando fallback con canvas de elemento de página...');
                 const canvas = document.createElement('canvas');
-                canvas.width = 300;
-                canvas.height = 200;
+                const scaleFactor = options.type === 'pdf' ? 3 : 1;
+                canvas.width = workspaceDimensions.width * scaleFactor;
+                canvas.height = workspaceDimensions.height * scaleFactor;
                 const ctx = canvas.getContext('2d');
                 
-                // Aplicar background
-                const bgColor = pages[currentPage]?.backgroundColor || '#ffffff';
+                // CORRECCIÓN THUMBNAIL: Aplicar background del elemento de página en fallback
+                const bgColor = workspaceBackground || currentPageData?.backgroundColor || '#ffffff';
                 ctx.fillStyle = bgColor;
-                ctx.fillRect(0, 0, 300, 200);
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
                 // Texto indicativo
-                ctx.fillStyle = '#666666';
-                ctx.font = '14px Arial';
+                ctx.fillStyle = bgColor === '#ffffff' || bgColor.includes('white') ? '#374151' : '#666666';
+                ctx.font = `${14 * scaleFactor}px Arial`;
                 ctx.textAlign = 'center';
-                ctx.fillText('Página ' + (currentPage + 1), 150, 100);
+                ctx.fillText('Página ' + (currentPage + 1), canvas.width / 2, canvas.height / 2);
                 
-                const fallbackDataUrl = canvas.toDataURL('image/png', 0.8);
-                console.log('✅ [DEBUG] Fallback thumbnail creado');
-                return fallbackDataUrl;
+                console.log('🔄 [THUMBNAIL-FIX] Fallback creado con dimensiones exactas:', {
+                    width: canvas.width,
+                    height: canvas.height,
+                    expectedDimensions: workspaceDimensions,
+                    background: bgColor
+                });
+                
+                if (options.type === 'pdf') {
+                    return canvas;
+                } else {
+                    const fallbackDataUrl = canvas.toDataURL('image/png', 0.8);
+                    console.log('✅ [DEBUG] Fallback thumbnail creado');
+                    return fallbackDataUrl;
+                }
             } catch (fallbackError) {
                 console.error('❌ [DEBUG] Error en fallback:', fallbackError);
                 return null;
@@ -461,11 +803,11 @@ export default function EditorLibro() {
         }
     }, [currentPage, pages]);
 
-    // Generar miniatura para la página actual
+    // Generar miniatura para la página actual (optimizada)
     const generateCurrentThumbnail = useCallback(async () => {
         if (!pages[currentPage]) return;
         
-        const thumbnail = await captureCurrentWorkspace();
+        const thumbnail = await captureCurrentWorkspace({ type: 'thumbnail' });
         if (thumbnail) {
             setPageThumbnails(prev => ({
                 ...prev,
@@ -495,6 +837,241 @@ export default function EditorLibro() {
             }, 300); // Longer delay to ensure DOM stability
         }
     }, [generateCurrentThumbnail, pages, currentPage, pageThumbnails]);
+
+    // Función para generar thumbnail de alta calidad para una página específica
+    const generateHighQualityThumbnail = useCallback(async (pageIndex = currentPage, size = { width: 400, height: 300 }) => {
+        if (!pages[pageIndex]) return null;
+        
+        try {
+            console.log(`🔍 Generando thumbnail de alta calidad para página ${pageIndex + 1}`);
+            
+            // Cambiar temporalmente a la página requerida
+            const originalPage = currentPage;
+            if (pageIndex !== currentPage) {
+                setCurrentPage(pageIndex);
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            const workspaceElement = document.querySelector(`#page-${pages[pageIndex].id}`);
+            if (!workspaceElement) {
+                console.warn('Workspace element not found for page:', pages[pageIndex].id);
+                return null;
+            }
+
+            // Opciones para thumbnail de alta calidad
+            const options = {
+                scale: 2, // 2x para mayor resolución
+                useCORS: true,
+                allowTaint: false,
+                backgroundColor: pages[pageIndex]?.backgroundColor || '#ffffff',
+                width: workspaceElement.offsetWidth,
+                height: workspaceElement.offsetHeight,
+                removeContainer: true,
+                logging: false,
+                onclone: (clonedDoc) => {
+                    // Limpiar elementos de UI
+                    const excludedSelectors = [
+                        '.toolbar', '.ui-element', '.floating', 
+                        '.overlay', '.modal', '.popover', 
+                        '.text-toolbar', '.element-selector', 
+                        '.element-controls', '.resize-handle',
+                        '.sidebar', '.panel', '.btn', '.button',
+                        '.control', '.menu', '.dropdown',
+                        '.tooltip', '.pointer-events-none',
+                        '[data-exclude-thumbnail="true"]'
+                    ];
+                    
+                    excludedSelectors.forEach(selector => {
+                        const elements = clonedDoc.querySelectorAll(selector);
+                        elements.forEach(el => el.remove());
+                    });
+
+                    // CRÍTICO: Encontrar el elemento workspace en el clon y asegurar background correcto
+                    const clonedWorkspace = clonedDoc.querySelector(`#page-${pages[pageIndex].id}`);
+                    if (clonedWorkspace) {
+                        const pageData = pages[pageIndex];
+                        
+                        // Forzar background-image si existe
+                        if (pageData?.backgroundImage) {
+                            console.log('🖼️ [HIGH-QUALITY] Aplicando backgroundImage al clon:', pageData.backgroundImage);
+                            clonedWorkspace.style.backgroundImage = `url(${pageData.backgroundImage})`;
+                            clonedWorkspace.style.backgroundSize = 'cover';
+                            clonedWorkspace.style.backgroundPosition = 'center';
+                            clonedWorkspace.style.backgroundRepeat = 'no-repeat';
+                        }
+                        
+                        // Aplicar backgroundColor si existe
+                        if (pageData?.backgroundColor) {
+                            console.log('🎨 [HIGH-QUALITY] Aplicando backgroundColor al clon:', pageData.backgroundColor);
+                            clonedWorkspace.style.backgroundColor = pageData.backgroundColor;
+                        }
+                    }
+
+                    // Mantener object-fit: cover para imágenes con preservación de estilos originales
+                    try {
+                        // CRÍTICO: Capturar y preservar los estilos de las imágenes del workspace original
+                        const originalImages = workspaceElement.querySelectorAll('img');
+                        const imageStyles = new Map();
+                        
+                        originalImages.forEach((img, index) => {
+                            const computedStyle = getComputedStyle(img);
+                            imageStyles.set(index, {
+                                objectFit: computedStyle.objectFit,
+                                objectPosition: computedStyle.objectPosition,
+                                width: computedStyle.width,
+                                height: computedStyle.height,
+                                borderRadius: computedStyle.borderRadius,
+                                transform: computedStyle.transform
+                            });
+                        });
+
+                        // Aplicar los estilos preservados a las imágenes clonadas
+                        const clonedImages = clonedDoc.querySelectorAll('img');
+                        clonedImages.forEach((img, index) => {
+                            const styles = imageStyles.get(index);
+                            if (styles) {
+                                img.style.objectFit = styles.objectFit || 'cover';
+                                img.style.objectPosition = styles.objectPosition || 'center';
+                                img.style.width = styles.width;
+                                img.style.height = styles.height;
+                                img.style.borderRadius = styles.borderRadius;
+                                img.style.transform = styles.transform;
+                                
+                                console.log(`🖼️ [HIGH-QUALITY] Imagen ${index} - Estilos aplicados:`, {
+                                    objectFit: img.style.objectFit,
+                                    objectPosition: img.style.objectPosition,
+                                    width: img.style.width,
+                                    height: img.style.height
+                                });
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('Error preservando estilos de imágenes:', e);
+                        
+                        // Fallback básico
+                        const images = clonedDoc.querySelectorAll('img');
+                        images.forEach(img => {
+                            img.style.objectFit = 'cover';
+                            img.style.objectPosition = 'center';
+                            if (!img.style.width) img.style.width = '100%';
+                            if (!img.style.height) img.style.height = '100%';
+                        });
+                    }
+
+                    // CRÍTICO: Preservar las fuentes originales del workspace de manera simplificada
+                    // Intentar preservar fuentes de los elementos clonados directamente
+                    const textElements = clonedDoc.querySelectorAll('[class*="text-"], p, span, div, h1, h2, h3, h4, h5, h6, [contenteditable]');
+                    textElements.forEach(el => {
+                        // Preservar las clases originales que pueden contener información de fuentes
+                        const originalClasses = el.className;
+                        if (originalClasses) {
+                            el.className = originalClasses;
+                        }
+                        
+                        // Mantener las fuentes inline si existen
+                        const computedStyle = getComputedStyle ? getComputedStyle(el) : null;
+                        if (computedStyle) {
+                            if (computedStyle.fontFamily && computedStyle.fontFamily !== 'Arial') {
+                                el.style.fontFamily = computedStyle.fontFamily;
+                            }
+                            if (computedStyle.fontSize) {
+                                el.style.fontSize = computedStyle.fontSize;
+                            }
+                            if (computedStyle.fontWeight) {
+                                el.style.fontWeight = computedStyle.fontWeight;
+                            }
+                            if (computedStyle.fontStyle) {
+                                el.style.fontStyle = computedStyle.fontStyle;
+                            }
+                        }
+                    });
+
+                    // CSS adicional para asegurar backgrounds y fuentes
+                    const style = clonedDoc.createElement('style');
+                    style.textContent = `
+                        /* Preservar fuentes originales y NO forzar Arial */
+                        * { 
+                            -webkit-font-smoothing: antialiased !important;
+                            -moz-osx-font-smoothing: grayscale !important;
+                        }
+                        
+                        /* CRÍTICO: Asegurar que las imágenes mantengan cover */
+                        img {
+                            object-fit: cover !important;
+                            object-position: center !important;
+                        }
+                        
+                        /* CRÍTICO: Asegurar que los backgrounds de página se mantengan en cover */
+                        [id^="page-"] {
+                            background-size: cover !important;
+                            background-position: center !important;
+                            background-repeat: no-repeat !important;
+                        }
+                        
+                        /* Asegurar que los elementos de texto mantengan sus fuentes */
+                        [class*="text-"], p, span, div, h1, h2, h3, h4, h5, h6 {
+                            font-family: inherit !important;
+                        }
+                    `;
+                    clonedDoc.head.appendChild(style);
+                }
+            };
+
+            // Capturar con html2canvas
+            const canvas = await html2canvas(workspaceElement, options);
+            
+            // Redimensionar si es necesario
+            if (size.width !== canvas.width || size.height !== canvas.height) {
+                const resizeCanvas = document.createElement('canvas');
+                resizeCanvas.width = size.width;
+                resizeCanvas.height = size.height;
+                const ctx = resizeCanvas.getContext('2d');
+                
+                // Calcular dimensiones manteniendo aspecto
+                const aspect = canvas.width / canvas.height;
+                const targetAspect = size.width / size.height;
+                
+                let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+                
+                if (aspect > targetAspect) {
+                    drawWidth = size.width;
+                    drawHeight = size.width / aspect;
+                    offsetY = (size.height - drawHeight) / 2;
+                } else {
+                    drawHeight = size.height;
+                    drawWidth = size.height * aspect;
+                    offsetX = (size.width - drawWidth) / 2;
+                }
+                
+                // Fondo
+                ctx.fillStyle = pages[pageIndex]?.backgroundColor || '#ffffff';
+                ctx.fillRect(0, 0, size.width, size.height);
+                
+                // Dibujar imagen redimensionada
+                ctx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
+                
+                const dataUrl = resizeCanvas.toDataURL('image/png', 0.9);
+                
+                // Restaurar página original
+                if (pageIndex !== originalPage) {
+                    setCurrentPage(originalPage);
+                }
+                
+                return dataUrl;
+            }
+            
+            // Restaurar página original
+            if (pageIndex !== originalPage) {
+                setCurrentPage(originalPage);
+            }
+            
+            return canvas.toDataURL('image/png', 0.9);
+            
+        } catch (error) {
+            console.error('❌ Error generando thumbnail de alta calidad:', error);
+            return null;
+        }
+    }, [pages, currentPage, setCurrentPage]);
 
     // Actualizar dimensiones cuando cambie el preset o el tamaño del workspace
     useEffect(() => {
@@ -1025,13 +1602,45 @@ export default function EditorLibro() {
         ];
         setHistory(newHistory);
         setHistoryIndex(newHistory.length - 1);
-        // Guardar en localStorage
-        const storageKey = getStorageKey();
-        localStorage.setItem(storageKey, JSON.stringify({
-            pages: newPages,
-            currentPage,
-            savedAt: Date.now(),
-        }));
+        // Guardar en localStorage con manejo de errores y optimización
+        try {
+            const storageKey = getStorageKey();
+            const dataToSave = {
+                pages: newPages,
+                currentPage,
+                savedAt: Date.now(),
+                // NO guardar thumbnails en localStorage para evitar QuotaExceededError
+            };
+            
+            const dataString = JSON.stringify(dataToSave);
+            const dataSizeKB = Math.round(dataString.length / 1024);
+            
+            // Solo guardar si es menor a 2MB para evitar errores
+            if (dataSizeKB < 2048) {
+                localStorage.setItem(storageKey, dataString);
+                console.log(`💾 Progreso guardado en localStorage (${dataSizeKB} KB)`);
+            } else {
+                console.warn(`⚠️ Datos demasiado grandes para localStorage (${dataSizeKB} KB), saltando guardado local`);
+                // Limpiar localStorage si está muy lleno
+                try {
+                    localStorage.removeItem(storageKey);
+                } catch (cleanError) {
+                    console.error('Error limpiando localStorage:', cleanError);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error guardando en localStorage:', error);
+            // Si hay error de cuota, intentar limpiar storage
+            if (error.name === 'QuotaExceededError') {
+                try {
+                    const storageKey = getStorageKey();
+                    localStorage.removeItem(storageKey);
+                    console.log('🧹 localStorage limpiado debido a QuotaExceededError');
+                } catch (cleanError) {
+                    console.error('Error limpiando localStorage:', cleanError);
+                }
+            }
+        }
 
         // Invalidar el thumbnail de la página actual siempre que se modifique
         if (newPages[currentPage]) {
@@ -1048,21 +1657,81 @@ export default function EditorLibro() {
         }
     }, [history, historyIndex, getStorageKey, currentPage]);
 
-    // Guardar currentPage en localStorage cuando cambie
+    // Guardar currentPage en localStorage cuando cambie (con manejo de errores)
     useEffect(() => {
-        const storageKey = getStorageKey();
-        localStorage.setItem(storageKey, JSON.stringify({
-            pages,
-            currentPage,
-            savedAt: Date.now(),
-        }));
-    }, [currentPage]);
+        try {
+            const storageKey = getStorageKey();
+            const dataToSave = {
+                pages,
+                currentPage,
+                savedAt: Date.now(),
+            };
+            
+            const dataString = JSON.stringify(dataToSave);
+            const dataSizeKB = Math.round(dataString.length / 1024);
+            
+            if (dataSizeKB < 2048) {
+                localStorage.setItem(storageKey, dataString);
+            } else {
+                console.warn(`⚠️ Datos demasiado grandes para localStorage (${dataSizeKB} KB), saltando guardado`);
+            }
+        } catch (error) {
+            console.error('❌ Error guardando currentPage en localStorage:', error);
+            if (error.name === 'QuotaExceededError') {
+                try {
+                    const storageKey = getStorageKey();
+                    localStorage.removeItem(storageKey);
+                    console.log('🧹 localStorage limpiado debido a QuotaExceededError');
+                } catch (cleanError) {
+                    console.error('Error limpiando localStorage:', cleanError);
+                }
+            }
+        }
+    }, [currentPage, pages, getStorageKey]);
     // (Opcional) Botón para limpiar progreso guardado
     const clearSavedProgress = () => {
         const storageKey = getStorageKey();
         localStorage.removeItem(storageKey);
+        // También limpiar thumbnails para liberar memoria
+        setPageThumbnails({});
         window.location.reload();
     };
+
+    // Función para limpiar thumbnails y liberar memoria
+    const clearThumbnails = useCallback(() => {
+        setPageThumbnails({});
+        console.log('🧹 Thumbnails limpiados para liberar memoria');
+        
+        // Forzar regeneración inmediata del thumbnail de la página actual
+        setTimeout(() => {
+            if (pages[currentPage]) {
+                console.log('🔄 Forzando regeneración de thumbnail para página actual...');
+                generateCurrentThumbnail();
+            }
+        }, 500);
+    }, [generateCurrentThumbnail, pages, currentPage]);
+
+    // Función para debug - generar thumbnail manualmente
+    const debugGenerateThumbnail = useCallback(async () => {
+        console.log('🐛 [DEBUG] Generando thumbnail manualmente...');
+        console.log('🐛 [DEBUG] Página actual:', currentPage);
+        console.log('🐛 [DEBUG] Datos de la página:', pages[currentPage]);
+        
+        try {
+            const result = await captureCurrentWorkspace({ type: 'thumbnail' });
+            console.log('🐛 [DEBUG] Resultado de captura:', result ? 'SUCCESS' : 'FAILED');
+            
+            if (result) {
+                setPageThumbnails(prev => ({
+                    ...prev,
+                    [pages[currentPage].id]: result
+                }));
+                console.log('🐛 [DEBUG] Thumbnail guardado exitosamente');
+            }
+        } catch (error) {
+            console.error('🐛 [DEBUG] Error en debug thumbnail:', error);
+        }
+    }, [captureCurrentWorkspace, currentPage, pages]);
 
     // Cambiar el layout de la página actual
     const changeLayout = (layoutId) => {
@@ -1396,50 +2065,28 @@ export default function EditorLibro() {
         const currentPageData = pages[currentPage];
         if (!currentPageData) return null;
         
-        // Generar un hash más detallado del contenido
+        // Generar un hash más ligero del contenido
         const allElements = currentPageData.cells?.flatMap(cell => cell.elements || []) || [];
         const contentHash = allElements.map(el => {
-            // Incluir más detalles según el tipo de elemento
-            const baseProps = {
+            // Solo incluir propiedades esenciales para el hash
+            return {
                 id: el.id,
                 type: el.type,
-                content: el.content,
                 position: el.position,
-                size: el.size,
-                style: el.style,
-                rotation: el.rotation
+                size: el.size
             };
-            
-            // Para imágenes, incluir src y dimensiones
-            if (el.type === 'image') {
-                baseProps.src = el.src;
-                baseProps.originalWidth = el.originalWidth;
-                baseProps.originalHeight = el.originalHeight;
-            }
-            
-            // Para texto, incluir propiedades de font
-            if (el.type === 'text') {
-                baseProps.fontSize = el.fontSize;
-                baseProps.fontFamily = el.fontFamily;
-                baseProps.fontWeight = el.fontWeight;
-                baseProps.textAlign = el.textAlign;
-                baseProps.color = el.color;
-            }
-            
-            return baseProps;
         });
         
         const key = {
             pageId: currentPageData.id,
             elementsCount: allElements.length,
-            contentHash: JSON.stringify(contentHash),
+            contentHash: JSON.stringify(contentHash).substring(0, 100), // Limitar tamaño del hash
             backgroundImage: currentPageData.backgroundImage,
             backgroundColor: currentPageData.backgroundColor,
-            layout: currentPageData.layout,
-            timestamp: Date.now() // Forzar regeneración agregando timestamp
+            layout: currentPageData.layout
+            // NO incluir timestamp para evitar regeneración constante
         };
         
-        console.log('🔑 [DEBUG] Nueva clave de thumbnail generada:', key);
         return key;
     }, [pages, currentPage]);
 
@@ -1962,157 +2609,213 @@ export default function EditorLibro() {
         }
     };
 
-    // --- Generar PDF del álbum (fiel al render del editor) ---
-    // Renderiza cada página usando el mismo componente React en un contenedor oculto
+    // --- Generar PDF del álbum con calidad de impresión 300 DPI ---
+    // Renderiza cada página usando el mismo componente React con alta resolución
     window.generateAlbumPDF = async () => {
-        try {
-            // 1. Crear un contenedor oculto React en el DOM
-        let hiddenContainer = document.getElementById('pdf-hidden-pages');
-        if (!hiddenContainer) {
-            hiddenContainer = document.createElement('div');
-            hiddenContainer.id = 'pdf-hidden-pages';
-            hiddenContainer.style.position = 'fixed';
-            hiddenContainer.style.left = '-99999px';
-            hiddenContainer.style.top = '0';
-            hiddenContainer.style.width = '800px';
-            hiddenContainer.style.zIndex = '-1';
-            document.body.appendChild(hiddenContainer);
-        }
-        hiddenContainer.innerHTML = '';
-
-        // 2. Renderizar cada página usando React (idéntico al editor)
-        // Creamos un mini-app React temporal para renderizar las páginas
-        const renderPage = (page, idx) => {
-            const layout = layouts.find(l => l.id === page.layout) || layouts[0];
-            return (
-                <div
-                    key={page.id}
-                    id={`pdf-page-${page.id}`}
-                    style={{
-                        width: 800,
-                        height: 600,
-                        background: '#fff',
-                        overflow: 'hidden',
-                        position: 'relative',
-                        boxSizing: 'border-box',
-                        display: 'block',
-                        margin: 0,
-                        padding: 0,
-                    }}
-                >
-                    <div
-                        className={`grid ${layout.template}`}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            gap: layout.style?.gap || '16px',
-                            padding: layout.style?.padding || '16px',
-                            boxSizing: 'border-box',
-                        }}
-                    >
-                        {page.cells.map((cell, cellIdx) => (
-                            <div
-                                key={cell.id}
-                                style={{
-                                    position: 'relative',
-                                    width: '100%',
-                                    height: '100%',
-                                    background: '#f9fafb',
-                                    borderRadius: 8,
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                {cell.elements.map((element) =>
-                                    element.type === 'image' ? (
-                                        <div
-                                            key={element.id}
-                                            className={imageMasks.find(m => m.id === element.mask)?.class || ''}
-                                            style={{
-                                                position: 'absolute',
-                                                left: element.position.x,
-                                                top: element.position.y,
-                                                width: '100%',
-                                                height: '100%',
-                                                zIndex: element.zIndex || 1,
-                                            }}
-                                        >
-                                            <img
-                                                src={element.content}
-                                                alt=""
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    objectFit: 'cover',
-                                                    filter: `brightness(${(element.filters?.brightness || 100) / 100}) contrast(${(element.filters?.contrast || 100) / 100}) saturate(${(element.filters?.saturation || 100) / 100}) sepia(${(element.filters?.tint || 0) / 100}) hue-rotate(${(element.filters?.hue || 0) * 3.6}deg) blur(${element.filters?.blur || 0}px)`,
-                                                    transform: `scale(${element.filters?.scale || 1}) rotate(${element.filters?.rotate || 0}deg)${element.filters?.flipHorizontal ? ' scaleX(-1)' : ''}${element.filters?.flipVertical ? ' scaleY(-1)' : ''}`,
-                                                    mixBlendMode: element.filters?.blendMode || 'normal',
-                                                    opacity: (element.filters?.opacity || 100) / 100,
-                                                }}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div
-                                            key={element.id}
-                                            style={{
-                                                position: 'absolute',
-                                                left: element.position.x,
-                                                top: element.position.y,
-                                                fontFamily: element.style?.fontFamily,
-                                                fontSize: element.style?.fontSize,
-                                                fontWeight: element.style?.fontWeight,
-                                                fontStyle: element.style?.fontStyle,
-                                                textDecoration: element.style?.textDecoration,
-                                                color: element.style?.color,
-                                                textAlign: element.style?.textAlign,
-                                                background: element.style?.backgroundColor || 'transparent',
-                                                padding: element.style?.padding || '8px',
-                                                borderRadius: element.style?.borderRadius || '0px',
-                                                border: element.style?.border || 'none',
-                                                opacity: element.style?.opacity || 1,
-                                            }}
-                                        >
-                                            {element.content}
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        // Renderizar usando ReactDOM
-        const ReactDOM = await import('react-dom');
-        await new Promise((resolve) => {
-            ReactDOM.render(
-                <div>
-                    {pages.map((page, idx) => renderPage(page, idx))}
-                </div>,
-                hiddenContainer,
-                resolve
-            );
-        });
-
-        // 3. Capturar cada página y agregar al PDF
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [800, 600] });
-        for (let i = 0; i < pages.length; i++) {
-            const pageDiv = document.getElementById(`pdf-page-${pages[i].id}`);
-            const canvas = await html2canvas(pageDiv, { backgroundColor: '#fff', scale: 2 });
-            const imgData = canvas.toDataURL('image/jpeg', 1.0);
-            if (i > 0) pdf.addPage([800, 600], 'landscape');
-            pdf.addImage(imgData, 'JPEG', 0, 0, 800, 600);
-        }
-        pdf.save('album.pdf');
-        // 4. Limpiar el DOM
-        hiddenContainer.innerHTML = '';
+        console.log('🖨️ === INICIO generateAlbumPDF ===');
         
-        return true;
+        try {
+            // Importar jsPDF dinámicamente
+            const { jsPDF } = await import('jspdf');
+            
+            // Obtener dimensiones del preset en cm (desde la BD)
+            let pageWidthCm = presetData?.width || 21; // A4 por defecto
+            let pageHeightCm = presetData?.height || 29.7;
+            
+            // Convertir a puntos (1 cm = 28.35 puntos)
+            const pageWidthPt = pageWidthCm * 28.35;
+            const pageHeightPt = pageHeightCm * 28.35;
+            
+            console.log('📏 Dimensiones PDF:', {
+                widthCm: pageWidthCm,
+                heightCm: pageHeightCm,
+                widthPt: pageWidthPt,
+                heightPt: pageHeightPt
+            });
+
+            // Crear el PDF con las dimensiones correctas
+            const pdf = new jsPDF({
+                orientation: pageWidthPt > pageHeightPt ? 'landscape' : 'portrait',
+                unit: 'pt',
+                format: [pageWidthPt, pageHeightPt],
+                compress: true
+            });
+
+            // Mostrar progreso
+            const totalPages = pages.length;
+            let processedPages = 0;
+
+            // Crear elemento de progreso
+            const progressContainer = document.createElement('div');
+            progressContainer.id = 'pdf-progress';
+            progressContainer.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            progressContainer.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 class="text-lg font-semibold mb-4">Generando PDF de alta calidad...</h3>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="pdf-progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        <span id="current-page">0</span> de ${totalPages} páginas procesadas
+                    </p>
+                </div>
+            `;
+            document.body.appendChild(progressContainer);
+
+            const updateProgress = (current) => {
+                const percentage = (current / totalPages) * 100;
+                document.getElementById('pdf-progress-bar').style.width = `${percentage}%`;
+                document.getElementById('current-page').textContent = current;
+            };
+
+            // Procesar cada página
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                console.log(`🔄 Procesando página ${i + 1}/${totalPages}: ${page.id}`);
+                
+                // Cambiar a la página actual temporalmente para capturarla
+                const originalCurrentPage = currentPage;
+                setCurrentPage(i);
+                
+                // Esperar un momento para que se renderice
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                try {
+                    // Capturar la página con alta calidad para PDF
+                    const canvas = await captureCurrentWorkspace({ type: 'pdf' });
+                    
+                    if (canvas) {
+                        // Calcular dimensiones para mantener aspecto y llenar la página
+                        const canvasAspect = canvas.width / canvas.height;
+                        const pageAspect = pageWidthPt / pageHeightPt;
+                        
+                        let imgWidth, imgHeight, offsetX = 0, offsetY = 0;
+                        
+                        if (canvasAspect > pageAspect) {
+                            // La imagen es más ancha, ajustar por ancho
+                            imgWidth = pageWidthPt;
+                            imgHeight = pageWidthPt / canvasAspect;
+                            offsetY = (pageHeightPt - imgHeight) / 2;
+                        } else {
+                            // La imagen es más alta, ajustar por alto
+                            imgHeight = pageHeightPt;
+                            imgWidth = pageHeightPt * canvasAspect;
+                            offsetX = (pageWidthPt - imgWidth) / 2;
+                        }
+                        
+                        // Convertir canvas a imagen
+                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        
+                        // Agregar página si no es la primera
+                        if (i > 0) {
+                            pdf.addPage([pageWidthPt, pageHeightPt]);
+                        }
+                        
+                        // Agregar imagen al PDF
+                        pdf.addImage(imgData, 'JPEG', offsetX, offsetY, imgWidth, imgHeight);
+                        
+                        console.log(`✅ Página ${i + 1} agregada al PDF`);
+                    } else {
+                        console.warn(`⚠️ No se pudo capturar la página ${i + 1}`);
+                        
+                        // Agregar página en blanco si falla la captura
+                        if (i > 0) {
+                            pdf.addPage([pageWidthPt, pageHeightPt]);
+                        }
+                        
+                        // Agregar texto de error
+                        pdf.setFontSize(12);
+                        pdf.text(`Error al renderizar página ${i + 1}`, pageWidthPt / 2, pageHeightPt / 2, { align: 'center' });
+                    }
+                } catch (pageError) {
+                    console.error(`❌ Error procesando página ${i + 1}:`, pageError);
+                    
+                    // Agregar página de error
+                    if (i > 0) {
+                        pdf.addPage([pageWidthPt, pageHeightPt]);
+                    }
+                    
+                    pdf.setFontSize(12);
+                    pdf.text(`Error al procesar página ${i + 1}`, pageWidthPt / 2, pageHeightPt / 2, { align: 'center' });
+                }
+                
+                processedPages++;
+                updateProgress(processedPages);
+                
+                // Pausa pequeña entre páginas para no sobrecargar el navegador
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            // Restaurar página original
+            setCurrentPage(originalCurrentPage);
+            
+            // Generar nombre del archivo
+            const fileName = `${itemData?.name || 'album'}_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            // Descargar el PDF
+            pdf.save(fileName);
+            
+            // Remover progreso
+            document.body.removeChild(progressContainer);
+            
+            console.log('✅ PDF generado exitosamente:', fileName);
+            
+            // Mostrar mensaje de éxito
+            const successMsg = document.createElement('div');
+            successMsg.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg z-50';
+            successMsg.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>PDF de alta calidad generado: ${fileName}</span>
+                </div>
+            `;
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                if (document.body.contains(successMsg)) {
+                    document.body.removeChild(successMsg);
+                }
+            }, 5000);
+            
+            return fileName;
+            
         } catch (error) {
-            console.error('Error al finalizar el diseño del álbum:', error);
-            return false;
+            console.error('❌ Error generando PDF:', error);
+            
+            // Remover progreso si existe
+            const progressElement = document.getElementById('pdf-progress');
+            if (progressElement) {
+                document.body.removeChild(progressElement);
+            }
+            
+            // Mostrar error
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg z-50';
+            errorMsg.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Error al generar PDF: ${error.message}</span>
+                </div>
+            `;
+            document.body.appendChild(errorMsg);
+            
+            setTimeout(() => {
+                if (document.body.contains(errorMsg)) {
+                    document.body.removeChild(errorMsg);
+                }
+            }, 7000);
+            
+            throw error;
         }
     };
+
+    // Exponer funciones útiles globalmente para uso externo
+    window.generateHighQualityThumbnail = generateHighQualityThumbnail;
+    window.captureCurrentWorkspace = captureCurrentWorkspace;
 
     return (
         <DndProvider backend={HTML5Backend} className="!h-screen !w-screen overflow-hidden">
@@ -2261,15 +2964,26 @@ export default function EditorLibro() {
                                 </Button> */}
                                 {/* Botón para limpiar progreso guardado (opcional, visible solo en desarrollo) */}
                                 {process.env.NODE_ENV !== 'production' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={clearSavedProgress}
-                                        icon={<Trash2 className="h-4 w-4" />}
-                                        className="text-white hover:bg-red-500"
-                                    >
-                                        Limpiar progreso
-                                    </Button>
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={clearSavedProgress}
+                                            icon={<Trash2 className="h-4 w-4" />}
+                                            className="text-white hover:bg-red-500"
+                                        >
+                                            Limpiar progreso
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={clearThumbnails}
+                                            icon={<ImageIcon className="h-4 w-4" />}
+                                            className="text-white hover:bg-orange-500"
+                                        >
+                                            Limpiar miniaturas ({Object.keys(pageThumbnails).length})
+                                        </Button>
+                                    </>
                                 )}
                             </div>
                         </div>
