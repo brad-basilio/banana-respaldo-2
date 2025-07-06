@@ -90,6 +90,43 @@ export default function ImageElement({
         }
     }, [element.filters]);
 
+    // 🎯 SOLUCIÓN PERFECTA: Detectar clics fuera del elemento para ocultar controles
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            // Solo actuar si el elemento está seleccionado
+            if (!isSelected) return;
+            
+            // Si el clic fue dentro del elemento o sus controles, no hacer nada
+            if (elementRef.current && elementRef.current.contains(event.target)) {
+                return;
+            }
+            
+            // Si el clic fue en cualquier control de resize (por si acaso)
+            if (event.target.classList.contains('bg-blue-500') || 
+                event.target.getAttribute('title')?.includes('Redimensionar')) {
+                return;
+            }
+            
+            // Clic fuera del elemento - deseleccionar
+            console.log('🔄 [ImageElement] Clic fuera detectado - deseleccionando elemento');
+            onSelect?.(null); // Deseleccionar el elemento
+        };
+
+        // Solo agregar el listener si el elemento está seleccionado
+        if (isSelected) {
+            document.addEventListener('mousedown', handleClickOutside);
+            console.log('👂 [ImageElement] Listener de clic fuera agregado');
+        }
+
+        // Cleanup: remover el listener al desmontar o cuando cambie isSelected
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            if (isSelected) {
+                console.log('🧹 [ImageElement] Listener de clic fuera removido');
+            }
+        };
+    }, [isSelected, onSelect]);
+
     // Aplicar filtros CSS mejorados y forzar estilos de recorte en línea
     const filterStyle = {
         filter: `
@@ -492,25 +529,25 @@ export default function ImageElement({
                     <>
                         {/* Esquinas de redimensionamiento */}
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-nw-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-nw-resize"
                             style={{ top: -8, left: -8, zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "nw")}
                             title="Redimensionar desde esquina superior izquierda"
                         />
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-ne-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-ne-resize"
                             style={{ top: -8, right: -8, zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "ne")}
                             title="Redimensionar desde esquina superior derecha"
                         />
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-se-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-se-resize"
                             style={{ bottom: -8, right: -8, zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "se")}
                             title="Redimensionar desde esquina inferior derecha"
                         />
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-sw-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-sw-resize"
                             style={{ bottom: -8, left: -8, zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "sw")}
                             title="Redimensionar desde esquina inferior izquierda"
@@ -518,25 +555,25 @@ export default function ImageElement({
                         
                         {/* Controles de los bordes */}
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-n-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-n-resize"
                             style={{ top: -8, left: "calc(50% - 8px)", zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "n")}
                             title="Redimensionar verticalmente"
                         />
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-e-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-e-resize"
                             style={{ right: -8, top: "calc(50% - 8px)", zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "e")}
                             title="Redimensionar horizontalmente"
                         />
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-s-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-s-resize"
                             style={{ bottom: -8, left: "calc(50% - 8px)", zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "s")}
                             title="Redimensionar verticalmente"
                         />
                         <div
-                            className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-w-resize"
+                            className="resize-control-handle absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-md hover:bg-blue-600 transition-colors cursor-w-resize"
                             style={{ left: -8, top: "calc(50% - 8px)", zIndex: 9999 }}
                             onMouseDown={(e) => handleStartResize(e, "w")}
                             title="Redimensionar horizontalmente"
@@ -544,7 +581,7 @@ export default function ImageElement({
 
                         {/* Indicador visual de manipulación   */}
                       {isManipulating && (
-                            <div className="absolute -inset-2 border-2 border-blue-300 border-dashed rounded animate-pulse" style={{ zIndex: 9999 }} />
+                            <div className="resize-manipulation-indicator absolute -inset-2 border-2 border-blue-300 border-dashed rounded animate-pulse" style={{ zIndex: 9999 }} />
                         )}
                     </>
                 )}

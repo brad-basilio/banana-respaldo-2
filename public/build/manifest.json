@@ -154,8 +154,8 @@
     "file": "assets/DxButton-DV0H-ZcL.js",
     "name": "DxButton"
   },
-  "_EditableCell-3YaYDQ5F.js": {
-    "file": "assets/EditableCell-3YaYDQ5F.js",
+  "_EditableCell-C5XVralC.js": {
+    "file": "assets/EditableCell-C5XVralC.js",
     "name": "EditableCell",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js",
@@ -3945,7 +3945,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-CrYEx9C6.js",
+    "file": "assets/BananaLab-CaMamOrO.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4004,7 +4004,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-M9qShPaN.js",
+    "file": "assets/Editor-CjrMxDUs.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4012,7 +4012,7 @@
       "_preload-helper-BfFHrpNk.js",
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_EditableCell-3YaYDQ5F.js",
+      "_EditableCell-C5XVralC.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
       "_objectWithoutPropertiesLoose-CoVnHxV7.js",
       "_hoist-non-react-statics.cjs-kbdZbs82.js",
@@ -9258,7 +9258,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-B2z3Y9CU.js",
+    "file": "assets/Editor-DdUuxYNl.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9271,7 +9271,7 @@
       "_index-xsH4HHeE.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "_preload-helper-BfFHrpNk.js",
-      "_EditableCell-3YaYDQ5F.js",
+      "_EditableCell-C5XVralC.js",
       "_createLucideIcon-Cy5Ya80P.js",
       "_objectSpread2-8ZRf701l.js",
       "_defineProperty-DRmM3rRU.js",
@@ -9466,7 +9466,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-r1tZK9n5.js",
+    "file": "assets/System-DTOiXGc_.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
