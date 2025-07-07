@@ -8,11 +8,11 @@ import "tippy.js/dist/tippy.css";
 import TextWithHighlight from '../../../../Utils/TextWithHighlight';
 import html2string from '../../../../Utils/html2string';
 
-const ProductCardFull = ({ product, setCart, cart }) => {
+const ProductCardFull = ({ product, setCart, cart, contacts }) => {
 
     const itemsRest = new ItemsRest();
     const [variationsItems, setVariationsItems] = useState([]);
-    console.log(product);
+    
     const onAddClicked = (product) => {
         const newCart = structuredClone(cart)
         const index = newCart.findIndex(x => x.id == product.id)
@@ -62,6 +62,13 @@ const ProductCardFull = ({ product, setCart, cart }) => {
 
     const inCart = cart?.find(x => x.id == product?.id)
     const finalPrice = product?.discount > 0 ? product?.discount : product?.price
+
+    const getContact = (correlative) => {
+        return (
+            contacts.find((contacts) => contacts.correlative === correlative)
+                ?.description || ""
+        );
+    };
 
     return (
         <div
@@ -130,7 +137,10 @@ const ProductCardFull = ({ product, setCart, cart }) => {
                     </div>
 
                     <div className='flex flex-row items-center justify-center w-full'>
-                        <a className='bg-secondary text-base lg:text-lg customtext-neutral-light px-10 py-2.5 rounded-lg'>
+                        <a target="_blank" href={`https://api.whatsapp.com/send?phone=${getContact("phone_whatsapp")}&text=${encodeURIComponent(
+                            `Hola, deseo mayor información acerca del producto: ${product?.name}`
+                            )}`}
+                         className='bg-secondary text-base lg:text-lg customtext-neutral-light px-10 py-2.5 rounded-lg'>
                             Solicitar cotizacion
                         </a>
                     </div>

@@ -164,7 +164,7 @@ const System = ({
                 return <Filter which={value} data={data} items={getItems(itemsId)} filteredData={filteredData} cart={cart} setCart={setCart} />
             case "product":
                 return <Product which={value} data={data} items={getItems(itemsId)} filteredData={filteredData} cart={cart} setCart={setCart} pages={pages} favorites={favorites}
-                    setFavorites={setFavorites} />
+                    setFavorites={setFavorites} contacts={contacts} />
             case "category":
                 return <Category which={value} data={data} items={getItems(itemsId)} />
             case "collection":

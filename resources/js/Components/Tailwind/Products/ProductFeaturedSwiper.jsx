@@ -13,7 +13,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import ProductCardFull from "./Components/ProductCardFull";
 
-const ProductFeaturedSwiper = ({ items, data, setCart, cart }) => {
+const ProductFeaturedSwiper = ({ items, data, setCart, cart, contacts }) => {
     
     return (
         <section className="py-0">
@@ -39,6 +39,7 @@ const ProductFeaturedSwiper = ({ items, data, setCart, cart }) => {
                                     product={product}
                                     setCart={setCart}
                                     cart={cart}
+                                    contacts={contacts}
                                 />
                             </SwiperSlide>
                         ))}
