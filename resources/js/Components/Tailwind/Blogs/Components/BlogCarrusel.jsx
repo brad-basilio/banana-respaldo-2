@@ -39,7 +39,7 @@ const BlogCarrusel = ({ items, itemVariants, hoverCard, hoverImage }) => {
             },
             1600: {
               slidesPerView: 3,
-              spaceBetween: 40
+              spaceBetween: 20
             },
           }}
           className="mySwiper"

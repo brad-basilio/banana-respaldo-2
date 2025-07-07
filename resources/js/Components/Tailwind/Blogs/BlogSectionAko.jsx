@@ -113,7 +113,7 @@ const BlogSectionAko = ({ data, items }) => {
                             backgroundPosition: 'center',
                             backgroundRepeat: 'no-repeat'
                           }}
-                    > 
+                        > 
 
                         <div
                             className="bg-transparent text-white text-left p-4 rounded-b-2xl"
