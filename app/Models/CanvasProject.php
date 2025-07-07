@@ -25,13 +25,17 @@ class CanvasProject extends Model
         'thumbnail',
         'pdf_path',
         'pdf_generated_at',
+        'pdf_data',
+        'completed_at',
         'item_data'
     ];
 
     protected $casts = [
         'project_data' => 'array',
         'item_data' => 'array',
+        'pdf_data' => 'array',
         'pdf_generated_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     // Relaciones
@@ -55,6 +59,7 @@ class CanvasProject extends Model
     {
         return [
             'draft' => 'Borrador',
+            'ready_for_pdf' => 'Listo para PDF',
             'completed' => 'Completado',
             'exported' => 'Exportado',
             'ordered' => 'Pedido realizado',

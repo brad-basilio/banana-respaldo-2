@@ -55,6 +55,8 @@ use App\Http\Controllers\CanvasController;
 use App\Http\Controllers\CanvasProjectController;
 use App\Http\Controllers\Api\Canvas\ProjectSaveController;
 use App\Http\Controllers\ProjectPDFController;
+use App\Http\Controllers\PDFGeneratorController;
+use App\Http\Controllers\CartPDFController;
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
@@ -212,6 +214,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/canvas-projects/{id}', [CustomerCanvasProjectController::class, 'get']);
     Route::post('/canvas-projects/save', [CustomerCanvasProjectController::class, 'save']);
     Route::delete('/canvas-projects/{id}', [CustomerCanvasProjectController::class, 'delete']);
+
+    // 🆕 Rutas para generación de PDF backend con dimensiones exactas
+    Route::post('/projects/{projectId}/generate-pdf', [PDFGeneratorController::class, 'generateHighQualityPDF']);
+    Route::get('/projects/{projectId}/pdf-info', [PDFGeneratorController::class, 'getPDFInfo']);
+    Route::get('/projects/{projectId}/download-pdf', [PDFGeneratorController::class, 'downloadPDF']);
+    
+    // 🛒 Rutas para carrito con PDFs backend
+    Route::post('/cart/process-pdfs', [CartPDFController::class, 'processCartPDFs']);
+    Route::post('/cart/check-pdf-status', [CartPDFController::class, 'checkCartPDFStatus']);
   });
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {
@@ -472,6 +483,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/canvas/projects/{id}/save-progress', [ProjectSaveController::class, 'saveProgress']);
     Route::get('/canvas/projects/{id}/load-progress', [ProjectSaveController::class, 'loadProgress']);
     Route::post('/canvas/projects/upload-image', [ProjectSaveController::class, 'uploadImage']);
+
+    // 🖼️ Canvas Image Management Routes
+    Route::post('/canvas/projects/{id}/upload-images', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'uploadImages']);
+    Route::get('/canvas/projects/{id}/images', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'getProjectImages']);
+    Route::post('/canvas/projects/{id}/cleanup-images', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'cleanupUnusedImages']);
+
+    // 🖼️ Servir imágenes desde storage/app - COMO BasicController
+    Route::get('/canvas/image/{encodedPath}', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'serveImage']);
 
     // Project PDF generation route (for frontend users)
     Route::post('/projects/{projectId}/generate-pdf', [ProjectPDFController::class, 'generatePDF']);

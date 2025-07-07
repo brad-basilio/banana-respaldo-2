@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Modal from "react-modal";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import HTMLFlipBook from "react-pageflip";
 import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import Global from "../../../../../Utils/Global";
 import { layouts } from '../../constants/layouts';
 
@@ -77,6 +78,7 @@ const BookPreviewModal = ({
 }) => {
     const [currentPage, setCurrentPage] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [generatedThumbnails, setGeneratedThumbnails] = useState({});
     const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
     const flipBook = useRef();
@@ -270,6 +272,458 @@ const BookPreviewModal = ({
         setGeneratedThumbnails(newThumbnails);
         setIsGeneratingThumbnails(false);
     }, [pages, isOpen, workspaceDimensions, layouts, presetData]);
+
+    // Función para generar PDF de alta calidad usando html2canvas como en Editor.jsx
+    const generatePDF = useCallback(async () => {
+        if (!pages || pages.length === 0) {
+            alert('No hay páginas para generar el PDF');
+            return;
+        }
+
+        setIsGeneratingPDF(true);
+
+        try {
+            console.log('🚀 Iniciando generación de PDF con captura DOM...');
+
+            // 🖨️ DIMENSIONES PROFESIONALES: Con sangrado para impresión
+            let pageWidthCm = workspaceDimensions.width * 0.0264583; // Convert px to cm (96 DPI)
+            let pageHeightCm = workspaceDimensions.height * 0.0264583;
+            
+            // Si tenemos preset data con dimensiones específicas, usar esas
+            if (presetData?.width && presetData?.height) {
+                pageWidthCm = presetData.width;
+                pageHeightCm = presetData.height;
+            }
+            
+            // Agregar sangrado de 3mm (0.3cm) en cada lado para impresión profesional
+            const bleedCm = 0.3; // 3mm de sangrado estándar
+            const printWidthCm = pageWidthCm + (bleedCm * 2);
+            const printHeightCm = pageHeightCm + (bleedCm * 2);
+            
+            // Convertir a puntos (1 cm = 28.35 puntos)
+            const pageWidthPt = printWidthCm * 28.35;
+            const pageHeightPt = printHeightCm * 28.35;
+            
+            console.log('📏 Dimensiones PDF con sangrado profesional:', {
+                originalWidthCm: pageWidthCm,
+                originalHeightCm: pageHeightCm,
+                printWidthCm: printWidthCm,
+                printHeightCm: printHeightCm,
+                widthPt: pageWidthPt,
+                heightPt: pageHeightPt,
+                bleedCm: bleedCm
+            });
+
+            // 🖨️ PDF PROFESIONAL: Sin compresión para máxima calidad de impresión
+            const pdf = new jsPDF({
+                orientation: pageWidthPt > pageHeightPt ? 'landscape' : 'portrait',
+                unit: 'pt',
+                format: [pageWidthPt, pageHeightPt],
+                compress: false // Sin compresión para calidad profesional
+            });
+
+            // Mostrar progreso
+            const totalPages = pages.length;
+            let processedPages = 0;
+
+            // Crear elemento de progreso
+            const progressContainer = document.createElement('div');
+            progressContainer.id = 'pdf-progress';
+            progressContainer.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            progressContainer.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 class="text-lg font-semibold mb-4">Generando PDF de alta calidad...</h3>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="pdf-progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">
+                        <span id="current-page">0</span> de ${totalPages} páginas procesadas
+                    </p>
+                </div>
+            `;
+            document.body.appendChild(progressContainer);
+
+            const updateProgress = (current) => {
+                const percentage = (current / totalPages) * 100;
+                const progressBar = document.getElementById('pdf-progress-bar');
+                const currentPageSpan = document.getElementById('current-page');
+                if (progressBar) progressBar.style.width = `${percentage}%`;
+                if (currentPageSpan) currentPageSpan.textContent = current;
+            };
+
+            // Función auxiliar para capturar página usando html2canvas (igual que Editor.jsx)
+            const capturePageWithDOM = async (pageIndex) => {
+                try {
+                    const page = pages[pageIndex];
+                    const workspaceElement = document.querySelector(`#page-${page.id}`);
+                    
+                    if (!workspaceElement) {
+                        console.warn(`❌ No se encontró elemento DOM para página ${page.id}`);
+                        return null;
+                    }
+
+                    console.log(`📸 Capturando página ${pageIndex + 1} con DOM: ${page.id}`);
+
+                    // 🖨️ CONFIGURACIÓN PROFESIONAL: Escala alta para PDF 300 DPI
+                    const scaleFactor = 11.81; // 11.81x para 300 DPI exacto (300/25.4 ≈ 11.81)
+                    const quality = 1.0; // Calidad máxima sin compresión
+
+                    // Obtener background correcto de la página
+                    let workspaceBackground = page?.backgroundColor || '#ffffff';
+                    const workspaceStyle = getComputedStyle(workspaceElement);
+                    if (workspaceStyle.backgroundColor && workspaceStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                        workspaceBackground = workspaceStyle.backgroundColor;
+                    }
+
+                    // 🖨️ OPCIONES PROFESIONALES PARA PDF
+                    const captureOptions = {
+                        scale: scaleFactor, // 11.81x para PDF 300 DPI exacto
+                        useCORS: true,
+                        allowTaint: false,
+                        backgroundColor: workspaceBackground,
+                        width: workspaceDimensions.width,
+                        height: workspaceDimensions.height,
+                        x: 0,
+                        y: 0,
+                        scrollX: 0,
+                        scrollY: 0,
+                        foreignObjectRendering: true, // Mejor renderizado para PDF
+                        removeContainer: false,
+                        logging: false,
+                        imageTimeout: 60000, // 60s para PDF de alta calidad
+                        pixelRatio: 3, // Triple pixel ratio para PDF
+                        onclone: async (clonedDoc) => {
+                            console.log(`🔍 Procesando clonado para página ${pageIndex + 1}...`);
+                            
+                            // Limpiar elementos de UI que no pertenecen al workspace
+                            const excludedSelectors = [
+                                '.toolbar', '.ui-element', '.floating', '.overlay', '.modal', '.popover', 
+                                '.text-toolbar', '.element-selector', '.element-controls', '.resize-handle',
+                                '.resize-control-handle', '.resize-manipulation-indicator',
+                                '.sidebar', '.panel', '.btn', '.button', '.control', '.menu', '.dropdown',
+                                '.tooltip', '.pointer-events-none', '[data-exclude-thumbnail="true"]'
+                            ];
+                            
+                            excludedSelectors.forEach(selector => {
+                                try {
+                                    const elements = clonedDoc.querySelectorAll(selector);
+                                    elements.forEach(el => el.remove());
+                                } catch (e) {
+                                    console.warn('Error removing selector:', selector, e);
+                                }
+                            });
+
+                            // Configurar específicamente el elemento de página clonado
+                            try {
+                                const clonedPageElement = clonedDoc.querySelector(`#page-${page.id}`);
+                                
+                                if (clonedPageElement) {
+                                    // Asegurar dimensiones exactas del workspace
+                                    clonedPageElement.style.width = workspaceDimensions.width + 'px';
+                                    clonedPageElement.style.height = workspaceDimensions.height + 'px';
+                                    clonedPageElement.style.position = 'relative';
+                                    clonedPageElement.style.overflow = 'hidden';
+                                    
+                                    // Aplicar backgrounds de la página
+                                    if (page?.backgroundImage) {
+                                        console.log(`🖼️ Aplicando backgroundImage: ${page.backgroundImage}`);
+                                        clonedPageElement.style.backgroundImage = `url(${page.backgroundImage})`;
+                                        clonedPageElement.style.backgroundSize = 'cover';
+                                        clonedPageElement.style.backgroundPosition = 'center';
+                                        clonedPageElement.style.backgroundRepeat = 'no-repeat';
+                                    }
+                                    
+                                    if (page?.backgroundColor) {
+                                        console.log(`🎨 Aplicando backgroundColor: ${page.backgroundColor}`);
+                                        clonedPageElement.style.backgroundColor = page.backgroundColor;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('❌ Error configurando elemento de página:', e);
+                            }
+
+                            // Pre-procesamiento avanzado de imágenes
+                            try {
+                                console.log('🔧 Iniciando pre-procesamiento avanzado de imágenes...');
+                                
+                                // Capturar datos originales de imágenes
+                                const originalImageData = new Map();
+                                const originalImages = workspaceElement.querySelectorAll('[data-element-type="image"] img, .workspace-image, img');
+                                
+                                originalImages.forEach((img, index) => {
+                                    if (img.complete && img.naturalWidth > 0) {
+                                        const container = img.closest('[data-element-type="image"]') || img.parentElement;
+                                        const containerRect = container.getBoundingClientRect();
+                                        
+                                        originalImageData.set(img.src, {
+                                            src: img.src,
+                                            naturalWidth: img.naturalWidth,
+                                            naturalHeight: img.naturalHeight,
+                                            containerWidth: containerRect.width,
+                                            containerHeight: containerRect.height,
+                                            objectFit: getComputedStyle(img).objectFit || 'cover',
+                                            objectPosition: getComputedStyle(img).objectPosition || 'center',
+                                            crossOrigin: img.crossOrigin
+                                        });
+                                    }
+                                });
+
+                                // Aplicar estilos CSS para imágenes optimizadas
+                                const style = clonedDoc.createElement('style');
+                                style.textContent = `
+                                    /* Configuración de página */
+                                    #page-${page.id} {
+                                        width: ${workspaceDimensions.width}px !important;
+                                        height: ${workspaceDimensions.height}px !important;
+                                        position: relative !important;
+                                        overflow: hidden !important;
+                                        box-sizing: border-box !important;
+                                        background-size: cover !important;
+                                        background-position: center !important;
+                                        background-repeat: no-repeat !important;
+                                    }
+                                    
+                                    /* Imágenes profesionales para PDF 300 DPI */
+                                    img {
+                                        width: 100% !important;
+                                        height: 100% !important;
+                                        object-fit: cover !important;
+                                        object-position: center !important;
+                                        display: block !important;
+                                        image-rendering: -webkit-optimize-contrast !important;
+                                        image-rendering: -webkit-crisp-edges !important;
+                                        image-rendering: -moz-crisp-edges !important;
+                                        image-rendering: pixelated !important;
+                                        image-rendering: crisp-edges !important;
+                                        image-rendering: optimizeQuality !important;
+                                        backface-visibility: hidden !important;
+                                        transform: translateZ(0) scale(1) !important;
+                                        will-change: transform !important;
+                                        filter: contrast(1.02) saturate(1.05) !important;
+                                        max-width: none !important;
+                                        max-height: none !important;
+                                        border: none !important;
+                                        outline: none !important;
+                                    }
+                                    
+                                    /* Contenedores de imagen */
+                                    [data-element-type="image"] {
+                                        overflow: hidden !important;
+                                        position: relative !important;
+                                    }
+                                    
+                                    [data-element-type="image"] > div {
+                                        width: 100% !important;
+                                        height: 100% !important;
+                                        overflow: hidden !important;
+                                    }
+                                    
+                                    /* Optimizaciones generales para PDF */
+                                    * {
+                                        -webkit-font-smoothing: antialiased !important;
+                                        -moz-osx-font-smoothing: grayscale !important;
+                                        text-rendering: optimizeLegibility !important;
+                                        -webkit-backface-visibility: hidden !important;
+                                        backface-visibility: hidden !important;
+                                        -webkit-transform: translateZ(0) !important;
+                                        transform: translateZ(0) !important;
+                                    }
+                                    
+                                    /* Elementos de texto de alta calidad */
+                                    p, span, div, h1, h2, h3, h4, h5, h6, [contenteditable] {
+                                        text-rendering: optimizeLegibility !important;
+                                        -webkit-font-smoothing: antialiased !important;
+                                        -moz-osx-font-smoothing: grayscale !important;
+                                        font-smooth: always !important;
+                                    }
+                                    
+                                    /* Elementos vectoriales de alta calidad */
+                                    svg, path, circle, rect, line {
+                                        shape-rendering: geometricPrecision !important;
+                                        vector-effect: non-scaling-stroke !important;
+                                    }
+                                `;
+                                clonedDoc.head.appendChild(style);
+                                console.log('✅ CSS para PDF aplicado correctamente');
+                                
+                            } catch (e) {
+                                console.error('❌ Error en pre-procesamiento avanzado:', e);
+                            }
+                        }
+                    };
+
+                    // Capturar con html2canvas
+                    const canvas = await html2canvas(workspaceElement, captureOptions);
+                    
+                    if (!canvas) {
+                        throw new Error('html2canvas no devolvió un canvas válido');
+                    }
+                    
+                    // Post-procesamiento para PDF de impresión profesional
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            // Mejorar el contraste y nitidez para impresión
+                            ctx.imageSmoothingEnabled = false;
+                            ctx.imageSmoothingQuality = 'high';
+                            
+                            // Aplicar filtros de mejora de calidad
+                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            const data = imageData.data;
+                            
+                            // Ligero aumento de contraste para impresión
+                            for (let i = 0; i < data.length; i += 4) {
+                                data[i] = Math.min(255, data[i] * 1.05);     // R
+                                data[i + 1] = Math.min(255, data[i + 1] * 1.05); // G
+                                data[i + 2] = Math.min(255, data[i + 2] * 1.05); // B
+                            }
+                            
+                            ctx.putImageData(imageData, 0, 0);
+                            console.log('✅ Post-procesamiento de calidad aplicado');
+                        }
+                    }
+                    
+                    console.log(`✅ Página ${pageIndex + 1} capturada exitosamente`);
+                    return canvas;
+                    
+                } catch (error) {
+                    console.error(`❌ Error capturando página ${pageIndex + 1}:`, error);
+                    return null;
+                }
+            };
+
+            // Procesar cada página usando captura DOM
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                console.log(`🔄 Procesando página ${i + 1}/${totalPages}: ${page.id}`);
+                
+                try {
+                    // Capturar página usando DOM (como en Editor.jsx)
+                    const canvas = await capturePageWithDOM(i);
+                    
+                    if (canvas) {
+                        // Calcular dimensiones para mantener aspecto y llenar la página
+                        const canvasAspect = canvas.width / canvas.height;
+                        const pageAspect = pageWidthPt / pageHeightPt;
+                        
+                        let imgWidth, imgHeight, offsetX = 0, offsetY = 0;
+                        
+                        if (canvasAspect > pageAspect) {
+                            imgWidth = pageWidthPt;
+                            imgHeight = pageWidthPt / canvasAspect;
+                            offsetY = (pageHeightPt - imgHeight) / 2;
+                        } else {
+                            imgHeight = pageHeightPt;
+                            imgWidth = pageHeightPt * canvasAspect;
+                            offsetX = (pageWidthPt - imgWidth) / 2;
+                        }
+                        
+                        // 🖨️ CALIDAD PROFESIONAL: PNG sin compresión para impresión
+                        const imgData = canvas.toDataURL('image/png', 1.0);
+                        
+                        // Agregar página si no es la primera
+                        if (i > 0) {
+                            pdf.addPage([pageWidthPt, pageHeightPt]);
+                        }
+                        
+                        // 🖨️ Agregar imagen PNG de alta calidad al PDF
+                        pdf.addImage(imgData, 'PNG', offsetX, offsetY, imgWidth, imgHeight);
+                        
+                        console.log(`✅ Página ${i + 1} agregada al PDF`);
+                    } else {
+                        console.warn(`⚠️ No se pudo capturar la página ${i + 1}`);
+                        
+                        // Agregar página en blanco si falla la captura
+                        if (i > 0) {
+                            pdf.addPage([pageWidthPt, pageHeightPt]);
+                        }
+                        
+                        // Agregar texto de error
+                        pdf.setFontSize(12);
+                        pdf.text(`Error al renderizar página ${i + 1}`, pageWidthPt / 2, pageHeightPt / 2, { align: 'center' });
+                    }
+                } catch (pageError) {
+                    console.error(`❌ Error procesando página ${i + 1}:`, pageError);
+                    
+                    // Agregar página de error
+                    if (i > 0) {
+                        pdf.addPage([pageWidthPt, pageHeightPt]);
+                    }
+                    
+                    pdf.setFontSize(12);
+                    pdf.text(`Error al procesar página ${i + 1}`, pageWidthPt / 2, pageHeightPt / 2, { align: 'center' });
+                }
+                
+                processedPages++;
+                updateProgress(processedPages);
+                
+                // Pausa pequeña entre páginas para no sobrecargar el navegador
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            // Generar nombre del archivo
+            const fileName = `${itemData?.name || projectData?.name || 'album'}_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            // Descargar el PDF
+            pdf.save(fileName);
+            
+            // Remover progreso
+            if (document.getElementById('pdf-progress')) {
+                document.body.removeChild(progressContainer);
+            }
+            
+            console.log('✅ PDF generado exitosamente:', fileName);
+            
+            // Mostrar mensaje de éxito
+            const successMsg = document.createElement('div');
+            successMsg.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg z-50';
+            successMsg.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>PDF de alta calidad generado: ${fileName}</span>
+                </div>
+            `;
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                if (document.body.contains(successMsg)) {
+                    document.body.removeChild(successMsg);
+                }
+            }, 5000);
+            
+        } catch (error) {
+            console.error('❌ Error generando PDF:', error);
+            
+            // Remover progreso si existe
+            const progressElement = document.getElementById('pdf-progress');
+            if (progressElement && document.body.contains(progressElement)) {
+                document.body.removeChild(progressElement);
+            }
+            
+            // Mostrar error
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg z-50';
+            errorMsg.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Error al generar PDF: ${error.message}</span>
+                </div>
+            `;
+            document.body.appendChild(errorMsg);
+            
+            setTimeout(() => {
+                if (document.body.contains(errorMsg)) {
+                    document.body.removeChild(errorMsg);
+                }
+            }, 5000);
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    }, [pages, workspaceDimensions, presetData, itemData, projectData]);
           
 
     // Funciones auxiliares
@@ -552,11 +1006,16 @@ const BookPreviewModal = ({
             <style dangerouslySetInnerHTML={{ __html: flipbookStyles }} />
 
             {/* Overlay de carga */}
-            {isGeneratingThumbnails && (
+            {(isGeneratingThumbnails || isGeneratingPDF) && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-                        <p className="text-gray-700">Generando vistas previas de alta calidad...</p>
+                        <p className="text-gray-700">
+                            {isGeneratingPDF 
+                                ? 'Generando PDF de alta calidad...' 
+                                : 'Generando vistas previas de alta calidad...'
+                            }
+                        </p>
                         <p className="text-sm text-gray-500 mt-1">
                             Esto puede tomar unos segundos
                         </p>
@@ -713,7 +1172,34 @@ const BookPreviewModal = ({
                 </div>
             </div>
  {/* Botones de acción */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-md mx-auto">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-2xl mx-auto">
+                {/* Botón Descargar PDF */}
+                <button
+                    className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center ${
+                        isGeneratingPDF
+                            ? 'bg-blue-400 text-white cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                    onClick={generatePDF}
+                    disabled={isGeneratingPDF || isProcessing}
+                >
+                    {isGeneratingPDF ? (
+                        <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Generando PDF...
+                        </>
+                    ) : (
+                        <>
+                            <Download className="h-5 w-5 mr-2" />
+                            Descargar PDF
+                        </>
+                    )}
+                </button>
+
+                {/* Botón Comprar ahora */}
                 <button
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center ${isProcessing
                             ? 'bg-purple-400 text-white cursor-not-allowed'
@@ -723,257 +1209,184 @@ const BookPreviewModal = ({
                         if (isProcessing) return;
 
                         setIsProcessing(true);
+                        console.log('🚀 === INICIO PROCESO COMPRA (SIN PDF FRONTEND) ===');
 
                         try {
-                            console.log('🚀 Iniciando proceso de compra con generación de PDF...');
+                            console.log('🔍 Verificando función addAlbumToCart...');
+                            console.log('addAlbumToCart type:', typeof addAlbumToCart);
+                            console.log('addAlbumToCart value:', addAlbumToCart);
 
                             // Verificar que la función addAlbumToCart esté disponible
                             if (typeof addAlbumToCart !== 'function') {
                                 console.error('❌ addAlbumToCart no es una función');
-                                console.log('addAlbumToCart type:', typeof addAlbumToCart);
-                                console.log('addAlbumToCart value:', addAlbumToCart);
                                 alert('Error: Función de carrito no disponible. Inténtelo nuevamente.');
+                                setIsProcessing(false);
                                 return;
                             }
 
-                            // Paso 1: Agregar al carrito primero (incluye generación del project_id)
-                            console.log('� Agregando álbum al carrito...');
-                            const addedToCart = addAlbumToCart();
-                            console.log('� Resultado de addAlbumToCart:', addedToCart);
-
-                            if (addedToCart) {
-                                console.log('✅ Álbum agregado al carrito exitosamente');
-
-                                // Paso 2: Obtener el project_id del producto agregado al carrito
-                                let projectId = null;
-                                
-                                // Verificar el carrito para obtener el project_id del álbum recién agregado
-                                try {
-                                    const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
-                                    const currentCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
-                                    
-                                    // Buscar el último álbum agregado (el más reciente)
-                                    const latestAlbum = currentCart
-                                        .filter(item => item.type === 'custom_album')
-                                        .sort((a, b) => {
-                                            // Ordenar por timestamp en el ID para obtener el más reciente
-                                            const timestampA = parseInt(a.id.split('_').pop());
-                                            const timestampB = parseInt(b.id.split('_').pop());
-                                            return timestampB - timestampA;
-                                        })[0];
-                                    
-                                    if (latestAlbum && latestAlbum.project_id) {
-                                        projectId = latestAlbum.project_id;
-                                        console.log('🆔 Project ID obtenido del carrito:', projectId);
-                                    } else {
-                                        console.warn('⚠️ No se encontró project_id en el carrito');
-                                    }
-                                } catch (error) {
-                                    console.error('❌ Error al obtener project_id del carrito:', error);
+                            // Paso 1: Agregar al carrito (esto guarda en BD y marca proyecto como listo para PDF backend)
+                            console.log('🛒 Agregando álbum al carrito y preparando para PDF backend...');
+                            let addedToCart;
+                            try {
+                                // Verificar si addAlbumToCart devuelve una promesa
+                                const cartResult = addAlbumToCart();
+                                if (cartResult && typeof cartResult.then === 'function') {
+                                    // Es una promesa, esperarla
+                                    addedToCart = await cartResult;
+                                } else {
+                                    // No es una promesa, usar el resultado directamente
+                                    addedToCart = cartResult;
                                 }
-                                
-                                // Si no se pudo obtener del carrito, usar las variables globales como fallback
-                                if (!projectId) {
-                                    projectId = window.currentProjectId || 
-                                               window.albumProjectId || 
-                                               `project_${Date.now()}`;
-                                    console.log('🆔 Project ID de fallback:', projectId);
-                                }
+                                console.log('✅ Resultado de addAlbumToCart:', addedToCart);
+                            } catch (cartError) {
+                                console.error('❌ Error en addAlbumToCart:', cartError);
+                                alert('Error al agregar al carrito: ' + cartError.message);
+                                setIsProcessing(false);
+                                return;
+                            }
 
-                                // Paso 3: Generar PDF del álbum usando los thumbnails generados
-                                console.log('📄 Generando PDF del álbum usando thumbnails...');
-                                try {
-                                    // Verificar que jsPDF esté disponible
-                                    if (!jsPDF) {
-                                        throw new Error('jsPDF no está disponible');
-                                    }
-
-                                    // Configurar el PDF con las dimensiones del workspace
-                                    const pdfWidth = workspaceDimensions.width*0.264583*10 ; // Convertir px a mm (1px = 0.264583mm)
-                                    const pdfHeight = workspaceDimensions.height*0.264583*10 ;
-                                    
-                                    const pdf = new jsPDF({
-                                        orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-                                        unit: 'mm',
-                                        format: [pdfWidth, pdfHeight],
-                                        scale: 2, // Escala para alta resolución
-                                        hotfixes: ['px_scaling']
-                                     
-                                        
-                                    });
-
-                                    // Obtener solo las páginas con contenido (sin reversos)
-                                    const contentPages = pages.filter(page => !page.isBack && !page.isEmpty);
-                                    console.log('📄 Páginas a incluir en PDF:', contentPages.length);
-
-                                    // Usar los thumbnails disponibles (los mismos que se muestran en el preview)
-                                    const thumbnailsToUse = Object.keys(activeThumbnails).length > 0 ? activeThumbnails : generatedThumbnails;
-                                    
-                                    if (Object.keys(thumbnailsToUse).length === 0) {
-                                        throw new Error('No hay thumbnails disponibles para generar el PDF');
-                                    }
-
-                                    console.log('📄 Usando thumbnails:', Object.keys(thumbnailsToUse));
-
-                                    // Agregar cada página al PDF usando sus thumbnails
-                                    for (let i = 0; i < contentPages.length; i++) {
-                                        const page = contentPages[i];
-                                        const thumbnail = thumbnailsToUse[page.id];
-                                        
-                                        if (thumbnail) {
-                                            // Agregar nueva página (excepto la primera)
-                                            if (i > 0) {
-                                                pdf.addPage([pdfWidth, pdfHeight]);
-                                            }
-                                            
-                                            // Agregar el thumbnail como imagen al PDF
-                                            pdf.addImage(
-                                                thumbnail, 
-                                                'PNG', 
-                                                0, 
-                                                0, 
-                                                pdfWidth, 
-                                                pdfHeight,
-                                                undefined,
-                                                'FAST'
-                                            );
-                                            
-                                            console.log(`📄 Página ${i + 1} agregada al PDF:`, page.type);
-                                        } else {
-                                            console.warn(`⚠️ No se encontró thumbnail para página ${page.id}`);
-                                        }
-                                    }
-
-                                    // Generar el PDF como blob
-                                    const pdfBlob = pdf.output('blob');
-                                    console.log('📄 PDF generado exitosamente usando thumbnails:', pdfBlob.size, 'bytes');
-
-                                    // Paso 4: Enviar PDF al servidor para guardarlo con el project_id
-                                    console.log('💾 Guardando PDF en el servidor...');
-
-                                    // Convertir blob a base64
-                                    const base64PDF = await new Promise((resolve, reject) => {
-                                        const reader = new FileReader();
-                                        reader.onload = () => {
-                                            const base64 = reader.result.split(',')[1];
-                                            resolve(base64);
-                                        };
-                                        reader.onerror = reject;
-                                        reader.readAsDataURL(pdfBlob);
-                                    });
-
-                                    // Preparar datos para enviar al servidor
-                                    const itemDataToSend = {
-                                        item_id: itemData?.id,
-                                        preset_id: presetData?.id,
-                                        title: itemData?.name || itemData?.title || 'Álbum Personalizado',
-                                        user_id: itemData?.user_id // Incluir user_id si está disponible
-                                    };
-
-                                    console.log('📄 Enviando PDF al servidor:', {
-                                        projectId,
-                                        itemDataToSend,
-                                        pdfSize: base64PDF.length
-                                    });
-
-                                    // Enviar PDF al servidor con project_id
-                                    const generatePDFResponse = await fetch(`/api/projects/${projectId}/generate-pdf`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                                        },
-                                        body: JSON.stringify({
-                                            pdf_blob: base64PDF,
-                                            item_data: itemDataToSend
-                                        })
-                                    });
-
-                                    if (!generatePDFResponse.ok) {
-                                        const errorData = await generatePDFResponse.json();
-                                        throw new Error(errorData.message || 'Error al guardar el PDF en el servidor');
-                                    }
-
-                                    const pdfResult = await generatePDFResponse.json();
-                                    console.log('💾 PDF guardado en servidor:', pdfResult);
-
-                                } catch (pdfError) {
-                                    console.error('❌ Error generando/guardando PDF:', pdfError);
-                                    // Continuar con el proceso aunque falle el PDF
-                                    console.log('⚠️ Continuando sin PDF...');
-                                }
-
-                                // Paso 5: Redirigir al carrito
-                                try {
-                                    // Esperar un poco para asegurar que el localStorage se actualice
-                                    await new Promise(resolve => setTimeout(resolve, 300));
-
-                                    // Verificar una vez más que el álbum esté en el carrito
-                                    const verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
-                                    console.log('🔍 Verificación final del carrito:', verifyCart);
-                                    console.log('🔍 Longitud del carrito:', verifyCart.length);
-
-                                    if (verifyCart.length === 0) {
-                                        console.error('❌ ADVERTENCIA: El carrito parece vacío después de agregar');
-                                    }
-
-                                    // Redirigir al carrito
-                                    const cartUrl = `${Global.APP_URL}/cart`;
-                                    console.log('🔄 Redirigiendo al carrito...');
-                                    console.log('🔄 URL del carrito:', cartUrl);
-
-                                    // Usar window.location.href para la redirección
-                                    window.location.href = cartUrl;
-
-                                } catch (redirectError) {
-                                    console.error('⚠️ Error durante verificación o redirección:', redirectError);
-                                    console.log('🔄 Intentando redirección directa...');
-
-                                    // Redirección de emergencia sin verificaciones adicionales
-                                    const cartUrl = `${Global.APP_URL}/cart`;
-                                    console.log('🔄 Redirigiendo al carrito...');
-                                    console.log('🔄 URL del carrito:', cartUrl);
-
-                                    // Usar window.location.href para la redirección
-                                    window.location.href = cartUrl;
-                                }
-                            } else {
+                            if (!addedToCart) {
                                 console.error('❌ No se pudo agregar al carrito');
                                 alert('Error al agregar el álbum al carrito. Revise la consola para más detalles.');
+                                setIsProcessing(false);
+                                return;
                             }
-                        } catch (error) {
-                            console.error('❌ === ERROR DURANTE PROCESO DE COMPRA ===');
-                            console.error('Tipo de error:', error.name);
-                            console.error('Mensaje:', error.message);
-                            console.error('Stack trace:', error.stack);
-                            console.error('Error completo:', error);
 
-                            // Si el error ocurrió DESPUÉS de agregar al carrito, intentar redirigir de todas formas
+                            console.log('✅ Álbum agregado al carrito exitosamente');
+                            console.log('📄 El PDF se generará automáticamente en el backend con dimensiones exactas de BD');
+
+                            // Opcional: Verificar que el proyecto tiene datos para PDF
                             try {
-                                const verifyCart = JSON.parse(localStorage.getItem(`${Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
-                                console.log('🔍 Verificando carrito después del error:', verifyCart.length > 0 ? 'HAY ITEMS' : 'VACÍO');
+                                const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
+                                const currentCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+                                const latestItem = currentCart.find(item => 
+                                    item.type === 'custom_album' && 
+                                    item.project_id && 
+                                    item.pdf_data
+                                );
+                                
+                                if (latestItem) {
+                                    console.log('📄 Datos para PDF backend confirmados:', {
+                                        project_id: latestItem.project_id,
+                                        has_pdf_data: !!latestItem.pdf_data,
+                                        dimensions: latestItem.pdf_data?.dimensions
+                                    });
+                                } else {
+                                    console.warn('⚠️ No se encontraron datos de PDF en el carrito');
+                                }
+                            } catch (verificationError) {
+                                console.warn('⚠️ Error verificando datos de PDF:', verificationError);
+                            }
 
-                                if (verifyCart.length > 0) {
-                                    console.log('✅ El carrito tiene items, redirigiendo de todas formas...');
-                                    // Redirección de emergencia sin verificaciones adicionales
-                                    const cartUrl = `${Global.APP_URL}/cart`;
-                                    console.log('🔄 Redirigiendo al carrito...');
-                                    console.log('🔄 URL del carrito:', cartUrl);
+                            // Paso 2: Redirigir al carrito (SIEMPRE ejecutar)
+                            console.log('🔄 Iniciando redirección al carrito...');
+                            try {
+                                // Esperar un poco para asegurar que el localStorage se actualice
+                                console.log('⏱️ Esperando 1 segundo para asegurar persistencia...');
+                                await new Promise(resolve => setTimeout(resolve, 1000));
 
-                                    // Usar window.location.href para la redirección
+                                // Verificar múltiples veces que el álbum esté en el carrito
+                                let verifyCart = [];
+                                for (let attempts = 0; attempts < 3; attempts++) {
+                                    verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
+                                    console.log(`🔍 Verificación ${attempts + 1}/3 del carrito:`, verifyCart.length, 'items');
+                                    
+                                    if (verifyCart.length > 0) {
+                                        break; // Carrito tiene items, proceder
+                                    }
+                                    
+                                    // Esperar un poco más en cada intento
+                                    if (attempts < 2) {
+                                        console.log('⏱️ Esperando 500ms más...');
+                                        await new Promise(resolve => setTimeout(resolve, 500));
+                                    }
+                                }
+
+                                // Forzar un último save del localStorage si es necesario
+                                if (verifyCart.length === 0) {
+                                    console.warn('⚠️ Carrito sigue vacío, intentando forzar adición...');
+                                    
+                                    // Intentar agregar al carrito una vez más como fallback
+                                    try {
+                                        const cartResult = addAlbumToCart();
+                                        if (cartResult && typeof cartResult.then === 'function') {
+                                            await cartResult;
+                                        }
+                                        await new Promise(resolve => setTimeout(resolve, 500));
+                                        verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
+                                        console.log('🔍 Verificación después de adición forzada:', verifyCart.length, 'items');
+                                    } catch (forceError) {
+                                        console.error('❌ Error en adición forzada:', forceError);
+                                    }
+                                }
+
+                                // Redirigir al carrito independientemente del estado
+                                const cartUrl = `${Global.APP_URL}/cart`;
+                                console.log('🔄 Redirigiendo a:', cartUrl);
+                                console.log('🔄 Estado final del carrito:', verifyCart.length, 'items');
+
+                                // Forzar la redirección usando múltiples métodos como respaldo
+                                try {
                                     window.location.href = cartUrl;
-                                    return; // Salir sin mostrar alert de error
+                                } catch (locationError) {
+                                    console.error('❌ Error con window.location.href:', locationError);
+                                    try {
+                                        window.location.replace(cartUrl);
+                                    } catch (replaceError) {
+                                        console.error('❌ Error con window.location.replace:', replaceError);
+                                        window.open(cartUrl, '_self');
+                                    }
+                                }
+
+                            } catch (redirectError) {
+                                console.error('❌ Error durante redirección:', redirectError);
+                                
+                                // Redirección de emergencia ultra-simple
+                                const cartUrl = `${Global.APP_URL}/cart`;
+                                console.log('🔄 Redirección de emergencia a:', cartUrl);
+                                
+                                // Múltiples métodos de respaldo
+                                setTimeout(() => {
+                                    try {
+                                        window.location.href = cartUrl;
+                                    } catch (e) {
+                                        window.location = cartUrl;
+                                    }
+                                }, 100);
+                            }
+
+                        } catch (error) {
+                            console.error('❌ === ERROR GENERAL ===');
+                            console.error('Tipo:', error.name);
+                            console.error('Mensaje:', error.message);
+                            console.error('Stack:', error.stack);
+
+                            // Intentar redirigir de todas formas si hay items en el carrito
+                            try {
+                                const verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
+                                if (verifyCart.length > 0) {
+                                    console.log('✅ Hay items en carrito, redirigiendo...');
+                                    window.location.href = `${Global.APP_URL}/cart`;
+                                    return;
                                 }
                             } catch (recoveryError) {
-                                console.error('❌ Error durante intento de recuperación:', recoveryError);
+                                console.error('❌ Error en recuperación:', recoveryError);
                             }
 
-                            alert(`Error durante el proceso: ${error.message}. Si el álbum se agregó al carrito, puede ir manualmente a la página del carrito.`);
+                            alert(`Error: ${error.message}. Si el álbum se agregó, puede ir manualmente al carrito.`);
                         } finally {
+                            // IMPORTANTE: Siempre desbloquear el botón con timeout adicional
+                            console.log('🔄 Desbloqueando botón...');
                             setIsProcessing(false);
+                            
+                            // Timeout adicional como respaldo para asegurar que el botón se desbloquee
+                            setTimeout(() => {
+                                console.log('🔄 Timeout: Desbloqueando botón (respaldo)...');
+                                setIsProcessing(false);
+                            }, 2000);
                         }
                     }}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isGeneratingPDF}
                 >
                     {isProcessing ? (
                         <>
@@ -990,7 +1403,7 @@ const BookPreviewModal = ({
                 <button
                     className="flex-1 py-3 px-4 rounded-lg bg-gray-200 text-gray-700 font-semibold shadow hover:bg-gray-300 transition"
                     onClick={onRequestClose}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isGeneratingPDF}
                 >
                     Continuar editando
                 </button>

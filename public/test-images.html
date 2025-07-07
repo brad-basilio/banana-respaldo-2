@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Sistema de Imágenes Canvas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        #progress {
+            width: 100%;
+            height: 20px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Prueba de Sistema de Imágenes Canvas</h1>
+    
+    <div class="section">
+        <h2>📋 Estado del Sistema</h2>
+        <div id="systemStatus">
+            <p>✅ Frontend: Cargado</p>
+            <p id="backendStatus">⏳ Backend: Verificando...</p>
+            <p>🗂️ <strong>Almacenamiento:</strong> storage/app/images/projects/{projectId}/ (como BasicController)</p>
+            <p>🌐 <strong>URLs:</strong> /api/canvas/image/{base64EncodedPath}</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🖼️ Prueba de Subida de Imágenes</h2>
+        <p>Selecciona una imagen para probar el sistema de subida:</p>
+        <input type="file" id="imageInput" accept="image/*" />
+        <br>
+        <button onclick="testImageUpload()">📤 Probar Subida de Imagen</button>
+        <button onclick="simulateAutoSave()">💾 Simular Auto-Save</button>
+        <progress id="progress" style="display:none;"></progress>
+        <div id="uploadResult" class="log" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>🔄 Simulación del Proceso del Editor</h2>
+        <button onclick="simulateEditorProcess()">🎨 Simular Proceso Completo del Editor</button>
+        <div id="editorResult" class="log" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Logs del Sistema</h2>
+        <div id="systemLogs" class="log"></div>
+        <button onclick="clearLogs()">🗑️ Limpiar Logs</button>
+    </div>
+
+    <script>
+        // Configuración
+        const API_BASE = 'http://127.0.0.1:8000/api';
+        const TEST_PROJECT_ID = 999; // ID de proyecto de prueba
+        
+        // Sistema de logs
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            const logEntry = `[${timestamp}] ${icon} ${message}`;
+            
+            const logsContainer = document.getElementById('systemLogs');
+            logsContainer.textContent += logEntry + '\n';
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            
+            console.log(logEntry);
+        }
+
+        // Verificar estado del backend
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/ubigeo/search`);
+                if (response.ok) {
+                    document.getElementById('backendStatus').innerHTML = '✅ Backend: Conectado';
+                    log('Backend conectado exitosamente');
+                } else {
+                    throw new Error('Backend no disponible');
+                }
+            } catch (error) {
+                document.getElementById('backendStatus').innerHTML = '❌ Backend: Error de conexión';
+                log(`Error conectando con backend: ${error.message}`, 'error');
+            }
+        }
+
+        // Convertir archivo a base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1]; // Remover data:image/...;base64,
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Probar subida de imagen
+        async function testImageUpload() {
+            const fileInput = document.getElementById('imageInput');
+            const resultDiv = document.getElementById('uploadResult');
+            const progressBar = document.getElementById('progress');
+            
+            if (!fileInput.files.length) {
+                alert('Por favor selecciona una imagen primero');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            log(`Iniciando prueba de subida: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+            
+            try {
+                resultDiv.style.display = 'block';
+                progressBar.style.display = 'block';
+                progressBar.value = 0;
+                
+                // Convertir a base64
+                log('Convirtiendo imagen a base64...');
+                progressBar.value = 30;
+                const base64Data = await fileToBase64(file);
+                
+                // Preparar datos para el API
+                const uploadData = {
+                    images: [{
+                        filename: file.name,
+                        data: base64Data,
+                        type: file.type,
+                        elementId: 'test-element-' + Date.now()
+                    }]
+                };
+                
+                log('Enviando imagen al servidor...');
+                progressBar.value = 60;
+                
+                // Enviar al endpoint
+                const response = await fetch(`${API_BASE}/canvas/projects/${TEST_PROJECT_ID}/upload-images`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(uploadData)
+                });
+                
+                progressBar.value = 90;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                progressBar.value = 100;
+                
+                resultDiv.textContent = JSON.stringify(result, null, 2);
+                log(`✅ Imagen subida exitosamente: ${result.uploaded_count} archivo(s)`, 'success');
+                
+                if (result.images && result.images.length > 0) {
+                    const uploadedImage = result.images[0];
+                    log(`📁 Archivo guardado como: ${uploadedImage.savedFilename}`, 'success');
+                    log(`🔗 URL: ${uploadedImage.url}`, 'success');
+                }
+                
+            } catch (error) {
+                log(`Error en subida de imagen: ${error.message}`, 'error');
+                resultDiv.textContent = `Error: ${error.message}`;
+            } finally {
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // Simular auto-save con imágenes
+        async function simulateAutoSave() {
+            log('🚀 Simulando auto-save con imágenes...');
+            
+            // Datos simulados del canvas
+            const mockCanvasData = {
+                version: "2.0",
+                pages: [{
+                    id: "page-1",
+                    elements: [{
+                        id: "text-element-1",
+                        type: "text",
+                        content: "Hola Mundo",
+                        x: 100,
+                        y: 100
+                    }, {
+                        id: "image-element-1", 
+                        type: "image",
+                        content: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                        x: 200,
+                        y: 200,
+                        width: 100,
+                        height: 100
+                    }]
+                }],
+                projectInfo: {
+                    title: "Proyecto de Prueba",
+                    lastModified: new Date().toISOString()
+                }
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/canvas/projects/${TEST_PROJECT_ID}/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        project_data: mockCanvasData,
+                        auto_save: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                log(`✅ Auto-save simulado exitosamente`, 'success');
+                log(`📊 Resultado: ${JSON.stringify(result, null, 2)}`);
+                
+            } catch (error) {
+                log(`❌ Error en auto-save: ${error.message}`, 'error');
+            }
+        }
+
+        // Simular proceso completo del editor
+        async function simulateEditorProcess() {
+            const resultDiv = document.getElementById('editorResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = '';
+            
+            log('🎨 Iniciando simulación completa del editor...');
+            
+            const steps = [
+                'Cargando editor...',
+                'Procesando imágenes base64...',
+                'Subiendo imágenes al servidor...',
+                'Actualizando referencias en canvas...',
+                'Guardando proyecto optimizado...',
+                'Proceso completado ✅'
+            ];
+            
+            for (let i = 0; i < steps.length; i++) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                resultDiv.textContent += `${i + 1}. ${steps[i]}\n`;
+                log(`Paso ${i + 1}: ${steps[i]}`);
+            }
+            
+            log('🎉 Simulación del editor completada exitosamente', 'success');
+        }
+
+        // Limpiar logs
+        function clearLogs() {
+            document.getElementById('systemLogs').textContent = '';
+        }
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 Sistema de pruebas iniciado');
+            checkBackendStatus();
+        });
+    </script>
+</body>
+</html>

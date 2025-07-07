@@ -2,6 +2,20 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import html2canvas from 'html2canvas'; // Para captura de alta calidad
+
+// Función debounce utility
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 import LayerPanel from "./components/Elements/LayerPanel";
 import {
     Undo2,
@@ -255,6 +269,12 @@ export default function EditorLibro() {
     // Referencias y timeouts para manejo de miniaturas
     const thumbnailTimeout = useRef();
 
+    // Estado para las dimensiones calculadas
+    const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
+
+    // 💾 Inicializar hook de auto-guardado con todos los parámetros necesarios
+    const autoSave = useAutoSave(pages, projectData, itemData, presetData, workspaceDimensions, pageThumbnails);
+
     // Función para obtener las dimensiones del área de trabajo
     const getWorkspaceDimensions = () => {
         // Si hay preset con dimensiones, usar esas dimensiones
@@ -355,9 +375,6 @@ export default function EditorLibro() {
         };
     };
 
-    // Estado para las dimensiones calculadas
-    const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
-    
     // Función para capturar el workspace actual con alta calidad y sin bordes
     const captureCurrentWorkspace = useCallback(async (options = { type: 'thumbnail' }) => {
         if (!pages[currentPage]) return null;
@@ -395,8 +412,9 @@ export default function EditorLibro() {
 
             // Configuración según el tipo de captura (thumbnail vs PDF)
             const isPDF = options.type === 'pdf';
-            const scaleFactor = isPDF ? 3 : 1; // 3x para PDF de alta calidad
-            const quality = isPDF ? 1 : 0.9;
+            // �️ IMPRESIÓN PROFESIONAL: Escalado optimizado para 300 DPI
+            const scaleFactor = isPDF ? 11.81 : 3; // 11.81x para 300 DPI exacto (300/25.4 ≈ 11.81), 3x para thumbnails
+            const quality = 1.0; // Calidad máxima sin compresión
 
             // CORRECCIÓN THUMBNAIL: Obtener las dimensiones reales del workspace de la BD
             const workspaceStyle = getComputedStyle(workspaceElement);
@@ -411,24 +429,28 @@ export default function EditorLibro() {
             
             console.log('🎨 [THUMBNAIL-FIX] Background detectado:', workspaceBackground);
 
-            // CORRECCIÓN THUMBNAIL: Opciones para capturar workspace con dimensiones exactas de la BD
+            // 🖨️ OPCIONES PROFESIONALES: Configuración especial para PDF vs Thumbnails
             const captureOptions = {
-                scale: scaleFactor,
+                scale: scaleFactor, // 11.81x para PDF 300 DPI exacto, 3x para thumbnails
                 useCORS: true,
                 allowTaint: false,
-                backgroundColor: workspaceBackground, // Usar el background correcto del workspace
-                // CORRECCIÓN THUMBNAIL: Usar las dimensiones exactas del workspace que vienen de la BD
+                backgroundColor: workspaceBackground,
                 width: workspaceDimensions.width,
                 height: workspaceDimensions.height,
-                // CORRECCIÓN THUMBNAIL: Asegurar que capture desde la posición correcta
                 x: 0,
                 y: 0,
                 scrollX: 0,
                 scrollY: 0,
-                foreignObjectRendering: false,
-                removeContainer: false, // CAMBIO: No remover contenedor para mantener estructura
+                // 🖨️ Configuración específica para PDF de impresión profesional
+                foreignObjectRendering: isPDF ? true : false, // Mejor renderizado para PDF
+                removeContainer: false,
                 logging: false,
-                imageTimeout: 15000,
+                imageTimeout: isPDF ? 60000 : 15000, // 60s para PDF de alta calidad
+                pixelRatio: isPDF ? 3 : (window.devicePixelRatio || 1), // Triple pixel ratio para PDF
+                // 🖨️ CONFIGURACIÓN CRÍTICA para impresión profesional
+                canvas: isPDF ? document.createElement('canvas') : null,
+                windowWidth: isPDF ? workspaceDimensions.width * scaleFactor : null,
+                windowHeight: isPDF ? workspaceDimensions.height * scaleFactor : null,
                 onclone: async (clonedDoc) => {
                     console.log('🔍 [THUMBNAIL-FIX] Iniciando proceso de clonado para elemento de página específico...');
                     
@@ -582,8 +604,8 @@ export default function EditorLibro() {
                                                 0, 0, containerWidth, containerHeight  // Destination rectangle
                                             );
                                             
-                                            // Convertir a dataURL y reemplazar la imagen original
-                                            const croppedDataUrl = tempCanvas.toDataURL('image/png', 0.9);
+                                            // 🚀 Convertir a máxima calidad 4K
+                                            const croppedDataUrl = tempCanvas.toDataURL('image/png', 1.0);
                                             
                                             // Aplicar la imagen pre-procesada
                                             img.src = croppedDataUrl;
@@ -671,13 +693,31 @@ export default function EditorLibro() {
                                 box-sizing: border-box !important;
                             }
                             
-                            /* Imágenes ya pre-procesadas - mantener dimensiones */
+                            /* 🖨️ IMÁGENES PROFESIONALES: Optimizada para PDF vs Thumbnails */
                             img {
                                 width: 100% !important;
                                 height: 100% !important;
                                 object-fit: fill !important; /* fill porque ya están recortadas */
                                 object-position: center !important;
                                 display: block !important;
+                                ${isPDF ? `
+                                /* 🖨️ IMPRESIÓN PROFESIONAL 300 DPI */
+                                image-rendering: -webkit-optimize-contrast !important;
+                                image-rendering: -webkit-crisp-edges !important;
+                                image-rendering: -moz-crisp-edges !important;
+                                image-rendering: pixelated !important;
+                                image-rendering: crisp-edges !important;
+                                image-rendering: optimizeQuality !important;
+                                backface-visibility: hidden !important;
+                                transform: translateZ(0) scale(1) !important;
+                                will-change: transform !important;
+                                filter: contrast(1.02) saturate(1.05) !important;
+                                ` : `
+                                /* Thumbnails optimizados */
+                                image-rendering: -webkit-optimize-contrast !important;
+                                image-rendering: crisp-edges !important;
+                                image-rendering: high-quality !important;
+                                `}
                             }
                             
                             /* Contenedores de imagen */
@@ -698,6 +738,33 @@ export default function EditorLibro() {
                                 background-position: center !important;
                                 background-repeat: no-repeat !important;
                             }
+                            
+                            /* 🖨️ OPTIMIZACIONES GENERALES PARA PDF DE IMPRESIÓN */
+                            ${isPDF ? `
+                            * {
+                                -webkit-font-smoothing: antialiased !important;
+                                -moz-osx-font-smoothing: grayscale !important;
+                                text-rendering: optimizeLegibility !important;
+                                -webkit-backface-visibility: hidden !important;
+                                backface-visibility: hidden !important;
+                                -webkit-transform: translateZ(0) !important;
+                                transform: translateZ(0) !important;
+                            }
+                            
+                            /* Elementos de texto de alta calidad */
+                            p, span, div, h1, h2, h3, h4, h5, h6, [contenteditable] {
+                                text-rendering: optimizeLegibility !important;
+                                -webkit-font-smoothing: antialiased !important;
+                                -moz-osx-font-smoothing: grayscale !important;
+                                font-smooth: always !important;
+                            }
+                            
+                            /* Elementos vectoriales de alta calidad */
+                            svg, path, circle, rect, line {
+                                shape-rendering: geometricPrecision !important;
+                                vector-effect: non-scaling-stroke !important;
+                            }
+                            ` : ''}
                             
                             /* Resetear estilos que puedan interferir */
                             img {
@@ -730,8 +797,34 @@ export default function EditorLibro() {
 
             console.log('📸 [THUMBNAIL-FIX] Iniciando captura de elemento de página con dimensiones exactas de BD:', captureOptions);
             
-            // CORRECCIÓN THUMBNAIL: Usar html2canvas para capturar elemento de página con dimensiones exactas
+            // 🖨️ CAPTURA PROFESIONAL: html2canvas con configuración optimizada
             const canvas = await html2canvas(workspaceElement, captureOptions);
+            
+            // 🖨️ POST-PROCESAMIENTO para PDF de impresión profesional
+            if (isPDF && canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    // Mejorar el contraste y nitidez para impresión
+                    ctx.imageSmoothingEnabled = false; // Desactivar suavizado para máxima nitidez
+                    ctx.imageSmoothingQuality = 'high';
+                    
+                    // Aplicar filtros de mejora de calidad si es necesario
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    // Ligero aumento de contraste para impresión
+                    for (let i = 0; i < data.length; i += 4) {
+                        // Ajuste sutil de contraste (factor 1.05)
+                        data[i] = Math.min(255, data[i] * 1.05);     // R
+                        data[i + 1] = Math.min(255, data[i + 1] * 1.05); // G
+                        data[i + 2] = Math.min(255, data[i + 2] * 1.05); // B
+                        // Alpha se mantiene igual (data[i + 3])
+                    }
+                    
+                    ctx.putImageData(imageData, 0, 0);
+                    console.log('✅ [PDF-PROFESSIONAL] Post-procesamiento de calidad aplicado');
+                }
+            }
             
             if (!canvas) {
                 throw new Error('html2canvas no devolvió un canvas válido para el elemento de página');
@@ -768,7 +861,7 @@ export default function EditorLibro() {
             try {
                 console.log('🔄 [THUMBNAIL-FIX] Intentando fallback con canvas de elemento de página...');
                 const canvas = document.createElement('canvas');
-                const scaleFactor = options.type === 'pdf' ? 3 : 1;
+                const scaleFactor = options.type === 'pdf' ? 11.81 : 1; // 🖨️ 11.81x para PDF 300 DPI exacto
                 canvas.width = workspaceDimensions.width * scaleFactor;
                 canvas.height = workspaceDimensions.height * scaleFactor;
                 const ctx = canvas.getContext('2d');
@@ -794,7 +887,7 @@ export default function EditorLibro() {
                 if (options.type === 'pdf') {
                     return canvas;
                 } else {
-                    const fallbackDataUrl = canvas.toDataURL('image/png', 0.8);
+                    const fallbackDataUrl = canvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
                     console.log('✅ [DEBUG] Fallback thumbnail creado');
                     return fallbackDataUrl;
                 }
@@ -841,7 +934,7 @@ export default function EditorLibro() {
     }, [generateCurrentThumbnail, pages, currentPage, pageThumbnails]);
 
     // Función para generar thumbnail de alta calidad para una página específica
-    const generateHighQualityThumbnail = useCallback(async (pageIndex = currentPage, size = { width: 400, height: 300 }) => {
+    const generateHighQualityThumbnail = useCallback(async (pageIndex = currentPage, size = { width: 800, height: 600 }) => {
         if (!pages[pageIndex]) return null;
         
         try {
@@ -862,7 +955,7 @@ export default function EditorLibro() {
 
             // Opciones para thumbnail de alta calidad
             const options = {
-                scale: 2, // 2x para mayor resolución
+                scale: 4, // 🚀 4x para alta calidad eficiente
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: pages[pageIndex]?.backgroundColor || '#ffffff',
@@ -999,10 +1092,13 @@ export default function EditorLibro() {
                             -moz-osx-font-smoothing: grayscale !important;
                         }
                         
-                        /* CRÍTICO: Asegurar que las imágenes mantengan cover */
+                        /* CRÍTICO: Asegurar que las imágenes mantengan cover + CALIDAD HD */
                         img {
                             object-fit: cover !important;
                             object-position: center !important;
+                            image-rendering: -webkit-optimize-contrast !important;
+                            image-rendering: crisp-edges !important;
+                            image-rendering: high-quality !important;
                         }
                         
                         /* CRÍTICO: Asegurar que los backgrounds de página se mantengan en cover */
@@ -1054,7 +1150,7 @@ export default function EditorLibro() {
                 // Dibujar imagen redimensionada
                 ctx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
                 
-                const dataUrl = resizeCanvas.toDataURL('image/png', 0.9);
+                const dataUrl = resizeCanvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
                 
                 // Restaurar página original
                 if (pageIndex !== originalPage) {
@@ -1069,7 +1165,7 @@ export default function EditorLibro() {
                 setCurrentPage(originalPage);
             }
             
-            return canvas.toDataURL('image/png', 0.9);
+            return canvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
             
         } catch (error) {
             console.error('❌ Error generando thumbnail de alta calidad:', error);
@@ -1136,25 +1232,226 @@ export default function EditorLibro() {
     const [showProgressRecovery, setShowProgressRecovery] = useState(false);
     const [savedProgress, setSavedProgress] = useState(null);
 
-    // Enhanced Auto-Save system integration
-    const autoSave = useAutoSave(
-        pages, 
-        projectData, 
-        itemData, 
-        presetData, 
-        workspaceDimensions, 
-        pageThumbnails
+    // �️ FUNCIÓN PARA PROCESAR Y GUARDAR IMÁGENES EN EL SERVIDOR
+    const processAndSaveImages = useCallback(async (pages, projectId) => {
+        const processedPages = [];
+        const imagesToUpload = [];
+
+        for (const page of pages) {
+            const processedPage = { ...page };
+            
+            if (page.cells) {
+                processedPage.cells = [];
+                
+                for (const cell of page.cells) {
+                    const processedCell = { ...cell };
+                    
+                    if (cell.elements) {
+                        processedCell.elements = [];
+                        
+                        for (const element of cell.elements) {
+                            if (element.type === 'image' && element.content?.startsWith('data:image/')) {
+                                // Detectar imagen en base64
+                                const imageId = `${element.id}_${Date.now()}`;
+                                const filename = `${imageId}.png`;
+                                
+                                // Extraer el tipo de imagen y los datos
+                                const matches = element.content.match(/^data:image\/([^;]+);base64,(.+)$/);
+                                if (matches) {
+                                    const imageType = matches[1];
+                                    const imageData = matches[2];
+                                    const extension = imageType === 'jpeg' ? 'jpg' : imageType;
+                                    const finalFilename = `${imageId}.${extension}`;
+                                    
+                                    // Agregar a la lista de imágenes para subir
+                                    imagesToUpload.push({
+                                        filename: finalFilename,
+                                        data: imageData,
+                                        type: imageType,
+                                        elementId: element.id
+                                    });
+                                    
+                                    // Reemplazar el contenido por la ruta del servidor
+                                    processedCell.elements.push({
+                                        ...element,
+                                        content: `/api/canvas/image/${btoa(`images/projects/${projectId}/${finalFilename}`)}`,
+                                        _wasBase64: true,
+                                        _originalSize: element.content.length
+                                    });
+                                    
+                                    console.log(`📸 [IMAGE-PROCESS] Imagen base64 procesada: ${element.id} -> ${finalFilename}`);
+                                } else {
+                                    // Si no coincide el patrón, mantener como está
+                                    processedCell.elements.push(element);
+                                }
+                            } else {
+                                // Elemento que no es imagen base64, mantener como está
+                                processedCell.elements.push(element);
+                            }
+                        }
+                    }
+                    
+                    processedPage.cells.push(processedCell);
+                }
+            }
+            
+            processedPages.push(processedPage);
+        }
+
+        // 🚀 SUBIR TODAS LAS IMÁGENES AL SERVIDOR
+        if (imagesToUpload.length > 0) {
+            console.log(`📤 [IMAGE-UPLOAD] Subiendo ${imagesToUpload.length} imágenes al servidor...`);
+            
+            try {
+                const uploadResponse = await fetch(`/api/canvas/projects/${projectId}/upload-images`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        images: imagesToUpload
+                    })
+                });
+
+                if (uploadResponse.ok) {
+                    const uploadResult = await uploadResponse.json();
+                    console.log(`✅ [IMAGE-UPLOAD] ${imagesToUpload.length} imágenes subidas exitosamente:`, uploadResult);
+                } else {
+                    const errorData = await uploadResponse.json().catch(() => ({ message: 'Error desconocido en upload' }));
+                    console.error('❌ [IMAGE-UPLOAD] Error subiendo imágenes:', errorData);
+                    
+                    // En caso de error, conservar las imágenes base64 originales
+                    console.log('🔄 [IMAGE-UPLOAD] Fallback: conservando imágenes base64 originales');
+                    return pages; // Retornar páginas originales sin procesar
+                }
+            } catch (uploadError) {
+                console.error('❌ [IMAGE-UPLOAD] Error de red subiendo imágenes:', uploadError);
+                return pages; // Retornar páginas originales sin procesar
+            }
+        }
+
+        return processedPages;
+    }, []);
+
+    // 💾 SISTEMA DE GUARDADO AUTOMÁTICO OPTIMIZADO - Con procesamiento de imágenes
+    const autoSaveToDatabase = useCallback(async (pagesToSave = pages, force = false) => {
+        if (!projectData?.id || (!force && pagesToSave.length === 0)) return;
+
+        try {
+            console.log('💾 [AUTO-SAVE] Guardando progreso con procesamiento de imágenes...');
+            
+            // 🖼️ PASO 1: Procesar y subir imágenes al servidor
+            const optimizedPages = await processAndSaveImages(pagesToSave, projectData.id);
+            
+            // CORRECCIÓN: Preparar datos según la estructura que espera ProjectSaveController
+            const designData = {
+                pages: optimizedPages,
+                currentPage: currentPage,
+                workspaceDimensions: workspaceDimensions,
+                workspaceSize: workspaceSize,
+                selectedElement: selectedElement,
+                selectedCell: selectedCell,
+                history: history.slice(-5), // Mantener más historial ya que las imágenes están optimizadas
+                historyIndex: Math.min(historyIndex, 4),
+                timestamp: new Date().toISOString(),
+                version: '2.0', // Nueva versión con imágenes en servidor
+                project: {
+                    id: projectData.id,
+                    name: itemData?.name || 'Álbum Personalizado',
+                    item_id: itemData?.id,
+                    preset_id: presetData?.id
+                }
+            };
+
+            // �️ Thumbnails optimizados (ya no hay problema de tamaño)
+            const thumbnailsArray = Object.entries(pageThumbnails).map(([pageId, thumbnail]) => ({
+                page_id: pageId,
+                thumbnail: thumbnail
+            }));
+
+            // CORRECCIÓN: Estructura exacta que espera el backend según ProjectSaveController
+            const requestData = {
+                design_data: designData,
+                thumbnails: thumbnailsArray
+            };
+
+            // 📊 Calcular tamaño final (debería ser mucho menor ahora)
+            const finalDataSize = JSON.stringify(requestData).length;
+            const finalDataSizeMB = finalDataSize / (1024 * 1024);
+
+            console.log('💾 [AUTO-SAVE] Datos optimizados con imágenes en servidor:', {
+                projectId: projectData.id,
+                pagesCount: optimizedPages.length,
+                thumbnailsCount: thumbnailsArray.length,
+                dataSize: finalDataSize,
+                dataSizeMB: finalDataSizeMB.toFixed(2) + ' MB',
+                optimized: '✅ Imágenes en servidor'
+            });
+
+            // 🚀 Enviar datos optimizados (sin verificación de tamaño extrema ya que están optimizados)
+            const response = await fetch(`/api/canvas/projects/${projectData.id}/save-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                credentials: 'include',
+                body: JSON.stringify(requestData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ [AUTO-SAVE] Progreso con imágenes optimizadas guardado exitosamente:', result);
+                
+                // Limpiar localStorage después de guardar en BD
+                const storageKey = `editor_progress_project_${projectData.id}`;
+                localStorage.removeItem(storageKey);
+                
+                return true;
+            } else {
+                const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+                console.error('❌ [AUTO-SAVE] Error guardando en BD:', errorData);
+                return false;
+            }
+
+        } catch (error) {
+            console.error('❌ [AUTO-SAVE] Error en auto-save con procesamiento de imágenes:', error);
+            return false;
+        }
+    }, [pages, currentPage, workspaceDimensions, workspaceSize, selectedElement, selectedCell, history, historyIndex, projectData?.id, itemData?.name, itemData?.id, presetData?.id, pageThumbnails, processAndSaveImages]);
+
+    // Auto-save automático cada 30 segundos
+    useEffect(() => {
+        if (!projectData?.id) return;
+
+        const autoSaveInterval = setInterval(() => {
+            if (pages.length > 0) {
+                console.log('⏰ [AUTO-SAVE] Ejecutando auto-save automático...');
+                autoSaveToDatabase(pages, false);
+            }
+        }, 30000); // 30 segundos
+
+        return () => clearInterval(autoSaveInterval);
+    }, [autoSaveToDatabase, pages, projectData?.id]);
+
+    // Auto-save cuando cambian las páginas (debounced)
+    const debouncedAutoSave = useCallback(
+        debounce(() => {
+            if (pages.length > 0 && projectData?.id) {
+                console.log('🔄 [AUTO-SAVE] Cambios detectados, guardando...');
+                autoSaveToDatabase(pages, false);
+            }
+        }, 3000), // 3 segundos después del último cambio
+        [autoSaveToDatabase, pages, projectData?.id]
     );
 
-    // Save system integration (legacy support)
-    const saveHook = useSaveProject(
-        pages,
-        projectData,
-        itemData,
-        presetData,
-        { width: 800, height: 600 }, // workspaceDimensions
-        pageThumbnails
-    );
+    useEffect(() => {
+        debouncedAutoSave();
+    }, [pages, debouncedAutoSave]);
 
     // Función para obtener el storage key único basado en el proyecto
     const getStorageKey = () => {
@@ -2246,41 +2543,110 @@ export default function EditorLibro() {
         }, 2000);
 
         return () => clearTimeout(backgroundTimeoutId);
-    }, [pages, pageThumbnails, isLoading]);
-
-
-
-    // --- Función para agregar álbum al carrito ---
+    }, [pages, pageThumbnails, isLoading]);    // --- Función para agregar álbum al carrito CON BACKEND PDF ---
     const addAlbumToCart = async () => {
-        console.log('🛒 === INICIO addAlbumToCart ===');
+        console.log('🛒 === INICIO addAlbumToCart CON BACKEND PDF ===');
 
         try {
             console.log('📊 Estado actual:', {
                 itemData: itemData,
                 presetData: presetData,
                 cartLength: cart?.length,
-                pagesLength: pages?.length
+                pagesLength: pages?.length,
+                projectId: projectData?.id
             });
 
-            if (!itemData || !presetData) {
+            if (!itemData || !presetData || !projectData?.id) {
                 console.error('❌ Faltan datos necesarios para crear el álbum');
                 console.log('itemData:', itemData);
                 console.log('presetData:', presetData);
+                console.log('projectData:', projectData);
                 toast.error("Error: Datos del álbum incompletos");
                 return false;
             }
 
-            // Paso 1: Generar un project_id único
+            // Paso 1: GUARDAR PROGRESO FINAL EN BASE DE DATOS
+            console.log('💾 Guardando progreso final en base de datos...');
+            const savedSuccessfully = await autoSaveToDatabase(pages, true); // Force save
+            
+            if (!savedSuccessfully) {
+                console.warn('⚠️ No se pudo guardar el progreso, pero continuando...');
+            }
+
+            // Paso 2: Preparar datos para generación de PDF en backend
+            console.log('📄 Preparando datos para PDF backend...');
+            const pdfData = {
+                project_data: {
+                    id: projectData.id,
+                    title: itemData?.name || 'Álbum Personalizado',
+                    pages: pages,
+                    workspace_dimensions: workspaceDimensions,
+                    created_at: new Date().toISOString()
+                },
+                item_data: {
+                    id: itemData?.id,
+                    name: itemData?.name || itemData?.title,
+                    price: itemData?.price,
+                    user_id: itemData?.user_id,
+                    width: itemData?.width,
+                    height: itemData?.height
+                },
+                preset_data: {
+                    id: presetData?.id,
+                    width: presetData?.width,
+                    height: presetData?.height,
+                    cover_image: presetData?.cover_image,
+                    content_layer_image: presetData?.content_layer_image,
+                    final_layer_image: presetData?.final_layer_image
+                },
+                dimensions: {
+                    width_mm: presetData?.width || itemData?.width || 210,
+                    height_mm: presetData?.height || itemData?.height || 297,
+                    workspace_width: workspaceDimensions?.width || 800,
+                    workspace_height: workspaceDimensions?.height || 600
+                }
+            };
+
+            // Paso 3: Marcar proyecto como listo para PDF backend
+            console.log('📄 Marcando proyecto listo para PDF backend...');
+            try {
+                const completeResponse = await fetch(`/api/canvas-projects/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        id: projectData.id,
+                        status: 'ready_for_pdf',
+                        pdf_data: pdfData,
+                        completed_at: new Date().toISOString()
+                    })
+                });
+
+                if (completeResponse.ok) {
+                    const completeResult = await completeResponse.json();
+                    console.log('✅ Proyecto marcado como completado:', completeResult);
+                } else {
+                    console.warn('⚠️ Error marcando proyecto como completado');
+                }
+            } catch (completeError) {
+                console.warn('⚠️ Error en marcado de completado:', completeError);
+            }
+
+            // Paso 3: Generar un project_id único para el carrito
             console.log('🆔 Generando project_id único...');
             const timestamp = Date.now();
-            const projectId = projectData?.id;
-            console.log('🆔 Project ID generado:', projectId);
+            const cartProjectId = projectData.id; // Usar el ID del proyecto de BD
+            console.log('🆔 Project ID para carrito:', cartProjectId);
 
             // Establecer el project_id globalmente para uso posterior
-            window.currentProjectId = projectId;
-            window.albumProjectId = projectId;
+            window.currentProjectId = cartProjectId;
+            window.albumProjectId = cartProjectId;
 
-            // Paso 2: Crear el producto del álbum para el carrito
+            // Paso 4: Crear el producto del álbum para el carrito
             console.log('📦 Creando producto del álbum...');
 
             // Obtener thumbnail de la portada si está disponible
@@ -2301,61 +2667,23 @@ export default function EditorLibro() {
             // Crear el producto siguiendo la estructura de itemData
             const albumProduct = {
                 ...itemData, // Incluir todos los campos de itemData
-                project_id: projectId, // El project_id que se guardará en colors
-            
+                project_id: cartProjectId, // El project_id que se guardará en colors
+                canvas_project_id: projectData.id, // ID del proyecto en canvas_projects
                 quantity: 1,
                 type: 'custom_album',
+                // Metadatos adicionales para el PDF backend
+                pdf_metadata: {
+                    width_mm: presetData.width,
+                    height_mm: presetData.height,
+                    pages_count: pages.length,
+                    workspace_dimensions: workspaceDimensions,
+                    requires_pdf_generation: true
+                }
             };
-
 
             console.log('📦 Producto del álbum creado:', albumProduct);
 
-            // Paso 3: Crear/actualizar el registro en canvas_projects
-            console.log('💾 Creando registro en canvas_projects...');
-            try {
-                const projectPayload = {
-                    id: projectId,
-                    name: itemData.name || 'Álbum Personalizado',
-                    item_id: itemData.id,
-                    canvas_preset_id: presetData.id,
-                    design_data: {
-                        pages: pages,
-                        workspace: {
-                            width: workspaceDimensions.width,
-                            height: workspaceDimensions.height,
-                            scale: workspaceDimensions.scale
-                        },
-                        itemData: itemData,
-                        presetData: presetData,
-                        createdAt: new Date().toISOString()
-                    },
-                    status: 'draft'
-                };
-
-                const response = await fetch('/api/canvas/create-project', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify(projectPayload)
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('✅ Proyecto creado en canvas_projects:', result);
-                } else {
-                    console.warn('⚠️ No se pudo crear el proyecto en canvas_projects:', response.statusText);
-                    // No es crítico, continúa con el proceso del carrito
-                }
-            } catch (projectError) {
-                console.warn('⚠️ Error creando proyecto en canvas_projects:', projectError);
-                // No es crítico, continúa con el proceso del carrito
-            }
-
-            // Paso 4: Agregar al carrito usando el patrón correcto
+            // Paso 5: Agregar al carrito usando el patrón correcto
             console.log('🛒 Agregando producto al carrito...');
             
             const newCart = structuredClone(cart);
@@ -2377,9 +2705,9 @@ export default function EditorLibro() {
 
             // Mostrar notificación de éxito
             toast.success("Álbum agregado al carrito", {
-                description: `${albumProduct.name} se ha añadido al carrito.`,
+                description: `${albumProduct.name} se ha añadido al carrito. El PDF se generará en el backend.`,
                 icon: <CheckCircleIcon className="h-5 w-5 text-green-500" />,
-                duration: 3000,
+                duration: 4000,
                 position: "bottom-center",
             });
 
@@ -2402,7 +2730,6 @@ export default function EditorLibro() {
                 duration: 5000,
                 position: "bottom-center",
             });
-
             return false;
         }
     };
@@ -2615,34 +2942,42 @@ export default function EditorLibro() {
 
     // --- Generar PDF del álbum con calidad de impresión 300 DPI ---
     // Renderiza cada página usando el mismo componente React con alta resolución
-    window.generateAlbumPDF = async () => {
+    const generateAlbumPDF = useCallback(async () => {
         console.log('🖨️ === INICIO generateAlbumPDF ===');
         
         try {
             // Importar jsPDF dinámicamente
             const { jsPDF } = await import('jspdf');
             
-            // Obtener dimensiones del preset en cm (desde la BD)
+            // 🖨️ DIMENSIONES PROFESIONALES: Con sangrado para impresión
             let pageWidthCm = presetData?.width || 21; // A4 por defecto
             let pageHeightCm = presetData?.height || 29.7;
             
-            // Convertir a puntos (1 cm = 28.35 puntos)
-            const pageWidthPt = pageWidthCm * 28.35;
-            const pageHeightPt = pageHeightCm * 28.35;
+            // Agregar sangrado de 3mm (0.3cm) en cada lado para impresión profesional
+            const bleedCm = 0.3; // 3mm de sangrado estándar
+            const printWidthCm = pageWidthCm + (bleedCm * 2);
+            const printHeightCm = pageHeightCm + (bleedCm * 2);
             
-            console.log('📏 Dimensiones PDF:', {
-                widthCm: pageWidthCm,
-                heightCm: pageHeightCm,
+            // Convertir a puntos (1 cm = 28.35 puntos)
+            const pageWidthPt = printWidthCm * 28.35;
+            const pageHeightPt = printHeightCm * 28.35;
+            
+            console.log('📏 Dimensiones PDF con sangrado profesional:', {
+                originalWidthCm: pageWidthCm,
+                originalHeightCm: pageHeightCm,
+                printWidthCm: printWidthCm,
+                printHeightCm: printHeightCm,
                 widthPt: pageWidthPt,
-                heightPt: pageHeightPt
+                heightPt: pageHeightPt,
+                bleedCm: bleedCm
             });
 
-            // Crear el PDF con las dimensiones correctas
+            // 🖨️ PDF PROFESIONAL: Sin compresión para máxima calidad de impresión
             const pdf = new jsPDF({
                 orientation: pageWidthPt > pageHeightPt ? 'landscape' : 'portrait',
                 unit: 'pt',
                 format: [pageWidthPt, pageHeightPt],
-                compress: true
+                compress: false // Sin compresión para calidad profesional
             });
 
             // Mostrar progreso
@@ -2672,13 +3007,15 @@ export default function EditorLibro() {
                 document.getElementById('current-page').textContent = current;
             };
 
+            // 🖨️ GUARDAR PÁGINA ORIGINAL antes del loop
+            const originalCurrentPage = currentPage;
+
             // Procesar cada página
             for (let i = 0; i < pages.length; i++) {
                 const page = pages[i];
                 console.log(`🔄 Procesando página ${i + 1}/${totalPages}: ${page.id}`);
                 
                 // Cambiar a la página actual temporalmente para capturarla
-                const originalCurrentPage = currentPage;
                 setCurrentPage(i);
                 
                 // Esperar un momento para que se renderice
@@ -2707,16 +3044,16 @@ export default function EditorLibro() {
                             offsetX = (pageWidthPt - imgWidth) / 2;
                         }
                         
-                        // Convertir canvas a imagen
-                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        // 🖨️ CALIDAD PROFESIONAL: PNG sin compresión para impresión
+                        const imgData = canvas.toDataURL('image/png', 1.0);
                         
                         // Agregar página si no es la primera
                         if (i > 0) {
                             pdf.addPage([pageWidthPt, pageHeightPt]);
                         }
                         
-                        // Agregar imagen al PDF
-                        pdf.addImage(imgData, 'JPEG', offsetX, offsetY, imgWidth, imgHeight);
+                        // 🖨️ Agregar imagen PNG de alta calidad al PDF
+                        pdf.addImage(imgData, 'PNG', offsetX, offsetY, imgWidth, imgHeight);
                         
                         console.log(`✅ Página ${i + 1} agregada al PDF`);
                     } else {
@@ -2815,9 +3152,10 @@ export default function EditorLibro() {
             
             throw error;
         }
-    };
+    }, [pages, currentPage, setCurrentPage, captureCurrentWorkspace, presetData, itemData]);
 
     // Exponer funciones útiles globalmente para uso externo
+    window.generateAlbumPDF = generateAlbumPDF;
     window.generateHighQualityThumbnail = generateHighQualityThumbnail;
     window.captureCurrentWorkspace = captureCurrentWorkspace;
 
