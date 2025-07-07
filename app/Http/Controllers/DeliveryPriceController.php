@@ -167,12 +167,15 @@ class DeliveryPriceController extends BasicController
                     'characteristics' => $expressType->characteristics,
                 ];
             } else {
-                // Para ubicaciones normales (no is_free), usar precio estándar
-                if ($qualifiesForFreeShipping) {
-                    // Si califica por monto global, hacer gratuito
-                    $result['standard']['price'] = 0;
-                    $result['standard']['description'] = 'Envío gratuito por compra mayor a S/ ' . $minFreeShipping;
-                }
+                // Para ubicaciones normales (NO is_free), NUNCA aplicar envío gratis
+                // Mantener siempre el precio estándar, sin importar el monto del carrito
+                Log::info('Setting NORMAL shipping - ubicación NO es is_free', [
+                    'is_free' => false,
+                    'cart_total' => $cartTotal,
+                    'qualifies_for_free_shipping' => $qualifiesForFreeShipping,
+                    'final_price' => $deliveryPrice->price,
+                    'note' => 'Para ubicaciones NO is_free, NUNCA aplicar envío gratis'
+                ]);
             }
 
             if ($deliveryPrice->is_agency) {

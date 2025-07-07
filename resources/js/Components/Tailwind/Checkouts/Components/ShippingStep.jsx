@@ -554,85 +554,88 @@ export default function ShippingStep({
             console.log('📦 ShippingStep - Respuesta del backend:', response.data);
             console.log('✅ ShippingStep - Califica para envío gratis?', response.data.qualifies_free_shipping);
             console.log('💰 ShippingStep - Umbral requerido:', response.data.free_shipping_threshold);
+            console.log('🔍 ShippingStep - is_free:', response.data.is_free);
+            console.log('🔍 ShippingStep - Descripción standard:', response.data.standard?.description);
+            console.log('🔍 ShippingStep - Tipo standard:', response.data.standard?.type);
 
             const options = [];
             let hasStorePickup = false;
 
-            if (response.data.is_free) {
-                console.log('🔥 ShippingStep - Es zona de delivery gratis (is_free=true)');
-                
-                // Verificar si el carrito califica para envío gratis condicional
-                if (response.data.qualifies_free_shipping) {
-                    console.log('✅ ShippingStep - SÍ califica para envío gratis');
-                    // El carrito califica, mostrar delivery gratis
-                    options.push({
-                        type: "free",
-                        price: 0,
-                        description: response.data.standard.description,
-                        deliveryType: response.data.standard.type,
-                        characteristics: response.data.standard.characteristics,
-                    });
-
-                    if (response.data.express && response.data.express.price > 0) {
-                        options.push({
-                            type: "express",
-                            price: response.data.express.price,
-                            description: response.data.express.description,
-                            deliveryType: response.data.express.type,
-                            characteristics: response.data.express.characteristics,
-                        });
-                    }
-
-                    // Si hay delivery gratis, forzar retiro en tienda
-                    hasStorePickup = true;
-                } else {
-                    console.log('❌ ShippingStep - NO califica para envío gratis, mostrar precios normales');
-                    console.log('💰 ShippingStep - Total carrito:', response.data.cart_total);
-                    console.log('🎯 ShippingStep - Umbral requerido:', response.data.free_shipping_threshold);
-                    
-                    // El carrito NO califica, mostrar precios normales (NO como "gratis")
-                    options.push({
-                        type: "standard",
-                        price: response.data.standard.price,
-                        description: response.data.standard.description,
-                        deliveryType: response.data.standard.type,
-                        characteristics: response.data.standard.characteristics,
-                    });
-
-                    if (response.data.express && response.data.express.price > 0) {
-                        options.push({
-                            type: "express",
-                            price: response.data.express.price,
-                            description: response.data.express.description,
-                            deliveryType: response.data.express.type,
-                            characteristics: response.data.express.characteristics,
-                        });
-                    }
-
-                    // Si hay configuración de retiro en tienda disponible, agregarlo también
-                    if (response.data.is_store_pickup) {
-                        hasStorePickup = true;
-                    }
-                }
-            } else if (response.data.is_agency) {
+            // 1. ENVÍO GRATIS: SOLO para zonas con is_free=true Y que califiquen por monto
+            if (response.data.is_free && response.data.qualifies_free_shipping) {
+                console.log('✅ ShippingStep - Es zona is_free=true Y califica por monto - Agregando envío GRATIS');
                 options.push({
-                    type: "agency",
+                    type: "free",
                     price: 0,
-                    description: response.data.agency.description,
-                    deliveryType: response.data.agency.type,
-                    characteristics: response.data.agency.characteristics,
-                });
-            } else if (response.data.is_store_pickup) {
-                // Retiro en tienda como opción principal
-                hasStorePickup = true;
-            } else {
-                options.push({
-                    type: "standard",
-                    price: response.data.standard.price,
                     description: response.data.standard.description,
                     deliveryType: response.data.standard.type,
                     characteristics: response.data.standard.characteristics,
                 });
+            }
+
+            // 2. ENVÍO NORMAL: Si existe standard, siempre agregarlo (excepto para zonas is_free que califican para gratis)
+            if (response.data.standard) {
+                // Solo agregar envío normal si NO es zona gratis que califica, o si es zona gratis que NO califica
+                if (!response.data.is_free || (response.data.is_free && !response.data.qualifies_free_shipping)) {
+                    console.log('📦 ShippingStep - Agregando envío NORMAL');
+                    
+                    // Limpiar cualquier mención de "envío gratis" en la descripción si NO es zona is_free
+                    let cleanDescription = response.data.standard.description;
+                    if (!response.data.is_free) {
+                        // Para zonas que NO son is_free, remover cualquier mención de envío gratis
+                        cleanDescription = cleanDescription
+                            .replace(/envío gratis.*?/gi, '')
+                            .replace(/envio gratis.*?/gi, '')
+                            .replace(/gratis.*?compras.*?/gi, '')
+                            .replace(/mayor.*?200.*?/gi, '')
+                            .replace(/200.*?mayor.*?/gi, '')
+                            .replace(/\s+/g, ' ') // Limpiar espacios extras
+                            .trim();
+                        
+                        // Si queda vacío, usar una descripción por defecto
+                        if (!cleanDescription) {
+                            cleanDescription = "Delivery a domicilio";
+                        }
+                    }
+                    
+                    options.push({
+                        type: "standard",
+                        price: response.data.standard.price,
+                        description: cleanDescription,
+                        deliveryType: response.data.standard.type,
+                        characteristics: response.data.standard.characteristics,
+                    });
+                }
+            }
+
+            // 3. ENVÍO EXPRESS: Si existe express, siempre agregarlo
+            if (response.data.express && response.data.express.price > 0) {
+                console.log('⚡ ShippingStep - Agregando envío EXPRESS');
+                options.push({
+                    type: "express",
+                    price: response.data.express.price,
+                    description: response.data.express.description,
+                    deliveryType: response.data.express.type,
+                    characteristics: response.data.express.characteristics,
+                });
+            }
+
+            // 4. ENVÍO AGENCIA: Si existe agency, agregarlo
+            if (response.data.is_agency && response.data.agency) {
+                console.log('🏢 ShippingStep - Agregando envío por AGENCIA');
+                options.push({
+                    type: "agency",
+                    price: response.data.agency.price || 0,
+                    description: response.data.agency.description,
+                    deliveryType: response.data.agency.type,
+                    characteristics: response.data.agency.characteristics,
+                });
+            }
+
+            // 5. RETIRO EN TIENDA: Si está disponible, marcar para agregar después
+            if (response.data.is_store_pickup) {
+                console.log('🏪 ShippingStep - Retiro en tienda disponible');
+                hasStorePickup = true;
             }
 
             // Si hay retiro en tienda disponible, agregar la opción usando los datos que ya vienen en la respuesta
