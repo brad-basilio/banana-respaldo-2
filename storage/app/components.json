@@ -53,6 +53,23 @@
                 "data": [
                     "background"
                 ]
+            },
+            {
+                "id": "TopBarPanni",
+                "name": "Paani con redes sociales",
+                "image": "top-bar-socials.png",
+                "data": [
+                    "background_color",
+                    "color",
+                    "isCopyright",
+                    "border_color"
+                ],
+                "using": {
+                    "model": "Social"
+                },
+                "generals": [
+                    "cintillo"
+                ]
             }
         ]
     },

@@ -15,7 +15,7 @@ const CategoryFlex = ({ data, items }) => {
             {/* Header */}
             {data?.title && (
                 <div className="flex flex-wrap gap-4 justify-between items-center ">
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-semibold tracking-normal customtext-neutral-dark max-w-2xl 2xl:max-w-6xl">{data?.title}</h2>
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl 2xl:text-6xl font-semibold tracking-normal customtext-neutral-dark max-w-3xl 2xl:max-w-6xl">{data?.title}</h2>
                     {data?.text_button && data?.link_catalog && (
                         <a
                             href={data?.link_catalog}
