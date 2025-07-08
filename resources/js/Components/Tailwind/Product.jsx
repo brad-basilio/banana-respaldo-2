@@ -22,6 +22,7 @@ const Product = ({
     filteredData,
     favorites,
     setFavorites,
+    contacts
 }) => {
     const getProduct = () => {
         switch (which) {
@@ -95,6 +96,7 @@ const Product = ({
                         items={items}
                         cart={cart}
                         setCart={setCart}
+                        contacts={contacts}
                     />
                 );
             case "ProductBananaLab":

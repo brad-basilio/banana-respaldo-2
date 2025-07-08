@@ -11,7 +11,7 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up()
-    {
+    {   
         if (!Schema::hasTable('analytics_events')) {
             Schema::create('analytics_events', function (Blueprint $table) {
                 $table->uuid('id')->default(DB::raw('(UUID())'))->primary();
@@ -52,7 +52,7 @@ return new class extends Migration
                 $table->index(['created_at', 'converted']);
             });
         }   
-
+        
         if (!Schema::hasTable('cart_analytics')) { 
             Schema::create('cart_analytics', function (Blueprint $table) {
                 $table->uuid('id')->default(DB::raw('(UUID())'))->primary();
@@ -68,6 +68,7 @@ return new class extends Migration
                 $table->index(['created_at', 'status']);
             });
         }    
+       
     }
 
     /**

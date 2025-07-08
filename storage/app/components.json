@@ -2230,12 +2230,16 @@
         ]
     },
     {
-        "id": "agradecimiento",
-        "name": "Agradecimiento",
+        "id": "agradecimientos",
+        "name": "Agradecimientos",
         "options": [
             {
-                "id": "agradecimientoSF",
+                "id": "AgradecimientoSF",
                 "name": "AgradecimientoSF"
+            },
+            {
+                "id": "AgradecimientoAko",
+                "name": "AgradecimientoAko"
             }
         ]
     },
