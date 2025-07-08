@@ -94,9 +94,11 @@ const ProductCardFull = ({ product, setCart, cart, contacts }) => {
                         />
                     </div>
                     <div className='absolute bottom-[7%] left-1/2 -translate-x-1/2 flex flex-row items-center justify-center w-full'>
-                        <a className='bg-accent text-base lg:text-lg customtext-neutral-light px-10 py-2.5 rounded-lg'>
-                            Ver video Xlerator
-                        </a>
+                        {product.linkvideo && (
+                            <a href={product.linkvideo} target='_blank' className='bg-accent text-base lg:text-lg customtext-neutral-light px-10 py-2.5 rounded-lg'>
+                                Ver video Xlerator
+                            </a>
+                        )}
                     </div>
                 </div>
                

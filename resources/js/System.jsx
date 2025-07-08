@@ -59,6 +59,7 @@ const Ad = React.lazy(() => import("./Components/Tailwind/Ad"));
 const Testimonials = React.lazy(() => import("./Components/Tailwind/Testimonials"));
 const Brands = React.lazy(() => import("./Components/Tailwind/Brands"));
 const Partner = React.lazy(() => import("./Components/Tailwind/Partner"));
+const Agradecimientos = React.lazy(() => import("./Components/Tailwind/Agradecimientos"));
 import { Local } from "sode-extend-react";
 import Global from "./Utils/Global";
 import ItemsRest from "./Actions/ItemsRest";
@@ -225,6 +226,8 @@ const System = ({
                 return <Brands which={value} data={data} items={getItems(itemsId)} />
             case "partner":
                 return <Partner which={value} data={data} items={getItems(itemsId)} />
+            case "agradecimientos":
+                return <Agradecimientos which={value} data={data} items={getItems(itemsId)} />
             default:
                 return (
                     <div className="w-full px-[5%] replace-max-w-here p-4 mx-auto">
