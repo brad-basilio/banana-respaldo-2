@@ -13,10 +13,10 @@ const CarruselBenefitsInifinite = ({ items }) => {
   });
 
   return (
-    <div ref={benefitsRef} className="bg-primary py-6 overflow-hidden">
+    <div ref={benefitsRef} className="bg-primary py-4 lg:py-6 overflow-hidden">
       <div className="px-primary 2xl:px-0 2xl:max-w-7xl mx-auto relative">
         <Swiper
-          slidesPerView={1}
+          slidesPerView={2}
           spaceBetween={32}
           loop={true}
           breakpoints={{
@@ -31,15 +31,15 @@ const CarruselBenefitsInifinite = ({ items }) => {
           {items.map((benefit, index) => (
             <SwiperSlide key={index}>
               <div
-                className={`flex items-center gap-4 justify-start relative 
+                className={`flex items-center gap-2  lg:gap-4 justify-start relative 
                 ${
                   index !== items.length - 1
                     ? "lg:before:absolute lg:before:-right-2 lg:before:top-1/2 lg:before:-translate-y-1/2 lg:before:h-14 lg:before:w-[2px] lg:before:bg-white"
                     : ""
                 }`}
               >
-                <div className="relative w-16 h-16 flex items-center justify-center">
-                  <div className="relative z-10 text-3xl p-3">
+                <div className="relative min-w-8 min-h-8 lg:w-16 lg:h-16 flex items-center justify-center">
+                  <div className="relative z-10 text-3xl lg:p-3">
                     <img
                     alt={benefit.name}
                       src={`/storage/images/indicator/${benefit.symbol}`}
@@ -51,10 +51,10 @@ const CarruselBenefitsInifinite = ({ items }) => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">
+                  <h3 className="font-bold text-xs lg:text-lg">
                     {benefit.name}
                   </h3>
-                  <p className="text-sm">{benefit.description}</p>
+                  <p className="text-[8px] lg:text-sm">{benefit.description}</p>
                 </div>
               </div>
             </SwiperSlide>

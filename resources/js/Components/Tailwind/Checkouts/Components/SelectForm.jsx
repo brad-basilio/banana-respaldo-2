@@ -1,6 +1,6 @@
 
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { ChevronDown, Check, Search } from "lucide-react"
 
 const SelectForm = ({
@@ -12,7 +12,8 @@ const SelectForm = ({
     label,
     labelClass,
     className,
-    disabled = false
+    disabled = false,
+    value = null // Agregamos la prop value para el valor inicial
 }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [selectedOption, setSelectedOption] = useState(null)
@@ -26,17 +27,33 @@ const SelectForm = ({
     const computedValueKey = isArrayOfObjects ? valueKey || Object.keys(options[0])[0] : null
     const computedLabelKey = isArrayOfObjects ? labelKey || Object.keys(options[0])[1] : null
 
-    // Convertir todas las opciones a un formato uniforme { value, label }
-    const normalizedOptions = options.map((option) =>
-        isArrayOfObjects
-            ? { value: option[computedValueKey], label: option[computedLabelKey] }
-            : { value: option, label: option } // Si es un string, lo usamos como value y label
-    )
+    // Convertir todas las opciones a un formato uniforme { value, label } usando useMemo
+    const normalizedOptions = useMemo(() => {
+        return options.map((option) =>
+            isArrayOfObjects
+                ? { value: option[computedValueKey], label: option[computedLabelKey] }
+                : { value: option, label: option } // Si es un string, lo usamos como value y label
+        )
+    }, [options, isArrayOfObjects, computedValueKey, computedLabelKey])
 
-    // Filtrar opciones por búsqueda
-    const filteredOptions = normalizedOptions.filter((option) =>
-        option.label.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    // Filtrar opciones por búsqueda usando useMemo
+    const filteredOptions = useMemo(() => {
+        return normalizedOptions.filter((option) =>
+            option.label.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+    }, [normalizedOptions, searchTerm])
+
+    // Efecto para establecer la opción seleccionada basada en la prop value
+    useEffect(() => {
+        if (value && normalizedOptions.length > 0) {
+            const option = normalizedOptions.find(opt => opt.value === value);
+            if (option && (!selectedOption || selectedOption.value !== option.value)) {
+                setSelectedOption(option);
+            }
+        } else if (!value && selectedOption) {
+            setSelectedOption(null);
+        }
+    }, [value, normalizedOptions])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -62,6 +79,7 @@ const SelectForm = ({
                 </label>
             )}
             <button
+                type="button"
                 className={`w-full relative text-start  px-4 py-3 border customtext-neutral-dark   rounded-xl focus:ring-0 focus:outline-0   transition-all duration-300 ${className}`}
                 onClick={() => setIsOpen(!isOpen)}
                 aria-haspopup="listbox"

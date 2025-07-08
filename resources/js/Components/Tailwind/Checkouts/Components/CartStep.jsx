@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import Number2Currency from "../../../../Utils/Number2Currency.jsx";
 import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
@@ -54,16 +54,35 @@ export default function CartStep({
     const applyDiscountRules = async () => {
         setIsLoadingDiscounts(true);
         try {
-            // Debug: Log información del carrito antes de enviar
+            // Debug: Log información detallada del carrito antes de enviar
+            const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
             console.log('🛒 CartStep applying discounts:', {
                 cart,
                 subTotal,
-                totalWithoutDiscounts
+                totalWithoutDiscounts,
+                totalQuantity,
+                cartLength: cart.length,
+                cartItems: cart.map(item => ({
+                    id: item.id || item.item_id,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price || item.final_price,
+                    category_id: item.category_id
+                }))
             });
             
             const result = await DiscountRulesRest.applyToCart(cart, totalWithoutDiscounts);
             
+            // Debug: Log respuesta completa del servidor
+            console.log('📥 Server response:', {
+                success: result.success,
+                data: result.data,
+                error: result.error,
+                fullResult: result
+            });
+            
             if (result.success && result.data) {
+                console.log('✅ Discounts found:', result.data.applied_discounts);
                 const discounts = DiscountRulesRest.formatDiscounts(result.data.applied_discounts);
                 const discountAmount = result.data.total_discount || 0;
                 const freeItemsData = DiscountRulesRest.getFreeItems(result.data.applied_discounts);
@@ -85,7 +104,12 @@ export default function CartStep({
                 if (setAutomaticDiscounts) setAutomaticDiscounts(discounts);
                 if (setAutomaticDiscountTotal) setAutomaticDiscountTotal(discountAmount);
             } else {
-                console.error('❌ Discount application failed:', result.error);
+                console.error('❌ Discount application failed:', {
+                    error: result.error,
+                    success: result.success,
+                    data: result.data,
+                    fullResult: result
+                });
                 
                 // No discounts applied or error
                 const emptyDiscounts = [];

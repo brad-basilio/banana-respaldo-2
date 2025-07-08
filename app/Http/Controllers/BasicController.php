@@ -236,6 +236,11 @@ class BasicController extends Controller
     try {
 
       $body = $this->beforeSave($request);
+      
+      // Debug logging
+      \Log::info('BasicController save - Body after beforeSave:', $body);
+      \Log::info('BasicController save - ID check: ' . (isset($body['id']) ? 'ID existe: ' . $body['id'] : 'ID no existe'));
+      
       $snake_case = Text::camelToSnakeCase(str_replace('App\\Models\\', '', $this->model));
       if ($snake_case === "item_image") {
         $snake_case = 'item';
@@ -253,15 +258,20 @@ class BasicController extends Controller
       }
 
       $jpa = $this->model::find(isset($body['id']) ? $body['id'] : null);
+      
+      // Debug logging
+      \Log::info('BasicController save - Model find result: ' . ($jpa ? 'Encontrado ID: ' . $jpa->id : 'No encontrado'));
 
       if (!$jpa) {
         
         $body['slug'] = Crypto::randomUUID();
         $jpa = $this->model::create($body);
         $isNew = true;
+        \Log::info('BasicController save - Creando nuevo registro con ID: ' . $jpa->id);
       } else {
         $jpa->update($body);
         $isNew = false;
+        \Log::info('BasicController save - Actualizando registro existente ID: ' . $jpa->id);
       }
 
       $table = (new $this->model)->getTable();

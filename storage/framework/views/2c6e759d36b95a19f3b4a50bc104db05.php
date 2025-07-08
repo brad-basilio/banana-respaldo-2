@@ -13,7 +13,7 @@
     <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', 'Sala Fabulosa')); ?></title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v=<?php echo e(uniqid()); ?>" type="image/png">
-    <meta name="description" content="Sala Fabulosa">
+  
     <?php if(isset($data['description'])): ?>
         <meta name="description" content="<?php echo e($data['description']); ?>">
     <?php endif; ?>

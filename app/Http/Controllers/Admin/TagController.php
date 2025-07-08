@@ -9,4 +9,5 @@ class TagController extends BasicController
 {
     public $model = Tag::class;
     public $reactView = 'Admin/Tags';
+    public $imageFields = ['image','icon'];
 }

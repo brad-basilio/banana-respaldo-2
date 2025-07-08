@@ -47,6 +47,12 @@ class DeliveryPriceController extends BasicController
             $body['type_id'] = $freeType->id;
         }
 
+        // Manejar selected_stores
+        if ($request->has('selected_stores')) {
+            $selectedStores = $request->input('selected_stores');
+            // Si selected_stores es null o está vacío, significa "todas las tiendas"
+            $body['selected_stores'] = $selectedStores;
+        }
 
         return $body;
     }

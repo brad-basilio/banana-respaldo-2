@@ -51,6 +51,7 @@ const Sales = ({ statuses = [] }) => {
 
     const onModalOpen = async (saleId) => {
         const newSale = await salesRest.get(saleId);
+        console.log("Sale data loaded:", newSale.data); // Debug: ver todos los datos que llegan
         setSaleLoaded(newSale.data);
         $(modalRef.current).modal("show");
     };
@@ -256,11 +257,66 @@ const Sales = ({ statuses = [] }) => {
                                             <th>Teléfono:</th>
                                             <td>{saleLoaded?.phone}</td>
                                         </tr>
-                                        
-                                        {saleLoaded?.delivery_type &&
-                                        //== "express"  (
+                                        {(saleLoaded?.document_type || saleLoaded?.documentType) && (
                                             <tr>
-                                                <th>Dirección:</th>
+                                                <th>Tipo de documento:</th>
+                                                <td>{saleLoaded?.document_type || saleLoaded?.documentType}</td>
+                                            </tr>
+                                        )}
+                                        {saleLoaded?.document && (
+                                            <tr>
+                                                <th>Número de documento:</th>
+                                                <td>{saleLoaded?.document}</td>
+                                            </tr>
+                                        )}
+                                        
+                                        {saleLoaded?.delivery_type && (
+                                            <tr>
+                                                <th>Tipo de entrega:</th>
+                                                <td>
+                                                    <span className="badge bg-info">
+                                                        {saleLoaded?.delivery_type === 'store_pickup' ? 'Retiro en Tienda' : 
+                                                         saleLoaded?.delivery_type === 'free' ? 'Envío Gratis' : 
+                                                         saleLoaded?.delivery_type === 'express' ? 'Envío Express' : 
+                                                         saleLoaded?.delivery_type === 'standard' ? 'Envío Estándar' :
+                                                         saleLoaded?.delivery_type === 'agency' ? 'Entrega en Agencia' : 
+                                                         saleLoaded?.delivery_type}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {saleLoaded?.delivery_type === 'store_pickup' && saleLoaded?.store && (
+                                            <tr>
+                                                <th>Tienda para retiro:</th>
+                                                <td>
+                                                    <strong>{saleLoaded?.store?.name}</strong>
+                                                    <small className="text-muted d-block">
+                                                        {saleLoaded?.store?.address}
+                                                        {saleLoaded?.store?.district && (
+                                                            <>, {saleLoaded?.store?.district}</>
+                                                        )}
+                                                        {saleLoaded?.store?.province && (
+                                                            <>, {saleLoaded?.store?.province}</>
+                                                        )}
+                                                    </small>
+                                                    {saleLoaded?.store?.phone && (
+                                                        <small className="text-info d-block">
+                                                            📞 {saleLoaded?.store?.phone}
+                                                        </small>
+                                                    )}
+                                                    {saleLoaded?.store?.schedule && (
+                                                        <small className="text-success d-block">
+                                                            🕒 {saleLoaded?.store?.schedule}
+                                                        </small>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {saleLoaded?.delivery_type && saleLoaded?.delivery_type !== 'store_pickup' && (
+                                            <tr>
+                                                <th>Dirección de entrega:</th>
                                                 <td>
                                                     {saleLoaded?.address}{" "}
                                                     {saleLoaded?.number}
@@ -280,8 +336,7 @@ const Sales = ({ statuses = [] }) => {
                                                     </small>
                                                 </td>
                                             </tr>
-                                        // )
-                                        }
+                                        )}
 
                                         {saleLoaded?.reference && (
                                             <tr>

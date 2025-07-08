@@ -264,14 +264,26 @@ gtag('event', 'conversion', {
 
         // TikTok Pixel Purchase Event
         if ($tiktokId = $generals->get('tiktok_pixel_id')?->description) {
+            $tiktokData = [
+                'value' => $orderData['total'],
+                'currency' => 'PEN',
+                'content_id' => $orderData['order_id'],
+                'content_type' => 'product'
+            ];
+            
+            // Agregar email y teléfono si están disponibles
+            if (!empty($orderData['email'])) {
+                $tiktokData['email'] = $orderData['email'];
+            }
+            if (!empty($orderData['phone'])) {
+                $tiktokData['phone'] = $orderData['phone'];
+            }
+            
+            $tiktokDataJson = json_encode($tiktokData, JSON_UNESCAPED_UNICODE);
+            
             $scripts .= "
 <script>
-ttq.track('CompletePayment', {
-    'value': {$orderData['total']},
-    'currency': 'PEN',
-    'content_id': '{$orderData['order_id']}',
-    'content_type': 'product'
-});
+ttq.track('CompletePayment', {$tiktokDataJson});
 </script>
 ";
         }

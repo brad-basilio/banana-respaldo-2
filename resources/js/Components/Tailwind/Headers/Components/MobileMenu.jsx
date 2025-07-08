@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X, ChevronRight, ChevronLeft, Home, ShoppingCart, User, Menu } from "lucide-react";
+import MenuSimple from "../../Menu/MenuSimple";
 
 export default function MobileMenu({ search, setSearch, pages, items, onClose }) {
     const [menuLevel, setMenuLevel] = useState("main");
@@ -83,7 +84,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                 <div className="animate-fade animate-duration-300">
                     {/* Categorías */}
                     <button
-                        className="p-4 mb-3 w-full flex justify-between items-center hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
+                        className="px-4 py-2 mb-3 w-full flex justify-between items-center hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
                         onClick={() => handleMainMenuItemClick("categories")}
                     >
                         <div className="flex items-center">
@@ -101,7 +102,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                                     <a
                                         key={index}
                                         href={page.path}
-                                        className="p-4 flex justify-between items-center w-full hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
+                                        className="p-4 py-2 flex justify-between items-center w-full hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
                                     >
                                         <span className="font-medium">{page.name}</span>
                                     </a>
@@ -111,13 +112,18 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                 </div>
             );
         } else if (menuLevel === "categories") {
+            // Ordenar categorías alfabéticamente
+            const sortedCategories = [...items].sort((a, b) => 
+                a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+            );
+            
             return (
                 <div className={animationDirection === "right" ? "animate-fade-left animate-duration-300" : "animate-fade-right animate-duration-300"}>
                     <div className="space-y-2">
-                        {items.map((category) => (
+                        {sortedCategories.map((category) => (
                             <div
                                 key={category.id}
-                                className="p-4  rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 active:bg-primary transition-all"
+                                className="px-4 py-2  rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 active:bg-primary transition-all"
                                 onClick={() => handleCategoryClick(category)}
                             >
                                 <span className="font-medium">{category.name}</span>
@@ -131,14 +137,22 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
             const selectedSubcategory = items.find(
                 (category) => category.name === selectedCategory
             );
+            
+            // Ordenar subcategorías alfabéticamente
+            const sortedSubcategories = selectedSubcategory.subcategories 
+                ? [...selectedSubcategory.subcategories].sort((a, b) => 
+                    a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+                  )
+                : [];
+                
             return (
                 <div className={animationDirection === "right" ? "animate-fade-left animate-duration-300" : "animate-fade-right animate-duration-300"}>
                     <div className="space-y-2">
-                        {selectedSubcategory.subcategories.map((subcat, index) => (
+                        {sortedSubcategories.map((subcat, index) => (
                             <a
                                 href={`/catalogo?subcategory=${subcat.slug}`}
                                 key={index}
-                                className="flex w-full p-4  rounded-xl justify-between items-center hover:bg-gray-50 active:bg-primary transition-all"
+                                className="flex w-full px-4  py-2 rounded-xl justify-between items-center hover:bg-gray-50 active:bg-primary transition-all"
                             >
                                 <span className="font-medium">{subcat.name}</span>
                                 <ChevronRight className="h-5 w-5 customtext-neutral-light" />
@@ -180,7 +194,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
     }, [search, onClose, setSearch]);
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col touch-none overscroll-none">
+        <div className="fixed inset-0 z-[99999] flex flex-col touch-none overscroll-none">
             {/* Overlay oscuro */}
             <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
             
@@ -189,7 +203,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                 {/* Panel del menú - fijo en la parte inferior */}
                 <div className="mt-auto bg-white  shadow-xl flex flex-col max-h-[80vh] rounded-t-2xl overflow-hidden">
                     {/* Header del menú */}
-                    <div className="p-4 bg-white flex justify-between items-center border-b border-gray-200 sticky top-0 z-10">
+                    <div className="p-4 bg-white flex justify-between items-center border-b border-gray-200 sticky top-0 z-[9999]">
                         <h1 className="text-lg font-bold">{getMenuTitle()}</h1>
                         <button 
                             className="p-2 rounded-full hover:bg-gray-100"
@@ -245,6 +259,9 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                         {/* Lista de ítems */}
                         <div className="pb-16">
                             {renderMenuItems()}
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0  flex justify-center">
+                            <MenuSimple visible={true}/>
                         </div>
                     </div>
 

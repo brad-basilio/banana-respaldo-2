@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateMessageRequest;
 use App\Notifications\MessageContactNotification;
 use App\Helpers\NotificationHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MessageController extends BasicController
 {
@@ -43,12 +44,31 @@ class MessageController extends BasicController
     public function afterSave(Request $request, object $jpa, ?bool $isNew)
     {
         try {
+            Log::info('MessageController - Iniciando envío de notificaciones', [
+                'message_id' => $jpa->id,
+                'email' => $jpa->email,
+                'name' => $jpa->name,
+                'subject' => $jpa->subject
+            ]);
+
             // Enviar notificación al cliente y al administrador
             NotificationHelper::sendToClientAndAdmin($jpa, new MessageContactNotification($jpa));
+            
+            Log::info('MessageController - Notificaciones enviadas exitosamente', [
+                'message_id' => $jpa->id
+            ]);
+
         } catch (\Exception $e) {
-            \Log::error('MessageController - Error enviando notificaciones', [
+            Log::error('MessageController - Error enviando notificaciones', [
                 'error' => $e->getMessage(),
-                'message_id' => $jpa->id ?? 'unknown'
+                'message_id' => $jpa->id ?? 'unknown',
+                'trace' => $e->getTraceAsString(),
+                'email_settings' => [
+                    'mail_host' => config('mail.mailers.smtp.host'),
+                    'mail_port' => config('mail.mailers.smtp.port'),
+                    'mail_encryption' => config('mail.mailers.smtp.encryption'),
+                    'mail_from' => config('mail.from.address'),
+                ]
             ]);
             // No lanzamos la excepción para no interrumpir el flujo del guardado
         }

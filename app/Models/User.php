@@ -48,7 +48,9 @@ class User extends Authenticatable
         'ubigeo',
         'number',
         'reference',
-        'alternate_phone'
+        'alternate_phone',
+        'document_type',
+        'document_number',
 
 
     ];
