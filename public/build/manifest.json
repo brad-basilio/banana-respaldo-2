@@ -685,8 +685,8 @@
       "_HtmlContent-FTivcJrM.js"
     ]
   },
-  "_esm-hESa1MbP.js": {
-    "file": "assets/esm-hESa1MbP.js",
+  "_esm-CxCcMpoq.js": {
+    "file": "assets/esm-CxCcMpoq.js",
     "name": "esm",
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
@@ -1880,14 +1880,14 @@
     ]
   },
   "resources/js/Admin/Generals.jsx": {
-    "file": "assets/Generals-BvbV0Szr.js",
+    "file": "assets/Generals-DtjRxUfH.js",
     "name": "Generals",
     "src": "resources/js/Admin/Generals.jsx",
     "isEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_esm-hESa1MbP.js",
+      "_esm-CxCcMpoq.js",
       "_Base-BuJISpgj.js",
       "_BasicRest-B3rfI5GY.js",
       "_CreateReactScript-BoGwggCx.js",
@@ -5363,7 +5363,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Contact.jsx": {
-    "file": "assets/Contact-CQpwgcyK.js",
+    "file": "assets/Contact-BuvL6DJF.js",
     "name": "Contact",
     "src": "resources/js/Components/Tailwind/Contact.jsx",
     "isDynamicEntry": true,
@@ -5380,7 +5380,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Contact/ContactAko.jsx": {
-    "file": "assets/ContactAko-HSxiYjpA.js",
+    "file": "assets/ContactAko-Dgr_xXmq.js",
     "name": "ContactAko",
     "src": "resources/js/Components/Tailwind/Contact/ContactAko.jsx",
     "isDynamicEntry": true,
@@ -5388,7 +5388,7 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "_MessagesRest-CFTDG4sK.js",
-      "_esm-hESa1MbP.js",
+      "_esm-CxCcMpoq.js",
       "_Global-ErywZRdd.js",
       "_index-CMHsc23u.js",
       "_TextWithHighlight-D9vn5Zbl.js",
@@ -5407,7 +5407,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Contact/ContactGrid.jsx": {
-    "file": "assets/ContactGrid-BWkPhO4e.js",
+    "file": "assets/ContactGrid-CScGXZP3.js",
     "name": "ContactGrid",
     "src": "resources/js/Components/Tailwind/Contact/ContactGrid.jsx",
     "isDynamicEntry": true,
@@ -5415,7 +5415,7 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "_MessagesRest-CFTDG4sK.js",
-      "_esm-hESa1MbP.js",
+      "_esm-CxCcMpoq.js",
       "_Global-ErywZRdd.js",
       "_index-CMHsc23u.js",
       "_proxy-BTYtmp9V.js",
@@ -8609,7 +8609,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-uxUy6V32.js",
+    "file": "assets/System-BkspjEUW.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
