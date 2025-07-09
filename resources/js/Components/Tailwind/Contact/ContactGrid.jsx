@@ -32,7 +32,7 @@ const ContactGrid = ({ data, contacts }) => {
 
     const [sending, setSending] = useState(false);
     const [phoneValue, setPhoneValue] = useState("");
-    const [phoneError, setPhoneError] = "";
+    const [phoneError, setPhoneError] = useState("");
     const [offices, setOffices] = useState([]);
     const [loadingOffices, setLoadingOffices] = useState(true);
     const [stores, setStores] = useState([]);
@@ -280,6 +280,15 @@ const ContactGrid = ({ data, contacts }) => {
         };
 
         const result = await messagesRest.save(request);
+        
+        // Limpiar campos inmediatamente después del envío exitoso
+        if (nameRef.current) nameRef.current.value = "";
+        if (phoneRef.current) phoneRef.current.value = "";
+        setPhoneValue("");
+        setPhoneError("");
+        if (emailRef.current) emailRef.current.value = "";
+        if (descriptionRef.current) descriptionRef.current.value = "";
+        
         toast.success("Mensaje enviado", {
             description: 'Tu mensaje ha sido enviado correctamente. ¡Nos pondremos en contacto contigo pronto!',
             duration: 3000,
@@ -289,15 +298,6 @@ const ContactGrid = ({ data, contacts }) => {
         setSending(false);
 
         if (!result) return;
-
-        // Limpiar campos solo después de éxito
-        if (nameRef.current) nameRef.current.value = "";
-        if (phoneRef.current) setPhoneValue("");
-        setPhoneError("");
-        if (emailRef.current) emailRef.current.value = "";
-        if (descriptionRef.current) descriptionRef.current.value = "";
-       
-      
 
         if (data.redirect) {
             location.href = data.redirect;
@@ -360,7 +360,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 type="text"
                                 name="name"
                                 placeholder="Nombre completo"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -380,7 +380,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 value={phoneValue}
                                 onChange={handlePhoneChange}
                                 maxLength={11}
-                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                                 required
                                 aria-describedby={phoneError ? "phone-error" : "phone-help"}
                                 aria-invalid={phoneError ? "true" : "false"}
@@ -415,7 +415,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 type="email"
                                 name="email"
                                 placeholder="Correo Electrónico"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -432,7 +432,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 name="message"
                                 placeholder="Deja tu mensaje..."
                                 rows="6"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
