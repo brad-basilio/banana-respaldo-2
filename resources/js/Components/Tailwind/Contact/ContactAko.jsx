@@ -179,7 +179,7 @@ const ContactAko = ({ data, contacts }) => {
                                 type="text"
                                 name="name"
                                 placeholder="Nombre completo"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300   outline-none"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -199,7 +199,7 @@ const ContactAko = ({ data, contacts }) => {
                                 value={phoneValue}
                                 onChange={handlePhoneChange}
                                 maxLength={11}
-                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 rounded-lg border    outline-none ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                                 required
                                 aria-describedby={phoneError ? "phone-error" : "phone-help"}
                                 aria-invalid={phoneError ? "true" : "false"}
@@ -234,7 +234,7 @@ const ContactAko = ({ data, contacts }) => {
                                 type="email"
                                 name="email"
                                 placeholder="Correo Electrónico"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300    outline-none"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -251,7 +251,7 @@ const ContactAko = ({ data, contacts }) => {
                                 name="message"
                                 placeholder="Deja tu mensaje..."
                                 rows="6"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300    outline-none resize-none"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}

@@ -50,9 +50,11 @@ const Items = ({ categories, brands, collections }) => {
     const textureRef = useRef();
     const descriptionRef = useRef();
     const skuRef = useRef();
+    const pdfRef = useRef();
     // Nuevos campos
 
     const stockRef = useRef();
+    const linkvideoRef = useRef();
 
     const featuresRef = useRef([]);
     const specificationsRef = useRef([]);
@@ -60,6 +62,7 @@ const Items = ({ categories, brands, collections }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedCollection, setSelectedCollection] = useState(null);
+    const [currentPdf, setCurrentPdf] = useState("");
     /*ADD NEW LINES GALLERY */
 
     const [gallery, setGallery] = useState([]);
@@ -117,11 +120,11 @@ const Items = ({ categories, brands, collections }) => {
     }, [itemData]);
 
     const onModalOpen = (data) => {
-        console.log('data total',data);
+      
         setItemData(data || null); // Guardamos los datos en el estado
         if (data?.id) setIsEditing(true);
         else setIsEditing(false);
-
+        setCurrentPdf(data?.pdf ? `/storage/images/item/${data.pdf}` : "");
         idRef.current.value = data?.id || "";
         $(categoryRef.current)
             .val(data?.category_id || null)
@@ -141,22 +144,31 @@ const Items = ({ categories, brands, collections }) => {
         skuRef.current.value = data?.sku || "";
         colorRef.current.value = data?.color || "";
         summaryRef.current.value = data?.summary || "";
+        linkvideoRef.current.value = data?.linkvideo || "";
         priceRef.current.value = data?.price || 0;
         discountRef.current.value = data?.discount || 0;
-
+        
         SetSelectValue(tagsRef.current, data?.tags ?? [], "id", "name");
 
         bannerRef.current.value = null;
+
         imageRef.current.value = null;
+
+       
+
         bannerRef.image.src = `/storage/images/item/${
             data?.banner ?? "undefined"
         }`;
+
         imageRef.image.src = `/storage/images/item/${
             data?.image ?? "undefined"
         }`;
+
         textureRef.image.src = `/storage/images/item/${
             data?.texture ?? "undefined"
         }`;
+
+        setCurrentPdf(data?.pdf ? `/storage/images/item/${data?.pdf}` : "");
 
         descriptionRef.editor.root.innerHTML = data?.description ?? "";
 
@@ -223,6 +235,7 @@ const Items = ({ categories, brands, collections }) => {
             stock: stockRef.current.value,
             features: cleanFeatures,
             specifications: cleanSpecs,
+            linkvideo:linkvideoRef.current.value,
         };
 
 
@@ -248,6 +261,12 @@ const Items = ({ categories, brands, collections }) => {
         const banner = bannerRef.current.files[0];
         if (banner) {
             formData.append("banner", banner);
+        }
+
+        const pdf = pdfRef.current.files[0];
+        
+        if (pdf) {
+            formData.append("pdf", pdf);
         }
 
         //TODO: Preparar los datos de la galería
@@ -727,6 +746,36 @@ const Items = ({ categories, brands, collections }) => {
                             label="Color"
                             required
                         />
+
+                        <div className="col-12">
+                            <label className="form-label">Archivo PDF</label>
+                            <input 
+                                ref={pdfRef}
+                                type="file" 
+                                className="form-control" 
+                                accept=".pdf" 
+                            />
+                            <small className="text-muted">Subir documento PDF relacionado al producto</small>
+                        </div>
+
+                        {currentPdf && (
+                            <div className="my-2">
+                                <a 
+                                    href={currentPdf} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="btn btn-sm btn-outline-primary"
+                                >
+                                    <i className="fas fa-file-pdf me-1"></i> Ver PDF actual
+                                </a>
+                            </div>
+                        )}
+
+                        <InputFormGroup
+                            eRef={linkvideoRef}
+                            label="Link de video"
+                        />
+                       
                         <ImageFormGroup
                             eRef={textureRef}
                             label="Imagen Textura"

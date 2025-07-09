@@ -24,7 +24,7 @@ class ItemController extends BasicController
 {
     public $model = Item::class;
     public $reactView = 'Admin/Items';
-    public $imageFields = ['image', 'banner', 'texture'];
+    public $imageFields = ['image', 'banner', 'texture', 'pdf'];
     public $prefix4filter = 'items';
 
     public function mediaGallery(Request $request, string $uuid)

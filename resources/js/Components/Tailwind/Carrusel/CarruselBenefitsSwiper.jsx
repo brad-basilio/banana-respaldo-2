@@ -11,8 +11,15 @@ const CarruselBenefitsInifinite = ({ items, data }) => {
   const benefitsRef = useRef(null)
 
   useEffect(() => {
-    adjustTextColor(benefitsRef.current)
+    if (items && items.length > 0) {
+      adjustTextColor(benefitsRef.current)
+    }
   })
+
+  // Si no hay items o el array está vacío, no renderizar nada
+  if (!items || items.length === 0) {
+    return null
+  }
 
   return (
     <div ref={benefitsRef} className={`${data.background ? data.background : "bg-secondary"} py-12 overflow-hidden`}>

@@ -40,7 +40,9 @@ class Item extends Model
         'sku',
         'stock',
         'color',
-        'texture'
+        'texture',
+        'pdf',
+        'linkvideo',
 
     ];
 

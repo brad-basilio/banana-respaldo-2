@@ -13,12 +13,15 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import ProductCardFull from "./Components/ProductCardFull";
 
-const ProductFeaturedSwiper = ({ items, data, setCart, cart }) => {
-    
+const ProductFeaturedSwiper = ({ items, data, setCart, cart, contacts }) => {
+    // Si no hay items o el array está vacío, no renderizar nada
+    if (!items || items.length === 0) {
+        return null;
+    }
+
     return (
         <section className="py-0">
             <div className="w-full font-font-general">
-
                 {/* Swiper Carousel */}
                 <div className="relative">
                     <Swiper
@@ -31,7 +34,6 @@ const ProductFeaturedSwiper = ({ items, data, setCart, cart }) => {
                                 spaceBetween: 10,
                             },
                         }}
-                        
                     >
                         {items.map((product, index) => (
                             <SwiperSlide key={index}>
@@ -39,12 +41,12 @@ const ProductFeaturedSwiper = ({ items, data, setCart, cart }) => {
                                     product={product}
                                     setCart={setCart}
                                     cart={cart}
+                                    contacts={contacts}
                                 />
                             </SwiperSlide>
                         ))}
                     </Swiper>
                 </div>
-
             </div>
         </section>
     );
