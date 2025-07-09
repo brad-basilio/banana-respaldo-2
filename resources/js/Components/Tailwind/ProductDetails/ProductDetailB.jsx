@@ -1340,12 +1340,12 @@ const ProductDetail = ({ item, data, setCart, cart, generals }) => {
                                     spec.type === "general" && (
                                         <div
                                             key={index}
-                                            className={`grid grid-cols-2 gap-4 px-4 py-1 ${index % 2 === 0
+                                            className={`flex gap-4 px-4 py-1 ${index % 2 === 0
                                                 ? "bg-[#F7F9FB]"
                                                 : "bg-white"
                                                 }`}
                                         >
-                                            <div className="customtext-neutral-light">
+                                            <div className="customtext-neutral-light min-w-56 max-w-56">
                                                 {spec.title}
                                             </div>
                                             <div className="customtext-neutral-dark">
