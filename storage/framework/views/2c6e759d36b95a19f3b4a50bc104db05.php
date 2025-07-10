@@ -10,10 +10,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', 'Sala Fabulosa')); ?></title>
+    <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', 'xcleretor')); ?></title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v=<?php echo e(uniqid()); ?>" type="image/png">
-  
+    <meta name="description" content="xcleretor">
     <?php if(isset($data['description'])): ?>
         <meta name="description" content="<?php echo e($data['description']); ?>">
     <?php endif; ?>
@@ -21,7 +21,7 @@
         <meta name="keywords" content="<?php echo e(implode(', ', $data['keywords'])); ?>">
     <?php endif; ?>
 
-    <meta name="author" content="Powered by Manuel Gamboa">
+    <meta name="author" content="Powered by Mundo Web">
 
     <!-- Carga diferida de select2 CSS -->
     <link rel="preload" href="/lte/assets/libs/select2/css/select2.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">

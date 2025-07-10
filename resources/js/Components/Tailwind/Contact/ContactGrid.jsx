@@ -2,7 +2,7 @@ import { Mail, Phone, Building2, Store } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import MessagesRest from "../../../Actions/MessagesRest";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, Marker, InfoWindow } from "@react-google-maps/api";
 import Global from "../../../Utils/Global";
 import { toast } from "sonner";
 const messagesRest = new MessagesRest();
@@ -32,11 +32,12 @@ const ContactGrid = ({ data, contacts }) => {
 
     const [sending, setSending] = useState(false);
     const [phoneValue, setPhoneValue] = useState("");
-    const [phoneError, setPhoneError] = "";
+    const [phoneError, setPhoneError] = useState("");
     const [offices, setOffices] = useState([]);
     const [loadingOffices, setLoadingOffices] = useState(true);
     const [stores, setStores] = useState([]);
     const [loadingStores, setLoadingStores] = useState(true);
+    const [selectedStore, setSelectedStore] = useState(null);
 
     // Cargar oficinas desde la API
     useEffect(() => {
@@ -195,9 +196,9 @@ const ContactGrid = ({ data, contacts }) => {
                     ...iconBase,
                     url: 'data:image/svg+xml;base64,' + btoa(`
                         <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="20" cy="20" r="18" fill="#6b7280" stroke="#fff" stroke-width="3"/>
+                            <circle cx="20" cy="20" r="18" fill=Global.APP_COLOR_PRIMARY stroke="#fff" stroke-width="3"/>
                             <circle cx="20" cy="20" r="8" fill="#fff"/>
-                            <circle cx="20" cy="20" r="4" fill="#6b7280"/>
+                            <circle cx="20" cy="20" r="4" fill=Global.APP_COLOR_PRIMARY/>
                         </svg>
                     `)
                 };
@@ -207,11 +208,11 @@ const ContactGrid = ({ data, contacts }) => {
     // Función para obtener el color del tipo de tienda
     const getStoreTypeColor = (type) => {
         switch (type?.toLowerCase()) {
-            case 'tienda': return '#10b981';
-            case 'oficina': return '#3b82f6';
-            case 'agencia': return '#f59e0b';
-            case 'almacen': return '#8b5cf6';
-            default: return '#6b7280';
+            case 'tienda': return Global.APP_COLOR_PRIMARY;
+            case 'oficina': return Global.APP_COLOR_PRIMARY;
+            case 'agencia': return Global.APP_COLOR_PRIMARY;
+            case 'almacen': return Global.APP_COLOR_SECONDARY;
+            default: return Global.APP_COLOR_TERTIARY;
         }
     };
 
@@ -280,6 +281,15 @@ const ContactGrid = ({ data, contacts }) => {
         };
 
         const result = await messagesRest.save(request);
+        
+        // Limpiar campos inmediatamente después del envío exitoso
+        if (nameRef.current) nameRef.current.value = "";
+        if (phoneRef.current) phoneRef.current.value = "";
+        setPhoneValue("");
+        setPhoneError("");
+        if (emailRef.current) emailRef.current.value = "";
+        if (descriptionRef.current) descriptionRef.current.value = "";
+        
         toast.success("Mensaje enviado", {
             description: 'Tu mensaje ha sido enviado correctamente. ¡Nos pondremos en contacto contigo pronto!',
             duration: 3000,
@@ -289,15 +299,6 @@ const ContactGrid = ({ data, contacts }) => {
         setSending(false);
 
         if (!result) return;
-
-        // Limpiar campos solo después de éxito
-        if (nameRef.current) nameRef.current.value = "";
-        if (phoneRef.current) setPhoneValue("");
-        setPhoneError("");
-        if (emailRef.current) emailRef.current.value = "";
-        if (descriptionRef.current) descriptionRef.current.value = "";
-       
-      
 
         if (data.redirect) {
             location.href = data.redirect;
@@ -360,7 +361,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 type="text"
                                 name="name"
                                 placeholder="Nombre completo"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -380,7 +381,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 value={phoneValue}
                                 onChange={handlePhoneChange}
                                 maxLength={11}
-                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                                 required
                                 aria-describedby={phoneError ? "phone-error" : "phone-help"}
                                 aria-invalid={phoneError ? "true" : "false"}
@@ -415,7 +416,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 type="email"
                                 name="email"
                                 placeholder="Correo Electrónico"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -432,7 +433,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 name="message"
                                 placeholder="Deja tu mensaje..."
                                 rows="6"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -739,41 +740,53 @@ const ContactGrid = ({ data, contacts }) => {
                                         lat: parseFloat(store.latitude),
                                         lng: parseFloat(store.longitude)
                                     }}
-                                    icon={getStoreIcon(store.type)}
+                                    icon={store.type?.toLowerCase() === 'tienda' ? 
+                                        {
+                                            scaledSize: { width: 40, height: 40 }
+                                        } : 
+                                        {
+                                            scaledSize: { width: 25, height: 25 }
+                                        }
+                                    }
                                     title={`${store.name} (${store.type})`}
-                                    onClick={() => {
-                                        // Crear un InfoWindow personalizado
-                                        const infoWindow = new window.google.maps.InfoWindow({
-                                            content: `
-                                                <div style="padding: 10px; max-width: 250px;">
-                                                    <h4 style="margin: 0 0 8px 0; color: ${getStoreTypeColor(store.type)}; font-weight: bold;">
-                                                        ${store.name}
-                                                    </h4>
-                                                    <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; font-weight: 500;">
-                                                        ${store.type}
-                                                    </p>
-                                                    <p style="margin: 0 0 8px 0; color: #374151; line-height: 1.4;">
-                                                        📍 ${store.address}
-                                                    </p>
-                                                    ${store.phone ? `
-                                                        <p style="margin: 0 0 8px 0; color: #374151;">
-                                                            📞 <a href="tel:${store.phone}" style="color: ${getStoreTypeColor(store.type)}; text-decoration: none;">${store.phone}</a>
-                                                        </p>
-                                                    ` : ''}
-                                                    ${store.schedule ? `
-                                                        <p style="margin: 0; color: #6b7280; font-size: 13px;">
-                                                            🕒 ${store.schedule}
-                                                        </p>
-                                                    ` : ''}
-                                                </div>
-                                            `
-                                        });
-                                        
-                                        infoWindow.open(window.google.maps, this);
-                                    }}
+                                    onClick={() => setSelectedStore(store)}
                                 />
                             ))}
                             
+                            {/* InfoWindow para mostrar detalles de la tienda seleccionada */}
+                            {selectedStore && (
+                                <InfoWindow
+                                    position={{
+                                        lat: parseFloat(selectedStore.latitude),
+                                        lng: parseFloat(selectedStore.longitude)
+                                    }}
+                                    onCloseClick={() => setSelectedStore(null)}
+                                >
+                                    <div style={{ padding: "10px", maxWidth: "250px" }}>
+                                        <h4 style={{ margin: "0 0 8px 0", color: getStoreTypeColor(selectedStore.type), fontWeight: "bold" }}>
+                                            {selectedStore.name}
+                                        </h4>
+                                        <p style={{ margin: "0 0 5px 0", color: Global.APP_COLOR_PRIMARY, fontSize: "12px", textTransform: "uppercase", fontWeight: "500" }}>
+                                            {selectedStore.type}
+                                        </p>
+                                        <p style={{ margin: "0 0 8px 0", color: "#374151", lineHeight: "1.4" }}>
+                                            📍 {selectedStore.address}
+                                        </p>
+                                        {selectedStore.phone && (
+                                            <p style={{ margin: "0 0 8px 0", color: Global.APP_COLOR_PRIMARY }}>
+                                                📞 <a href={`tel:${selectedStore.phone}`} style={{ color: getStoreTypeColor(selectedStore.type), textDecoration: "none" }}>
+                                                    {selectedStore.phone}
+                                                </a>
+                                            </p>
+                                        )}
+                                        {selectedStore.schedule && (
+                                            <p style={{ margin: "0", color: Global.APP_COLOR_PRIMARY, fontSize: "13px" }}>
+                                                🕒 {selectedStore.schedule}
+                                            </p>
+                                        )}
+                                    </div>
+                                </InfoWindow>
+                            )}
                          
                         </GoogleMap>
                     </LoadScript>
