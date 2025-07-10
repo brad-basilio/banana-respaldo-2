@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 
-const ProductCardColors = ({ product, setCart, cart, textcolor = "", fondo = "" }) => {
+const ProductCardColorsBoton = ({ product, setCart, cart, textcolor = "", fondo = "", fondoboton = "" }) => {
 
     const itemsRest = new ItemsRest();
     const [variationsItems, setVariationsItems] = useState([]);
@@ -64,11 +64,11 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "", fondo = "" 
     return (
         <div
             key={product.id}
-            className={`group w-full rounded-xl lg:rounded-2xl transition-transform duration-300 hover:scale-105 flex-shrink-0 font-font-general customtext-primary cursor-pointer`}
+            className={`group w-full rounded-xl lg:rounded-2xl transition-transform duration-300 hover:scale-105 flex-shrink-0 font-font-general customtext-primary cursor-pointer relative`}
         >
             <div
                 className={`p-0 ${fondo !== "" ? fondo : 'bg-white'} rounded-xl lg:rounded-2xl`}
-            >
+            >   
                 <a href={`/item/${product.slug}`}>
                     {/* Imagen del producto y etiqueta de descuento */}
                     <div className="relative">
@@ -187,6 +187,17 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "", fondo = "" 
                             )}
                         </div>
                     </a>
+
+                     {/* Botón "Ver producto" (siempre visible) */}
+                     <div className="hidden lg:flex mt-3 transition-all duration-300 transform translate-y-5 opacity-0 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a 
+                            href={`/item/${product.slug}`}
+                            className={`${fondoboton !== "" ? fondoboton : 'bg-secondary'} block w-full text-center  text-white font-bold py-2.5 rounded-3xl transition-colors duration-300`}
+                        >
+                            Ver producto
+                        </a>
+                    </div>
+
                 </div>
             </div >
 
@@ -194,4 +205,4 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "", fondo = "" 
     );
 };
 
-export default ProductCardColors;
+export default ProductCardColorsBoton;

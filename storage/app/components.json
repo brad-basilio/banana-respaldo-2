@@ -631,6 +631,72 @@
                 ]
             },
             {
+                "id": "CatalagoFiltrosPaani",
+                "name": "Producto Catalogo Filtro - Paani",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
                 "id": "FilterSalaFabulosa",
                 "name": "Filtro SalaFabulosa",
                 "image": "products-list.png",
@@ -1246,6 +1312,37 @@
                 }
             },
             {
+                "id": "ProductNavigationSwiperPaani",
+                "name": "NavegacionSwiper Paani",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart",
+                    "background",
+                    "text_button",
+                    "backgroundboton"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
+                    "limit": 20
+                }
+            },
+            {
                 "id": "ProductFeaturedSwiper",
                 "name": "Navegacion Swiper Featured",
                 "image": "products-list.png",
@@ -1345,6 +1442,14 @@
             {
                 "id": "BannerPublicitario",
                 "name": "BannerPublicitario",
+                "data": [
+                    "title",
+                    "image_position"
+                ]
+            },
+            {
+                "id": "BannerPublicitarioPaani",
+                "name": "BannerPublicitarioPaani",
                 "data": [
                     "title",
                     "image_position"
@@ -1517,7 +1622,9 @@
                 "id": "ProductDetailPaani",
                 "name": "ProductDetailPaani",
                 "data": [
-                    "link_cart"
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
                 ],
                 "using": {
                     "model": "Item",
@@ -1951,6 +2058,19 @@
                 "using": {
                     "model": "Aboutus"
                 }
+            },
+            {
+                "id": "AboutPaani",
+                "name": "AboutPaani",
+                "data": [
+                    "url_imagen",
+                    "title",
+                    "description",
+                    "about_url"
+                ],
+                "using": {
+                    "model": "Aboutus"
+                }
             }
         ]
     },
@@ -2264,7 +2384,8 @@
                     "model": "Partner"
                 },
                 "data": [
-                    "title"
+                    "title",
+                    "background"
                 ]
             }
         ]

@@ -27,7 +27,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/grid";
 import { Swiper, SwiperSlide } from "swiper/react";
-import ProductBananaLab from "../Products/ProductBananaLab";
+import ProductNavigationSwiperPaani from "../Products/ProductNavigationSwiperPaani";
 
 
 
@@ -769,13 +769,14 @@ const ProductDetailPaani = ({ item, data, setCart, cart, generals, favorites, se
                 </div>
             </div>
             {relationsItems.length > 0 && (
-                <ProductBananaLab
-                    data={{ title: "Te puede interesar",style_offer: "circle" }}
+                <ProductNavigationSwiperPaani
+                    data={{ title: "Te puede interesar",style_offer: "circle", background: "", backgroundboton: "bg-[linear-gradient(90deg,_#003D52_0%,_#0075A7_118.41%)]" }}
                     items={relationsItems}
                     cart={cart}
                     setCart={setCart}
                     favorites={favorites}
                     setFavorites={setFavorites}
+                    textcolor="customtext-neutral-dark"
                 />)}
             <CartModal
                 data={data}

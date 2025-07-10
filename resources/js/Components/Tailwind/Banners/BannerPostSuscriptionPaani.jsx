@@ -156,28 +156,28 @@ const BannerPostSuscriptionPaani = ({ data, items }) => {
                     <div className=" rounded-3xl overflow-hidden shadow-sm h-[500px] lg:h-full" style={{ backgroundImage: `url(/storage/images/system/${data?.background})`, backgroundSize: "cover", backgroundPosition: "top" }}>
 
                         <div className="relative z-10 flex flex-col justify-end h-full px-6 py-10 w-full">
-                            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-lg">
+                            <h2 className="text-3xl 2xl:text-4xl font-medium text-white mb-2 drop-shadow-lg">
                                 {data?.name}
                             </h2>
-                            <p className="text-lg  text-white mb-6 max-w-2xl drop-shadow">
+                            <p className="text-base 2xl:text-lg  text-white mb-3 max-w-2xl drop-shadow">
                                 {data?.description}
                             </p>
-                        <form onSubmit={onEmailSubmit}>
-                        <div className="relative ">
-                            <input
-                                ref={emailRef}
-                                type="email"
-                                placeholder="Ingresa tu e-mail"
-                                className="w-full  bg-transparent text-sm   shadow-xl  py-5 pl-5 border  rounded-[20px] md:rounded-full focus:ring-0 focus:outline-none placeholder:text-white text-white"
-                            />
-                            <button
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 py-3  shadow-xl px-4 bg-primary text-white rounded-full"
-                                aria-label="Suscribite"
-                            >
-                                Suscribirme
-                            </button>
-                        </div>
-                    </form>
+                            <form onSubmit={onEmailSubmit}>
+                                <div className="relative">
+                                    <input
+                                        ref={emailRef}
+                                        type="email"
+                                        placeholder="Ingresa tu e-mail"
+                                        className="w-full  bg-transparent text-sm   shadow-xl  py-4 pl-5 border  rounded-[20px] md:rounded-full focus:ring-0 focus:outline-none placeholder:text-white text-white"
+                                    />
+                                    <button
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 py-2  shadow-xl px-4 bg-[linear-gradient(90deg,_#003D52_0%,_#0075A7_118.41%)] text-white rounded-full"
+                                        aria-label="Suscribite"
+                                    >
+                                        Suscribirme
+                                    </button>
+                                </div>
+                            </form>
                         </div>
 
                     </div>

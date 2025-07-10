@@ -8,6 +8,7 @@ const FilterSalaFabulosa = React.lazy(() => import('./Filters/FilterSalaFabulosa
 const FilterBananaLab = React.lazy(() => import('./Filters/FilterBananaLab'))
 const FilterCategoryImage = React.lazy(() => import('./Filters/FilterCategoryImage'))
 const CatalagoFiltrosAko = React.lazy(() => import('./Filters/CatalagoFiltrosAko'))
+const CatalagoFiltrosPaani = React.lazy(() => import('./Filters/CatalagoFiltrosPaani'))
 //const Filter = ({ which, items, data, category, brands, subcategory, cart, setCart, prices }) => {
 const Filter = ({ which, items, data, cart, setCart, filteredData }) => {
   const getFilter = () => {
@@ -31,7 +32,8 @@ const Filter = ({ which, items, data, cart, setCart, filteredData }) => {
           return <FilterBananaLab data={data} items={items} cart={cart} setCart={setCart} filteredData={filteredData} />
       case 'CatalagoFiltrosAko':
           return <CatalagoFiltrosAko data={data} items={items} cart={cart} setCart={setCart} filteredData={filteredData} />
-
+      case 'CatalagoFiltrosPaani':
+        return <CatalagoFiltrosPaani data={data} items={items} cart={cart} setCart={setCart} filteredData={filteredData} />
       default:
         return <div className="w-full px-[5%] replace-max-w-here p-4 mx-auto">- No Hay componente <b>{which}</b> -</div>
     }
