@@ -20,7 +20,7 @@ const BannerSimpleD2 = ({ data }) => {
 
                     <p className="text-white italic text-base md:text-lg lg:text-xl 2xl:text-2xl font-normal">{data?.description}</p>
                     
-                    <div className="flex flex-wrap justify-center items-center gap-4 lg:gap-8 customtext-primary font-semibold w-full py-5 max-w-md mx-auto">
+                    <div className="flex flex-wrap justify-center items-center gap-4 lg:gap-8 customtext-primary font-semibold w-full py-5 max-w-lg 2xl:max-w-xl mx-auto">
 
                         {data?.button_link && data?.button_text && (
                             <a
