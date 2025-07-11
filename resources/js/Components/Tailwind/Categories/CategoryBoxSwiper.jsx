@@ -5,16 +5,22 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import TextWithHighlight from "../../../Utils/TextWithHighlight";
 
 const CategoryBoxSwiper = ({ data, items }) => {
+    // Si no hay items o el array está vacío, no renderizar nada
+    if (!items || items.length === 0) {
+        return null;
+    }
+
     return (
         <div className="relative bg-cover bg-center" style={{ backgroundImage: 'url(/assets/img/backgrounds/sliders/bannerako.png)' }}>
             <div className="px-[5%] replace-max-w-here w-full mx-auto pt-12 md:pt-16 xl:pt-20 space-y-10">
-                <div className="flex flex-col max-w-2xl 2xl:max-w-3xl mx-auto">
-                    {data?.title && (
+                {data?.title && (
+                    <div className="flex flex-col max-w-2xl 2xl:max-w-3xl mx-auto">
                         <h1 className="text-4xl md:text-5xl 2xl:text-6xl text-center customtext-neutral-light leading-tight font-medium font-title">
                             <TextWithHighlight text={data?.title} ></TextWithHighlight>
                         </h1>
-                    )}
-                </div>
+                    </div>
+                )}
+                
                 <div className="rounded-t-2xl overflow-hidden">
                     <Swiper
                         modules={[Autoplay]}
@@ -42,7 +48,7 @@ const CategoryBoxSwiper = ({ data, items }) => {
                             },
                         }}
                     >
-                        {items?.map((item, index) => (
+                        {items.map((item, index) => (
                             <SwiperSlide
                                 key={index}
                                 className="p-4 shadow-md w-full aspect-square overflow-hidden group relative"
@@ -66,8 +72,6 @@ const CategoryBoxSwiper = ({ data, items }) => {
                                         Ver línea
                                     </a>
                                 </div>
-
-                                
 
                                 {/* Overlay on hover (se muestra en hover) */}
                                 <div className="absolute font-title inset-0 bg-black bg-opacity-0 flex flex-col items-center justify-center p-4 opacity-0 group-hover:opacity-100 group-hover:bg-opacity-70 transition-all duration-300">

@@ -131,22 +131,32 @@ export const useEcommerceTracking = () => {
     const trackPurchase = (orderId, conversionScripts) => {
         if (typeof window === 'undefined') return;
 
-        if (conversionScripts) {
-            // Usar scripts del servidor
-            executeTrackingScripts(conversionScripts);
-        } else {
-            // Fallback: obtener scripts del API
-            fetch(`/api/tracking/purchase/${orderId}`)
-                .then(response => response.text())
-                .then(scripts => {
-                    if (scripts) {
-                        executeTrackingScripts(scripts);
-                        console.log('✅ Purchase tracked successfully');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Error tracking Purchase:', error);
-                });
+        console.log('🎯 Iniciando tracking de compra:', { orderId, conversionScripts });
+
+        try {
+            if (conversionScripts) {
+                // Usar scripts del servidor
+                console.log('📊 Usando scripts de conversión del servidor');
+                executeTrackingScripts(conversionScripts);
+            } else {
+                // Fallback: obtener scripts del API
+                console.log('🔄 Obteniendo scripts de conversión del API');
+                fetch(`/api/tracking/purchase/${orderId}`)
+                    .then(response => response.text())
+                    .then(scripts => {
+                        if (scripts) {
+                            executeTrackingScripts(scripts);
+                            console.log('✅ Purchase tracked successfully');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Error tracking Purchase:', error);
+                        // No lanzar el error para que no afecte el flujo
+                    });
+            }
+        } catch (error) {
+            console.error('❌ Error general en trackPurchase:', error);
+            // No lanzar el error para que no afecte el flujo de compra
         }
     };
 
@@ -209,21 +219,37 @@ export const useEcommerceTracking = () => {
     const executeTrackingScripts = (scripts) => {
         if (typeof window === 'undefined' || !scripts) return;
 
+        console.log('🎯 Ejecutando scripts de tracking:', scripts);
+
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = scripts;
         
         const scriptTags = tempDiv.querySelectorAll('script');
-        scriptTags.forEach(script => {
-            const newScript = document.createElement('script');
-            newScript.textContent = script.textContent;
-            document.head.appendChild(newScript);
-            // Remover inmediatamente para limpiar
-            setTimeout(() => {
-                if (newScript.parentNode) {
-                    newScript.parentNode.removeChild(newScript);
-                }
-            }, 100);
+        scriptTags.forEach((script, index) => {
+            try {
+                const newScript = document.createElement('script');
+                newScript.textContent = script.textContent;
+                
+                console.log(`📊 Ejecutando script de tracking ${index + 1}:`, script.textContent.trim());
+                
+                document.head.appendChild(newScript);
+                
+                // Remover inmediatamente para limpiar
+                setTimeout(() => {
+                    if (newScript.parentNode) {
+                        newScript.parentNode.removeChild(newScript);
+                    }
+                }, 100);
+                
+                console.log(`✅ Script de tracking ${index + 1} ejecutado exitosamente`);
+            } catch (error) {
+                console.error(`❌ Error ejecutando script de tracking ${index + 1}:`, error);
+                console.error('Script content:', script.textContent);
+                // No lanzar el error para que no afecte el flujo de compra
+            }
         });
+        
+        console.log('🎯 Todos los scripts de tracking procesados');
     };
 
     /**

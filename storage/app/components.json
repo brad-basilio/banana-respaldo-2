@@ -21,7 +21,6 @@
                     "color",
                     "isCopyright",
                     "border_color"
-
                 ],
                 "using": {
                     "model": "Social"
@@ -53,6 +52,23 @@
                 ],
                 "data": [
                     "background"
+                ]
+            },
+            {
+                "id": "TopBarPanni",
+                "name": "Paani con redes sociales",
+                "image": "top-bar-socials.png",
+                "data": [
+                    "background_color",
+                    "color",
+                    "isCopyright",
+                    "border_color"
+                ],
+                "using": {
+                    "model": "Social"
+                },
+                "generals": [
+                    "cintillo"
                 ]
             }
         ]
@@ -112,8 +128,6 @@
                     "link_cart",
                     "showLoginCart",
                     "mobileSearch"
-                   
-                    
                 ],
                 "using": {
                     "model": "Category",
@@ -126,7 +140,7 @@
                     "message_whatsapp"
                 ]
             },
-             {
+            {
                 "id": "HeaderMakita",
                 "name": "HeaderMakita",
                 "image": "header-with-search.png",
@@ -268,7 +282,6 @@
             {
                 "id": "CarruselBenefitsPaani",
                 "name": "Beneficios Paani",
-               
                 "using": {
                     "model": "Indicator"
                 }
@@ -303,7 +316,6 @@
                     "model": "Indicator"
                 }
             }
-
         ]
     },
     {
@@ -387,7 +399,6 @@
                     "showNavigation",
                     "imageBgPosition",
                     "overlayMobile"
-                
                 ],
                 "using": {
                     "model": "Slider",
@@ -407,7 +418,6 @@
                 "data": [
                     "title",
                     "description"
-                 
                 ],
                 "using": {
                     "model": "Item",
@@ -639,6 +649,140 @@
                 ]
             },
             {
+                "id": "CatalagoFiltrosPaani",
+                "name": "Producto Catalogo Filtro - Paani",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "CatalagoFiltrosPaani",
+                "name": "Producto Catalogo Filtro - Paani",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
                 "id": "FilterSalaFabulosa",
                 "name": "Filtro SalaFabulosa",
                 "image": "products-list.png",
@@ -658,8 +802,17 @@
                         "name": "Lista estándar",
                         "using": {
                             "model": "Item",
-                            "with": ["category", "subcategory", "brand","collection"],
-                            "relations": ["category", "tags","collection"],
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
                             "fields": [
                                 "id",
                                 "name",
@@ -676,8 +829,17 @@
                         "name": "Lista con variantes",
                         "using": {
                             "model": "Item",
-                            "with": ["category", "subcategory", "brand","collection"],
-                            "relations": ["category", "tags","collection"],
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
                             "fields": [
                                 "id",
                                 "name",
@@ -940,17 +1102,26 @@
                 ],
                 "using": {
                     "model": "Category",
-                    "filters": ["featured"]
+                    "filters": [
+                        "featured"
+                    ]
                 }
             },
             {
                 "id": "CategoryGridInfinite",
                 "name": "CategoryGridInfinite",
                 "image": "categories-carousel.png",
-                "data": ["path", "title", "description", "link_catalog"],
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_catalog"
+                ],
                 "using": {
                     "model": "Category",
-                    "filters": ["featured"]
+                    "filters": [
+                        "featured"
+                    ]
                 }
             },
             {
@@ -1115,7 +1286,7 @@
                     "limit": 12
                 }
             },
-              {
+            {
                 "id": "ProductMakita",
                 "name": "ProductMakita",
                 "image": "products-list.png",
@@ -1215,7 +1386,42 @@
                         "is_new",
                         "views"
                     ],
-                    "with": ["category", "subcategory", "brand"],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
+                    "limit": 20
+                }
+            },
+            {
+                "id": "ProductNavigationSwiperPaani",
+                "name": "NavegacionSwiper Paani",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart",
+                    "background",
+                    "text_button",
+                    "backgroundboton"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
                     "limit": 20
                 }
             },
@@ -1239,7 +1445,12 @@
                         "is_new",
                         "views"
                     ],
-                    "with": ["category", "subcategory", "brand", "specifications"],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand",
+                        "specifications"
+                    ],
                     "limit": 20
                 }
             },
@@ -1319,15 +1530,22 @@
                     "image_position"
                 ]
             },
-             {
+            {
+                "id": "BannerPublicitarioPaani",
+                "name": "BannerPublicitarioPaani",
+                "data": [
+                    "title",
+                    "image_position"
+                ]
+            },
+            {
                 "id": "BannerCTAMakita",
                 "name": "BannerCTAMakita",
                 "using": {
                     "model": "Strength"
                 }
-               
             },
-             {
+            {
                 "id": "BannerContactMakita",
                 "name": "BannerContactMakita",
                 "data": [
@@ -1450,7 +1668,11 @@
                 "name": "Simple",
                 "using": {
                     "model": "Item",
-                    "with": ["category", "subcategory", "brand"]
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ]
                 }
             },
             {
@@ -1472,13 +1694,20 @@
                 "using": {
                     "model": "Item",
                     "flied": "slug"
-                }
+                },
+                "generals": [
+                    "phone_whatsapp",
+                    "message_whatsapp",
+                    "delivery_policy"
+                ]
             },
-             {
+            {
                 "id": "ProductDetailPaani",
                 "name": "ProductDetailPaani",
                 "data": [
-                    "link_cart"
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
                 ],
                 "using": {
                     "model": "Item",
@@ -1637,7 +1866,9 @@
             {
                 "id": "CheckoutStepsSF",
                 "name": "StepsSF",
-                "data": ["title"],
+                "data": [
+                    "title"
+                ],
                 "json": {
                     "prefixes": "./prefijocelular.json"
                 },
@@ -1780,7 +2011,7 @@
                     ]
                 }
             },
-             {
+            {
                 "id": "BlogSectionMakita",
                 "name": "BlogSectionMakita",
                 "data": [
@@ -1871,11 +2102,11 @@
                 "data": [
                     "title"
                 ],
-               "using": {
+                "using": {
                     "model": "Post",
                     "field": "slug",
                     "with": [
-                        "category"       
+                        "category"
                     ],
                     "relations": [
                         "category"
@@ -1911,6 +2142,19 @@
             {
                 "id": "AboutAko",
                 "name": "AboutAko",
+                "data": [
+                    "url_imagen",
+                    "title",
+                    "description",
+                    "about_url"
+                ],
+                "using": {
+                    "model": "Aboutus"
+                }
+            },
+            {
+                "id": "AboutPaani",
+                "name": "AboutPaani",
                 "data": [
                     "url_imagen",
                     "title",
@@ -2000,8 +2244,8 @@
                     "support_phone",
                     "support_email"
                 ]
-            }, 
-             {
+            },
+            {
                 "id": "FooterMakita",
                 "name": "FooterMakita",
                 "image": "footer-simple.png",
@@ -2018,7 +2262,7 @@
                     "support_phone",
                     "support_email"
                 ]
-            }, 
+            },
             {
                 "id": "FooterPaani",
                 "name": "FooterPaani",
@@ -2129,6 +2373,9 @@
                 "data": [
                     "steps",
                     "selected"
+                ],
+                "generals": [
+                    "terms_conditions"
                 ]
             },
             {
@@ -2144,7 +2391,7 @@
             }
         ]
     },
-     {
+    {
         "id": "testimonials",
         "name": "Testimonials",
         "options": [
@@ -2152,9 +2399,8 @@
                 "id": "TestimonialsPaani",
                 "name": "Paani",
                 "using": {
-                        "model": "Testimony"
-                    
-                    }
+                    "model": "Testimony"
+                }
             }
         ]
     },
@@ -2197,12 +2443,19 @@
         ]
     },
     {
-        "id": "agradecimiento",
-        "name": "Agradecimiento",
+        "id": "agradecimientos",
+        "name": "Agradecimientos",
         "options": [
             {
-                "id": "agradecimientoSF",
+                "id": "AgradecimientoSF",
                 "name": "AgradecimientoSF"
+            },
+            {
+                "id": "AgradecimientoAko",
+                "name": "AgradecimientoAko",
+                "using": {
+                    "model": "Social"
+                }
             }
         ]
     },
@@ -2227,7 +2480,8 @@
                     "model": "Partner"
                 },
                 "data": [
-                    "title"
+                    "title",
+                    "background"
                 ]
             }
         ]

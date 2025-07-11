@@ -423,10 +423,12 @@ export default function ProductDetailAko({ item, data, setCart, cart, textstatic
                                         className='bg-accent w-full text-base lg:text-lg customtext-neutral-light px-5 text-center py-2.5 rounded-lg'>
                                         Solicitar cotizacion
                                     </a>
-                                
-                                    <a className='bg-secondary w-full text-base lg:text-lg customtext-neutral-light px-5 text-center py-2.5 rounded-lg'>
-                                        Descargar ficha técnica
-                                    </a>
+                                    {item.pdf !== null && 
+                                        <a target="_blank" href={`/storage/images/item/${item.pdf}`} download className='bg-secondary w-full text-base lg:text-lg customtext-neutral-light px-5 text-center py-2.5 rounded-lg'>
+                                            Descargar ficha técnica
+                                        </a>
+                                    }    
+                                   
                             </div>
 
                             {/* {(variationsItems.length > 1) && (

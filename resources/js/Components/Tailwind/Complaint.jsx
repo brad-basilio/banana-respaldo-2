@@ -8,7 +8,7 @@ const Complaint = ({ which, data, generals }) => {
     const getComplaint = () => {
         switch (which) {
             case "ComplaintStech":
-                return <ComplaintStech data={data} />;
+                return <ComplaintStech data={data} generals={generals} />;
             case "ComplaintSimple":
                 return <ComplaintSimple data={data} generals={generals} />;
 

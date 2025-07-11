@@ -44,6 +44,7 @@ class Sale extends Model
         'amount',
         'delivery',
         'delivery_type',
+        'store_id',
         'status_id',
         'coupon_id',
         'coupon_code',
@@ -105,6 +106,11 @@ class Sale extends Model
     public function coupon()
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function scopeWithUser($query)

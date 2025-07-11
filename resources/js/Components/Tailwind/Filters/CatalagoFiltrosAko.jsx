@@ -1432,7 +1432,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                     {Array.isArray(products) && products.length > 0 ? (
                                         products.map((product, index) => (
                                             <motion.div
-                                                className="w-full lg:h-[460px] lg:max-h-[500px] xl:h-auto xl:max-h-[600px] 2xl:h-auto 2xl:max-h-[600px] flex flex-row items-start justify-center"
+                                                className="w-full h-full flex items-center justify-center"
                                                 key={product.id}
                                                 initial={{ opacity: 0, y: 20, scale: 0.9 }}
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}

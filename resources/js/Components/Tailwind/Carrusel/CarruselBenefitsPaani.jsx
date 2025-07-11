@@ -55,7 +55,22 @@ const CarruselBenefitsPaani = ({ items }) => {
           spaceBetween={32}
           loop={true}
           breakpoints={{
-            768: {
+            0: {
+              slidesPerView: 1,
+              loop: true,
+              allowTouchMove: true,
+            },
+            640: {
+              slidesPerView: 2,
+              loop: false,
+              allowTouchMove: false,
+            },
+            950: {
+              slidesPerView: 3,
+              loop: false,
+              allowTouchMove: false,
+            },
+            1250: {
               slidesPerView: 4,
               loop: false,
               allowTouchMove: false,
@@ -67,11 +82,11 @@ const CarruselBenefitsPaani = ({ items }) => {
             <SwiperSlide key={index}>
               <div className="flex flex-col h-full ">
                 <div className="flex flex-row  items-center gap-6 h-full  transition   duration-200">
-                  <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-full shadow-md w-16 h-16 p-2">
+                  <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-full shadow-md w-14 h-14 p-2">
                     <img
                       alt={benefit.name}
                       src={`/storage/images/indicator/${benefit.symbol}`}
-                      className="w-12 h-12 object-contain"
+                      className="w-7 h-7 object-contain"
                       onError={(e) => {
                         e.target.src = "/api/cover/thumbnail/null";
                       }}

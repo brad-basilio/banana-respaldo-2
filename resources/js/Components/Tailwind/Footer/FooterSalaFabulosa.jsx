@@ -198,9 +198,9 @@ const FooterSalaFabulosa = ({ socials = [], pages, generals, contacts }) => {
             <form onSubmit={onEmailSubmit} className="max-w-sm">
               <div className="relative customtext-primary">
                 <input ref={emailRef} type="email" placeholder="Ingresa tu e-mail"
-                  className="w-full bg-transparent text-white font-semibold  shadow-xl  py-4 pl-5 border-2 border-white rounded-full focus:ring-0 focus:outline-none placeholder:text-white placeholder:opacity-65" />
+                  className="w-full bg-transparent text-white font-medium py-4 pl-2 border-2 border-white rounded-xl focus:ring-0 focus:outline-none placeholder:text-white placeholder:opacity-65" />
                 <button
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 py-3 font-bold shadow-xl px-4 bg-primary customtext-primary bg-white rounded-full"
+                  className="absolute text-md right-2 top-1/2 transform -translate-y-1/2 py-3 font-medium px-4 bg-secondary customtext-neutral-light rounded-lg"
                   aria-label="Suscribite">
                   Suscribirme
                 </button>

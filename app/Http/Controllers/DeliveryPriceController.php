@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\File;
 use Inertia\Inertia;
 use SoDe\Extend\Crypto;
@@ -42,10 +43,12 @@ class DeliveryPriceController extends BasicController
 
 
             $validated = $request->validate([
-                'ubigeo' => 'required|string' // Asumiendo nuevo parámetro desde el front
+                'ubigeo' => 'required|string', // Asumiendo nuevo parámetro desde el front
+                'cart_total' => 'nullable|numeric' // Total del carrito para calcular envío gratuito
             ]);
 
             $ubigeo = $validated['ubigeo'];
+            $cartTotal = $validated['cart_total'] ?? 0;
 
 
 
@@ -69,28 +72,110 @@ class DeliveryPriceController extends BasicController
                 return;
             }
           //  dump($deliveryPrice);
+            
+            // Obtener el mínimo para envío gratuito desde generals
+            $freeShippingThreshold = \App\Models\General::where('correlative', 'shipping_free')->first();
+            $minFreeShipping = $freeShippingThreshold ? floatval($freeShippingThreshold->description) : 0;
+            
+            // Debug logs
+            Log::info('DeliveryPrice Debug:', [
+                'ubigeo' => $ubigeo,
+                'cart_total' => $cartTotal,
+                'free_shipping_record' => $freeShippingThreshold,
+                'min_free_shipping' => $minFreeShipping,
+                'delivery_price_is_free' => $deliveryPrice->is_free
+            ]);
+            
+            // Verificar si aplica envío gratuito por monto del carrito
+            $qualifiesForFreeShipping = $minFreeShipping > 0 && $cartTotal >= $minFreeShipping;
+            
+            // Debug logs adicionales
+            Log::info('Free Shipping Validation:', [
+                'min_free_shipping' => $minFreeShipping,
+                'cart_total' => $cartTotal,
+                'qualifies_for_free_shipping' => $qualifiesForFreeShipping,
+                'comparison' => $cartTotal . ' >= ' . $minFreeShipping . ' = ' . ($cartTotal >= $minFreeShipping ? 'true' : 'false')
+            ]);
+            
             // 3. Estructurar la respuesta
             $result = [
                 'is_free' => $deliveryPrice->is_free,
                 'is_agency'=>$deliveryPrice->is_agency,
+                'qualifies_free_shipping' => $qualifiesForFreeShipping,
+                'free_shipping_threshold' => $minFreeShipping,
+                'cart_total' => $cartTotal,
                 'standard' => [
-                    'price' => $deliveryPrice->is_free ? 0 : $deliveryPrice->price,
+                    'price' => $deliveryPrice->price, // Siempre usar el precio base inicialmente
                     'description' => $deliveryPrice->type->description ?? 'Entrega estándar',
                     'type' => $deliveryPrice->type->name,
                     'characteristics' => $deliveryPrice->type->characteristics,
                 ]
             ];
 
-            // 4. Si es free, buscar el tipo express relacionado
+            // 4. Para ubicaciones con is_free=true, lógica condicional
             if ($deliveryPrice->is_free) {
                 $expressType = TypeDelivery::where('slug', 'delivery-express')->first();
-
+                
+                if ($qualifiesForFreeShipping) {
+                    // Si califica por monto: Gratis + Express
+                    $result['standard']['price'] = 0;
+                    $result['standard']['description'] = 'Envío gratuito por compra mayor a S/ ' . $minFreeShipping;
+                    
+                    Log::info('Setting FREE shipping - qualifies for free shipping', [
+                        'cart_total' => $cartTotal,
+                        'threshold' => $minFreeShipping,
+                        'standard_price' => 0
+                    ]);
+                } else {
+                    // Si no califica por monto: Standard (con precio normal) + Express
+                    $fallbackPrice = $deliveryPrice->price;
+                    
+                    // Si el precio base es 0 pero tiene express_price, usar la mitad del express como fallback
+                    if ($fallbackPrice == 0 && $deliveryPrice->express_price > 0) {
+                        $fallbackPrice = round($deliveryPrice->express_price * 0.6, 2); // 60% del express
+                        Log::info('Using fallback price calculation', [
+                            'original_price' => $deliveryPrice->price,
+                            'express_price' => $deliveryPrice->express_price,
+                            'calculated_fallback' => $fallbackPrice
+                        ]);
+                    }
+                    
+                    // Usar el tipo "Delivery Normal" cuando no califica para envío gratis
+                    $normalDeliveryType = TypeDelivery::where('slug', 'delivery-normal')->first();
+                    
+                    $result['standard']['price'] = $fallbackPrice;
+                    if ($normalDeliveryType) {
+                        $result['standard']['description'] = $normalDeliveryType->description;
+                        $result['standard']['type'] = $normalDeliveryType->name;
+                        $result['standard']['characteristics'] = $normalDeliveryType->characteristics;
+                    }
+                    
+                    Log::info('Setting PAID shipping - does NOT qualify for free shipping', [
+                        'cart_total' => $cartTotal,
+                        'threshold' => $minFreeShipping,
+                        'original_price' => $deliveryPrice->price,
+                        'final_price' => $fallbackPrice,
+                        'using_normal_delivery_type' => $normalDeliveryType ? $normalDeliveryType->name : 'not found'
+                    ]);
+                }
+                
+                // Siempre agregar express para ubicaciones is_free
                 $result['express'] = [
                     'price' => $deliveryPrice->express_price,
                     'description' => $expressType->description ?? 'Entrega express',
                     'type' => $expressType->name,
                     'characteristics' => $expressType->characteristics,
                 ];
+            } else {
+                // Para ubicaciones normales (NO is_free), NUNCA aplicar envío gratis
+                // Mantener siempre el precio estándar, sin importar el monto del carrito
+                Log::info('Setting NORMAL shipping - ubicación NO es is_free', [
+                    'is_free' => false,
+                    'cart_total' => $cartTotal,
+                    'qualifies_for_free_shipping' => $qualifiesForFreeShipping,
+                    'final_price' => $deliveryPrice->price,
+                    'note' => 'Para ubicaciones NO is_free, NUNCA aplicar envío gratis'
+                ]);
             }
 
             if ($deliveryPrice->is_agency) {
@@ -103,12 +188,28 @@ class DeliveryPriceController extends BasicController
                     'characteristics' => $agencyType->characteristics,
                 ];
             }
+
+            // 5. Verificar si hay retiro en tienda disponible
+            // Obtener directamente el TypeDelivery de retiro en tienda
+            $storePickupType = TypeDelivery::where('slug', 'retiro-en-tienda')->first();
+
+            if ($storePickupType) {
+                $result['is_store_pickup'] = true;
+                $result['store_pickup'] = [
+                    'price' => 0,
+                    'description' => $storePickupType->description,
+                    'type' => $storePickupType->name,
+                    'characteristics' => $storePickupType->characteristics ?? ['Sin costo de envío', 'Horarios flexibles', 'Atención personalizada'],
+                ];
+            } else {
+                $result['is_store_pickup'] = false;
+            }
             //dump($result);
             $response->data = $result;
             $response->status = 200;
             $response->message = 'Precios obtenidos correctamente';
         }, function ($e) {
-        //    \Log::error('Error en getDeliveryPrice: ' . $e->getMessage());
+           Log::error('Error en getDeliveryPrice: ' . $e->getMessage());
          //  dump('Error en getDeliveryPrice: ' . $e->getMessage());
         });
 

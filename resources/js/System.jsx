@@ -45,6 +45,8 @@ const DeliveryZone = React.lazy(() => import("./Components/Tailwind/DeliveryZone
 const Ad = React.lazy(() => import("./Components/Tailwind/Ad"));
 const Testimonials = React.lazy(() => import("./Components/Tailwind/Testimonials"));
 const Brands = React.lazy(() => import("./Components/Tailwind/Brands"));
+const Partner = React.lazy(() => import("./Components/Tailwind/Partner"));
+const Agradecimientos = React.lazy(() => import("./Components/Tailwind/Agradecimientos"));
 
 // Componente de carga para usar con Suspense
 const LoadingFallback = () => (
@@ -167,7 +169,7 @@ const System = ({
                 return <Filter which={value} data={data} items={getItems(itemsId)} filteredData={filteredData} cart={cart} setCart={setCart} />
             case "product":
                 return <Product which={value} data={data} items={getItems(itemsId)} filteredData={filteredData} cart={cart} setCart={setCart} pages={pages} favorites={favorites}
-                    setFavorites={setFavorites} />
+                    setFavorites={setFavorites} contacts={contacts} />
             case "category":
                 return <Category which={value} data={data} items={getItems(itemsId)} />
             case "collection":
@@ -230,6 +232,8 @@ const System = ({
                 return <Brands which={value} data={data} items={getItems(itemsId)} />
             case "partner":
                 return <Partner which={value} data={data} items={getItems(itemsId)} />
+            case "agradecimientos":
+                return <Agradecimientos which={value} data={data} items={getItems(itemsId)} contacts={contacts} />
             default:
                 return <NoComponent which={value} />
         }

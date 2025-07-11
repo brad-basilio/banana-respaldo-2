@@ -14,6 +14,7 @@ import {
 import CartModal from "../Components/CartModal";
 import Logout from "../../../Actions/Logout";
 import MobileMenu from "./Components/MobileMenu";
+import ProfileImage from "./Components/ProfileImage";
 import { motion, AnimatePresence } from "framer-motion";
 
 const HeaderSearchB = ({
@@ -31,7 +32,7 @@ const HeaderSearchB = ({
     const messageWhatsappObj = generals.find(
         (item) => item.correlative === "message_whatsapp"
     );
-
+    
     const phoneWhatsapp = phoneWhatsappObj?.description ?? null;
     const messageWhatsapp = messageWhatsappObj?.description ?? null;
 
@@ -485,10 +486,44 @@ const HeaderSearchB = ({
                                     <div ref={menuRef} className="relative">
                                         <button
                                             aria-label="user"
-                                            className="flex items-center gap-2 hover:customtext-primary transition-colors duration-300"
+                                            className="flex items-center gap-2 hover:customtext-primary transition-all duration-300 relative group"
                                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                                         >
-                                            <CircleUser className="customtext-primary" width="1.5rem" />
+                                            <div className="relative transform group-hover:scale-105 transition-transform duration-200">
+                                                {isUser.uuid ? (
+                                                    <div className="relative">
+                                                        <ProfileImage 
+                                                            uuid={isUser.uuid}
+                                                            name={isUser.name}
+                                                            lastname={isUser.lastname}
+                                                            className="!w-6 !h-6 rounded-full object-cover border-2 border-primary ring-secondary transition-all duration-300"
+                                                        />
+                                                        <div className="relative" style={{ display: 'none' }}>
+                                                            <CircleUser 
+                                                                className="customtext-primary  border-primary rounded-full   ring-secondary transition-all duration-300" 
+                                                                width="1.5rem" 
+                                                            />
+                                                        </div>
+                                                        {/* Punto indicador online animado */}
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                            <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                            <div className="w-full h-full bg-primary rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="relative">
+                                                        <CircleUser 
+                                                            className="customtext-primary border-2 border-primary rounded-full  ring-secondary  transition-all duration-300" 
+                                                            width="1.5rem" 
+                                                        />
+                                                        {/* Punto indicador online animado */}
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                            <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                            <div className="w-full h-full bg-primary rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </button>
 
                                         <AnimatePresence>
@@ -498,7 +533,7 @@ const HeaderSearchB = ({
                                                     animate="visible"
                                                     exit="exit"
                                                     variants={menuVariants}
-                                                    className="absolute z-50 top-full right-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
+                                                    className="absolute z-50 top-full -left-20 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
                                                 >
                                                     <div className="p-4">
                                                         <ul className="space-y-3">
@@ -508,8 +543,16 @@ const HeaderSearchB = ({
                                                                         {item.onClick ? (
                                                                             <button
                                                                                 aria-label="menu-items"
-                                                                                onClick={item.onClick}
-                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    setIsMenuOpen(false);
+                                                                                    // Pequeño delay para que la animación se complete
+                                                                                    setTimeout(() => {
+                                                                                        item.onClick();
+                                                                                    }, 150);
+                                                                                }}
+                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                             >
                                                                                 {item.icon}
                                                                                 <span>{item.label}</span>
@@ -517,7 +560,11 @@ const HeaderSearchB = ({
                                                                         ) : (
                                                                             <a
                                                                                 href={item.href}
-                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setIsMenuOpen(false);
+                                                                                }}
+                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                             >
                                                                                 {item.icon}
                                                                                 <span>{item.label}</span>
@@ -530,22 +577,32 @@ const HeaderSearchB = ({
                                                                     <li>
                                                                         <a
                                                                             href="/admin/home"
-                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setIsMenuOpen(false);
+                                                                            }}
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                         >
                                                                             <Home size={16} />
                                                                             <span>Dashboard</span>
                                                                         </a>
                                                                     </li>
                                                                     <li>
-                                                                        <a
-                                                                            href="#"
-                                                                            onClick={Logout}
-                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setIsMenuOpen(false);
+                                                                                // Pequeño delay para que la animación se complete
+                                                                                setTimeout(() => {
+                                                                                    Logout();
+                                                                                }, 150);
+                                                                            }}
+                                                                            className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                         >
-                                                                            <Home />
                                                                             <DoorClosed size={16} />
                                                                             <span>Cerrar Sesión</span>
-                                                                        </a>
+                                                                        </button>
                                                                     </li>
                                                                 </>
                                                             )}
@@ -622,7 +679,7 @@ const HeaderSearchB = ({
                                 ref={desktopSearchInputRef}
                                 type="search"
                                 name="search"
-                                placeholder="Buscar productos"
+                                placeholder="Estoy buscando..."
                                 value={search}
                                 onChange={(e) => handleSearchChange(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -631,12 +688,12 @@ const HeaderSearchB = ({
                                         fetchSearchSuggestions(search);
                                     }
                                 }}
-                                className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
+                                className="w-full pr-14 py-4 pl-4 border rounded-full font-normal focus:ring-0 customtext-neutral-dark placeholder:customtext-neutral-dark focus:outline-none bg-[#DFF4FF]"
                                 enterKeyHint="search"
                                 inputMode="search"
                                 autoComplete="on"
                                 role="searchbox"
-                                aria-label="Buscar productos"
+                                aria-label="Estoy buscando..."
                             />
                             <button
                                 type="submit"
@@ -663,10 +720,37 @@ const HeaderSearchB = ({
                                 {isUser ? (
                                     <button
                                         aria-label="user"
-                                        className="customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-colors duration-300"
+                                        className="customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-all duration-300 relative group"
                                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                                     >
-                                        <CircleUser className="customtext-primary" />
+                                        <div className="relative transform group-hover:scale-105 transition-transform duration-200">
+                                            {isUser.uuid ? (
+                                                <div className="relative">
+                                                    <ProfileImage 
+                                                        uuid={isUser.uuid}
+                                                        name={isUser.name}
+                                                        lastname={isUser.lastname}
+                                                        className="w-8 h-8 rounded-full object-cover border-2 border-primary ring-secondary transition-all duration-300"
+                                                    />
+                                                    {/* Punto indicador online animado */}
+                                                    <div className="absolute -bottom-[-0.115rem] -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                        <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                        <div className="w-full h-full bg-primary rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="relative">
+                                                    <CircleUser 
+                                                        className="customtext-primary border-2 border-primary rounded-full  ring-secondary group-hover:ring-green-300 transition-all duration-300" 
+                                                    />
+                                                    {/* Punto indicador online animado */}
+                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                        <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                        <div className="w-full h-full bg-primary rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                         <span className="hidden md:inline">{isUser.name}</span>
                                     </button>
                                 ) : (
@@ -686,15 +770,23 @@ const HeaderSearchB = ({
                                             className="absolute z-50 top-full left-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
                                         >
                                             <div className="p-4">
-                                                <ul className="space-y-3">
+                                                <ul className="space-y-4">
                                                     {isCustomer ? (
                                                         menuItems.map((item, index) => (
                                                             <li key={index}>
                                                                 {item.onClick ? (
                                                                     <button
                                                                         aria-label="menu-items"
-                                                                        onClick={item.onClick}
-                                                                        className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            setIsMenuOpen(false);
+                                                                            // Pequeño delay para que la animación se complete
+                                                                            setTimeout(() => {
+                                                                                item.onClick();
+                                                                            }, 150);
+                                                                        }}
+                                                                        className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                     >
                                                                         {item.icon}
                                                                         <span>{item.label}</span>
@@ -702,7 +794,11 @@ const HeaderSearchB = ({
                                                                 ) : (
                                                                     <a
                                                                         href={item.href}
-                                                                        className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setIsMenuOpen(false);
+                                                                        }}
+                                                                        className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                     >
                                                                         {item.icon}
                                                                         <span>{item.label}</span>
@@ -715,21 +811,32 @@ const HeaderSearchB = ({
                                                             <li>
                                                                 <a
                                                                     href="/admin/home"
-                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setIsMenuOpen(false);
+                                                                    }}
+                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                 >
                                                                     <Home size={16} />
                                                                     <span>Dashboard</span>
                                                                 </a>
                                                             </li>
                                                             <li>
-                                                                <a
-                                                                    href="#"
-                                                                    onClick={Logout}
-                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        setIsMenuOpen(false);
+                                                                        // Pequeño delay para que la animación se complete
+                                                                        setTimeout(() => {
+                                                                            Logout();
+                                                                        }, 150);
+                                                                    }}
+                                                                    className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                 >
                                                                     <DoorClosed size={16} />
                                                                     <span>Cerrar Sesión</span>
-                                                                </a>
+                                                                </button>
                                                             </li>
                                                         </>
                                                     )}
@@ -759,7 +866,7 @@ const HeaderSearchB = ({
                             {/* Desktop: botón "Haz tu Pedido" */}
                             <a
                                 aria-label="primary-button"
-                                className="hidden lg:block px-4 py-3 bg-primary text-white rounded-full hover:brightness-125 transition-colors duration-300"
+                                className={`${data.class ? data.class : 'bg-primary'} hidden lg:block px-6 py-2.5 text-white font-medium rounded-3xl hover:brightness-125 transition-colors duration-300`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 href={
@@ -768,7 +875,7 @@ const HeaderSearchB = ({
                                         : "#"
                                 }
                             >
-                                Haz tu Pedido
+                                Haz tu pedido
                             </a>
                             {/* Mobile: búsqueda expandible */}
                             <div className="md:hidden relative w-full max-w-xl mx-auto">
@@ -933,7 +1040,7 @@ const HeaderSearchB = ({
             />
 
             <div className="flex justify-end w-full mx-auto z-[100] relative">
-                <div className="hidden lg:block fixed bottom-6 sm:bottom-[2rem] lg:bottom-[4rem] z-20 cursor-pointer">
+                <div className="block fixed bottom-6 sm:bottom-[2rem] lg:bottom-[4rem] z-20 cursor-pointer">
                     <a
                         target="_blank"
                         id="whatsapp-toggle"
@@ -942,7 +1049,7 @@ const HeaderSearchB = ({
                         <img
                             src="/assets/img/whatsapp.svg"
                             alt="whatsapp"
-                            className="mr-3 w-16 h-16 md:w-[80px] md:h-[80px] animate-bounce duration-300"
+                            className="mr-3 w-12 h-12 md:w-[60px] md:h-[60px] animate-bounce duration-300"
                         />
                     </a>
                 </div>

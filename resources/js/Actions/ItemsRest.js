@@ -101,6 +101,26 @@ class ItemsRest extends BasicRest {
             return [];
         }
     };
+
+    convertSlugs = async (request) => {
+        try {
+            const { status, result } = await Fetch(
+                `/api/${this.path}/convert-slugs`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(request),
+                }
+            );
+            if (!status)
+                throw new Error(
+                    result?.message ??
+                        "Ocurrió un error al convertir los slugs"
+                );
+            return result;
+        } catch (error) {
+            return { status: 400, data: {} };
+        }
+    };
 }
 
 export default ItemsRest;

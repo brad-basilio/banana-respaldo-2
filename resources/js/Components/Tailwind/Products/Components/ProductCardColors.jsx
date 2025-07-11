@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 
-const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
+const ProductCardColors = ({ product, setCart, cart, textcolor = "", fondo = "" }) => {
 
     const itemsRest = new ItemsRest();
     const [variationsItems, setVariationsItems] = useState(product.variants);
@@ -67,11 +67,10 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
     return (
         <div
             key={product.id}
-            className={`group w-full transition-transform duration-300 hover:scale-105 flex-shrink-0 font-font-general customtext-primary cursor-pointer`}
+            className={`group w-full rounded-xl lg:rounded-2xl transition-transform duration-300 hover:scale-105 flex-shrink-0 font-font-general customtext-primary cursor-pointer`}
         >
             <div
-                className="bg-white p-0"
-
+                className={`p-0 ${fondo !== "" ? fondo : 'bg-white'} rounded-xl lg:rounded-2xl`}
             >
                 <a href={`/item/${product.slug}`}>
                     {/* Imagen del producto y etiqueta de descuento */}
@@ -81,7 +80,7 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
                                 -{Math.abs(Number(100 - Number((product?.discount * 100 / product?.price)))).toFixed(0)}%
                             </span>
                         )}
-                        <div className="aspect-square rounded-3xl overflow-hidden flex items-center justify-center  bg-secondary border bg-white">
+                        <div className="aspect-square rounded-3xl overflow-hidden flex items-center justify-center  bg-secondary  bg-white">
                             <img
                                 src={`/storage/images/item/${product.image}`}
                                 onError={e => e.target.src = '/assets/img/noimage/no_img.jpg'}
@@ -99,8 +98,8 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
                     </p>
 
                     <a href={`/item/${product.slug}`}>
-                        <h3 className="text-base sm:text-lg lg:text-xl font-semibold mb-2 line-clamp-2 !leading-normal">
-                            {product.name}
+                        <h3 className="text-base sm:text-lg lg:text-xl font-semibold mb-1 line-clamp-2 !leading-normal">
+                            {product.name} 
                         </h3>
 
 
@@ -180,7 +179,7 @@ const ProductCardColors = ({ product, setCart, cart, textcolor = "" }) => {
                         )}
 
                         {/* Precio */}
-                        <div className="flex items-baseline gap-4 mt-4">
+                        <div className="flex items-baseline gap-4 mt-2">
                             <span className="text-lg sm:text-xl md:text-2xl font-semibold">
                                 S/ {product.final_price}
                             </span>

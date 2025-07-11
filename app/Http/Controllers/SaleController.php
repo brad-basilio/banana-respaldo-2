@@ -82,6 +82,10 @@ class SaleController extends BasicController
             $saleJpa->number = $sale['number'];
             $saleJpa->reference = $sale['reference'];
             $saleJpa->comment = $sale['comment'];
+            
+            // Document info
+            $saleJpa->documentType = $sale['document_type'] ?? null;
+            $saleJpa->document = $sale['document'] ?? null;
 
             if (Auth::check()) {
                 $userJpa = User::find(Auth::user()->id);
@@ -245,6 +249,10 @@ class SaleController extends BasicController
         // $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
         $body['status_id'] = 'bd60fc99-c0c0-463d-b738-1c72d7b085f5';
         $body['user_id'] = Auth::id();
+        
+        // Document info
+        $body['documentType'] = $request->document_type ?? null;
+        $body['document'] = $request->document ?? null;
 
         // Manejar cupón si está presente
         if (isset($body['coupon_code']) && $body['coupon_code']) {

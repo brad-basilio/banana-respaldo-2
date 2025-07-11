@@ -7,6 +7,7 @@ const ProductInfinite = React.lazy(() => import("./Products/ProductInfinite"));
 const ProductNavigation = React.lazy(() => import("./Products/ProductNavigation"));
 const ProductNavigationSwiper = React.lazy(() => import("./Products/ProductNavigationSwiper"));
 const ProductNavigationSwiperSimple = React.lazy(() => import("./Products/ProductNavigationSwiperSimple"));
+const ProductNavigationSwiperPaani = React.lazy(() => import("./Products/ProductNavigationSwiperPaani"));
 const ProductFeaturedSwiper = React.lazy(() => import("./Products/ProductFeaturedSwiper"));
 const ProductBananaLab = React.lazy(() => import("./Products/ProductBananaLab"));
 const ScrapingSimple = React.lazy(() => import("./Scraping/ScrapingSimple"));
@@ -22,6 +23,7 @@ const Product = ({
     filteredData,
     favorites,
     setFavorites,
+    contacts
 }) => {
     const getProduct = () => {
         switch (which) {
@@ -88,6 +90,15 @@ const Product = ({
                         setCart={setCart}
                     />
                 );
+            case "ProductNavigationSwiperPaani":
+                return (
+                    <ProductNavigationSwiperPaani
+                        data={data}
+                        items={items}
+                        cart={cart}
+                        setCart={setCart}
+                    />
+                );
             case "ProductFeaturedSwiper":
                 return (
                     <ProductFeaturedSwiper
@@ -95,6 +106,7 @@ const Product = ({
                         items={items}
                         cart={cart}
                         setCart={setCart}
+                        contacts={contacts}
                     />
                 );
             case "ProductBananaLab":

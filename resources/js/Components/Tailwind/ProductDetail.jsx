@@ -18,7 +18,7 @@ const ProductDetail = ({ which, item, cart, setCart,data, generals = [],favorite
       case 'ProductDetailSimple':
         return <ProductDetailSimple item={item} cart={cart} setCart={setCart} />
       case 'ProductDetailB':
-        return <ProductDetailB item={item} cart={cart} setCart={setCart} data={data} />
+        return <ProductDetailB item={item} cart={cart} setCart={setCart} data={data} generals={generals} />
       case 'ScrapingProductDetail':
         return <ScrapingProductDetail cart={cart} setCart={setCart} />
       case 'ProductDetailSF':

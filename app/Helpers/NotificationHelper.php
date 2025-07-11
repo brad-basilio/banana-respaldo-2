@@ -5,10 +5,13 @@ namespace App\Helpers;
 use App\Models\General;
 use App\Notifications\AdminPurchaseNotification;
 use App\Notifications\AdminContactNotification;
+use App\Notifications\AdminClaimNotification;
 use App\Notifications\PurchaseSummaryNotification;
 use App\Notifications\MessageContactNotification;
+use App\Notifications\ClaimNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 
 class NotificationHelper
 {
@@ -32,31 +35,107 @@ class NotificationHelper
             ]);
             return null;
         }
+    }
+
+    /**
+     * Verifica si un email pertenece a Zoho Mail
+     */
+    public static function isZohoEmail($email)
+    {
+        if (!$email) return false;
+        
+        $zohoPatterns = [
+            '@zoho.com',
+            '@zohomail.com',
+            // También verificar si usa servidores de Zoho con dominio personalizado
+        ];
+        
+        foreach ($zohoPatterns as $pattern) {
+            if (strpos(strtolower($email), $pattern) !== false) {
+                return true;
+            }
+        }
+        
+        // Verificar si es un dominio personalizado que usa Zoho
+        // Esto requeriría verificar los registros MX, pero por ahora 
+        // asumimos que dominios como s-tech.com.pe podrían usar Zoho
+        $domain = substr(strrchr($email, "@"), 1);
+        $possibleZohoDomains = ['s-tech.com.pe']; // Agregar más dominios conocidos que usan Zoho
+        
+        return in_array(strtolower($domain), $possibleZohoDomains);
     }    /**
      * Envía una notificación tanto al destinatario original como al administrador
      */
-    public static function sendToClientAndAdmin($originalNotifiable, $notification)
+    public static function sendToClientAndAdmin($originalNotifiable, $notification, $adminNotification = null)
     {
         try {
             // Enviar al cliente/destinatario original
-            $originalNotifiable->notify($notification);
-            Log::info('NotificationHelper - Notificación enviada al cliente');
+            if ($originalNotifiable->email ?? $originalNotifiable->correo_electronico ?? null) {
+                $clientEmail = $originalNotifiable->email ?? $originalNotifiable->correo_electronico;
+                Log::info('NotificationHelper - Enviando notificación al cliente', [
+                    'client_email' => $clientEmail,
+                    'notification_type' => get_class($notification)
+                ]);
+                
+                $originalNotifiable->notify($notification);
+                Log::info('NotificationHelper - Notificación enviada al cliente exitosamente');
+            } else {
+                Log::warning('NotificationHelper - Cliente sin email, saltando envío al cliente');
+            }
 
             // Enviar al administrador con notificación específica
             $corporateEmail = self::getCorporateEmail();
             if ($corporateEmail) {
-                $adminNotification = self::createAdminNotification($notification);
+                Log::info('NotificationHelper - Preparando envío al administrador', [
+                    'admin_email' => $corporateEmail,
+                    'is_zoho' => self::isZohoEmail($corporateEmail),
+                    'mail_config' => [
+                        'host' => config('mail.mailers.smtp.host'),
+                        'port' => config('mail.mailers.smtp.port'),
+                        'encryption' => config('mail.mailers.smtp.encryption'),
+                        'from_address' => config('mail.from.address'),
+                        'from_name' => config('mail.from.name')
+                    ]
+                ]);
+
+                // Si se proporciona una notificación específica para admin, usarla
                 if ($adminNotification) {
+                    Log::info('NotificationHelper - Enviando notificación específica proporcionada al administrador');
                     Notification::route('mail', $corporateEmail)->notify($adminNotification);
-                    Log::info('NotificationHelper - Notificación específica enviada al administrador', [
+                    Log::info('NotificationHelper - Notificación específica enviada al administrador exitosamente', [
                         'admin_email' => $corporateEmail,
                         'notification_type' => get_class($adminNotification)
                     ]);
                 } else {
-                    // Fallback: usar la misma notificación
-                    Notification::route('mail', $corporateEmail)->notify($notification);
-                    Log::info('NotificationHelper - Notificación genérica enviada al administrador', [
-                        'admin_email' => $corporateEmail
+                    // Crear notificación específica basada en la original
+                    $autoAdminNotification = self::createAdminNotification($notification);
+                    if ($autoAdminNotification) {
+                        Log::info('NotificationHelper - Enviando notificación auto-generada al administrador');
+                        Notification::route('mail', $corporateEmail)->notify($autoAdminNotification);
+                        Log::info('NotificationHelper - Notificación auto-generada enviada al administrador exitosamente', [
+                            'admin_email' => $corporateEmail,
+                            'notification_type' => get_class($autoAdminNotification)
+                        ]);
+                    } else {
+                        // Fallback: usar la misma notificación
+                        Log::info('NotificationHelper - Enviando notificación genérica al administrador');
+                        Notification::route('mail', $corporateEmail)->notify($notification);
+                        Log::info('NotificationHelper - Notificación genérica enviada al administrador exitosamente', [
+                            'admin_email' => $corporateEmail
+                        ]);
+                    }
+                }
+
+                // Verificación adicional para Zoho
+                if (self::isZohoEmail($corporateEmail)) {
+                    Log::info('NotificationHelper - Email Zoho detectado, verificando configuraciones adicionales', [
+                        'zoho_email' => $corporateEmail,
+                        'recommendations' => [
+                            'verify_spf_record' => 'Verificar registro SPF del dominio',
+                            'verify_dkim' => 'Verificar configuración DKIM',
+                            'check_spam_folder' => 'Revisar carpeta de spam en Zoho',
+                            'whitelist_sender' => 'Agregar remitente a lista blanca'
+                        ]
                     ]);
                 }
             } else {
@@ -65,7 +144,9 @@ class NotificationHelper
         } catch (\Exception $e) {
             Log::error('NotificationHelper - Error enviando notificaciones', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'admin_email' => $corporateEmail ?? 'not_set',
+                'is_zoho' => isset($corporateEmail) ? self::isZohoEmail($corporateEmail) : false
             ]);
             throw $e;
         }
@@ -95,6 +176,13 @@ class NotificationHelper
                 $message = $messageProperty->getValue($originalNotification);
                 
                 return new AdminContactNotification($message);
+                
+            } elseif ($originalNotification instanceof ClaimNotification) {
+                $complaintProperty = $reflection->getProperty('complaint');
+                $complaintProperty->setAccessible(true);
+                $complaint = $complaintProperty->getValue($originalNotification);
+                
+                return new AdminClaimNotification($complaint);
             }
             
             return null;
@@ -151,6 +239,60 @@ class NotificationHelper
             Log::info('NotificationHelper - Notificaciones de contacto enviadas exitosamente');
         } catch (\Exception $e) {
             Log::error('NotificationHelper - Error enviando notificaciones de contacto', [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Envía un correo optimizado para Zoho Mail
+     */
+    public static function sendZohoOptimizedEmail($to, $subject, $content, $isHtml = false)
+    {
+        try {
+            Log::info('NotificationHelper - Enviando correo optimizado para Zoho', [
+                'to' => $to,
+                'subject' => $subject,
+                'is_zoho' => self::isZohoEmail($to)
+            ]);
+
+            if ($isHtml) {
+                Mail::html($content, function ($message) use ($to, $subject) {
+                    $message->to($to)
+                            ->subject($subject)
+                            ->from(config('mail.from.address'), config('mail.from.name'))
+                            ->replyTo(config('mail.from.address'), config('mail.from.name'));
+                    
+                    // Headers optimizados para Zoho
+                    $message->getHeaders()
+                            ->addTextHeader('X-Mailer', 'Laravel-STP')
+                            ->addTextHeader('X-Priority', '3')
+                            ->addTextHeader('List-Unsubscribe', '<mailto:' . config('mail.from.address') . '>')
+                            ->addTextHeader('Precedence', 'bulk');
+                });
+            } else {
+                Mail::raw($content, function ($message) use ($to, $subject) {
+                    $message->to($to)
+                            ->subject($subject)
+                            ->from(config('mail.from.address'), config('mail.from.name'))
+                            ->replyTo(config('mail.from.address'), config('mail.from.name'));
+                    
+                    // Headers optimizados para Zoho
+                    $message->getHeaders()
+                            ->addTextHeader('X-Mailer', 'Laravel-STP')
+                            ->addTextHeader('X-Priority', '3');
+                });
+            }
+
+            Log::info('NotificationHelper - Correo optimizado enviado exitosamente', [
+                'to' => $to
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('NotificationHelper - Error enviando correo optimizado', [
+                'to' => $to,
                 'error' => $e->getMessage()
             ]);
             throw $e;
