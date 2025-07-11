@@ -7,23 +7,63 @@ import ProductNavigationSwiper from "../Products/ProductNavigationSwiper";
 import ReactModal from "react-modal";
 import HtmlContent from "../../../Utils/HtmlContent";
 import { X } from "lucide-react";
+import useEcommerceTracking from "../../../Hooks/useEcommerceTracking";
 
 export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items, generals }) {
     const [currentStep, setCurrentStep] = useState(1);
     const totalPrice = cart.reduce((acc, item) => acc + item.final_price * item.quantity, 0);
     
+    // Hook de tracking
+    const { 
+        trackCheckoutPageView, 
+        trackInitiateCheckout, 
+        trackPurchase,
+        resetTracking
+    } = useEcommerceTracking();
+    
     // Corregir cálculo del IGV y subtotal
     const subTotal = parseFloat((totalPrice / 1.18).toFixed(2));
     const igv = parseFloat((totalPrice - subTotal).toFixed(2));
     const [envio, setEnvio] = useState(0);
-    const totalFinal = subTotal + igv + parseFloat(envio);
-    const [sale, setSale] = useState([]);
-    const [code, setCode] = useState([]);
-    const [delivery, setDelivery] = useState([]);
     
     // Estados para el cupón
     const [couponDiscount, setCouponDiscount] = useState(0);
     const [couponCode, setCouponCode] = useState(null);
+    
+    // Estados para descuentos automáticos
+    const [automaticDiscounts, setAutomaticDiscounts] = useState([]);
+    const [automaticDiscountTotal, setAutomaticDiscountTotal] = useState(0);
+    
+    // Calcular total final con todos los descuentos
+    const totalWithoutDiscounts = subTotal + igv + parseFloat(envio);
+    const totalAllDiscounts = couponDiscount + automaticDiscountTotal;
+    const totalFinal = Math.max(0, totalWithoutDiscounts - totalAllDiscounts);
+    
+    const [sale, setSale] = useState([]);
+    const [code, setCode] = useState([]);
+    const [delivery, setDelivery] = useState([]);
+
+    // Estado para tracking de conversión
+    const [conversionScripts, setConversionScripts] = useState(null);
+
+    // Tracking inicial del checkout
+    useEffect(() => {
+        // Track vista inicial del checkout
+        trackCheckoutPageView(currentStep, cart);
+        
+        // Reset tracking cuando se monta el componente
+        return () => resetTracking();
+    }, []);
+
+    // Tracking cuando cambia el paso
+    useEffect(() => {
+        trackCheckoutPageView(currentStep, cart);
+        
+        // Track InitiateCheckout cuando llegan al paso 2 (Shipping)
+        if (currentStep === 2) {
+            trackInitiateCheckout(cart, totalFinal);
+        }
+    }, [currentStep]);
 
     // useEffect(() => {
     //     const script = document.createElement("script");
@@ -97,6 +137,11 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         igv={igv}
                         totalFinal={totalFinal}
                         openModal={openModal}
+                        automaticDiscounts={automaticDiscounts}
+                        setAutomaticDiscounts={setAutomaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        setAutomaticDiscountTotal={setAutomaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
                     />
                 )}
 
@@ -120,6 +165,9 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         openModal={openModal}
                         setCouponDiscount={setCouponDiscount}
                         setCouponCode={setCouponCode}
+                        automaticDiscounts={automaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
                     />
                 )}
 
@@ -134,6 +182,14 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         totalFinal={totalFinal}
                         couponDiscount={couponDiscount}
                         couponCode={couponCode}
+                        automaticDiscounts={automaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
+                        conversionScripts={conversionScripts}
+                        setConversionScripts={setConversionScripts}
+                        onPurchaseComplete={(orderId, scripts) => {
+                            trackPurchase(orderId, scripts);
+                        }}
                     />
                 )}
             </div>

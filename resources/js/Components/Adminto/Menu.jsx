@@ -100,13 +100,17 @@ const Menu = ({ session, hasRole }) => {
                   <MenuItem href="/admin/sales" icon="mdi mdi-cart-outline">Pedidos</MenuItem>
                   <MenuItem href="/admin/items" icon="mdi mdi-bookshelf">Items</MenuItem>
 
-                  {/* <MenuItem href="/admin/combos" icon="mdi mdi-bookshelf">
-                      Combos
-                  </MenuItem> */}
-
-                   <MenuItem href="/admin/coupons" icon="mdi mdi-bookshelf">
-                      Cupones
+                  <MenuItem href="/admin/combos" icon="mdi mdi-bookshelf">
+                    Combos
                   </MenuItem>
+
+                  <MenuItem href="/admin/coupons" icon="mdi mdi-bookshelf">
+                    Cupones
+                  </MenuItem>
+                  <MenuItem href="/admin/discount-rules" icon="mdi mdi-bookshelf">
+                    Reglas de Descuento
+                  </MenuItem>
+
 
                   <MenuItemContainer title="Características" icon="mdi mdi-view-dashboard">
                     <MenuItem href="/admin/collections" icon="mdi mdi-view-carousel-outline">Colecciones</MenuItem>
@@ -124,14 +128,13 @@ const Menu = ({ session, hasRole }) => {
                   <MenuItem href="/admin/ads" icon='mdi mdi-google-ads'>Pop-ups</MenuItem>
                   <MenuItem href="/admin/posts" icon="mdi mdi-post">Posts</MenuItem>
                   <MenuItem href="/admin/about" icon="mdi mdi-briefcase">Nosotros</MenuItem>
-                  {/* <MenuItem href="/admin/delivery-zones" icon="mdi mdi-map-marker-radius">Zonas de Cobertura</MenuItem> */}
+                  <MenuItem href="/admin/delivery-zones" icon="mdi mdi-map-marker-radius">Zonas de Cobertura</MenuItem>
                   <MenuItem href="/admin/indicators" icon="mdi mdi-dots-grid">Indicadores</MenuItem>
                   <MenuItem href="/admin/strengths" icon="mdi mdi-arm-flex">Fortalezas</MenuItem>
                   <MenuItem href="/admin/banners" icon="mdi mdi-post-outline">Banners</MenuItem>
-                  {/* <MenuItem href="/admin/sliders" icon="mdi mdi-page-layout-body">Sliders</MenuItem> */}
-                  <MenuItem href="/admin/coupons" icon="mdi mdi-page-layout-body">Cupones</MenuItem>
-                  {/* <MenuItem href="/admin/faqs" icon="mdi mdi-forum">Preguntas Frecuentes</MenuItem> */}
-                  {/* <MenuItem href="/admin/testimonies" icon="mdi mdi-forum">Testimonios</MenuItem> */}
+                  <MenuItem href="/admin/sliders" icon="mdi mdi-page-layout-body">Sliders</MenuItem>
+                  <MenuItem href="/admin/faqs" icon="mdi mdi-forum">Preguntas Frecuentes</MenuItem>
+                  <MenuItem href="/admin/testimonies" icon="mdi mdi-forum">Testimonios</MenuItem>
                   <MenuItem href="/admin/socials" icon="mdi mdi-web">Redes Sociales</MenuItem>
                   <MenuItem href="/admin/statuses" icon="mdi mdi-tag-text">Estados de ventas</MenuItem>
 
@@ -142,6 +145,10 @@ const Menu = ({ session, hasRole }) => {
 
                   {/* Configuraciones */}
                   <li className="menu-title">Configuraciones</li>
+                  <MenuItemContainer title="Usuarios" icon="mdi mdi-account-multiple">
+                    <MenuItem href="/admin/users" icon="mdi mdi-account-box-multiple">Sistema</MenuItem>
+                    <MenuItem href="/admin/clients" icon="mdi mdi-account-group">Clientes</MenuItem>
+                  </MenuItemContainer>
                   {hasRole("Root") && (
                     <MenuItem href="/admin/system" icon="mdi mdi-cog" target="_blank">
                       Configuraciones

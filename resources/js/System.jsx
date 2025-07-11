@@ -138,19 +138,15 @@ const System = ({
             headerPosts,
             contacts
         };
-
+        
         switch (component) {
             case "top_bar":
                 return (
-
                     <TopBar {...componentProps} data={data} />
-
                 );
             case "header":
                 return (
-
                     <Header {...componentProps} />
-
                 );
             case "menu":
                 return <Menu data={data} which={value} items={getItems(itemsId)} cart={cart} setCart={setCart} pages={pages} />
@@ -211,7 +207,7 @@ const System = ({
             case "post-detail":
                 return <PostDetail which={value} data={data} item={filteredData.Post} />
             case "about":
-                return <AboutUs which={value} data={data} filteredData={filteredData} />
+                return <AboutUs which={value} data={data} filteredData={filteredData} items={getItems(itemsId)}/>
             case "login":
                 return <Login which={value} data={data} />
             case "signup":
@@ -232,7 +228,8 @@ const System = ({
                 return <Testimonials which={value} data={data} items={getItems(itemsId)} />
             case "brands":
                 return <Brands which={value} data={data} items={getItems(itemsId)} />
-
+            case "partner":
+                return <Partner which={value} data={data} items={getItems(itemsId)} />
             default:
                 return <NoComponent which={value} />
         }

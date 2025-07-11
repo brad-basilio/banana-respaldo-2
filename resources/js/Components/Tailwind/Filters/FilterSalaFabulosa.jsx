@@ -96,12 +96,7 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
         category_id: GET.category ? GET.category.split(',') : [],
         brand_id: GET.brand ? GET.brand.split(',') : [],
         subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
-        collection_id: GET.collection ? GET.collection.split(',') : [],
-        category_id: GET.category ? GET.category.split(',') : [],
-        brand_id: GET.brand ? GET.brand.split(',') : [],
-        subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
         price: null,
-        name: GET.search || null,
         name: GET.search || null,
         sort_by: "created_at",
         order: "desc",
@@ -725,8 +720,8 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                                                     className={`w-10 h-10 p-2 inline-flex items-center justify-center rounded-full transition-all duration-300 
                                            
                                             ${page === pagination.currentPage
-                                                                            ? "bg-primary text-white"
-                                                                            : "bg-transparent hover:text-white hover:bg-primary"
+                                                                            ? "bg-accent text-white"
+                                                                            : "bg-transparent hover:text-white hover:bg-accent"
                                                                         }`}
                                                                     onClick={() =>
                                                                         handlePageChange(
@@ -829,8 +824,8 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                                                 <button
                                                                     className={`w-10 h-10 p-2 inline-flex items-center justify-center rounded-full transition-all duration-300 
                                             ${page === pagination.currentPage
-                                                                            ? "bg-primary text-white"
-                                                                            : "bg-transparent hover:text-white hover:bg-primary"
+                                                                            ? "bg-accent text-white"
+                                                                            : "bg-transparent hover:text-white hover:bg-accent"
                                                                         }`}
                                                                     onClick={() =>
                                                                         handlePageChange(

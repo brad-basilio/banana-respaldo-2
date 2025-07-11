@@ -99,7 +99,9 @@ const Sales = ({ statuses = [] }) => {
         Number(saleLoaded?.delivery || 0) -
         Number(saleLoaded?.bundle_discount || 0) -
         Number(saleLoaded?.renewal_discount || 0) -
-        Number(saleLoaded?.coupon_discount || 0);
+        Number(saleLoaded?.coupon_discount || 0) 
+     // -Number(saleLoaded?.promotion_discount || 0)
+        ;
 
     return (
         <>
@@ -336,6 +338,8 @@ const Sales = ({ statuses = [] }) => {
                                                 </td>
                                             </tr>
                                         )}
+
+                                   
 
                                         {saleLoaded?.invoiceType && (
                                             <tr>

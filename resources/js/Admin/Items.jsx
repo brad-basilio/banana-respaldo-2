@@ -55,7 +55,6 @@ const Items = ({ categories, brands, collections }) => {
     const stockRef = useRef();
 
     const featuresRef = useRef([]);
-
     const specificationsRef = useRef([]);
 
     const [isEditing, setIsEditing] = useState(false);
@@ -178,20 +177,34 @@ const Items = ({ categories, brands, collections }) => {
             setSpecifications(data.specifications.map(spec => ({
                 type: spec.type,
                 title: spec.title,
-                description: spec.description
+                description: spec.description,
+                image: spec.image || "",
             })));
         } else {
             setSpecifications([]);
         }
+        
         // Nuevos campos
-
+        setFeatures(data?.features?.map(f => typeof f === 'object' ? f : { feature: f }) || []);
         stockRef.current.value = data?.stock;
-
         $(modalRef.current).modal("show");
     };
 
     const onModalSubmit = async (e) => {
         e.preventDefault();
+
+        // Limpia características vacías
+        const cleanFeatures = features.filter(f => {
+            if (typeof f === 'string') return f.trim() !== '';
+            if (typeof f === 'object') return f.feature?.trim() !== '';
+            return false;
+        });
+
+        // Limpia especificaciones vacías
+        const cleanSpecs = specifications.filter(s => 
+            (s.title && s.title.trim() !== '') || 
+            (s.description && s.description.trim() !== '')
+        );
 
         const request = {
             id: idRef.current.value || undefined,
@@ -208,15 +221,21 @@ const Items = ({ categories, brands, collections }) => {
             tags: $(tagsRef.current).val(),
             description: descriptionRef.current.value,
             stock: stockRef.current.value,
-            specifications: JSON.stringify(specifications),
+            features: cleanFeatures,
+            specifications: cleanSpecs,
         };
 
+
+
         const formData = new FormData();
+        
         for (const key in request) {
-            formData.append(key, request[key]);
+            if (key === 'features' || key === 'specifications') {
+                formData.append(key, JSON.stringify(request[key]));
+            } else {
+                formData.append(key, request[key]);
+            }
         }
-        formData.append("features", JSON.stringify(features)); // Características (array de strings)
-        formData.append("specifications", JSON.stringify(specifications)); // Especificaciones (array de objetos)
 
         const image = imageRef.current.files[0];
         if (image) {
@@ -291,7 +310,7 @@ const Items = ({ categories, brands, collections }) => {
     const [specifications, setSpecifications] = useState([]); // Especificaciones
 
     // Opciones del campo "type"
-    const typeOptions = ["General", "Principal"];
+    const typeOptions = ["Principal", "General", "Icono"];
     const [showImportModal, setShowImportModal] = useState(false);
     const modalImportRef = useRef();
     const onModalImportOpen = () => {
@@ -696,7 +715,7 @@ const Items = ({ categories, brands, collections }) => {
                             multiple
                         />
                     </div>
-                    <div className="col-md-4">
+                    <div className="col-md-5">
                         {/*Agregar aqui lo que falta */}
                         <InputFormGroup
                             eRef={nameRef}
@@ -725,6 +744,7 @@ const Items = ({ categories, brands, collections }) => {
                             ref={featuresRef}
                             label="Características"
                             structure=""
+                            value={features}
                             onChange={setFeatures}
                         />
 
@@ -738,7 +758,7 @@ const Items = ({ categories, brands, collections }) => {
                             typeOptions={typeOptions}
                         />
                     </div>
-                    <div className="col-md-5">
+                    <div className="col-md-4">
                         <div className="row">
                             <ImageFormGroup
                                 eRef={bannerRef}

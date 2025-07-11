@@ -31,17 +31,19 @@ class ItemSpecificationController extends BasicController
 
             
         foreach ($specifications as $spec) {
-            ItemSpecification::updateOrCreate(
-                [
-                    'id' => Arr::get($spec, 'id'), // Busca por ID si existe
-                    'item_id' => $jpa->id
-                ],
-                [
-                    'type' => Arr::get($spec, 'type'),
-                    'title' => Arr::get($spec, 'title'),
-                    'description' => Arr::get($spec, 'description')
-                ]
-            );
+            if (!empty($spec['title']) || !empty($spec['description'])) {
+                ItemSpecification::updateOrCreate(
+                    [
+                        'id' => $spec['id'] ?? null,
+                        'item_id' => $jpa->id
+                    ],
+                    [
+                        'type' => $spec['type'] ?? 'General',
+                        'title' => $spec['title'] ?? '',
+                        'description' => $spec['description'] ?? ''
+                    ]
+                );
+            }
         }
     }
 }

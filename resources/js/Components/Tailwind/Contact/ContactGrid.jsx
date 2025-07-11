@@ -467,7 +467,7 @@ const ContactGrid = ({ data, contacts }) => {
                     >
                         <GoogleMap
                             mapContainerStyle={{ width: "100%", height: "400px" }}
-                            zoom={10}
+                            zoom={15}
                             center={locationGps}
                         >
                             <Marker position={locationGps} />

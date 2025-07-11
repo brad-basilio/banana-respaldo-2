@@ -371,9 +371,14 @@ class BasicController extends Controller
 
       $dataBeforeDelete = $this->model::find($id);
       if (!$dataBeforeDelete) throw new Exception('El registro que intenta eliminar no existe');
-      if ($this->softDeletion) {
+      
+      // Verificar si la tabla tiene el campo 'status' antes de hacer soft delete
+      $table = (new $this->model)->getTable();
+      $hasStatusColumn = Schema::hasColumn($table, 'status');
+      
+      if ($this->softDeletion && $hasStatusColumn) {
         $deleted = $this->model::where('id', $id)
-          ->update(\array_merge(['status' => null], $body));
+          ->update(\array_merge(['status' => false], $body));
       } else {
         $deleted = $this->model::where('id', $id)
           ->delete();

@@ -8,6 +8,7 @@ import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
 import OptionCard from "./OptionCard";
+import FreeItemsDisplay from "./FreeItemsDisplay";
 import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { debounce } from "lodash";
@@ -31,9 +32,159 @@ export default function ShippingStep({
     openModal,
     setCouponDiscount: setParentCouponDiscount,
     setCouponCode: setParentCouponCode,
+    automaticDiscounts = [], // Se usará como reglas, no como descuentos ya calculados
+    automaticDiscountTotal = 0,
+    totalWithoutDiscounts,
+    conversionScripts,
+    setConversionScripts,
+    onPurchaseComplete,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
+    
+
+    // Estados para los descuentos automáticos calculados
+    const [autoDiscounts, setAutoDiscounts] = useState([]);
+    const [autoDiscountTotal, setAutoDiscountTotal] = useState(0);
+
+    // Get free items from automatic discounts calculados
+    const freeItems = autoDiscounts.reduce((items, discount) => {
+        if (discount.free_items && Array.isArray(discount.free_items)) {
+            return [...items, ...discount.free_items];
+        }
+        return items;
+    }, []);
+
+    // Función para calcular todos los descuentos automáticos
+    const calculateAutomaticDiscounts = (cart, rules) => {
+        let discounts = [];
+        let totalDiscount = 0;
+
+        for (const rule of rules) {
+            switch (rule.type) {
+                case 'buy_x_get_y': {
+                    // Ejemplo: compra 2 lleva 1 gratis
+                    cart.forEach(item => {
+                        if (rule.product_ids?.includes(item.id)) {
+                            const sets = Math.floor(item.quantity / (rule.buy + rule.get));
+                            if (sets > 0 && rule.get > 0) {
+                                const freeQty = sets * rule.get;
+                                const discount = freeQty * item.final_price;
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                    free_items: [{ ...item, quantity: freeQty }],
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'quantity_discount': {
+                    // Ejemplo: 2x1, 3x2 (paga menos por comprar más)
+                    cart.forEach(item => {
+                        if (rule.product_ids?.includes(item.id)) {
+                            const sets = Math.floor(item.quantity / rule.buy);
+                            if (sets > 0 && rule.pay < rule.buy) {
+                                const discount = sets * (rule.buy - rule.pay) * item.final_price;
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'tiered_discount': {
+                    // Ejemplo: compra 5 lleva 6 (1 gratis por cada 5)
+                    cart.forEach(item => {
+                        if (rule.product_ids?.includes(item.id)) {
+                            const sets = Math.floor(item.quantity / rule.tier);
+                            if (sets > 0 && rule.free > 0) {
+                                const freeQty = sets * rule.free;
+                                const discount = freeQty * item.final_price;
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                    free_items: [{ ...item, quantity: freeQty }],
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'category_discount': {
+                    // Descuento por categoría
+                    cart.forEach(item => {
+                        if (rule.category_ids?.includes(item.category_id)) {
+                            const discount = item.final_price * item.quantity * (rule.percent / 100);
+                            if (discount > 0) {
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'cart_discount': {
+                    // Descuento por total del carrito
+                    const cartTotal = cart.reduce((sum, item) => sum + item.final_price * item.quantity, 0);
+                    if (cartTotal >= (rule.min_total || 0)) {
+                        const discount = rule.percent ? cartTotal * (rule.percent / 100) : (rule.amount || 0);
+                        if (discount > 0) {
+                            discounts.push({
+                                name: rule.name,
+                                amount: discount,
+                                description: rule.description,
+                            });
+                            totalDiscount += discount;
+                        }
+                    }
+                    break;
+                }
+                case 'bundle_discount': {
+                    // Descuento por paquete/combo
+                    const hasAll = rule.product_ids?.every(pid => cart.some(item => item.id === pid));
+                    if (hasAll && rule.amount > 0) {
+                        discounts.push({
+                            name: rule.name,
+                            amount: rule.amount,
+                            description: rule.description,
+                        });
+                        totalDiscount += rule.amount;
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        return { discounts, totalDiscount };
+    };
+
+    // Recalcular descuentos automáticos cuando cambie el carrito o las reglas
+    useEffect(() => {
+        if (automaticDiscounts && Array.isArray(automaticDiscounts) && automaticDiscounts.length > 0) {
+            const { discounts, totalDiscount } = calculateAutomaticDiscounts(cart, automaticDiscounts);
+            setAutoDiscounts(discounts);
+            setAutoDiscountTotal(totalDiscount);
+        } else {
+            setAutoDiscounts([]);
+            setAutoDiscountTotal(0);
+        }
+    }, [cart, automaticDiscounts]);
+    
     const [formData, setFormData] = useState({
         name: user?.name || "",
         lastname: user?.lastname || "",
@@ -78,7 +229,8 @@ export default function ShippingStep({
     // Estados para cupones
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState(null);
-    const [couponDiscount, setCouponDiscount] = useState(0);
+    // El descuento del cupón se calcula sobre el total real, no solo el subtotal
+    const [couponDiscount, setCouponDiscount] = useState(0); // solo para compatibilidad visual
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState("");
 
@@ -438,6 +590,9 @@ export default function ShippingStep({
                 coupon_id: appliedCoupon?.id || null,
                 coupon_code: appliedCoupon?.code || null,
                 coupon_discount: roundToTwoDecimals(couponDiscount || 0),
+                // Información de promociones automáticas
+                applied_promotions: automaticDiscounts || [],
+                promotion_discount: roundToTwoDecimals(automaticDiscountTotal || 0),
             };
 
             console.log("📦 Request completo a enviar:", request);
@@ -451,6 +606,18 @@ export default function ShippingStep({
                 setSale(response.sale);
                 setDelivery(response.delivery);
                 setCode(response.code);
+                
+                // Capturar scripts de conversión si están disponibles
+                if (response.conversion_scripts) {
+                    console.log('Scripts de conversión recibidos:', response.conversion_scripts);
+                    setConversionScripts(response.conversion_scripts);
+                    
+                    // Llamar al callback de compra completada si está disponible
+                    if (onPurchaseComplete) {
+                        onPurchaseComplete(response.sale_id, response.conversion_scripts);
+                    }
+                }
+                
                 setCart([]);
                 onContinue();
             } else {
@@ -663,8 +830,25 @@ export default function ShippingStep({
         return parseFloat(number.toFixed(2));
     };
 
-    // Calcular total final con descuento de cupón, redondeado correctamente
-    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal - couponDiscount);
+    // Calcular el total base antes de cupón
+    const totalBase = roundToTwoDecimals(subTotal) + roundToTwoDecimals(igv) + roundToTwoDecimals(envio) - roundToTwoDecimals(autoDiscountTotal);
+
+    // Calcular el descuento del cupón sobre el total base
+    let calculatedCouponDiscount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage' || appliedCoupon.type === 'percent') {
+            calculatedCouponDiscount = (totalBase * Number(appliedCoupon.value)) / 100;
+        } else if (appliedCoupon.type === 'fixed') {
+            calculatedCouponDiscount = Number(appliedCoupon.value);
+        }
+    }
+    // Sincronizar el estado para mantener compatibilidad visual
+    useEffect(() => {
+        setCouponDiscount(roundToTwoDecimals(calculatedCouponDiscount));
+        if (setParentCouponDiscount) setParentCouponDiscount(roundToTwoDecimals(calculatedCouponDiscount));
+    }, [appliedCoupon, subTotal, igv, envio, autoDiscountTotal]);
+
+    const finalTotalWithCoupon = Math.max(0, roundToTwoDecimals(totalBase - calculatedCouponDiscount));
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
@@ -981,11 +1165,13 @@ export default function ShippingStep({
                                             </div>
                                             <div>
                                                 <p className="customtext-primary font-semibold text-sm">
-                                                    Cupón aplicado: {appliedCoupon.code}
+                                                    Descto. {appliedCoupon.type === 'percentage' 
+                                                        ? `${appliedCoupon.value}%` 
+                                                        : `S/${Number2Currency(appliedCoupon.value)}`}
                                                 </p>
-                                              {/*  <p className="customtext-primary text-xs mt-1">
-                                                    {appliedCoupon.name}
-                                                </p> */}
+                                                <p className="customtext-primary text-xs mt-1">
+                                                    {appliedCoupon.code}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="text-right w-4/12">
@@ -1000,6 +1186,59 @@ export default function ShippingStep({
                         </div>
                     </div>
 
+                    {/* Sección de descuentos automáticos */}
+                    {autoDiscounts && autoDiscounts.length > 0 && (
+                        <div className="space-y-4 border-t pt-4">
+                            <div className="space-y-3">
+                                <div className="text-sm font-medium customtext-neutral-dark mb-2">
+                                    🎉 Descuentos automáticos aplicados:
+                                </div>
+                                {autoDiscounts.map((discount, index) => (
+                                    <div key={index} className=" border-2  rounded-xl p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 w-8/12">
+                                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="customtext-neutral-dark font-semibold text-sm">
+                                                        {discount.name}
+                                                    </p>
+                                                    {discount.description && (
+                                                        <p className="customtext-neutral-dark text-xs mt-1">
+                                                            {discount.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="text-right w-4/12">
+                                                <span className="customtext-neutral-dark font-bold text-base">
+                                                    -S/ {Number2Currency(discount.amount)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {autoDiscountTotal > 0 && (
+                                    <div className="l p-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="customtext-neutral-dark font-semibold">Total descuentos automáticos:</span>
+                                            <span className="customtext-neutral-dark font-bold text-lg">
+                                                -S/ {Number2Currency(autoDiscountTotal)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Productos gratuitos {freeItems.length > 0 && (
+                        <FreeItemsDisplay freeItems={freeItems} />
+                    )} */}
+                    
                   
 
                     <div className="pt-4 border-t-2">

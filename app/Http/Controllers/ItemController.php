@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use SoDe\Extend\Response;
 use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\RedirectResponse;
 
 use Illuminate\Http\Response as HttpResponse;
@@ -90,8 +91,8 @@ class ItemController extends BasicController
 
     public function setPaginationInstance(Request $request, string $model)
     {
-        //  dump($request->all());
-        // dump('Estamos aqui');
+        //dump('[STEP 1] setPaginationInstance INICIO', $request->all());
+        //dump('[STEP 2] Antes de armar query base');
         $query = $model::select(['items.*'])
             ->with(['collection', 'category', 'subcategory', 'brand', 'tags'])
             ->leftJoin('collections AS collection', 'collection.id', 'items.collection_id')
@@ -133,14 +134,115 @@ class ItemController extends BasicController
                 $query->where('brand.visible', true)
                     ->orWhereNull('brand.id');
             });
+        //dump('[STEP 3] Query base armada');
 
         // Solo aplica agrupación para la página específica
+        //dump('[STEP 4] Antes de join agrupador');
         $query->join(
             DB::raw('(SELECT MIN(id) as min_id FROM items GROUP BY name) as grouped'),
             function ($join) {
                 $join->on('items.id', '=', 'grouped.min_id');
             }
         );
+        //dump('[STEP 5] Después de join agrupador');
+
+        // Ordenar primero por mayor coincidencia entre el nombre de la categoría y el nombre del producto (singular/plural)
+        //dump('[STEP 6] Antes de filtro y orden de categoría');
+        $selectedCategories = $request->input('category_id', []);
+        $categorySlug = null;
+        // Si no hay category_id pero sí hay filtro por category.slug, usarlo
+        if (empty($selectedCategories)) {
+            // Buscar en el filtro si hay category o category.slug (soporta array de arrays tipo DevExtreme)
+            $filter = $request->input('filter', []);
+            // Extraer slug de cualquier formato (asociativo o array de arrays)
+            if (is_array($filter)) {
+                // Caso DevExtreme: array de arrays de condiciones
+                foreach ($filter as $f1) {
+                    if (is_array($f1)) {
+                        foreach ($f1 as $f2) {
+                            if (is_array($f2) && count($f2) === 3) {
+                                if ($f2[0] === 'category.slug' && ($f2[1] === '=' || $f2[1] === '==')) {
+                                    $categorySlug = $f2[2];
+                                } elseif ($f2[0] === 'category' && ($f2[1] === '=' || $f2[1] === '==')) {
+                                    $categorySlug = $f2[2];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Fallback: asociativo plano
+            if (!$categorySlug && isset($filter['category'])) {
+                $categorySlug = $filter['category'];
+            } elseif (!$categorySlug && isset($filter['category.slug'])) {
+                $categorySlug = $filter['category.slug'];
+            }
+            if ($categorySlug) {
+                //dump('[STEP 7A] No category_id, pero hay categorySlug', $categorySlug);
+                $cat = Category::where('slug', $categorySlug)->first();
+                if ($cat) {
+                    $categoryName = $cat->name;
+                    //dump('[STEP 8A] Nombre de categoría encontrado por slug', $categoryName);
+                    $categoryNameLower = strtolower($categoryName);
+                    $categoryRoot = rtrim($categoryNameLower, 's');
+                    //dump('[STEP 10A] categoryNameLower y root', $categoryNameLower, $categoryRoot);
+                    // NO filtrar, solo ordenar por coincidencia de nombre
+                    // CASE prioritization:
+                    $query->orderByRaw('
+                        CASE
+                            WHEN LOWER(items.name) LIKE ? THEN 1
+                            WHEN LOWER(items.name) REGEXP ? THEN 2
+                            WHEN LOWER(items.name) LIKE ? OR LOWER(items.name) LIKE ? THEN 3
+                            ELSE 4
+                        END
+                    ', [
+                        $categoryNameLower . '%',
+                        '\\b' . $categoryRoot . '(s)?\\b',
+                        '%' . $categoryNameLower . '%',
+                        '%' . $categoryRoot . '%',
+                    ]);
+                    $query->orderByRaw('(category.name = ?) DESC', [$categoryName]);
+                    //dump('[STEP 13A] Query final', $query->toSql(), $query->getBindings());
+                }
+            }
+        } else {
+            //dump('[STEP 7] Hay categorías seleccionadas', $selectedCategories);
+            // Obtener el nombre de la categoría seleccionada (solo la primera si hay varias)
+            $categoryName = null;
+            if (is_array($selectedCategories) && count($selectedCategories) > 0) {
+                $categoryId = $selectedCategories[0];
+                // Puede venir como id o slug, intentamos ambos
+                $cat = Category::where('id', $categoryId)->orWhere('slug', $categoryId)->first();
+                //dump('[STEP 8] Buscando categoría por id o slug', $categoryId, $cat);
+                if ($cat) {
+                    $categoryName = $cat->name;
+                }
+            }
+            if ($categoryName) {
+                //dump('[STEP 9] Nombre de categoría encontrado', $categoryName);
+                $categoryNameLower = strtolower($categoryName);
+                $categoryRoot = rtrim($categoryNameLower, 's');
+                //dump('[STEP 10] categoryNameLower y root', $categoryNameLower, $categoryRoot);
+                // NO filtrar, solo ordenar por coincidencia de nombre
+                // CASE prioritization:
+                $query->orderByRaw('
+                    CASE
+                        WHEN LOWER(items.name) LIKE ? THEN 1
+                        WHEN LOWER(items.name) REGEXP ? THEN 2
+                        WHEN LOWER(items.name) LIKE ? OR LOWER(items.name) LIKE ? THEN 3
+                        ELSE 4
+                    END
+                ', [
+                    $categoryNameLower . '%',
+                    '\\b' . $categoryRoot . '(s)?\\b',
+                    '%' . $categoryNameLower . '%',
+                    '%' . $categoryRoot . '%',
+                ]);
+                $query->orderByRaw('(category.name = ?) DESC', [$categoryName]);
+                //dump('[STEP 13] Query final', $query->toSql(), $query->getBindings());
+            }
+        }
+        //dump('[STEP 14] setPaginationInstance FIN');
 
 
         return $query;
@@ -246,7 +348,7 @@ class ItemController extends BasicController
                 'tags' => $tags
             ];
         } catch (\Throwable $th) {
-            // dump($th->getMessage());
+            // //dump($th->getMessage());
             return [];
         }
     }
@@ -262,7 +364,7 @@ class ItemController extends BasicController
     }
     public function verifyCombo2(Request $request)
     {
-        //dump($request->all());
+        ////dump($request->all());
         try {
             // Validar la solicitud
             $validated = $request->validate([
@@ -277,7 +379,7 @@ class ItemController extends BasicController
                 $query->orderBy('is_main_item', 'desc'); // Ordenar para que el principal aparezca primero
             }])->get();
 
-            //dump($combos);
+            ////dump($combos);
 
             // Verificar si hay combos
             if ($combos->isEmpty()) {
@@ -298,7 +400,7 @@ class ItemController extends BasicController
                     }),
                 ];
             });
-            //dump($result);
+            ////dump($result);
             return response()->json([
                 'status' => true,
                 'data' => $result,
@@ -333,7 +435,7 @@ class ItemController extends BasicController
                 'items.brand'     // Incluir la marca del item
             ])->get();
 
-            //dump($combos);
+            ////dump($combos);
 
             // Verificar si hay combos
             if ($combos->isEmpty()) {
@@ -353,7 +455,7 @@ class ItemController extends BasicController
                 ];
             });
 
-            //dump($result);
+            ////dump($result);
 
             // Respuesta exitosa
             $response->status = 200;
@@ -371,7 +473,7 @@ class ItemController extends BasicController
     }
     public function updateViews(Request $request)
     {
-        //dump($request->all());
+        ////dump($request->all());
         $product = Item::findOrFail($request->id); // Asegúrate de que el modelo sea el correcto
         if (!$product) {
             return response()->json(['error' => 'Producto no encontrado'], 404);
@@ -382,7 +484,7 @@ class ItemController extends BasicController
 
     public function relationsItems(Request $request): HttpResponse | ResponseFactory
     {
-        //dump($request->all());
+        ////dump($request->all());
         $response = new Response();
         try {
             // Validar el ID del producto
@@ -392,14 +494,14 @@ class ItemController extends BasicController
 
             // Obtener el producto principal
             $product = Item::findOrFail($request->id);
-            //dump($product);
+            ////dump($product);
             // Obtener productos de la misma categoría (excluyendo el producto principal)
             $relatedItems = Item::where('category_id', $product->category_id)
                 ->where('id', '!=', $product->id) // Excluir el producto actual
                 ->with(['category', 'brand']) // Cargar relaciones necesarias
                 ->take(10) // Limitar a 10 productos
                 ->get();
-            //dump($relatedItems);
+            ////dump($relatedItems);
 
             // Verificar si hay productos relacionados
             if ($relatedItems->isEmpty()) {
