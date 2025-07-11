@@ -200,7 +200,7 @@ const FooterSalaFabulosa = ({ socials = [], pages, generals, contacts }) => {
                 <input ref={emailRef} type="email" placeholder="Ingresa tu e-mail"
                   className="w-full bg-transparent text-white font-medium py-4 pl-2 border-2 border-white rounded-xl focus:ring-0 focus:outline-none placeholder:text-white placeholder:opacity-65" />
                 <button
-                  className="absolute text-md right-2 top-1/2 transform -translate-y-1/2 py-3 font-medium px-4 bg-secondary customtext-neutral-light rounded-lg"
+                  className="absolute text-md right-2 top-1/2 transform -translate-y-1/2 py-3 font-medium px-4 bg-secondary customtext-neutral-dark rounded-lg"
                   aria-label="Suscribite">
                   Suscribirme
                 </button>

@@ -12,6 +12,7 @@ export default {
                 "font-general": ["Lato", "serif"], //"Lato" "serif" usado para Sala Fabulosa
                 "font-primary": ["Rajdhani", "sans-serif"], // usado para Stech Peru
                 "font-secondary": ["Open Sans", "serif"],
+                "playfair": ["Playfair", "serif"],
             },
             colors: {
                 primary: {

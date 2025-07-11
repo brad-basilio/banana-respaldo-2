@@ -10,6 +10,7 @@ const BannerPostSuscriptionPaani = lazy(() => import("./Banners/BannerPostSuscri
 const BannerStatic = lazy(() => import("./Banners/BannerStatic"));
 const BannerStaticSecond = lazy(() => import("./Banners/BannerStaticSecond"));
 const BannerSimpleSF = lazy(() => import("./Banners/BannerSimpleSF"));
+const BannerSimpleD2 = lazy(() => import("./Banners/BannerSimpleD2"));
 const BannerBananaLab = lazy(() => import("./Banners/BannerBananaLab"));
 const BannerCTAMakita = lazy(() => import("./Banners/BannerCTAMakita"));
 const BannerContactMakita = lazy(() => import("./Banners/BannerContactMakita"));
@@ -34,6 +35,8 @@ const Banner = ({ which, data, items }) => {
                 return <BannerStatic data={data} items={items} />;
             case "BannerSimpleSF":
                 return <BannerSimpleSF data={data} />;
+            case "BannerSimpleD2":
+                return <BannerSimpleD2 data={data} />;
             case "BannerBananaLab":
                 return <BannerBananaLab data={data} />;
             case "BannerCTAMakita":

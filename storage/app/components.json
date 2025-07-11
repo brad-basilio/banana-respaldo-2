@@ -1516,6 +1516,10 @@
                 "name": "Simple"
             },
             {
+                "id": "BannerSimpleD2",
+                "name": "Simple D2en1"
+            },
+            {
                 "id": "BannerAd",
                 "name": "Anuncio",
                 "data": [
