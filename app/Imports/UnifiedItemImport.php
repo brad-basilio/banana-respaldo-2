@@ -102,7 +102,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         Item::truncate();
         SubCategory::truncate();
         Collection::truncate();
-        Category::truncate();
+        // Category::truncate();
         Brand::truncate();
         
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -235,6 +235,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 'image' => $this->getMainImage($sku),
                 'slug' => $slug,
                 'stock' => $this->getNumericValue($row, 'stock', 10),
+                'pdf' => $this->getPdfFile($sku),
             ];
 
             // Agregar campos opcionales si existen
@@ -651,5 +652,19 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
     public function getFieldMappings(): array
     {
         return $this->fieldMappings;
+    }
+
+    /**
+     * Obtener archivo PDF del producto basado en el SKU
+     */
+    private function getPdfFile(string $sku): ?string
+    {
+        $path = "images/item/{$sku}.pdf";
+        
+        if (Storage::exists($path)) {
+            return "{$sku}.pdf";
+        }
+        
+        return null;
     }
 }
