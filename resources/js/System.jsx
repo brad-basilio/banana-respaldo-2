@@ -120,7 +120,6 @@ const System = ({
         });
     }, [null]);
 
-    console.log("FilteredData", filteredData);
    
     const getSystem = ({ component, value, data, itemsId, visible }) => {
         if (visible == 0) return <></>;
@@ -227,7 +226,7 @@ const System = ({
             case "partner":
                 return <Partner which={value} data={data} items={getItems(itemsId)} />
             case "agradecimientos":
-                return <Agradecimientos which={value} data={data} items={getItems(itemsId)} />
+                return <Agradecimientos which={value} data={data} items={getItems(itemsId)} contacts={contacts} />
             default:
                 return (
                     <div className="w-full px-[5%] replace-max-w-here p-4 mx-auto">

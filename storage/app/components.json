@@ -2359,7 +2359,10 @@
             },
             {
                 "id": "AgradecimientoAko",
-                "name": "AgradecimientoAko"
+                "name": "AgradecimientoAko",
+                "using": {
+                    "model": "Social"
+                }
             }
         ]
     },

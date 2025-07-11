@@ -10,7 +10,7 @@ import TextWithHighlight from "../../../Utils/TextWithHighlight";
 const messagesRest = new MessagesRest();
 
 const ContactAko = ({ data, contacts }) => {
-   
+
     const getContact = (correlative) => {
         return (
             contacts.find((contact) => contact.correlative === correlative)
@@ -118,10 +118,8 @@ const ContactAko = ({ data, contacts }) => {
         if (emailRef.current) emailRef.current.value = "";
         if (descriptionRef.current) descriptionRef.current.value = "";
        
-      
-
-        if (data.redirect) {
-            location.href = data.redirect;
+        if (data.redirect !== undefined && data.redirect !== "") {
+            window.location.href = data.redirect;
         }
     };
     return (

@@ -3642,7 +3642,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Agradecimientos.jsx": {
-    "file": "assets/Agradecimientos-CmwGWOqF.js",
+    "file": "assets/Agradecimientos-yPkBim24.js",
     "name": "Agradecimientos",
     "src": "resources/js/Components/Tailwind/Agradecimientos.jsx",
     "isDynamicEntry": true,
@@ -5390,7 +5390,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Contact.jsx": {
-    "file": "assets/Contact-DNqou0BM.js",
+    "file": "assets/Contact-Dwq7rTEu.js",
     "name": "Contact",
     "src": "resources/js/Components/Tailwind/Contact.jsx",
     "isDynamicEntry": true,
@@ -5407,7 +5407,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Contact/ContactAko.jsx": {
-    "file": "assets/ContactAko-BvwJ4T4M.js",
+    "file": "assets/ContactAko-COST1pdx.js",
     "name": "ContactAko",
     "src": "resources/js/Components/Tailwind/Contact/ContactAko.jsx",
     "isDynamicEntry": true,
@@ -8755,7 +8755,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-v6icfXe1.js",
+    "file": "assets/System-DwwRim7o.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
