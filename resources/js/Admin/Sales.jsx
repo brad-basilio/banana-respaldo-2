@@ -89,42 +89,78 @@ const Sales = ({ statuses = [] }) => {
 
     const showExportModal = () => {
         Swal.fire({
-            title: 'Exportar Ventas a Excel',
+            title: '<div style="display: flex; align-items: center; justify-content: center; gap: 12px; color: #2c3e50;"><i class="fas fa-file-excel" style="color: #1e7e34; font-size: 28px;"></i><span style="font-weight: 600;">Exportar Ventas a Excel</span></div>',
             html: `
-                <div style="text-align: left; margin: 20px 0;">
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Fecha inicio:</label>
-                        <input type="date" id="startDate" class="swal2-input" style="width: 100%; box-sizing: border-box;">
+                <div style="padding: 25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);">
+                    
+                   
+                    
+                    <!-- Formulario de Fechas -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
+                        
+                        <!-- Fecha Inicio -->
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 4px solid #28a745;">
+                            <label style="display: block; margin-bottom: 12px; font-weight: 600; color: #495057; font-size: 14px;">
+                                <i class="fas fa-play-circle" style="color: #28a745; margin-right: 8px;"></i>
+                                Fecha de Inicio
+                            </label>
+                            <input 
+                                type="date" 
+                                id="startDate" 
+                                style="
+                                    width: 100%; 
+                                    padding: 12px 16px; 
+                                    border: 2px solid #e9ecef; 
+                                    border-radius: 8px; 
+                                    font-size: 14px; 
+                                    transition: all 0.3s ease;
+                                    background: #ffffff;
+                                    color: #495057;
+                                    font-family: inherit;
+                                " 
+                                onFocus="this.style.borderColor='#28a745'; this.style.boxShadow='0 0 0 3px rgba(40, 167, 69, 0.15)'; this.style.transform='translateY(-1px)'"
+                                onBlur="this.style.borderColor='#e9ecef'; this.style.boxShadow='none'; this.style.transform='translateY(0)'"
+                            >
+                        </div>
+                        
+                        <!-- Fecha Fin -->
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 4px solid #dc3545;">
+                            <label style="display: block; margin-bottom: 12px; font-weight: 600; color: #495057; font-size: 14px;">
+                                <i class="fas fa-stop-circle" style="color: #dc3545; margin-right: 8px;"></i>
+                                Fecha de Fin
+                            </label>
+                            <input 
+                                type="date" 
+                                id="endDate" 
+                                style="
+                                    width: 100%; 
+                                    padding: 12px 16px; 
+                                    border: 2px solid #e9ecef; 
+                                    border-radius: 8px; 
+                                    font-size: 14px; 
+                                    transition: all 0.3s ease;
+                                    background: #ffffff;
+                                    color: #495057;
+                                    font-family: inherit;
+                                " 
+                                onFocus="this.style.borderColor='#dc3545'; this.style.boxShadow='0 0 0 3px rgba(220, 53, 69, 0.15)'; this.style.transform='translateY(-1px)'"
+                                onBlur="this.style.borderColor='#e9ecef'; this.style.boxShadow='none'; this.style.transform='translateY(0)'"
+                            >
+                        </div>
                     </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Fecha fin:</label>
-                        <input type="date" id="endDate" class="swal2-input" style="width: 100%; box-sizing: border-box;">
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Estado (opcional):</label>
-                        <select id="statusFilter" class="swal2-input" style="width: 100%; box-sizing: border-box;">
-                            <option value="">Todos los estados</option>
-                            ${saleStatuses.map(status => 
-                                `<option value="${status.id}">${status.name}</option>`
-                            ).join('')}
-                        </select>
-                    </div>
-                    <div style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                        <small style="color: #6c757d;">
-                            <strong>Tip:</strong> Si no seleccionas fechas, se exportarán todas las ventas.
-                        </small>
-                    </div>
+                    
+                  
                 </div>
             `,
             showCancelButton: true,
-            confirmButtonText: 'Exportar Excel',
-            cancelButtonText: 'Cancelar',
+            confirmButtonText: '<i class="fas fa-file-excel"></i> Exportar Excel',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
             confirmButtonColor: '#28a745',
-            width: '500px',
+            cancelButtonColor: '#6c757d',
+            width: '650px',
             preConfirm: () => {
                 const startDate = document.getElementById('startDate').value;
                 const endDate = document.getElementById('endDate').value;
-                const status = document.getElementById('statusFilter').value;
 
                 // Validación básica
                 if (startDate && endDate && startDate > endDate) {
@@ -135,7 +171,7 @@ const Sales = ({ statuses = [] }) => {
                 return {
                     startDate,
                     endDate,
-                    status
+                    status: '' // Siempre vacío ya que no hay filtro de estado
                 };
             }
         }).then((result) => {
@@ -308,24 +344,121 @@ const Sales = ({ statuses = [] }) => {
             }
 
             Swal.fire({
-                title: "¡Exportación exitosa! 🎉",
+                title: '<div style="display: flex; align-items: center; justify-content: center; gap: 12px; color: #155724;"><i class="fas fa-check-circle" style="color: #28a745; font-size: 28px;"></i><span style="font-weight: 600;">¡Exportación Exitosa!</span></div>',
                 html: `
-                    <div style="text-align: left; margin: 15px 0; font-size: 14px;">
-                        <p><strong>📊 Total de ventas exportadas:</strong> ${salesData.length}</p>
-                        <p><strong>📄 Archivo generado:</strong> ${filename}</p>
-                        ${filterInfo ? `<p><strong>🔍 Filtros aplicados:</strong>${filterInfo}</p>` : ''}
-                        <hr style="margin: 10px 0;">
-                        <small style="color: #6c757d;">
-                            El archivo Excel contiene toda la información detallada de las ventas seleccionadas, 
-                            incluyendo datos del cliente, productos, montos y métodos de pago.
-                        </small>
+                    <div style="
+                        background: linear-gradient(135deg, #d4edda 0%, #f8f9fa 100%);
+                        border-radius: 16px;
+                        padding: 25px;
+                        margin: 20px 0;
+                        border-left: 5px solid #28a745;
+                        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.15);
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    ">
+                        <!-- Estadísticas principales -->
+                        <div style="
+                            display: grid; 
+                            grid-template-columns: 1fr 1fr; 
+                            gap: 20px; 
+                            margin-bottom: 20px;
+                        ">
+                            <!-- Total exportado -->
+                            <div style="
+                                background: white;
+                                padding: 18px;
+                                border-radius: 12px;
+                                text-align: center;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                                border-top: 3px solid #17a2b8;
+                            ">
+                                <div style="color: #17a2b8; font-size: 24px; margin-bottom: 8px;">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-bottom: 4px;">
+                                    ${salesData.length}
+                                </div>
+                                <div style="font-size: 13px; color: #6c757d; font-weight: 500;">
+                                    Ventas Exportadas
+                                </div>
+                            </div>
+                            
+                            <!-- Archivo generado -->
+                            <div style="
+                                background: white;
+                                padding: 18px;
+                                border-radius: 12px;
+                                text-align: center;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                                border-top: 3px solid #28a745;
+                            ">
+                                <div style="color: #28a745; font-size: 24px; margin-bottom: 8px;">
+                                    <i class="fas fa-file-excel"></i>
+                                </div>
+                                <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 4px; word-break: break-all;">
+                                    ${filename}
+                                </div>
+                                <div style="font-size: 13px; color: #6c757d; font-weight: 500;">
+                                    Archivo Excel
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${filterInfo ? `
+                        <!-- Información de filtros -->
+                        <div style="
+                            background: white;
+                            padding: 18px;
+                            border-radius: 12px;
+                            border-left: 4px solid #ffc107;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                        ">
+                            <div style="
+                                display: flex; 
+                                align-items: center; 
+                                margin-bottom: 12px;
+                                color: #856404;
+                                font-weight: 600;
+                                font-size: 15px;
+                            ">
+                                <i class="fas fa-filter" style="margin-right: 10px; color: #ffc107;"></i>
+                                Filtros Aplicados
+                            </div>
+                            <div style="
+                                font-size: 14px; 
+                                color: #495057; 
+                                line-height: 1.6;
+                                background: #fff8e1;
+                                padding: 12px;
+                                border-radius: 8px;
+                                border: 1px solid #ffeaa7;
+                            ">
+                                ${filterInfo.replace(/\n/g, '<br/>')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Mensaje de confirmación -->
+                        <div style="
+                            text-align: center;
+                            margin-top: 20px;
+                            padding: 15px;
+                            background: rgba(40, 167, 69, 0.1);
+                            border-radius: 10px;
+                            border: 1px solid rgba(40, 167, 69, 0.2);
+                        ">
+                            <div style="color: #155724; font-size: 15px; font-weight: 500;">
+                                <i class="fas fa-download" style="margin-right: 8px;"></i>
+                                El archivo se ha descargado exitosamente
+                            </div>
+                        </div>
                     </div>
                 `,
                 icon: "success",
-                confirmButtonText: "Entendido",
+                confirmButtonText: '<i class="fas fa-thumbs-up"></i> ¡Perfecto!',
                 confirmButtonColor: '#28a745',
-                timer: 5000,
-                timerProgressBar: true
+                timer: 8000,
+                timerProgressBar: true,
+                width: '700px'
             });
 
         } catch (error) {
