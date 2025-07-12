@@ -57,17 +57,20 @@ class Sale extends Model
         'businessName',
         'payment_method',
         'payment_proof',
-        'coupon_id',
-        'coupon_discount',
         'applied_promotions',
         'promotion_discount',
         'total_amount',
+        'bundle_discount',
+        'renewal_discount',
+        'zip_code',
     ];
 
     protected $casts = [
         'applied_promotions' => 'array',
         'promotion_discount' => 'decimal:2',
         'coupon_discount' => 'decimal:2',
+        'bundle_discount' => 'decimal:2',
+        'renewal_discount' => 'decimal:2',
         'amount' => 'decimal:2',
         'delivery' => 'decimal:2',
     ];

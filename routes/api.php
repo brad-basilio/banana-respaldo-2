@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SaleController as AdminSaleController;
+use App\Http\Controllers\Admin\SaleExportController as AdminSaleExportController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 
@@ -202,6 +203,9 @@ Route::middleware('auth')->group(function () {
   Route::get('/profile/thumbnail/{uuid}', [AdminProfileController::class, 'thumbnail']);
   Route::post('/profile', [AdminProfileController::class, 'saveProfile']);
   Route::patch('/profile', [AdminProfileController::class, 'save']);
+
+  // Ruta de exportación sin middleware de permisos
+  Route::get('/admin/sales/export-data', [AdminSaleExportController::class, 'exportData']);
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminHomeController::class, 'dashboard']);

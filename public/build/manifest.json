@@ -2239,7 +2239,7 @@
     ]
   },
   "resources/js/Admin/Sales.jsx": {
-    "file": "assets/Sales-D9K3pArF.js",
+    "file": "assets/Sales-BWg9hlvj.js",
     "name": "Sales",
     "src": "resources/js/Admin/Sales.jsx",
     "isEntry": true,
@@ -5190,7 +5190,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaint.jsx": {
-    "file": "assets/Complaint-D06H19EM.js",
+    "file": "assets/Complaint-bC-l4ZgZ.js",
     "name": "Complaint",
     "src": "resources/js/Components/Tailwind/Complaint.jsx",
     "isDynamicEntry": true,
@@ -5234,7 +5234,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaints/ComplaintStech.jsx": {
-    "file": "assets/ComplaintStech-C0gbhFQF.js",
+    "file": "assets/ComplaintStech-BZFOjlCT.js",
     "name": "ComplaintStech",
     "src": "resources/js/Components/Tailwind/Complaints/ComplaintStech.jsx",
     "isEntry": true,
@@ -5252,7 +5252,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Complaints/CustomCaptcha.jsx": {
-    "file": "assets/CustomCaptcha-C6Ve2Ziv.js",
+    "file": "assets/CustomCaptcha-J2dgwmxZ.js",
     "name": "CustomCaptcha",
     "src": "resources/js/Components/Tailwind/Complaints/CustomCaptcha.jsx",
     "isEntry": true,
@@ -8609,7 +8609,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-DsfSqZQh.js",
+    "file": "assets/System-BotJhBoK.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

@@ -60,7 +60,7 @@ const CustomCaptcha = forwardRef(({ onVerify, error }, ref) => {
             <label className="block text-sm font-medium customtext-neutral-dark mb-2">
                 Verificación de seguridad
             </label>
-            <div className='flex gap-4  items-center'>
+            <div className='flex  flex-col lg:flex-row gap-4  items-center'>
  {/* Canvas del captcha */}
             <div className="flex items-center gap-4">
                 <div className="relative">
