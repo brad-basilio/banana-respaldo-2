@@ -14,6 +14,13 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('sitemap:generate')->daily();
+        
+        // Actualizar estados promocionales de tags cada hora
+        $schedule->command('tags:update-promotional-status')
+                 ->hourly()
+                 ->withoutOverlapping()
+                 ->runInBackground()
+                 ->appendOutputTo(storage_path('logs/promotional-tags.log'));
     }
 
     /**

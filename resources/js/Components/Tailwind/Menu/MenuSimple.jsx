@@ -20,15 +20,36 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
     }, []);
 
     useEffect(() => {
-        // Obtener tags al cargar el componente
+        // Obtener tags activos al cargar el componente
         const fetchTags = async () => {
             try {
-                console.log('Fetching tags...');
+                console.log('Fetching active tags...');
                 const response = await tagsItemsRest.getTags();
                 console.log('Tags response:', response);
                 if (response?.data) {
-                    setTags(response.data);
-                    console.log('Tags set:', response.data);
+                    // Filtrar y ordenar tags: promocionales activos primero, luego permanentes
+                    const activeTags = response.data.filter(tag => 
+                        tag.promotional_status === 'permanent' || tag.promotional_status === 'active'
+                    ).sort((a, b) => {
+                        // Promocionales activos primero
+                        if (a.promotional_status === 'active' && b.promotional_status !== 'active') return -1;
+                        if (b.promotional_status === 'active' && a.promotional_status !== 'active') return 1;
+                        // Luego por nombre
+                        return a.name.localeCompare(b.name);
+                    });
+                    
+                    setTags(activeTags);
+                    console.log('Active tags set:', activeTags);
+                    
+                    // Log para debug: mostrar información promocional
+                    const promotionalCount = activeTags.filter(t => t.promotional_status === 'active').length;
+                    const permanentCount = activeTags.filter(t => t.promotional_status === 'permanent').length;
+                    console.log(`🎯 Tags cargados: ${promotionalCount} promocionales activos, ${permanentCount} permanentes`);
+                    
+                    if (promotionalCount > 0) {
+                        const activePromotions = activeTags.filter(t => t.promotional_status === 'active');
+                        console.log('🎉 Promociones activas:', activePromotions.map(t => `${t.name} (${t.start_date} - ${t.end_date})`));
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching tags:', error);
@@ -223,20 +244,23 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                                             <a
                                                 href={`/catalogo?tag=${tag.id}`}
                                                 className={
-                                                    `font-medium ${tag.background_color} ${tag.text_color} rounded-full p-2 hover:brightness-105 cursor-pointer transition-all duration-300  relative flex items-center gap-2`
+                                                    `font-medium rounded-full p-2 hover:brightness-105 cursor-pointer transition-all duration-300 relative flex items-center gap-2`
                                                 }
                                                 style={{
                                                     backgroundColor: tag.background_color || '#3b82f6',
                                                     color: tag.text_color || '#ffffff',
-                                                    
-            }}
+                                                }}
                                                 title={tag.description || tag.name}
                                             >
-                                                {tag.icon && <img src={`/storage/images/tag/${tag.icon}`} alt={tag.name} className="w-4 h-4"   onError={(e) =>
-                                        (e.target.src =
-                                            "/api/cover/thumbnail/null")
-                                    }/>}
-                                            
+                                                {tag.icon && (
+                                                    <img 
+                                                        src={`/storage/images/tag/${tag.icon}`} 
+                                                        alt={tag.name} 
+                                                        className="w-4 h-4"   
+                                                        onError={(e) => (e.target.src = "/api/cover/thumbnail/null")}
+                                                    />
+                                                )}
+                                                
                                                 {tag.name}
                                             </a>
                                         </li>

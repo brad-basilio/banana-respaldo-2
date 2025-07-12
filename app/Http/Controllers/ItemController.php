@@ -1152,14 +1152,43 @@ class ItemController extends BasicController
                 ->where('tags.visible', true)
                 ->where('items.status', true)
                 ->where('items.visible', true)
-                ->select('tags.id', 'tags.name', 'tags.description',"tags.icon","tags.background_color","tags.text_color","tags.image", DB::raw('COUNT(items.id) as items_count'))
-                ->groupBy('tags.id', 'tags.name', 'tags.description',"tags.icon","tags.background_color","tags.text_color","tags.image")
+                // Solo tags activos: permanentes (sin fechas) o promocionales activos
+                ->where(function($query) {
+                    $query->where('tags.promotional_status', 'permanent')
+                          ->orWhere('tags.promotional_status', 'active');
+                })
+                ->select(
+                    'tags.id', 
+                    'tags.name', 
+                    'tags.description',
+                    'tags.icon',
+                    'tags.background_color',
+                    'tags.text_color',
+                    'tags.image',
+                    'tags.promotional_status',
+                    'tags.start_date',
+                    'tags.end_date',
+                    DB::raw('COUNT(items.id) as items_count')
+                )
+                ->groupBy(
+                    'tags.id', 
+                    'tags.name', 
+                    'tags.description',
+                    'tags.icon',
+                    'tags.background_color',
+                    'tags.text_color',
+                    'tags.image',
+                    'tags.promotional_status',
+                    'tags.start_date',
+                    'tags.end_date'
+                )
                 ->having('items_count', '>', 0)
+                ->orderBy('tags.promotional_status', 'desc') // Promocionales primero (active viene antes que permanent alfabéticamente)
                 ->orderBy('tags.name')
                 ->get();
 
             $response->status = 200;
-            $response->message = 'Tags obtenidos correctamente';
+            $response->message = 'Tags activos obtenidos correctamente';
             $response->data = $tags;
 
         } catch (\Throwable $th) {

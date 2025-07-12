@@ -373,6 +373,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/tags', [AdminTagController::class, 'save']);
     Route::post('/tags/paginate', [AdminTagController::class, 'paginate']);
+    Route::post('/tags/update-promotional-status', [AdminTagController::class, 'updatePromotionalStatus']);
     Route::patch('/tags/status', [AdminTagController::class, 'status']);
     Route::patch('/tags/{field}', [AdminTagController::class, 'boolean']);
     Route::delete('/tags/{id}', [AdminTagController::class, 'delete']);
