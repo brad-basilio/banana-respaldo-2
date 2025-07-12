@@ -35,7 +35,6 @@ use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 
 use App\Http\Controllers\Admin\SubCategoryController as AdminSubCategoryController;
-use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\SystemColorController as AdminSystemColorController;
 use App\Http\Controllers\Admin\SystemController as AdminSystemController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
@@ -50,6 +49,8 @@ use App\Http\Controllers\Admin\NotificationVariableController;
 use App\Http\Controllers\Api\NotificationVariablesController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\SaleStatusController as AdminSaleStatusController;
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
@@ -161,7 +162,7 @@ Route::post('/items/verify-stock', [ItemController::class, 'verifyStock']);
 Route::post('/items/combo-items', [ItemController::class, 'verifyCombo']);
 Route::post('/items/update-items', [ItemController::class, 'updateViews']);
 Route::post('/items/relations-items', [ItemController::class, 'relationsItems']);
-Route::post('/items/variations-items', [ItemController::class, 'variationsItems']);
+Route::post('/items/variations-items', [ItemController::class, 'variationsItems'])->withoutMiddleware('throttle');
 Route::post('/items/searchProducts', [ItemController::class, 'searchProduct']);
 Route::get('/items/tags', [ItemController::class, 'getTags']);
 
@@ -188,6 +189,7 @@ Route::post('/coupons/is-first', [CouponController::class, 'isFirst']);
 Route::post('/orders', [MercadoPagoController::class, 'getOrder']);
 
 Route::post('/sales', [SaleController::class, 'save']);
+Route::get('/sales/track/{code}', [SaleController::class, 'track']);
 
 Route::get('/person/{dni}', [PersonController::class, 'find']);
 
@@ -222,7 +224,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/gallery', [AdminGalleryController::class, 'save']);
 
     Route::post('/items', [AdminItemController::class, 'save']);
-    Route::post('/items/paginate', [AdminItemController::class, 'paginate']);
+    Route::post('/items/paginate', [AdminItemController::class, 'paginate'])->withoutMiddleware('throttle');
     Route::patch('/items/status', [AdminItemController::class, 'status']);
     Route::patch('/items/{field}', [AdminItemController::class, 'boolean']);
     Route::delete('/items/{id}', [AdminItemController::class, 'delete']);
@@ -404,6 +406,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/socials/status', [AdminSocialController::class, 'status']);
     Route::patch('/socials/{field}', [AdminSocialController::class, 'boolean']);
     Route::delete('/socials/{id}', [AdminSocialController::class, 'delete']);
+
+    Route::post('/statuses', [AdminSaleStatusController::class, 'save']);
+    Route::post('/statuses/paginate', [AdminSaleStatusController::class, 'paginate']);
+    Route::patch('/statuses/status', [AdminSaleStatusController::class, 'status']);
+    Route::patch('/statuses/{field}', [AdminSaleStatusController::class, 'boolean']);
+    Route::delete('/statuses/{id}', [AdminSaleStatusController::class, 'delete']);
 
     Route::middleware(['can:Root'])->group(function () {
       Route::post('/system', [AdminSystemController::class, 'save']);

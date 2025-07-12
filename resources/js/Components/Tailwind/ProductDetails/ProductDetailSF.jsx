@@ -236,7 +236,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
     };
     return (
         <>
-            <div className="px-primary mx-auto py-4 md:py-6 xl:py-8 bg-white">
+            <div className="px-primary mx-auto pb-4 md:pb-6 xl:pb-8 bg-white">
                 <div className="bg-white rounded-xl p-4 md:p-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-20 2xl:gap-32">
                         {/* Left Column - Images and Delivery Options */}
@@ -317,7 +317,8 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                         </div>
 
                         {/* Right Column - Product Info */}
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-3">
+                            
                             {/* Brand and Title */}
                             <div className="font-font-general">
                                 {item?.brand && (
@@ -334,14 +335,14 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                             </div>
 
                             {/* SKU and Availability */}
-                            <div className="flex flex-wrap customtext-neutral-light items-center gap-y-2  gap-x-8 text-sm font-font-general">
-                                <span className="customtext-neutral-light text-sm 2xl:text-base">
+                            <div className="flex flex-wrap customtext-neutral-light items-center gap-y-2 gap-x-8 text-sm font-font-general">
+                                <span className="customtext-neutral-dark text-base 2xl:text-lg">
                                     SKU:{" "}
                                     <span className="customtext-neutral-dark font-bold">
                                         {item?.sku}
                                     </span>
                                 </span>
-                                <span className="customtext-neutral-light text-sm 2xl:text-base">
+                                <span className="customtext-neutral-dark text-base 2xl:text-lg">
                                     Disponibilidad:{" "}
                                     <span className="customtext-neutral-dark font-bold">
                                         {item?.stock > 0
@@ -352,8 +353,8 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                             </div>
 
                             {/* Price Section */}
-                            <div className="flex flex-col w-full xl:w-1/2 !font-font-general max-w-xl mt-5">
-                                <p className="text-sm 2xl:text-base customtext-neutral-light">
+                            <div className="flex flex-col w-full xl:w-1/2 font-font-general max-w-xl mt-5">
+                                <p className="text-base 2xl:text-lg customtext-neutral-dark opacity-70 font-medium">
                                     Precio:{" "}
                                     <span className="line-through">
                                         S/ {item?.price}
@@ -381,7 +382,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
 
                             {/* Selector de variantes */}
                             <div className="variants-selector flex flex-col gap-3">
-                                <h3 className="w-full block opacity-85 customtext-neutral-dark text-sm 2xl:text-base">
+                                <h3 className="w-full block opacity-85 customtext-neutral-dark text-base 2xl:text-lg">
                                     Colores
                                 </h3>
 
@@ -429,7 +430,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                             {/* Quantity */}
                             <div className="flex flex-col mt-8">
                                 <div className="flex items-center gap-4 mb-2">
-                                    <div className="flex items-center space-x-4 customtext-neutral-light text-sm 2xl:text-base">
+                                    <div className="flex items-center space-x-4 customtext-neutral-dark text-base 2xl:text-lg">
                                         <span className="opacity-85">
                                             Cantidad
                                         </span>
@@ -468,7 +469,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
 
                             {/* Specifications */}
                             {item?.specifications?.length > 0 && (
-                                <div className="flex-1 w-full">
+                                <div className="flex-1 w-full mt-5 2xl:mt-8">
                                     <div className="bg-[#F7F9FB] rounded-xl p-6">
                                         <h3 className="font-semibold text-lg xl:text-xl 2xl:text-2xl mb-4 customtext-neutral-dark font-font-general">
                                             Especificaciones principales
@@ -567,10 +568,10 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                                         : "bg-white"
                                                 }`}
                                             >
-                                                <div className="customtext-neutral-light opacity-85">
+                                                <div className="customtext-neutral-dark ">
                                                     {spec.title}
                                                 </div>
-                                                <div className="customtext-neutral-dark">
+                                                <div className="customtext-neutral-dark opacity-75">
                                                     {spec.description}
                                                 </div>
                                             </div>

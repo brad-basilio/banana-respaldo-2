@@ -29,12 +29,9 @@ class SaleController extends BasicController
     public function afterSave(Request $request, object $jpa, ?bool $isNew)
     {
         $saleJpa = Sale::with($this->with4get)->find($jpa->id);
-
-        // Notificar al cliente sobre el cambio de estado
-        if ($saleJpa && $saleJpa->email && $saleJpa->status) {
+        if ($request->notify_client) {
             $saleJpa->notify(new OrderStatusChangedNotification($saleJpa));
         }
-
         return $saleJpa;
     }
 }

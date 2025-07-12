@@ -28,6 +28,7 @@ const Banners = ({ pages }) => {
     const imageRef = useRef();
     const buttonTextRef = useRef();
     const buttonLinkRef = useRef();
+    const absoluteRef = useRef();
 
     const [isEditing, setIsEditing] = useState(false);
 
@@ -45,6 +46,10 @@ const Banners = ({ pages }) => {
         buttonTextRef.current.value = banner?.data?.button_text ?? "";
         buttonLinkRef.current.value = banner?.data?.button_link ?? "";
 
+        if (absoluteRef.current) {
+            absoluteRef.current.checked = banner?.data?.contenedor === 'absoluto';
+        }
+
         $(modalRef.current).modal("show");
     };
 
@@ -57,6 +62,7 @@ const Banners = ({ pages }) => {
             description: descriptionRef.current.value,
             button_text: buttonTextRef.current.value,
             button_link: buttonLinkRef.current.value,
+            contenedor: absoluteRef.current?.checked ? 'absoluto' : 'relativo'
         };
 
         const formData = new FormData();
@@ -293,6 +299,26 @@ const Banners = ({ pages }) => {
                     </div>
                 </div>
                 <InputFormGroup eRef={buttonLinkRef} label="URL botón" />
+                
+                <div className="form-group row">
+                    <label className="col-sm-3 col-form-label">Posición</label>
+                    <div className="col-sm-9">
+                        <div className="custom-control custom-switch">
+                            <input 
+                                type="checkbox" 
+                                className="custom-control-input" 
+                                id="absoluteSwitch"
+                                ref={absoluteRef}
+                            />
+                            <label className="custom-control-label" htmlFor="absoluteSwitch">
+                                Imagen absoluta
+                            </label>
+                        </div>
+                        <small className="form-text text-muted">
+                            Marca esta opción para posicionamiento absoluto de la imagen
+                        </small>
+                    </div>
+                </div>
             </Modal>
         </>
     );

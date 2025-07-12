@@ -10,7 +10,7 @@ class BasicRest {
         this.controller = new AbortController();
     }
 
-    simpleGet = async (url, params) => {
+    simpleGet = async (url, params, notify = true) => {
         try {
             const { status, result } = await Fetch(url, params);
             if (!status)
@@ -19,12 +19,12 @@ class BasicRest {
                 );
             return result.data ?? true;
         } catch (error) {
-           
-            toast.error("¡Error!", {
+
+            if (notify) toast.error("¡Error!", {
                 description: error.message,
                 duration: 3000,
                 position: "bottom-center",
-               richColors:true
+                richColors: true
             });
             return null;
         }
@@ -47,7 +47,7 @@ class BasicRest {
         return await res.json();
     };
 
-    save = async (request, callback = () => {}) => {
+    save = async (request, callback = () => { }) => {
         try {
             let status = false;
             let result = {};
@@ -77,27 +77,27 @@ class BasicRest {
                     result?.message || "Ocurrio un error inesperado"
                 );
 
-              if(this.is_use_notify){
+            if (this.is_use_notify) {
                 toast.success("¡Excelente!", {
                     description: result.message,
-                  
+
                     duration: 3000,
                     position: "bottom-center",
-                   richColors:true
+                    richColors: true
                 });
-              }
-                
-         
+            }
+
+
             callback?.();
             return result?.data ?? true;
         } catch (error) {
-            
-               toast.error("¡Error!", {
+
+            toast.error("¡Error!", {
                 description: error.message,
-              
+
                 duration: 3000,
                 position: "bottom-center",
-               richColors:true
+                richColors: true
             });
             return null;
         }
@@ -118,21 +118,21 @@ class BasicRest {
                 );
 
             toast.success("¡Excelente!", {
-                    description: result.message,
-                  
-                    duration: 3000,
-                    position: "bottom-center",
-                   richColors:true
-                });
+                description: result.message,
+
+                duration: 3000,
+                position: "bottom-center",
+                richColors: true
+            });
 
             return true;
         } catch (error) {
-               toast.error("¡Error!", {
+            toast.error("¡Error!", {
                 description: error.message,
-              
+
                 duration: 3000,
                 position: "bottom-center",
-               richColors:true
+                richColors: true
             });
 
             return false;
@@ -154,21 +154,21 @@ class BasicRest {
                 );
 
             toast.success("¡Excelente!", {
-                    description: result.message,
-                  
-                    duration: 3000,
-                    position: "bottom-center",
-                   richColors:true
-                });
+                description: result.message,
+
+                duration: 3000,
+                position: "bottom-center",
+                richColors: true
+            });
 
             return true;
         } catch (error) {
-               toast.error("¡Error!", {
+            toast.error("¡Error!", {
                 description: error.message,
-              
+
                 duration: 3000,
                 position: "bottom-center",
-               richColors:true
+                richColors: true
             });
 
             return false;
@@ -189,21 +189,21 @@ class BasicRest {
                 );
 
             toast.success("¡Excelente!", {
-                    description: result.message,
-                  
-                    duration: 3000,
-                    position: "bottom-center",
-                   richColors:true
-                });
+                description: result.message,
+
+                duration: 3000,
+                position: "bottom-center",
+                richColors: true
+            });
 
             return true;
         } catch (error) {
-               toast.error("¡Error!", {
+            toast.error("¡Error!", {
                 description: error.message,
-              
+
                 duration: 3000,
                 position: "bottom-center",
-               richColors:true
+                richColors: true
             });
 
             return false;
@@ -254,12 +254,12 @@ class BasicRest {
 
             return await response.json();
         } catch (error) {
-               toast.error("¡Error!", {
+            toast.error("¡Error!", {
                 description: error.message,
-              
+
                 duration: 3000,
                 position: "bottom-center",
-               richColors:true
+                richColors: true
             });
             return null;
         }

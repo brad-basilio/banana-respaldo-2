@@ -1,7 +1,7 @@
 import "swiper/css";
 import { Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
-import TextWithHighlight from "../../../Utils/TextWithHighlight";
+import TextWithHighlight_Second from "../../../Utils/TextWithHighlight_Second";
 
 export default function BannerStaticSecond({ data, items }) {
     const cleanDescription = (html) => {
@@ -21,7 +21,7 @@ export default function BannerStaticSecond({ data, items }) {
                     {/* Text Content */}
                     <div className="flex flex-row justify-start items-center h-full">
                         <h2 className="text-3xl sm:text-4xl lg:text-[40px] 2xl:text-5xl font-medium tracking-normal customtext-neutral-dark leading-tight font-title">
-                            <TextWithHighlight text={data?.title} ></TextWithHighlight>
+                            <TextWithHighlight_Second text={data?.title} ></TextWithHighlight_Second>
                         </h2>
                     </div>
 

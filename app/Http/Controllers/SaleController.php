@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Classes\EmailConfig;
 use App\Jobs\SendSaleEmail;
 use App\Jobs\SendSaleWhatsApp;
 use App\Models\Sale;
@@ -13,6 +14,7 @@ use App\Models\Renewal;
 use App\Models\SaleDetail;
 use App\Models\User;
 use App\Models\General;
+use App\Notifications\PurchaseSummaryNotification;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +27,18 @@ class SaleController extends BasicController
 {
     public $model = Sale::class;
     public $imageFields = ['payment_proof'];
+
+    public function track(Request $request, string $code) {
+        $response = Response::simpleTryCatch(function () use ($code) {
+            $sale = Sale::select(['id', 'code', 'status_id', 'updated_at'])
+            ->with(['status', 'tracking'])
+            ->where('code', $code)
+            ->first();
+            if (!$sale) throw new Exception('El código de seguimiento no es válido');
+            return $sale->toArray();
+        });
+        return response($response->toArray(), $response->status);
+    }
 
     static function create(array $sale, array $details): array
     {
@@ -189,7 +203,7 @@ class SaleController extends BasicController
     public function beforeSave(Request $request)
     {
         $body = $request->all();
-        
+
         // Primero calculamos el total temporal para verificar el envío gratuito
         // Inicio de calculo de envio gratuito 
         $tempTotal = 0;
@@ -206,21 +220,24 @@ class SaleController extends BasicController
         if ($request->coupon_id != 'null' && $request->coupon_discount > 0) {
             $montocupon = $request->coupon_discount ?? 0;
             $tempTotal -= $montocupon;
+        } else {
+            $body['coupon_id'] = null;
+            $body['coupon_discount'] = 0;
         }
-        
+
         $freeShippingThreshold = General::where('correlative', 'shipping_free')->first();
         $minFreeShipping = $freeShippingThreshold ? (float)$freeShippingThreshold->description : 0;
         $deliveryPrice = $request->delivery;
-            
+
         if ($minFreeShipping > 0 && $tempTotal >= $minFreeShipping) {
             $deliveryPrice = 0;
         }
         // Fin de calculo de envio gratuito 
 
         $delivery = DeliveryPrice::query()
-                ->where('ubigeo', $body['ubigeo'])
-                ->first();
-        
+            ->where('ubigeo', $body['ubigeo'])
+            ->first();
+
         //$body['delivery'] = $delivery?->price ?? 0;
         $body['delivery'] = $deliveryPrice ?? $delivery?->price;
         // $body['department'] = $delivery?->data['departamento'] ?? null;
@@ -228,8 +245,9 @@ class SaleController extends BasicController
         // $body['district'] = $delivery?->data['distrito'] ?? null;
         $body['ubigeo'] = $delivery?->ubigeo ?? null;
         $body['code'] = Trace::getId();
-        //$body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
-        $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
+        // $body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
+        // $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
+        $body['status_id'] = 'bd60fc99-c0c0-463d-b738-1c72d7b085f5';
         $body['user_id'] = Auth::id();
         
         // Document info
@@ -274,6 +292,7 @@ class SaleController extends BasicController
         foreach ($details as $item) {
             $itemJpa = Item::find($item['id']);
             SaleDetail::create([
+                'colors' => $itemJpa->color,
                 'sale_id' => $jpa->id,
                 'item_id' => $itemJpa->id,
                 'name' => $itemJpa->name,
@@ -301,6 +320,10 @@ class SaleController extends BasicController
         
         $jpa->amount = $totalPrice;
         $jpa->save();
+
+        $saleJpa = Sale::with('details')->find($jpa->id);
+        $saleJpa->notify(new PurchaseSummaryNotification($saleJpa, $saleJpa->details));
+
         return $jpa;
     }
 

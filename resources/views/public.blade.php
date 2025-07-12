@@ -126,6 +126,14 @@
     @endif
     @foreach ($data['colors'] as $color)
         <style>
+            .stroke-{{ $color->name }} {
+                stroke: {{ $color->description }};
+            }
+
+            .background-{{ $color->name }} {
+                background-color: {{ $color->description }};
+            }
+
             .bg-{{ $color->name }} {
                 background-color: {{ $color->description }};
             }
@@ -174,6 +182,7 @@
             }
         </style>
     @endforeach
+
     <style>
         .font-emoji {
             font-family: "Noto Color Emoji", sans-serif;
@@ -184,7 +193,7 @@
             transform: translateY(-50%);
         }
     </style>
-
+    
 </head>
 
 <body class="font-general">
@@ -195,6 +204,20 @@
     {!! $pixelScripts['body'] !!}
 
     @inertia
+
+    {{-- <div id="page-loader" class="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
+
+        <div class="animate-bounce">
+            <img
+
+                src='/assets/resources/logo.png?v={{uniqid()}}'
+                alt={Global.APP_NAME}
+                onError="(e) => { e.target.onerror = null; e.target.src = '/assets/img/logo-bk.svg';}"
+
+                class=" w-64 lg:w-96 transition-all duration-300 transform hover:scale-105"
+            />
+        </div>
+    </div> --}}
 
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
@@ -243,6 +266,8 @@
                     lazyImageObserver.observe(lazyImage);
                 });
             }
+
+            // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
 

@@ -54,7 +54,7 @@ const PaginationCollection = ({
   return (
     <section className="px-[3%] font-font-general pt-12 lg:pt-16">
       <div className="w-full px-primary">
-        <h2 className="text-3xl sm:text-4xl lg:text-[42px] 2xl:text-5xl font-semibold tracking-normal customtext-neutral-dark max-w-5xl 2xl:max-w-6xl">
+        <h2 className={`${data?.centrado ? data.centrado : 'text-left'} text-3xl sm:text-4xl lg:text-[42px] 2xl:text-5xl font-semibold tracking-normal customtext-neutral-dark max-w-5xl 2xl:max-w-6xl !leading-tight`}>
           {data?.title}
         </h2>
 
@@ -71,7 +71,7 @@ const PaginationCollection = ({
               renderBullet: (index, className) => {
                 return `
                   <div class="${className} inline-flex mx-1 cursor-pointer">
-                    <div class="w-4 h-4 bg-gray-300 rounded-full transition-all duration-200 ease-in-out hover:bg-primary"></div>
+                    <div class="w-4 h-4 bg-gray-300 rounded-full transition-all duration-200 ease-in-out hover:bg-secondary"></div>
                   </div>
                 `;
               },
@@ -135,6 +135,7 @@ const PaginationCollection = ({
         <div className="w-full custom-pagination relative flex justify-center mt-8 lg:mt-12 gap-2"></div>
 
       </div>
+
     </section>
   );
 };

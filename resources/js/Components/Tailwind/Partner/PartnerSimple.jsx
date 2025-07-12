@@ -17,9 +17,9 @@ const PartnerSimple = ({ data, items }) => {
     }
 
     return (
-        <section className="customtext-primary bg-[#F2F2F2] font-font-general bg-cover bg-center">
+        <section className={`${data.background ? data.background : 'bg-[#F2F2F2]'}  customtext-primary font-font-general bg-cover bg-center mt-10`}>
             <div className="overflow-hidden px-primary">
-                <div className="grid grid-cols-1 gap-8 xl:gap-10 pt-10 pb-16 2xl:py-12">
+                <div className="grid grid-cols-1 gap-8 xl:gap-10 pt-12 pb-16 2xl:py-12">
                     {/* Text Content */}
                     <div className="flex flex-row justify-center items-center h-full max-w-xl 2xl:max-w-2xl mx-auto">
                         <h2 className="text-3xl sm:text-4xl lg:text-[40px] 2xl:text-5xl text-center font-medium tracking-normal customtext-neutral-dark leading-tight font-title">

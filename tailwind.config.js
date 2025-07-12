@@ -9,12 +9,32 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                "font-general": ["Roboto", "serif"], //"Lato" "serif" usado para Sala Fabulosa
+                "font-general": ["Lato", "serif"], //"Lato" "serif" usado para Sala Fabulosa
                 "font-primary": ["Rajdhani", "sans-serif"], // usado para Stech Peru
                 "font-secondary": ["Open Sans", "serif"],
-                "roboto": ["Roboto", "sans-serif"], // usado para Xcleretor
+                "playfair": ["Playfair", "serif"],
             },
-           
+            colors: {
+                primary: {
+                    DEFAULT: "#0f62fe", // Color azul moderno
+                    50: "#eff6ff",
+                    100: "#dbeafe", 
+                    200: "#bfdbfe",
+                    300: "#93c5fd",
+                    400: "#60a5fa",
+                    500: "#3b82f6",
+                    600: "#0f62fe", // Primary
+                    700: "#1d4ed8",
+                    800: "#1e40af",
+                    900: "#1e3a8a",
+                },
+                
+                neutral: {
+                    dark: "#1f2937",
+                    light: "#f9fafb"
+                },
+                
+            },
             margin: {
                 primary: "5%",
             },

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react"
 
-const SelectFormGroup = ({ id, col, className, label, eRef, required = false, children, dropdownParent, noMargin = false, multiple = false, disabled = false, onChange = () => { },
+const SelectFormGroup = ({ id, col, className, value, label, eRef, required = false, children, dropdownParent, noMargin = false, multiple = false, disabled = false, onChange = () => { },
   templateResult,
   templateSelection,
   tags = false,
@@ -20,13 +20,18 @@ const SelectFormGroup = ({ id, col, className, label, eRef, required = false, ch
       minimumResultsForSearch
     })
     $(eRef.current).on('change', onChange)
-  }, [dropdownParent, changeWith])
+
+    return () => {
+      $(eRef.current).off('change', onChange)
+      $(eRef.current).select2('destroy')
+    }
+  }, [...changeWith, value, disabled])
 
   return <div className={`form-group ${col} ${!noMargin && 'mb-2'}`}>
     <label htmlFor={id} className="mb-1 form-label">
       {label} {(label && required) && <b className="text-danger">*</b>}
     </label>
-    <select ref={eRef} id={id} required={required} className={`form-control ${className}`} style={{ width: '100%' }} disabled={disabled} multiple={multiple}>
+    <select ref={eRef} id={id} required={required} className={`form-control ${className}`} style={{ width: '100%' }} disabled={disabled} multiple={multiple} value={value}>
       {children}
     </select>
   </div>

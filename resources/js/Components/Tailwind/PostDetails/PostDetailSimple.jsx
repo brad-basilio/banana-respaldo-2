@@ -44,10 +44,10 @@ export default function PostDetailSimple({ item }) {
     };
 
     return (
-        <article className="min-h-screen bg-white font-paragraph">
+        <article className="min-h-screen bg-white font-title">
             <div className="px-[5%] 2xl:max-w-6xl mx-auto py-8 flex flex-col justify-center">
                 {/* Metadata */}
-                <div className="flex items-center gap-2 text-base mb-4 customtext-primary font-semibold 2xl:text-lg max-w-xl mx-auto">
+                <div className="flex customtext-neutral-light items-center gap-2 text-base mb-4 customtext-primary font-semibold 2xl:text-lg max-w-xl mx-auto">
                     <span className="">{item?.category?.name}</span>
                     <span>|</span>
                     <time>{formatDate(item?.created_at)}</time>
@@ -72,7 +72,7 @@ export default function PostDetailSimple({ item }) {
 
                 {/* Content */}
                 <div
-                    className="prose prose-lg max-w-none customtext-neutral-dark text-base xl:text-lg"
+                    className="prose prose-lg max-w-none customtext-neutral-dark font-title text-base xl:text-lg"
                     dangerouslySetInnerHTML={{ __html: item?.description }}
                 />
 
@@ -82,14 +82,14 @@ export default function PostDetailSimple({ item }) {
                     <div className="flex gap-4">
                         <button
                             aria-label="Compartir en Facebook"
-                            className="p-2 rounded-full bg-blue-100 hover:bg-blue-500 hover:text-white transition"
+                            className="p-2 rounded-full bg-[#03030414] hover:bg-blue-500 customtext-neutral-light hover:text-white transition"
                             onClick={() => handleShare("facebook")}
                         >
                             <Facebook />
                         </button>
                         <button
                             aria-label="Compartir en Twitter"
-                            className="p-2 rounded-full bg-blue-100 hover:bg-blue-400 hover:text-white transition"
+                            className="p-2 rounded-full bg-[#03030414] hover:bg-blue-400 customtext-neutral-light hover:text-white transition"
                             onClick={() => handleShare("twitter")}
                         >
                             <TwitterIcon />
@@ -97,7 +97,7 @@ export default function PostDetailSimple({ item }) {
 
                         <button
                             aria-label="Copiar enlace"
-                            className="p-2 rounded-full bg-gray-100 hover:bg-gray-400 hover:text-white transition"
+                            className="p-2 rounded-full bg-[#03030414] hover:bg-blue-400 customtext-neutral-light hover:text-white transition"
                             onClick={() => handleShare("link")}
                         >
                             <Link />

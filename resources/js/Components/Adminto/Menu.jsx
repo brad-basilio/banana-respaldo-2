@@ -138,6 +138,7 @@ const Menu = ({ session, hasRole }) => {
                   <MenuItem href="/admin/faqs" icon="mdi mdi-forum">Preguntas Frecuentes</MenuItem>
                   <MenuItem href="/admin/testimonies" icon="mdi mdi-forum">Testimonios</MenuItem>
                   <MenuItem href="/admin/socials" icon="mdi mdi-web">Redes Sociales</MenuItem>
+                  <MenuItem href="/admin/statuses" icon="mdi mdi-tag-text">Estados de ventas</MenuItem>
 
                   {/* Recursos */}
                   <li className="menu-title">Recursos</li>

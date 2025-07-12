@@ -32,7 +32,7 @@ const HeaderSearchB = ({
     const messageWhatsappObj = generals.find(
         (item) => item.correlative === "message_whatsapp"
     );
-
+    
     const phoneWhatsapp = phoneWhatsappObj?.description ?? null;
     const messageWhatsapp = messageWhatsappObj?.description ?? null;
 
@@ -679,7 +679,7 @@ const HeaderSearchB = ({
                                 ref={desktopSearchInputRef}
                                 type="search"
                                 name="search"
-                                placeholder="Buscar productos"
+                                placeholder="Estoy buscando..."
                                 value={search}
                                 onChange={(e) => handleSearchChange(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -688,12 +688,12 @@ const HeaderSearchB = ({
                                         fetchSearchSuggestions(search);
                                     }
                                 }}
-                                className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
+                                className="w-full pr-14 py-4 pl-4 border rounded-full font-normal focus:ring-0 customtext-neutral-dark placeholder:customtext-neutral-dark focus:outline-none bg-[#DFF4FF]"
                                 enterKeyHint="search"
                                 inputMode="search"
                                 autoComplete="on"
                                 role="searchbox"
-                                aria-label="Buscar productos"
+                                aria-label="Estoy buscando..."
                             />
                             <button
                                 type="submit"
@@ -866,7 +866,7 @@ const HeaderSearchB = ({
                             {/* Desktop: botón "Haz tu Pedido" */}
                             <a
                                 aria-label="primary-button"
-                                className="hidden lg:block px-4 py-3 bg-primary text-white rounded-full hover:brightness-125 transition-colors duration-300"
+                                className={`${data.class ? data.class : 'bg-primary'} hidden lg:block px-6 py-2.5 text-white font-medium rounded-3xl hover:brightness-125 transition-colors duration-300`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 href={
@@ -875,7 +875,7 @@ const HeaderSearchB = ({
                                         : "#"
                                 }
                             >
-                                Haz tu Pedido
+                                Haz tu pedido
                             </a>
                             {/* Mobile: búsqueda expandible */}
                             <div className="md:hidden relative w-full max-w-xl mx-auto">

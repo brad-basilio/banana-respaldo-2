@@ -1,28 +1,14 @@
-import React, { useEffect, useState, Suspense } from "react";
-import { createRoot } from "react-dom/client";
+import React, { useEffect, useState, Suspense, createContext } from "react";
+import { createRoot } from 'react-dom/client';
 import CreateReactScript from "./Utils/CreateReactScript";
-
-// Componente de carga para usar con Suspense
-const LoadingFallback = () => (
-    <div className="fixed inset-0 flex flex-col justify-center items-center bg-black/90 backdrop-blur-sm z-50">
-
-        <div className="animate-bounce">
-            <img
-
-                src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`}
-                alt={Global.APP_NAME}
-                onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "/assets/img/logo-bk.svg";
-                }}
-
-                className=" w-64 lg:w-96 transition-all duration-300 transform hover:scale-105"
-            />
-        </div>
-    </div>
-);
+import { Local } from "sode-extend-react";
+import Global from "./Utils/Global";
+import ItemsRest from "./Actions/ItemsRest";
+import SortByAfterField from "./Utils/SortByAfterField";
+import { Toaster } from "sonner";
 
 // Importaciones lazy
+const NoComponent = React.lazy(() => import("./NoComponent"));
 const TopBar = React.lazy(() => import("./Components/Tailwind/TopBar"));
 const Header = React.lazy(() => import("./Components/Tailwind/Header"));
 const Footer = React.lazy(() => import("./Components/Tailwind/Footer"));
@@ -52,6 +38,7 @@ const Complaint = React.lazy(() => import("./Components/Tailwind/Complaint"));
 const Indicator = React.lazy(() => import("./Components/Tailwind/Indicator"));
 const ThankSimple = React.lazy(() => import("./Components/Tailwind/Thanks/ThankSimple"));
 const Image = React.lazy(() => import("./Components/Tailwind/Image"));
+const Track = React.lazy(() => import("./Components/Tailwind/Track"));
 const BananaLab = React.lazy(() => import("./Components/Tailwind/BananaLab"));
 const Floating = React.lazy(() => import("./Components/Tailwind/Floating"));
 const DeliveryZone = React.lazy(() => import("./Components/Tailwind/DeliveryZone"));
@@ -60,13 +47,30 @@ const Testimonials = React.lazy(() => import("./Components/Tailwind/Testimonials
 const Brands = React.lazy(() => import("./Components/Tailwind/Brands"));
 const Partner = React.lazy(() => import("./Components/Tailwind/Partner"));
 const Agradecimientos = React.lazy(() => import("./Components/Tailwind/Agradecimientos"));
-import { Local } from "sode-extend-react";
-import Global from "./Utils/Global";
-import ItemsRest from "./Actions/ItemsRest";
-import SortByAfterField from "./Utils/SortByAfterField";
-import { Toaster } from "sonner";
+
+// Componente de carga para usar con Suspense
+const LoadingFallback = () => (
+    <div className="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
+
+        <div className="animate-bounce">
+            <img
+
+                src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`}
+                alt={Global.APP_NAME}
+                onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/assets/img/logo-bk.svg";
+                }}
+
+                className=" w-64 lg:w-96 transition-all duration-300 transform hover:scale-105"
+            />
+        </div>
+    </div>
+);
 
 const itemsRest = new ItemsRest();
+
+export const SystemContext = createContext({});
 
 const System = ({
     session,
@@ -84,6 +88,7 @@ const System = ({
     headerPosts,
     postsLatest,
     textstatic,
+    hasRole = () => { }
 }) => {
 
     const getItems = (itemsId) => {
@@ -120,8 +125,6 @@ const System = ({
         });
     }, [null]);
 
-    console.log("FilteredData", filteredData);
-   
     const getSystem = ({ component, value, data, itemsId, visible }) => {
         if (visible == 0) return <></>;
 
@@ -151,6 +154,7 @@ const System = ({
                 return <Menu data={data} which={value} items={getItems(itemsId)} cart={cart} setCart={setCart} pages={pages} />
             case "content":
                 if (!page.id) {
+                    return null
                     return <div className="h-80 w-full bg-gray-300 flex items-center justify-center">
                         <div>- Tu contenido aquí -</div>
                     </div>
@@ -198,6 +202,8 @@ const System = ({
                 return <Faq which={value} data={data} faqs={faqs} />
             case "thank":
                 return <ThankSimple which={value} data={data} item={filteredData.Sale} />
+            case "track":
+                return <Track which={value} data={data} />
             case "blog":
                 return <Blog which={value} data={data} items={getItems(itemsId)} headerPosts={headerPosts} postsLatest={postsLatest} filteredData={filteredData} />
             case "post-detail":
@@ -227,13 +233,9 @@ const System = ({
             case "partner":
                 return <Partner which={value} data={data} items={getItems(itemsId)} />
             case "agradecimientos":
-                return <Agradecimientos which={value} data={data} items={getItems(itemsId)} />
+                return <Agradecimientos which={value} data={data} items={getItems(itemsId)} contacts={contacts} />
             default:
-                return (
-                    <div className="w-full px-[5%] replace-max-w-here p-4 mx-auto">
-                        - No Hay componente <b>{value}</b> -
-                    </div>
-                );
+                return <NoComponent which={value} />
         }
     };
 
@@ -242,24 +244,21 @@ const System = ({
     );
 
     return (
-        <main className="font-paragraph">
-            {systemsSorted.map((system) => getSystem(system))}
-            <Toaster />
-        </main>
+        // <SystemContext.Provider value={{
+        //     hasRole
+        // }}>
+            <main className="font-paragraph">
+                {systemsSorted.map((system) => getSystem(system))}
+                <Toaster />
+            </main>
+        // </SystemContext.Provider>
     );
 };
 
 CreateReactScript((el, properties) => {
     createRoot(el).render(
-
-
         <Suspense fallback={<LoadingFallback />}>
             <System {...properties} />
         </Suspense>
-
-
     );
 });
-/* <Suspense fallback={<LoadingFallback />}>
-            <System {...properties} />
-        </Suspense> */

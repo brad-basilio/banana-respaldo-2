@@ -53,6 +53,23 @@
                 "data": [
                     "background"
                 ]
+            },
+            {
+                "id": "TopBarPanni",
+                "name": "Paani con redes sociales",
+                "image": "top-bar-socials.png",
+                "data": [
+                    "background_color",
+                    "color",
+                    "isCopyright",
+                    "border_color"
+                ],
+                "using": {
+                    "model": "Social"
+                },
+                "generals": [
+                    "cintillo"
+                ]
             }
         ]
     },
@@ -138,7 +155,8 @@
                         "category",
                         "subcategory",
                         "brand",
-                        "collection"
+                        "collection",
+                        "variants"
                     ]
                 },
                 "generals": [
@@ -244,6 +262,19 @@
             {
                 "id": "CarruselBenefitsInifinite",
                 "name": "Beneficios",
+                "data": [
+                    "background"
+                ],
+                "using": {
+                    "model": "Indicator"
+                }
+            },
+            {
+                "id": "CarruselBenefitsInifinite2dn1",
+                "name": "CarruselBenefitsInifinite2dn1",
+                "data": [
+                    "background"
+                ],
                 "using": {
                     "model": "Indicator"
                 }
@@ -529,7 +560,9 @@
                             "with": [
                                 "category",
                                 "subcategory",
-                                "brand"
+                                "brand",
+                                "collection",
+                                "variants"
                             ],
                             "relations": [
                                 "category",
@@ -558,6 +591,142 @@
                     "title",
                     "description",
                     "link_cart"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "CatalagoFiltrosPaani",
+                "name": "Producto Catalogo Filtro - Paani",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "CatalagoFiltrosPaani",
+                "name": "Producto Catalogo Filtro - Paani",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
                 ],
                 "options": [
                     {
@@ -985,6 +1154,7 @@
                 "image": "categories-simple.png",
                 "data": [
                     "title",
+                    "centrado",
                     "path"
                 ],
                 "using": {
@@ -1192,11 +1362,7 @@
                         "is_new",
                         "views"
                     ],
-                    "with": [
-                        "category",
-                        "subcategory",
-                        "brand"
-                    ],
+                    "with": ["category", "subcategory", "brand", "variants"],
                     "limit": 20
                 }
             },
@@ -1210,6 +1376,37 @@
                     "description",
                     "link_catalog",
                     "link_cart"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
+                    "limit": 20
+                }
+            },
+            {
+                "id": "ProductNavigationSwiperPaani",
+                "name": "NavegacionSwiper Paani",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart",
+                    "background",
+                    "text_button",
+                    "backgroundboton"
                 ],
                 "using": {
                     "model": "Item",
@@ -1319,6 +1516,10 @@
                 "name": "Simple"
             },
             {
+                "id": "BannerSimpleD2",
+                "name": "Simple D2en1"
+            },
+            {
                 "id": "BannerAd",
                 "name": "Anuncio",
                 "data": [
@@ -1328,6 +1529,14 @@
             {
                 "id": "BannerPublicitario",
                 "name": "BannerPublicitario",
+                "data": [
+                    "title",
+                    "image_position"
+                ]
+            },
+            {
+                "id": "BannerPublicitarioPaani",
+                "name": "BannerPublicitarioPaani",
                 "data": [
                     "title",
                     "image_position"
@@ -1500,7 +1709,9 @@
                 "id": "ProductDetailPaani",
                 "name": "ProductDetailPaani",
                 "data": [
-                    "link_cart"
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
                 ],
                 "using": {
                     "model": "Item",
@@ -1876,6 +2087,16 @@
         ]
     },
     {
+        "id": "track",
+        "name": "Tracking",
+        "options": [
+            {
+                "id": "TrackSimple",
+                "name": "Simple"
+            }
+        ]
+    },
+    {
         "id": "post-detail",
         "name": "Post Detalle",
         "options": [
@@ -1925,6 +2146,19 @@
             {
                 "id": "AboutAko",
                 "name": "AboutAko",
+                "data": [
+                    "url_imagen",
+                    "title",
+                    "description",
+                    "about_url"
+                ],
+                "using": {
+                    "model": "Aboutus"
+                }
+            },
+            {
+                "id": "AboutPaani",
+                "name": "AboutPaani",
                 "data": [
                     "url_imagen",
                     "title",
@@ -2222,7 +2456,10 @@
             },
             {
                 "id": "AgradecimientoAko",
-                "name": "AgradecimientoAko"
+                "name": "AgradecimientoAko",
+                "using": {
+                    "model": "Social"
+                }
             }
         ]
     },
@@ -2247,7 +2484,8 @@
                     "model": "Partner"
                 },
                 "data": [
-                    "title"
+                    "title",
+                    "background"
                 ]
             }
         ]

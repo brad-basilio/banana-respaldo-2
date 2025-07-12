@@ -1451,7 +1451,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                     product={product}
                                                     setCart={setCart}
                                                     cart={cart}
-                                                    textcolor="customtext-secondary"
+                                                    data={data}
+                                                    textcolor="customtext-neutral-light"
                                                 />
                                             </motion.div>
                                         ))

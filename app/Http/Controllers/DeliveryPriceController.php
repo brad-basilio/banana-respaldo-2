@@ -317,7 +317,7 @@ class DeliveryPriceController extends BasicController
             ->map(function ($item) {
                 return [
                     'ieni' => $item['inei'],
-                    'reniec' => $item['reniec'],
+                    'reniec' => $item['reniec'] ?? $item['inei'],
                     'departamento' => $item['departamento'],
                     'provincia' => $item['provincia'],
                     'distrito' => $item['distrito']

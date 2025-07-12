@@ -127,6 +127,14 @@
     <?php endif; ?>
     <?php $__currentLoopData = $data['colors']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $color): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <style>
+            .stroke-<?php echo e($color->name); ?> {
+                stroke: <?php echo e($color->description); ?>;
+            }
+
+            .background-<?php echo e($color->name); ?> {
+                background-color: <?php echo e($color->description); ?>;
+            }
+
             .bg-<?php echo e($color->name); ?> {
                 background-color: <?php echo e($color->description); ?>;
             }
@@ -175,6 +183,7 @@
             }
         </style>
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
     <style>
         .font-emoji {
             font-family: "Noto Color Emoji", sans-serif;
@@ -185,7 +194,7 @@
             transform: translateY(-50%);
         }
     </style>
-
+    
 </head>
 
 <body class="font-general">
@@ -197,6 +206,8 @@
 
 
     <?php if (!isset($__inertiaSsrDispatched)) { $__inertiaSsrDispatched = true; $__inertiaSsrResponse = app(\Inertia\Ssr\Gateway::class)->dispatch($page); }  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->body; } else { ?><div id="app" data-page="<?php echo e(json_encode($page)); ?>"></div><?php } ?>
+
+    
 
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
@@ -245,6 +256,8 @@
                     lazyImageObserver.observe(lazyImage);
                 });
             }
+
+            // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
 
