@@ -266,4 +266,44 @@ class ProjectImageController extends Controller
             return response()->json(['error' => 'Error sirviendo imagen'], 500);
         }
     }
+
+    /**
+     * Subir una sola imagen desde el editor
+     */
+    public function uploadEditorImage(Request $request)
+    {
+        try {
+            $request->validate([
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'projectId' => 'required|string',
+            ]);
+
+            $projectId = $request->projectId;
+            $projectPath = "images/projects/{$projectId}";
+
+            // Crear directorio del proyecto si no existe
+            if (!Storage::exists($projectPath)) {
+                Storage::makeDirectory($projectPath);
+            }
+
+            // Guardar la imagen
+            $path = $request->file('image')->store($projectPath);
+
+            // Generar la URL para servir la imagen
+            $url = '/api/canvas/image/' . base64_encode($path);
+
+            return response()->json([
+                'success' => true,
+                'url' => $url,
+                'path' => $path,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("❌ [EDITOR-UPLOAD] Error subiendo imagen: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error subiendo imagen: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

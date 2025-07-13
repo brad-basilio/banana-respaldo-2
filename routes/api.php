@@ -485,6 +485,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/canvas/projects/upload-image', [ProjectSaveController::class, 'uploadImage']);
 
     // 🖼️ Canvas Image Management Routes
+    Route::post('/canvas/editor/upload-image', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'uploadEditorImage']);
     Route::post('/canvas/projects/{id}/upload-images', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'uploadImages']);
     Route::get('/canvas/projects/{id}/images', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'getProjectImages']);
     Route::post('/canvas/projects/{id}/cleanup-images', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'cleanupUnusedImages']);

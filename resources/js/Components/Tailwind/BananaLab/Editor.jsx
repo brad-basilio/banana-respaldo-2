@@ -1232,6 +1232,86 @@ export default function EditorLibro() {
     const [showProgressRecovery, setShowProgressRecovery] = useState(false);
     const [savedProgress, setSavedProgress] = useState(null);
 
+    // Estado para el input de carga de imágenes
+    const imageInputRef = useRef(null);
+
+    // Función para manejar la carga de imágenes
+    const handleImageUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file || !projectData?.id) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('projectId', projectData.id);
+
+        try {
+            const response = await fetch('/api/canvas/editor/upload-image', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                addImageElement(result.url);
+                toast.success('Imagen subida correctamente');
+            } else {
+                toast.error(result.message || 'Error al subir la imagen');
+            }
+        } catch (error) {
+            console.error('Error subiendo la imagen:', error);
+            toast.error('Error de red al subir la imagen');
+        }
+    };
+
+    // Función para añadir un elemento de imagen al lienzo
+    const addImageElement = (imageUrl) => {
+        const newElement = {
+            id: `image-${Date.now()}`,
+            type: 'image',
+            content: imageUrl,
+            position: { x: 10, y: 10 },
+            size: { width: 50, height: 50 },
+            filters: {},
+            mask: 'none',
+            zIndex: pages[currentPage].cells[0].elements.length + 1,
+        };
+
+        const newPages = [...pages];
+        const currentCell = newPages[currentPage].cells.find(cell => cell.id === selectedCell) || newPages[currentPage].cells[0];
+        currentCell.elements.push(newElement);
+
+        updatePages(newPages);
+    };
+
+    // Función para añadir un elemento de texto
+    const addTextElement = () => {
+        const newElement = {
+            id: `text-${Date.now()}`,
+            type: 'text',
+            content: 'Doble clic para editar',
+            position: { x: 10, y: 10 },
+            size: { width: 50, height: 10 },
+            style: {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#000000',
+                textAlign: 'left',
+            },
+            zIndex: pages[currentPage].cells[0].elements.length + 1,
+        };
+
+        const newPages = [...pages];
+        const currentCell = newPages[currentPage].cells.find(cell => cell.id === selectedCell) || newPages[currentPage].cells[0];
+        currentCell.elements.push(newElement);
+
+        updatePages(newPages);
+        toast.success('Texto añadido');
+    };
+
     // �️ FUNCIÓN PARA PROCESAR Y GUARDAR IMÁGENES EN EL SERVIDOR
     const processAndSaveImages = useCallback(async (pages, projectId) => {
         const processedPages = [];
@@ -3672,14 +3752,28 @@ export default function EditorLibro() {
                                                     Imagen
                                                 </Button>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={handleAddText}
-                                                    className="h-8 px-2"
-                                                    icon={<Type className="h-4 w-4" />}
-                                                >
-                                                    Texto
-                                                </Button>
+                                    variant="ghost"
+                                    tooltip="Añadir Imagen"
+                                    onClick={() => imageInputRef.current && imageInputRef.current.click()}
+                                >
+                                    <ImageIcon className="w-5 h-5" />
+                                </Button>
+
+                                <input
+                                    type="file"
+                                    ref={imageInputRef}
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                    accept="image/*"
+                                />
+
+                                <Button
+                                    variant="ghost"
+                                    tooltip="Añadir Texto"
+                                    onClick={addTextElement}
+                                >
+                                    <Type className="w-5 h-5" />
+                                </Button>
                                             </div>
 
                                             <div className="h-6 w-px bg-gray-300 mx-2"></div>
