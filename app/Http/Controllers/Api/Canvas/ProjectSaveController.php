@@ -14,11 +14,17 @@ use SoDe\Extend\Crypto;
 /**
  * Controlador profesional para el sistema de auto-guardado de proyectos Canvas
  * Maneja guardado automático, manual, carga de imágenes y recuperación de progreso
+ * Incluye optimizaciones para evitar errores de max_allowed_packet
  */
 class ProjectSaveController extends Controller
 {
+    // Límites de seguridad para evitar errores de MySQL
+    const MAX_MYSQL_PACKET_SIZE = 1048576; // 1MB por defecto en MySQL
+    const SAFE_PACKET_RATIO = 0.7; // Usar solo 70% del límite para seguridad
+    const MAX_BASE64_IMAGE_SIZE = 500000; // 500KB max para imágenes base64 en auto-save
+
     /**
-     * Guardar progreso automáticamente (sin procesar imágenes)
+     * Guardar progreso automáticamente (optimizado para velocidad y tamaño)
      */
     public function saveProgress(Request $request, $projectId)
     {
@@ -31,33 +37,50 @@ class ProjectSaveController extends Controller
             $designData = $request->input('design_data');
             $thumbnails = $request->input('thumbnails', []);
 
-            // Verificar que el proyecto existe
-            $project = DB::table('canvas_projects')->where('id', $projectId)->first();
-            if (!$project) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Proyecto no encontrado'
-                ], 404);
+            // 🔧 OPTIMIZACIÓN: Preparar datos para auto-save (sin procesar imágenes grandes)
+            $optimizedData = $this->optimizeDataForAutoSave($designData);
+
+            // 🔍 VALIDACIÓN: Verificar tamaño antes de guardar
+            $jsonData = json_encode($optimizedData);
+            $dataSize = strlen($jsonData);
+            $maxSafeSize = self::MAX_MYSQL_PACKET_SIZE * self::SAFE_PACKET_RATIO;
+
+            if ($dataSize > $maxSafeSize) {
+                // 🗜️ COMPRESIÓN: Intentar comprimir datos si están muy grandes
+                $compressedData = $this->compressLargeData($optimizedData);
+                $jsonData = json_encode($compressedData);
+                $dataSize = strlen($jsonData);
+
+                Log::warning("Auto-save: Datos comprimidos para proyecto {$projectId}", [
+                    'original_size' => strlen(json_encode($optimizedData)),
+                    'compressed_size' => $dataSize,
+                    'max_safe_size' => $maxSafeSize
+                ]);
+
+                // Si aún está muy grande, rechazar
+                if ($dataSize > $maxSafeSize) {
+                    throw new \Exception("Los datos del proyecto son demasiado grandes para auto-save. Tamaño: " . round($dataSize/1024/1024, 2) . "MB");
+                }
+                
+                $optimizedData = $compressedData;
             }
 
-            // Preparar datos para guardar
-            $saveData = [
-                'design_data' => json_encode($designData),
-                'thumbnails' => json_encode($thumbnails),
-                'progress_saved_at' => Carbon::now(),
-                'is_autosave' => true,
-                'updated_at' => Carbon::now()
-            ];
+            // Usar el modelo Eloquent para encontrar el proyecto
+            $project = \App\Models\CanvasProject::findOrFail($projectId);
 
-            // Actualizar el registro
-            DB::table('canvas_projects')
-                ->where('id', $projectId)
-                ->update($saveData);
+            // Eloquent se encargará de la codificación JSON automáticamente
+            $project->design_data = $optimizedData;
+            $project->thumbnails = $thumbnails;
+            $project->progress_saved_at = Carbon::now();
+            $project->is_autosave = true;
+
+            $project->save();
 
             Log::info("Auto-save exitoso para proyecto {$projectId}", [
                 'project_id' => $projectId,
-                'data_size' => strlen(json_encode($designData)),
-                'pages_count' => count($designData['pages'] ?? [])
+                'data_size_kb' => round($dataSize / 1024, 2),
+                'pages_count' => count($optimizedData['pages'] ?? []),
+                'optimization_applied' => $dataSize !== strlen(json_encode($designData))
             ]);
 
             return response()->json([
@@ -65,8 +88,9 @@ class ProjectSaveController extends Controller
                 'message' => 'Progreso guardado automáticamente',
                 'data' => [
                     'project_id' => $projectId,
-                    'saved_at' => Carbon::now()->toISOString(),
-                    'type' => 'auto_save'
+                    'saved_at' => $project->progress_saved_at->toIso8601String(),
+                    'type' => 'auto_save',
+                    'data_size_kb' => round($dataSize / 1024, 2)
                 ]
             ]);
 
@@ -74,12 +98,14 @@ class ProjectSaveController extends Controller
             Log::error("Error en auto-save para proyecto {$projectId}: " . $e->getMessage(), [
                 'project_id' => $projectId,
                 'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar el progreso: ' . $e->getMessage()
+                'message' => 'Error al guardar el progreso: ' . $e->getMessage(),
+                'error_type' => $this->classifyError($e)
             ], 500);
         }
     }
@@ -343,5 +369,139 @@ class ProjectSaveController extends Controller
         // Retornar solo el filename (no la URL completa)
         // El frontend deberá usar la ruta del media endpoint
         return $filename;
+    }
+
+    /**
+     * 🔧 OPTIMIZACIÓN: Preparar datos para auto-save reduciendo tamaño
+     */
+    private function optimizeDataForAutoSave($designData)
+    {
+        if (!isset($designData['pages']) || !is_array($designData['pages'])) {
+            return $designData;
+        }
+
+        $optimizedData = $designData;
+
+        foreach ($optimizedData['pages'] as &$page) {
+            if (!isset($page['cells']) || !is_array($page['cells'])) {
+                continue;
+            }
+
+            foreach ($page['cells'] as &$cell) {
+                if (!isset($cell['elements']) || !is_array($cell['elements'])) {
+                    continue;
+                }
+
+                foreach ($cell['elements'] as &$element) {
+                    if ($element['type'] === 'image' && isset($element['content'])) {
+                        // 📷 Si es una imagen base64 muy grande, reemplazarla con placeholder
+                        if (is_string($element['content']) && 
+                            strpos($element['content'], 'data:image/') === 0 && 
+                            strlen($element['content']) > self::MAX_BASE64_IMAGE_SIZE) {
+                            
+                            // Guardar metadatos de la imagen pero no el contenido completo
+                            $element['content_placeholder'] = 'large_base64_image';
+                            $element['content_size'] = strlen($element['content']);
+                            $element['content'] = 'data:image/png;base64,placeholder'; // Placeholder pequeño
+                            $element['needs_upload'] = true;
+
+                            Log::info("Auto-save: Imagen grande optimizada", [
+                                'element_id' => $element['id'] ?? 'unknown',
+                                'original_size' => $element['content_size']
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $optimizedData;
+    }
+
+    /**
+     * 🗜️ COMPRESIÓN: Comprimir datos grandes eliminando información redundante
+     */
+    private function compressLargeData($data)
+    {
+        $compressed = $data;
+
+        // Remover campos opcionales que ocupan mucho espacio
+        if (isset($compressed['pages'])) {
+            foreach ($compressed['pages'] as &$page) {
+                // Remover thumbnails temporales en auto-save
+                unset($page['thumbnail_cache']);
+                unset($page['preview_cache']);
+
+                if (isset($page['cells'])) {
+                    foreach ($page['cells'] as &$cell) {
+                        if (isset($cell['elements'])) {
+                            foreach ($cell['elements'] as &$element) {
+                                // Simplificar filtros por defecto
+                                if (isset($element['filters'])) {
+                                    $element['filters'] = $this->simplifyFilters($element['filters']);
+                                }
+                                
+                                // Remover caches y datos temporales
+                                unset($element['render_cache']);
+                                unset($element['transform_cache']);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $compressed;
+    }
+
+    /**
+     * Simplificar filtros removiendo valores por defecto
+     */
+    private function simplifyFilters($filters)
+    {
+        $defaults = [
+            'brightness' => 100,
+            'contrast' => 100,
+            'saturation' => 100,
+            'tint' => 0,
+            'hue' => 0,
+            'blur' => 0,
+            'scale' => 1,
+            'rotate' => 0,
+            'opacity' => 100,
+            'blendMode' => 'normal'
+        ];
+
+        $simplified = [];
+        foreach ($filters as $key => $value) {
+            // Solo incluir si el valor no es el por defecto
+            if (!isset($defaults[$key]) || $value !== $defaults[$key]) {
+                $simplified[$key] = $value;
+            }
+        }
+
+        return $simplified;
+    }
+
+    /**
+     * 🔍 CLASIFICACIÓN: Clasificar tipo de error para mejor handling
+     */
+    private function classifyError($exception)
+    {
+        $message = $exception->getMessage();
+        
+        if (strpos($message, 'max_allowed_packet') !== false) {
+            return 'mysql_packet_size';
+        }
+        
+        if (strpos($message, 'Connection') !== false) {
+            return 'database_connection';
+        }
+        
+        if (strpos($message, 'demasiado grandes') !== false) {
+            return 'data_too_large';
+        }
+        
+        return 'unknown';
     }
 }

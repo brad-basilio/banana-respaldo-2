@@ -20,6 +20,8 @@ class CanvasProject extends Model
         'item_id',
         'canvas_preset_id',
         'project_data',
+        'design_data',
+        'thumbnails',
         'status',
         'name',
         'thumbnail',
@@ -27,15 +29,25 @@ class CanvasProject extends Model
         'pdf_generated_at',
         'pdf_data',
         'completed_at',
-        'item_data'
+        'item_data',
+        'progress_saved_at',
+        'manually_saved_at',
+        'is_autosave',
+        'is_finalized'
     ];
 
     protected $casts = [
         'project_data' => 'array',
+        'design_data' => 'array',
+        'thumbnails' => 'array',
         'item_data' => 'array',
         'pdf_data' => 'array',
         'pdf_generated_at' => 'datetime',
         'completed_at' => 'datetime',
+        'progress_saved_at' => 'datetime',
+        'manually_saved_at' => 'datetime',
+        'is_autosave' => 'boolean',
+        'is_finalized' => 'boolean',
     ];
 
     // Relaciones

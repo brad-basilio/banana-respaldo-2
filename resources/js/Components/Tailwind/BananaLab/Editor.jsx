@@ -265,6 +265,7 @@ export default function EditorLibro() {
     const [previewMode, setPreviewMode] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [pageThumbnails, setPageThumbnails] = useState({});
+    const [isPDFGenerating, setIsPDFGenerating] = useState(false);
     
     // Referencias y timeouts para manejo de miniaturas
     const thumbnailTimeout = useRef();
@@ -673,7 +674,7 @@ export default function EditorLibro() {
                             }
                         });
                         
-                        // 4. ESPERAR A QUE TODAS LAS IMÁGENES SE PROCESEN
+                        // 4. ESPERAR A QUE TODAS LAS IMÁGENAS SE PROCESEN
                         if (imageProcessingPromises.length > 0) {
                             console.log(`⏳ [ADVANCED-THUMBNAIL] Esperando procesamiento de ${imageProcessingPromises.length} imágenes...`);
                             await Promise.all(imageProcessingPromises);
@@ -1859,7 +1860,6 @@ export default function EditorLibro() {
 
         const page = pages[currentPage];
         if (!page) return "Página";
-
         switch (page.type) {
             case "cover":
                 return "Portada";
@@ -2069,13 +2069,258 @@ export default function EditorLibro() {
             }
         }
     }, [currentPage, pages, getStorageKey]);
-    // (Opcional) Botón para limpiar progreso guardado
-    const clearSavedProgress = () => {
-        const storageKey = getStorageKey();
-        localStorage.removeItem(storageKey);
-        // También limpiar thumbnails para liberar memoria
-        setPageThumbnails({});
-        window.location.reload();
+    // Función para exportar el proyecto como PDF usando el backend optimizado
+    const handleExportPDF = async () => {
+        if (!projectData?.id) {
+            toast.error('No se ha cargado ningún proyecto.');
+            return;
+        }
+
+        // Evitar múltiples ejecuciones simultáneas
+        if (isPDFGenerating) {
+            toast.warning('⏳ Ya se está generando un PDF. Por favor espera...');
+            return;
+        }
+
+        // Activar estado de loading
+        setIsPDFGenerating(true);
+
+        // Mostrar loading con mensaje específico y información útil
+        const loadingToast = toast.loading('🖨️ Generando PDF de alta calidad (300 DPI)...\n⏱️ Este proceso puede tomar varios minutos\n📁 El archivo se descargará automáticamente', {
+            duration: 0 // No auto-dismiss
+        });
+
+        try {
+            // Primero validar que el proyecto tenga contenido
+            if (!pages || pages.length === 0) {
+                toast.dismiss(loadingToast);
+                toast.error('El proyecto no tiene páginas para exportar.');
+                return;
+            }
+
+            // Verificar que las páginas tengan contenido real
+            const pagesWithContent = pages.filter(page => 
+                page.cells && 
+                page.cells.length > 0 && 
+                page.cells.some(cell => 
+                    cell.elements && 
+                    cell.elements.length > 0
+                )
+            );
+
+            if (pagesWithContent.length === 0) {
+                toast.dismiss(loadingToast);
+                toast.error('Las páginas del proyecto están vacías. Agrega contenido antes de generar el PDF.');
+                return;
+            }
+
+            console.log('🖨️ [PDF-EXPORT] Iniciando exportación del proyecto:', {
+                projectId: projectData.id,
+                totalPages: pages.length,
+                pagesWithContent: pagesWithContent.length
+            });
+
+            // Configuración optimizada para PDFs grandes
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 300000); // 5 minutos de timeout
+
+            const requestConfig = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/pdf',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Cache-Control': 'no-cache'
+                },
+                credentials: 'same-origin',
+                signal: controller.signal,
+                body: JSON.stringify({
+                    quality: 'high',
+                    dpi: 300,
+                    includeBackgrounds: true,
+                    optimize: true,
+                    pages: pagesWithContent.length
+                })
+            };
+
+            // Actualizar mensaje de progreso
+            toast.loading('📊 Procesando ' + pagesWithContent.length + ' páginas...\n⏱️ Por favor mantén esta pestaña abierta', {
+                id: loadingToast
+            });
+
+            // Intentar primero la ruta simplificada que ya probamos que funciona
+            let response;
+            try {
+                response = await fetch(`/api/simple/projects/${projectData.id}/export/pdf`, requestConfig);
+            } catch (networkError) {
+                if (networkError.name === 'AbortError') {
+                    throw new Error('Timeout: El PDF está tardando demasiado en generarse. Intenta con menos páginas.');
+                }
+                
+                console.warn('⚠️ [PDF-EXPORT] Error en ruta simplificada, intentando ruta principal...');
+                // Si falla, intentar la ruta principal
+                try {
+                    response = await fetch(`/api/customer/projects/${projectData.id}/export/pdf`, requestConfig);
+                } catch (fallbackError) {
+                    if (fallbackError.name === 'AbortError') {
+                        throw new Error('Timeout: El PDF está tardando demasiado en generarse. Intenta con menos páginas.');
+                    }
+                    
+                    // Como último recurso, intentar ruta de prueba
+                    console.warn('⚠️ [PDF-EXPORT] Ruta principal falló, intentando ruta de prueba...');
+                    response = await fetch(`/api/test/projects/${projectData.id}/export/pdf`, requestConfig);
+                }
+            }
+
+            // Limpiar timeout
+            clearTimeout(timeoutId);
+
+            // Si la ruta simplificada da 401 o 404, intentar las otras rutas
+            if (!response.ok && (response.status === 401 || response.status === 404)) {
+                console.warn('⚠️ [PDF-EXPORT] Ruta simplificada falló, intentando ruta principal...');
+                try {
+                    const fallbackConfig = { ...requestConfig };
+                    delete fallbackConfig.signal; // Nuevo request sin el signal anterior
+                    
+                    response = await fetch(`/api/customer/projects/${projectData.id}/export/pdf`, fallbackConfig);
+                    
+                    // Si también falla, intentar ruta de prueba
+                    if (!response.ok) {
+                        response = await fetch(`/api/test/projects/${projectData.id}/export/pdf`, fallbackConfig);
+                    }
+                } catch (fallbackError) {
+                    console.error('❌ [PDF-EXPORT] Todas las rutas fallaron:', fallbackError);
+                    throw fallbackError;
+                }
+            }
+
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/pdf')) {
+                    // Actualizar mensaje de progreso para descarga
+                    toast.loading('📦 Descargando PDF...\n⏬ Preparando archivo', {
+                        id: loadingToast
+                    });
+
+                    // Usar un enfoque de streaming para archivos grandes
+                    const reader = response.body.getReader();
+                    const chunks = [];
+                    let receivedLength = 0;
+                    const contentLength = +response.headers.get('Content-Length') || 0;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        
+                        if (done) break;
+                        
+                        chunks.push(value);
+                        receivedLength += value.length;
+                        
+                        // Actualizar progreso si conocemos el tamaño total
+                        if (contentLength > 0) {
+                            const progress = Math.round((receivedLength / contentLength) * 100);
+                            toast.loading(`📦 Descargando PDF... ${progress}%\n📊 ${(receivedLength / 1024 / 1024).toFixed(1)} MB de ${(contentLength / 1024 / 1024).toFixed(1)} MB`, {
+                                id: loadingToast
+                            });
+                        }
+                    }
+
+                    // Crear blob desde chunks
+                    const blob = new Blob(chunks, { type: 'application/pdf' });
+                    
+                    if (blob.size > 0) {
+                        const fileName = `${projectData.name || 'proyecto'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                        const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+                        
+                        // Disparar descarga
+                        saveAs(blob, fileName);
+                        
+                        // Limpiar loading toast y mostrar éxito
+                        toast.dismiss(loadingToast);
+                        toast.success(`✅ PDF descargado exitosamente!\n📄 Archivo: ${fileName}\n📦 Tamaño: ${fileSizeMB} MB\n📁 Ubicación: Carpeta de Descargas`, {
+                            duration: 8000
+                        });
+                        
+                        console.log('✅ [PDF-EXPORT] PDF descargado exitosamente:', {
+                            fileName,
+                            size: fileSizeMB + ' MB',
+                            pages: pagesWithContent.length
+                        });
+                    } else {
+                        toast.dismiss(loadingToast);
+                        toast.error('El PDF generado está vacío. Verifica que el proyecto tenga contenido.');
+                        console.error('❌ [PDF-EXPORT] PDF blob está vacío');
+                    }
+                } else {
+                    // La respuesta no es un PDF, probablemente un error JSON
+                    const errorData = await response.json();
+                    const errorMessage = errorData.message || 'Error desconocido al generar el PDF.';
+                    toast.dismiss(loadingToast);
+                    toast.error(`❌ ${errorMessage}`);
+                    console.error('❌ [PDF-EXPORT] Error del servidor:', errorData);
+                }
+            } else {
+                // Error HTTP
+                try {
+                    const errorData = await response.json();
+                    const errorMessage = errorData.message || `Error HTTP ${response.status}`;
+                    
+                    toast.dismiss(loadingToast);
+                    
+                    // Manejo específico para errores de autenticación
+                    if (response.status === 401) {
+                        toast.error('❌ Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    } else if (response.status === 403) {
+                        toast.error('❌ No tienes permisos para exportar este proyecto.');
+                    } else if (response.status === 404) {
+                        toast.error('❌ Proyecto no encontrado. Verifica que el proyecto exista.');
+                    } else if (response.status === 413) {
+                        toast.error('❌ El proyecto es demasiado grande para generar PDF. Intenta reducir el número de páginas o imágenes.');
+                    } else if (response.status === 500) {
+                        toast.error('❌ Error del servidor. El proyecto puede ser demasiado complejo o grande.');
+                    } else {
+                        toast.error(`❌ ${errorMessage}`);
+                    }
+                    
+                    console.error('❌ [PDF-EXPORT] Error HTTP:', {
+                        status: response.status,
+                        error: errorData
+                    });
+                } catch (parseError) {
+                    toast.dismiss(loadingToast);
+                    
+                    // El servidor devolvió HTML en lugar de JSON (típico en páginas de error)
+                    if (response.status === 404) {
+                        toast.error('❌ Endpoint de PDF no encontrado. Verifica la configuración del servidor.');
+                    } else if (response.status === 401) {
+                        toast.error('❌ Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    } else if (response.status === 413) {
+                        toast.error('❌ El proyecto es demasiado grande. Intenta reducir el contenido.');
+                    } else {
+                        toast.error(`❌ Error del servidor (${response.status}). El proyecto puede ser demasiado grande o complejo.`);
+                    }
+                    console.error('❌ [PDF-EXPORT] Error parseando respuesta de error:', parseError);
+                }
+            }
+        } catch (error) {
+            toast.dismiss(loadingToast);
+            console.error('❌ [PDF-EXPORT] Error de red:', error);
+            
+            if (error.message.includes('Timeout')) {
+                toast.error('⏱️ ' + error.message);
+            } else if (error.name === 'AbortError') {
+                toast.error('❌ Operación cancelada. El PDF tardó demasiado en generarse.');
+            } else {
+                toast.error('❌ Error de conexión al generar el PDF. Verifica tu conexión a internet.');
+            }
+        } finally {
+            // Desactivar estado de loading
+            setIsPDFGenerating(false);
+        }
     };
 
     // Función para limpiar thumbnails y liberar memoria
@@ -3292,7 +3537,7 @@ export default function EditorLibro() {
                 </div>
             ) : (
                 <div className="h-screen w-screen overflow-hidden bg-gray-50 font-paragraph">
-                    { /* Book Preview Modal */}
+                    {/* Book Preview Modal */}
                     <BookPreviewModal
                         isOpen={isBookPreviewOpen}
                         onRequestClose={() => setIsBookPreviewOpen(false)}
@@ -3356,6 +3601,21 @@ export default function EditorLibro() {
 
                             {/* Action buttons */}
                             <div className="flex gap-3 items-center">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    tooltip={isPDFGenerating ? "Generando PDF..." : "Exportar a PDF"}
+                                    onClick={handleExportPDF}
+                                    disabled={isPDFGenerating}
+                                    className={`text-white hover:bg-white/10 ${isPDFGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    icon={isPDFGenerating ? (
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                    ) : (
+                                        <Book className="h-4 w-4" />
+                                    )}
+                                >
+                                    {isPDFGenerating ? 'Generando...' : 'PDF'}
+                                </Button>
                                 {/* Enhanced Auto-Save indicator */}
                                 <SaveIndicator
                                     saveStatus={autoSave.saveStatus}
@@ -3384,29 +3644,7 @@ export default function EditorLibro() {
                                 >
                                     Agregar al Carrito
                                 </Button> */}
-                                {/* Botón para limpiar progreso guardado (opcional, visible solo en desarrollo) */}
-                                {process.env.NODE_ENV !== 'production' && (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={clearSavedProgress}
-                                            icon={<Trash2 className="h-4 w-4" />}
-                                            className="text-white hover:bg-red-500"
-                                        >
-                                            Limpiar progreso
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={clearThumbnails}
-                                            icon={<ImageIcon className="h-4 w-4" />}
-                                            className="text-white hover:bg-orange-500"
-                                        >
-                                            Limpiar miniaturas ({Object.keys(pageThumbnails).length})
-                                        </Button>
-                                    </>
-                                )}
+                                
                             </div>
                         </div>
                     </header>

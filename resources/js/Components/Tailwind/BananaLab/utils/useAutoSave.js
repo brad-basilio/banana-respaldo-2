@@ -353,6 +353,17 @@ export const useAutoSave = (pages, projectData, itemData, presetData, workspaceD
         };
     }, []);
 
+    // Mejorar manejo de errores para max_allowed_packet y datos grandes
+    useEffect(() => {
+        if (saveError) {
+            if (saveError.includes('max_allowed_packet') || saveError.includes('data_too_large')) {
+                toast.error('❌ El proyecto es demasiado grande para guardar automáticamente. Reduce el número o tamaño de imágenes.');
+            } else {
+                toast.error(`❌ Error de auto-guardado: ${saveError}`);
+            }
+        }
+    }, [saveError]);
+
     return {
         // Estados
         saveStatus,

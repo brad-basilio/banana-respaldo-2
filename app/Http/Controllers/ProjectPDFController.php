@@ -2,496 +2,263 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use App\Models\CanvasProject;
-use App\Models\User;
-use SoDe\Extend\Crypto;
-use SoDe\Extend\Response;
+use App\Services\PDFImageService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Http\JsonResponse;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class ProjectPDFController extends Controller
 {
-    /**
-     * Generar y guardar PDF de un proyecto
-     */
+    protected PDFImageService $imageService;
+    
+    public function __construct(PDFImageService $imageService)
+    {
+        $this->imageService = $imageService;
+        
+        // Configurar límites de memoria y tiempo para PDFs grandes
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300); // 5 minutos
+    }
+
     public function generatePDF(Request $request, $projectId)
     {
-        $response = new Response();
-
+        $startTime = microtime(true);
+        
         try {
-            // Validar datos recibidos
-            $request->validate([
-                'pdf_blob' => 'required|string',
-                'item_data' => 'sometimes|array'
-            ]);
-
-            // Obtener datos del request
-            $pdfBlob = $request->input('pdf_blob');
-            $itemData = $request->input('item_data', []);
-
-            Log::info('📄 Iniciando generación de PDF', [
-                'project_id' => $projectId,
-                'pdf_size' => strlen($pdfBlob),
-                'item_data' => $itemData,
-                'user_authenticated' => Auth::check(),
-                'user_id' => Auth::id()
-            ]);
-
-            // Generar nombre único para el PDF
-            $fileName = $this->generatePDFFileName($projectId, $itemData);
-            $filePath = "pdfs/projects/{$fileName}";
-
-            // Decodificar el base64 y guardar el archivo
-            $pdfData = base64_decode($pdfBlob);
-
-            if (!$pdfData) {
-                throw new \Exception('Error al decodificar el PDF');
+            Log::info("🖨️ [PDF-CONTROLLER] Iniciando generación de PDF para proyecto: {$projectId}");
+            
+            // Validar proyecto
+            $project = CanvasProject::findOrFail($projectId);
+            
+            // Validar datos del proyecto
+            if (empty($project->design_data)) {
+                Log::warning("❌ [PDF-CONTROLLER] Proyecto {$projectId} no tiene design_data");
+                return $this->errorResponse('El proyecto no tiene datos de diseño guardados.', 404);
             }
 
-            // Guardar el archivo en storage
-            $stored = Storage::put($filePath, $pdfData);
-
-            if (!$stored) {
-                throw new \Exception('Error al guardar el PDF en el servidor');
+            $designData = is_string($project->design_data) 
+                ? json_decode($project->design_data, true) 
+                : $project->design_data;
+                
+            if (!isset($designData['pages']) || empty($designData['pages'])) {
+                Log::warning("❌ [PDF-CONTROLLER] Proyecto {$projectId} no tiene páginas en design_data");
+                return $this->errorResponse('El proyecto está vacío o no tiene páginas diseñadas.', 404);
             }
 
-            Log::info('💾 PDF guardado exitosamente', [
-                'project_id' => $projectId,
-                'file_path' => $filePath,
-                'file_size' => strlen($pdfData)
-            ]);
+            $pages = $designData['pages'];
+            $totalPages = count($pages);
+            
+            Log::info("📄 [PDF-CONTROLLER] Procesando {$totalPages} páginas");
 
-            // Buscar o crear registro del proyecto y actualizar con PDF en una sola operación
-            Log::info('🔧 Iniciando actualización de proyecto con PDF', [
-                'project_id' => $projectId,
-                'file_path' => $filePath,
-                'item_data' => $itemData
-            ]);
-
-            $project = $this->findOrUpdateProjectWithPDF($projectId, $itemData, $filePath);
-
-            if ($project) {
-                Log::info('📄 Proyecto actualizado con PDF exitosamente', [
-                    'project_id' => $projectId,
-                    'database_id' => $project->id,
-                    'pdf_path' => $project->pdf_path,
-                    'pdf_generated_at' => $project->pdf_generated_at,
-                    'status' => $project->status
-                ]);
-            } else {
-                Log::error('❌ No se pudo actualizar el proyecto con PDF', [
-                    'project_id' => $projectId,
-                    'item_data' => $itemData
-                ]);
+            // Procesar páginas en lotes para evitar problemas de memoria
+            $processedPages = [];
+            $batchSize = 5; // Procesar 5 páginas a la vez
+            
+            for ($i = 0; $i < $totalPages; $i += $batchSize) {
+                $batch = array_slice($pages, $i, $batchSize);
+                $processedBatch = $this->processPagesOptimized($batch, $i + 1, min($i + $batchSize, $totalPages));
+                $processedPages = array_merge($processedPages, $processedBatch);
+                
+                // Limpiar memoria entre lotes
+                if (function_exists('gc_collect_cycles')) {
+                    gc_collect_cycles();
+                }
+                
+                Log::info("📦 [PDF-CONTROLLER] Lote procesado: páginas " . ($i + 1) . " a " . min($i + $batchSize, $totalPages));
             }
 
-            $response->data = [
-                'success' => true,
-                'message' => 'PDF generado y guardado exitosamente',
+            // Generar HTML del PDF
+            $html = $this->generatePDFHTML($processedPages, $project);
+            
+            // Configurar DomPDF con optimizaciones
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('dpi', 300);
+            $options->set('defaultFont', 'DejaVu Sans');
+            $options->set('isFontSubsettingEnabled', true);
+            $options->set('chroot', [storage_path(), public_path()]);
+            
+            // Configuraciones para PDFs grandes
+            $options->set('debugKeepTemp', false);
+            $options->set('debugCss', false);
+            $options->set('debugLayout', false);
+            $options->set('debugLayoutLines', false);
+            $options->set('debugLayoutBlocks', false);
+            $options->set('debugLayoutInline', false);
+            $options->set('debugLayoutPaddingBox', false);
+
+            $dompdf = new Dompdf($options);
+            
+            // Configurar papel personalizado
+            $paperWidth = $project->canvasPreset->width ?? 21;
+            $paperHeight = $project->canvasPreset->height ?? 29.7;
+            $customPaper = [0, 0, $paperWidth * 28.3465, $paperHeight * 28.3465];
+            
+            Log::info("📏 [PDF-CONTROLLER] Configurando papel: {$paperWidth}x{$paperHeight} cm");
+            
+            $dompdf->setPaper($customPaper, 'portrait');
+            $dompdf->loadHtml($html);
+            
+            // Renderizar con manejo de errores
+            try {
+                $dompdf->render();
+            } catch (\Exception $renderError) {
+                Log::error("❌ [PDF-CONTROLLER] Error en renderizado: " . $renderError->getMessage());
+                return $this->errorResponse('Error al renderizar el PDF. El proyecto puede ser demasiado complejo.', 500);
+            }
+
+            $pdfOutput = $dompdf->output();
+            $pdfSize = strlen($pdfOutput);
+            $executionTime = round(microtime(true) - $startTime, 2);
+            
+            Log::info("✅ [PDF-CONTROLLER] PDF generado exitosamente", [
                 'project_id' => $projectId,
-                'pdf_path' => $filePath,
-                'file_name' => $fileName,
-                'file_size' => strlen($pdfData)
-            ];
+                'pages' => $totalPages,
+                'size_mb' => round($pdfSize / 1024 / 1024, 2),
+                'execution_time' => $executionTime . 's'
+            ]);
+
+            $filename = "proyecto-" . Str::slug($project->name ?? 'album') . "-" . date('Y-m-d') . ".pdf";
+            
+            return response($pdfOutput, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Length' => $pdfSize,
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::warning("❌ [PDF-CONTROLLER] Proyecto no encontrado: {$projectId}");
+            return $this->errorResponse('Proyecto no encontrado.', 404);
         } catch (\Exception $e) {
-            Log::error('❌ Error generando PDF', [
+            $executionTime = round(microtime(true) - $startTime, 2);
+            Log::error("❌ [PDF-CONTROLLER] Error general en generación de PDF", [
                 'project_id' => $projectId,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'execution_time' => $executionTime . 's'
             ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al generar PDF: ' . $e->getMessage()
-            ], 500);
+            
+            return $this->errorResponse('Error interno del servidor al generar el PDF.', 500);
         }
-
-        return response($response->toArray(), $response->status);
     }
 
     /**
-     * Obtener PDF de un proyecto (solo para administradores)
+     * Procesa páginas de manera optimizada para evitar problemas de memoria
      */
-    public function getPDF(Request $request, $projectId)
+    private function processPagesOptimized(array $pages, int $startIndex, int $endIndex): array
+    {
+        Log::info("🔄 [PDF-CONTROLLER] Procesando páginas {$startIndex} a {$endIndex}");
+        
+        return array_map(function ($page, $index) use ($startIndex) {
+            $pageNumber = $startIndex + $index;
+            
+            // Procesar imagen de fondo
+            if (!empty($page['backgroundImage'])) {
+                $page['backgroundImage'] = $this->processImagePath($page['backgroundImage'], "background-page-{$pageNumber}");
+            }
+
+            // Procesar elementos de celdas
+            if (isset($page['cells']) && is_array($page['cells'])) {
+                foreach ($page['cells'] as &$cell) {
+                    if (isset($cell['elements']) && is_array($cell['elements'])) {
+                        foreach ($cell['elements'] as &$element) {
+                            if ($element['type'] === 'image' && !empty($element['content'])) {
+                                $element['content'] = $this->processImagePath(
+                                    $element['content'], 
+                                    "element-page-{$pageNumber}-" . ($element['id'] ?? 'unknown')
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return $page;
+        }, $pages, array_keys($pages));
+    }
+
+    /**
+     * Procesa y optimiza rutas de imágenes
+     */
+    private function processImagePath(string $imagePath, string $context = ''): string
     {
         try {
-            Log::info('📄 Solicitud de descarga de PDF', [
-                'project_id' => $projectId,
-                'user_id' => Auth::id(),
-                'user_email' => Auth::user()?->email
-            ]);
+            // Si es una imagen base64, optimizarla
+            if (Str::startsWith($imagePath, 'data:image/')) {
+                return $this->imageService->optimizeBase64Image($imagePath);
+            }
+            
+            // Si es una URL del API de canvas
+            if (Str::startsWith($imagePath, '/api/canvas/image/')) {
+                $encodedPath = last(explode('/', $imagePath));
+                $decodedPath = base64_decode($encodedPath);
+                $fullPath = storage_path('app/' . $decodedPath);
 
-            // Buscar el proyecto por ID
-            $project = CanvasProject::find($projectId);
+                if (file_exists($fullPath)) {
+                    return $this->imageService->optimizeImageForPDF($fullPath);
+                }
+            }
+            
+            // Si es una ruta de storage pública
+            if (Str::startsWith($imagePath, '/storage/')) {
+                $fullPath = public_path($imagePath);
+                if (file_exists($fullPath)) {
+                    return $this->imageService->optimizeImageForPDF($fullPath);
+                }
+            }
+            
+            // Si es una URL completa
+            if (Str::startsWith($imagePath, 'http')) {
+                return $imagePath; // DomPDF puede manejar URLs directamente
+            }
+            
+            return $imagePath;
+            
+        } catch (\Exception $e) {
+            Log::warning("⚠️ [PDF-CONTROLLER] Error procesando imagen ({$context}): " . $e->getMessage());
+            return $imagePath; // Devolver la imagen original si falla el procesamiento
+        }
+    }
 
-            Log::info('📄 project', [
+    /**
+     * Genera el HTML optimizado para el PDF
+     */
+    private function generatePDFHTML(array $pages, CanvasProject $project): string
+    {
+        Log::info("🔨 [PDF-CONTROLLER] Generando HTML para PDF");
+        
+        try {
+            return View::make('pdf.project-optimized', [
+                'pages' => $pages,
                 'project' => $project,
-
-            ]);
-            if (!$project || !$project->pdf_path) {
-                Log::warning('📄 PDF no encontrado', [
-                    'project_id' => $projectId,
-                    'project_exists' => !is_null($project),
-                    'has_pdf_path' => $project ? !is_null($project->pdf_path) : false
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'PDF no encontrado para este proyecto'
-                ], 404);
-            }
-
-            // Verificar que el archivo existe
-            if (!Storage::exists($project->pdf_path)) {
-                Log::error('📄 Archivo PDF no encontrado en storage', [
-                    'project_id' => $projectId,
-                    'pdf_path' => $project->pdf_path
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Archivo PDF no encontrado en el servidor'
-                ], 404);
-            }
-
-            Log::info('📄 Descarga de PDF exitosa', [
-                'project_id' => $projectId,
-                'pdf_path' => $project->pdf_path
-            ]);
-
-            // Devolver el archivo PDF
-            return Storage::download(
-                $project->pdf_path,
-                "proyecto_{$projectId}.pdf"
-            );
+                'totalPages' => count($pages)
+            ])->render();
         } catch (\Exception $e) {
-            Log::error('❌ Error obteniendo PDF', [
-                'project_id' => $projectId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener el PDF'
-            ], 500);
+            Log::error("❌ [PDF-CONTROLLER] Error generando HTML: " . $e->getMessage());
+            throw $e;
         }
     }
 
     /**
-     * Listar proyectos con PDFs (solo para administradores)
+     * Devuelve una respuesta de error JSON estandarizada
      */
-    public function listProjectsWithPDFs(Request $request)
+    private function errorResponse(string $message, int $status = 500): JsonResponse
     {
-        try {
-            Log::info('📄 Solicitud de lista de proyectos con PDFs', [
-                'user_id' => Auth::id(),
-                'user_email' => Auth::user()?->email
-            ]);
-
-            // Obtener proyectos con PDFs
-            $projects = CanvasProject::whereNotNull('pdf_path')
-                ->with('user:id,name,email')
-                ->orderBy('pdf_generated_at', 'desc')
-                ->paginate(20);
-
-            return response()->json([
-                'success' => true,
-                'projects' => $projects
-            ]);
-        } catch (\Exception $e) {
-            Log::error('❌ Error listando proyectos con PDFs', [
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener la lista de proyectos'
-            ], 500);
-        }
-    }
-
-    /**
-     * Generar nombre único para el archivo PDF
-     */
-    private function generatePDFFileName($projectId, $itemData = [])
-    {
-        $timestamp = now()->format('Y-m-d_H-i-s');
-        $itemTitle = isset($itemData['title']) ?
-            preg_replace('/[^a-zA-Z0-9_-]/', '', $itemData['title']) :
-            'album';
-
-        return "{$projectId}_{$itemTitle}_{$timestamp}.pdf";
-    }
-
-    /**
-     * Buscar o crear proyecto y actualizar con datos del PDF en una sola operación
-     */
-    private function findOrUpdateProjectWithPDF($projectId, $itemData = [], $pdfFilePath = null)
-    {
-        try {
-            Log::info('🔍 Buscando proyecto para actualizar con PDF', [
-                'project_id' => $projectId,
-                'item_data' => $itemData,
-                'pdf_path' => $pdfFilePath
-            ]);
-
-            // Buscar proyecto existente por ID
-            $project = CanvasProject::find($projectId);
-
-            Log::info('🔍 Resultado de búsqueda de proyecto', [
-                'project_id' => $projectId,
-                'project_found' => !is_null($project),
-                'project_data' => $project ? [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    'status' => $project->status,
-                    'current_pdf_path' => $project->pdf_path
-                ] : null
-            ]);
-
-            if ($project) {
-                Log::info('✅ Proyecto encontrado, actualizando con información del PDF', [
-                    'project_id' => $projectId,
-                    'database_id' => $project->id,
-                    'current_status' => $project->status
-                ]);
-
-                // Preparar datos de actualización incluyendo PDF
-                $updateData = [
-                    'status' => 'completed', // Estado final después de generar PDF
-                    'updated_at' => now()
-                ];
-
-                // Agregar datos del PDF si se proporciona
-                if ($pdfFilePath) {
-                    $updateData['pdf_path'] = $pdfFilePath;
-                    $updateData['pdf_generated_at'] = now();
-                }
-
-                // Solo actualizar campos si se proporcionan en itemData
-                if (isset($itemData['title'])) {
-                    $updateData['name'] = $itemData['title'];
-                }
-                if (isset($itemData['item_id'])) {
-                    $updateData['item_id'] = $itemData['item_id'];
-                }
-                if (isset($itemData['preset_id'])) {
-                    $updateData['canvas_preset_id'] = $itemData['preset_id'];
-                }
-                if (isset($itemData['user_id'])) {
-                    $updateData['user_id'] = $itemData['user_id'];
-                }
-
-                $updateResult = $project->update($updateData);
-
-                Log::info('🔄 Resultado de actualización de proyecto', [
-                    'project_id' => $projectId,
-                    'update_successful' => $updateResult,
-                    'updated_fields' => array_keys($updateData),
-                    'pdf_path_in_update' => $updateData['pdf_path'] ?? 'no_pdf_provided'
-                ]);
-
-                // Verificar que la actualización se haya aplicado correctamente
-                $project->refresh();
-                Log::info('🔄 Estado del proyecto después de actualización', [
-                    'project_id' => $projectId,
-                    'final_pdf_path' => $project->pdf_path,
-                    'final_status' => $project->status,
-                    'final_pdf_generated_at' => $project->pdf_generated_at
-                ]);
-            } else {
-                Log::warning('⚠️ Proyecto no encontrado, creando nuevo registro con PDF', [
-                    'project_id' => $projectId
-                ]);
-
-                // Si no existe, crear uno nuevo con el ID proporcionado incluyendo PDF
-                $user = Auth::user();
-                $userId = $itemData['user_id'] ?? ($user ? $user->id : null);
-
-                $createData = [
-                    'id' => $projectId, // Usar el projectId como ID principal
-                    'user_id' => $userId,
-                    'name' => $itemData['title'] ?? 'Álbum Personalizado',
-                    'item_id' => $itemData['item_id'] ?? null,
-                    'canvas_preset_id' => $itemData['preset_id'] ?? null,
-                    'status' => 'completed', // Estado final después de generar PDF
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ];
-
-                // Agregar datos del PDF si se proporciona
-                if ($pdfFilePath) {
-                    $createData['pdf_path'] = $pdfFilePath;
-                    $createData['pdf_generated_at'] = now();
-                }
-
-                $project = CanvasProject::create($createData);
-
-                Log::info('🆕 Nuevo proyecto creado con PDF', [
-                    'project_id' => $projectId,
-                    'database_id' => $project->id,
-                    'pdf_path' => $createData['pdf_path'] ?? 'no_pdf_provided'
-                ]);
-            }
-
-            return $project;
-        } catch (\Exception $e) {
-            Log::error('❌ Error buscando/actualizando proyecto con PDF', [
-                'project_id' => $projectId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return null;
-        }
-    }
-
-    /**
-     * Buscar o actualizar proyecto existente en la base de datos
-     */
-    private function findOrCreateProject($projectId, $itemData = [])
-    {
-        try {
-            Log::info('🔍 Buscando proyecto existente', [
-                'project_id' => $projectId,
-                'item_data' => $itemData
-            ]);
-
-            // Buscar proyecto existente por ID
-            $project = CanvasProject::find($projectId);
-
-            if ($project) {
-                Log::info('✅ Proyecto encontrado, actualizando información', [
-                    'project_id' => $projectId,
-                    'database_id' => $project->id,
-                    'current_status' => $project->status
-                ]);
-
-                // Actualizar información del proyecto si se proporciona
-                $updateData = [
-                    'status' => 'exported', // Usar valor válido del ENUM
-                    'updated_at' => now()
-                ];
-
-                // Solo actualizar campos si se proporcionan en itemData
-                if (isset($itemData['title'])) {
-                    $updateData['name'] = $itemData['title'];
-                }
-                if (isset($itemData['item_id'])) {
-                    $updateData['item_id'] = $itemData['item_id'];
-                }
-                if (isset($itemData['preset_id'])) {
-                    $updateData['canvas_preset_id'] = $itemData['preset_id'];
-                }
-                if (isset($itemData['user_id'])) {
-                    $updateData['user_id'] = $itemData['user_id'];
-                }
-
-                $project->update($updateData);
-
-                Log::info('🔄 Proyecto actualizado', [
-                    'project_id' => $projectId,
-                    'updated_fields' => array_keys($updateData)
-                ]);
-            } else {
-                Log::warning('⚠️ Proyecto no encontrado, creando nuevo registro', [
-                    'project_id' => $projectId
-                ]);
-
-                // Si no existe, crear uno nuevo con el ID proporcionado
-                $user = Auth::user();
-                $userId = $itemData['user_id'] ?? ($user ? $user->id : null);
-
-                $project = CanvasProject::create([
-                    'id' => $projectId, // Usar el projectId como ID principal
-                    'user_id' => $userId,
-                    'name' => $itemData['title'] ?? 'Álbum Personalizado',
-                    'item_id' => $itemData['item_id'] ?? null,
-                    'canvas_preset_id' => $itemData['preset_id'] ?? null,
-                    'status' => 'draft', // Usar valor válido del ENUM
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
-
-                Log::info('🆕 Nuevo proyecto creado', [
-                    'project_id' => $projectId,
-                    'database_id' => $project->id
-                ]);
-            }
-
-            return $project;
-        } catch (\Exception $e) {
-            Log::error('❌ Error buscando/actualizando proyecto', [
-                'project_id' => $projectId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return null;
-        }
-    }
-
-    /**
-     * Obtener información del proyecto sin descargar el PDF
-     */
-    public function getProjectInfo(Request $request, $projectId)
-    {
-        try {
-            Log::info('📄 Solicitud de información del proyecto', [
-                'project_id' => $projectId,
-                'user_id' => Auth::id(),
-                'user_email' => Auth::user()?->email
-            ]);
-
-            // Buscar el proyecto por ID
-            $project = CanvasProject::find($projectId);
-
-            if (!$project) {
-                Log::warning('📄 Proyecto no encontrado', [
-                    'project_id' => $projectId
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Proyecto no encontrado'
-                ], 404);
-            }
-
-            // Verificar si el archivo PDF existe
-            $pdfExists = false;
-            if ($project->pdf_path) {
-                $pdfExists = Storage::exists($project->pdf_path);
-            }
-
-            Log::info('📄 Información del proyecto obtenida', [
-                'project_id' => $projectId,
-                'has_pdf' => !is_null($project->pdf_path),
-                'pdf_exists' => $pdfExists
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $project->id,
-                    'pdf_path' => $project->pdf_path,
-                    'pdf_generated_at' => $project->pdf_generated_at,
-                    //'item_data' => $project->item_data,
-                    'has_pdf' => !is_null($project->pdf_path),
-                    'pdf_exists' => $pdfExists,
-                    'name' => $project->name,
-                    'status' => $project->status
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error("❌ Error obteniendo información del proyecto {$projectId}: " . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error interno del servidor'
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+            'timestamp' => now()->toISOString()
+        ], $status);
     }
 }

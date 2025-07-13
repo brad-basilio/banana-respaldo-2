@@ -55,6 +55,7 @@ use App\Http\Controllers\CanvasController;
 use App\Http\Controllers\CanvasProjectController;
 use App\Http\Controllers\Api\Canvas\ProjectSaveController;
 use App\Http\Controllers\ProjectPDFController;
+use App\Http\Controllers\Api\SimplePDFController;
 use App\Http\Controllers\PDFGeneratorController;
 use App\Http\Controllers\CartPDFController;
 use App\Http\Controllers\AuthClientController;
@@ -190,6 +191,12 @@ Route::get('/person/{dni}', [PersonController::class, 'find']);
 // Ruta pública para aplicar reglas de descuento al carrito
 Route::post('/discount-rules/apply-to-cart', [AdminDiscountRulesController::class, 'applyToCart']);
 
+// 🧪 TEMPORAL: Ruta de prueba para PDF sin autenticación (SOLO DESARROLLO)
+if (app()->environment('local')) {
+    Route::post('/test/projects/{projectId}/export/pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
+    Route::post('/simple/projects/{projectId}/export/pdf', [SimplePDFController::class, 'generatePDF']);
+}
+
 Route::middleware('auth')->group(function () {
   Route::get('/notification-variables/{type}', [NotificationVariableController::class, 'variables']);
   Route::post('/upload-image', [ImageUploadController::class, 'store']);
@@ -216,7 +223,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/canvas-projects/{id}', [CustomerCanvasProjectController::class, 'delete']);
 
     // 🆕 Rutas para generación de PDF backend con dimensiones exactas
-    Route::post('/projects/{projectId}/generate-pdf', [PDFGeneratorController::class, 'generateHighQualityPDF']);
+    Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
+    Route::post('/projects/{projectId}/export/pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
     Route::get('/projects/{projectId}/pdf-info', [PDFGeneratorController::class, 'getPDFInfo']);
     Route::get('/projects/{projectId}/download-pdf', [PDFGeneratorController::class, 'downloadPDF']);
     
@@ -474,13 +482,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/canvas/projects', [CanvasController::class, 'list']);
     Route::delete('/canvas/projects/{id}', [CanvasController::class, 'delete']);
 
-    // New project save system routes
+    // New project save system routes - con optimización para MySQL
     Route::post('/canvas/upload-image', [ProjectSaveController::class, 'uploadImage']);
-    Route::post('/canvas/auto-save', [ProjectSaveController::class, 'autoSave']);
+    Route::post('/canvas/auto-save', [ProjectSaveController::class, 'autoSave'])->middleware('optimize.mysql');
     Route::post('/canvas/manual-save', [ProjectSaveController::class, 'manualSave']);
     
-    // Enhanced auto-save system routes
-    Route::post('/canvas/projects/{id}/save-progress', [ProjectSaveController::class, 'saveProgress']);
+    // Enhanced auto-save system routes - con optimización para MySQL
+    Route::post('/canvas/projects/{id}/save-progress', [ProjectSaveController::class, 'saveProgress'])->middleware('optimize.mysql');
     Route::get('/canvas/projects/{id}/load-progress', [ProjectSaveController::class, 'loadProgress']);
     Route::post('/canvas/projects/upload-image', [ProjectSaveController::class, 'uploadImage']);
 
@@ -494,7 +502,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/canvas/image/{encodedPath}', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'serveImage']);
 
     // Project PDF generation route (for frontend users)
-    Route::post('/projects/{projectId}/generate-pdf', [ProjectPDFController::class, 'generatePDF']);
+    Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
 
     Route::patch('/account/email', [AdminAccountController::class, 'email']);
     Route::patch('/account/password', [AdminAccountController::class, 'password']);
