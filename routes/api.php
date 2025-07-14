@@ -194,7 +194,7 @@ Route::post('/discount-rules/apply-to-cart', [AdminDiscountRulesController::clas
 // 🧪 TEMPORAL: Ruta de prueba para PDF sin autenticación (SOLO DESARROLLO)
 if (app()->environment('local')) {
     Route::post('/test/projects/{projectId}/export/pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
-    Route::post('/simple/projects/{projectId}/export/pdf', [SimplePDFController::class, 'generatePDF']);
+    Route::post('/test/projects/{projectId}/debug/html', [App\Http\Controllers\Api\ProjectPDFController::class, 'debugPDFHtml']);
 }
 
 Route::middleware('auth')->group(function () {

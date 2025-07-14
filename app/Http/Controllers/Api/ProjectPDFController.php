@@ -22,6 +22,11 @@ class ProjectPDFController extends Controller
     private $tempFiles = [];
 
     /**
+     * Servicio de procesamiento de imágenes
+     */
+    private $imageService;
+
+    /**
      * Genera un PDF de alta calidad para un proyecto específico
      */
     public function generatePDF(Request $request, $projectId)
@@ -46,25 +51,40 @@ class ProjectPDFController extends Controller
             }
 
             // 2. VALIDAR DATOS DEL PROYECTO - versión robusta
-            if (empty($project->design_data)) {
-                return response()->json(['error' => 'Proyecto sin datos de diseño'], 404);
+            $pages = null;
+            
+            // Primero intentar obtener páginas desde el request (datos más actuales)
+            if ($request->has('pages') && is_array($request->get('pages'))) {
+                $pages = $request->get('pages');
+                Log::info("✅ [PDF-GENERATOR] Usando páginas del request: " . count($pages) . " páginas");
             }
             
-            $designData = is_string($project->design_data) 
-                ? json_decode($project->design_data, true) 
-                : $project->design_data;
+            // Si no hay páginas en el request, usar las del proyecto guardado
+            if (!$pages) {
+                if (empty($project->design_data)) {
+                    return response()->json(['error' => 'Proyecto sin datos de diseño'], 404);
+                }
                 
-            if (!isset($designData['pages']) || empty($designData['pages'])) {
-                return response()->json(['error' => 'Proyecto sin páginas'], 404);
+                $designData = is_string($project->design_data) 
+                    ? json_decode($project->design_data, true) 
+                    : $project->design_data;
+                    
+                if (!isset($designData['pages']) || empty($designData['pages'])) {
+                    return response()->json(['error' => 'Proyecto sin páginas'], 404);
+                }
+                
+                $pages = $designData['pages'];
+                Log::info("✅ [PDF-GENERATOR] Usando páginas del proyecto guardado: " . count($pages) . " páginas");
             }
             
-            $pages = $designData['pages'];
-            Log::info("✅ [PDF-GENERATOR] Encontradas " . count($pages) . " páginas");
+            if (empty($pages)) {
+                return response()->json(['error' => 'No se encontraron páginas para procesar'], 404);
+            }
             
             $projectData = ['pages' => $pages];
 
             // 3. INSTANCIAR SERVICIO DE IMÁGENES
-            $imageService = new PDFImageService();
+            $this->imageService = new PDFImageService();
             
             // 4. PROCESAR Y VALIDAR PÁGINAS
             $processedPages = $this->processProjectPages($projectData['pages']);
@@ -106,15 +126,18 @@ class ProjectPDFController extends Controller
             Log::info("✅ [PDF-GENERATOR] PDF generado exitosamente: {$fileName}");
             
             // 8. RETORNAR PDF COMO DESCARGA
-            $response = response($pdf->output(), 200, [
+            $pdfContent = $pdf->output();
+            $response = response($pdfContent, 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-                'Content-Length' => strlen($pdf->output()),
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
             ]);
             
             // 9. LIMPIAR ARCHIVOS TEMPORALES
             if (!empty($this->tempFiles)) {
-                PDFImageService::cleanupTempFiles($this->tempFiles);
+                $this->cleanupTempFiles();
             }
             
             return $response;
@@ -126,7 +149,7 @@ class ProjectPDFController extends Controller
             
             // Limpiar archivos temporales en caso de error
             if (!empty($this->tempFiles)) {
-                PDFImageService::cleanupTempFiles($this->tempFiles);
+                $this->cleanupTempFiles();
             }
             
             return response()->json([
@@ -311,9 +334,16 @@ class ProjectPDFController extends Controller
             case 'image':
                 $processed['content'] = $this->processImageContent($element['content'] ?? $element['src'] ?? null);
                 if (!$processed['content']) {
-                    Log::warning("⚠️ [PDF-GENERATOR] Imagen del elemento {$index} no pudo ser procesada");
+                    Log::warning("⚠️ [PDF-GENERATOR] Imagen del elemento {$index} no pudo ser procesada", [
+                        'original_content' => $element['content'] ?? $element['src'] ?? 'null',
+                        'element_id' => $element['id'] ?? 'unknown'
+                    ]);
                     return null;
                 }
+                Log::info("✅ [PDF-GENERATOR] Imagen procesada exitosamente para elemento {$index}", [
+                    'element_id' => $element['id'] ?? 'unknown',
+                    'processed_path' => is_string($processed['content']) ? (strlen($processed['content']) > 100 ? substr($processed['content'], 0, 100) . '...' : $processed['content']) : 'base64_data'
+                ]);
                 break;
                 
             case 'text':
@@ -347,17 +377,35 @@ class ProjectPDFController extends Controller
         if (strpos($imageContent, 'data:image/') === 0) {
             Log::info("🖼️ [PDF-GENERATOR] Procesando imagen base64");
             
-            $tempFile = PDFImageService::base64ToTempFile($imageContent, [
-                'maxWidth' => 2480,
-                'maxHeight' => 3508,
-                'quality' => 95,
-                'format' => 'jpg'
-            ]);
-            
-            if ($tempFile) {
-                // Guardar referencia para limpieza posterior
-                $this->tempFiles[] = $tempFile;
-                return $tempFile;
+            try {
+                // Decodificar base64 y guardar como archivo temporal
+                $base64String = substr($imageContent, strpos($imageContent, ',') + 1);
+                $decodedImage = base64_decode($base64String);
+                
+                if ($decodedImage === false) {
+                    Log::warning("⚠️ [PDF-GENERATOR] Error decodificando imagen base64");
+                    return $imageContent; // Fallback al base64 original
+                }
+                
+                // Crear archivo temporal
+                $tempPath = sys_get_temp_dir() . '/pdf_image_' . uniqid() . '.jpg';
+                file_put_contents($tempPath, $decodedImage);
+                
+                // Optimizar imagen
+                $optimizedPath = $this->imageService->processImageForPDF($tempPath, 2480, 95);
+                
+                if ($optimizedPath) {
+                    $this->tempFiles[] = $optimizedPath;
+                    return $optimizedPath;
+                }
+                
+                // Limpiar archivo temporal si falla la optimización
+                if (file_exists($tempPath)) {
+                    unlink($tempPath);
+                }
+                
+            } catch (\Exception $e) {
+                Log::error("❌ [PDF-GENERATOR] Error procesando imagen base64: " . $e->getMessage());
             }
             
             // Fallback: devolver base64 original
@@ -370,12 +418,7 @@ class ProjectPDFController extends Controller
             
             if ($absolutePath && file_exists($absolutePath)) {
                 // Procesar imagen para optimizar para PDF
-                $optimizedPath = PDFImageService::processImageForPDF($absolutePath, [
-                    'maxWidth' => 2480,
-                    'maxHeight' => 3508,
-                    'quality' => 95,
-                    'format' => 'jpg'
-                ]);
+                $optimizedPath = $this->imageService->processImageForPDF($absolutePath, 2480, 95);
                 
                 if ($optimizedPath) {
                     $this->tempFiles[] = $optimizedPath;
@@ -395,12 +438,7 @@ class ProjectPDFController extends Controller
                 Log::info("🖼️ [PDF-GENERATOR] Imagen encontrada en storage público: {$path}");
                 
                 // Optimizar imagen
-                $optimizedPath = PDFImageService::processImageForPDF($fullPath, [
-                    'maxWidth' => 2480,
-                    'maxHeight' => 3508,
-                    'quality' => 95,
-                    'format' => 'jpg'
-                ]);
+                $optimizedPath = $this->imageService->processImageForPDF($fullPath, 2480, 95);
                 
                 if ($optimizedPath) {
                     $this->tempFiles[] = $optimizedPath;
@@ -423,12 +461,7 @@ class ProjectPDFController extends Controller
             Log::info("🖼️ [PDF-GENERATOR] Imagen encontrada en public: {$imageContent}");
             
             // Optimizar imagen
-            $optimizedPath = PDFImageService::processImageForPDF($publicPath, [
-                'maxWidth' => 2480,
-                'maxHeight' => 3508,
-                'quality' => 95,
-                'format' => 'jpg'
-            ]);
+            $optimizedPath = $this->imageService->processImageForPDF($publicPath, 2480, 95);
             
             if ($optimizedPath) {
                 $this->tempFiles[] = $optimizedPath;
@@ -469,10 +502,27 @@ class ProjectPDFController extends Controller
     private function processBackgroundImage($backgroundImage)
     {
         if (empty($backgroundImage)) {
+            Log::info("🖼️ [PDF-GENERATOR] Imagen de fondo vacía");
             return null;
         }
         
-        return $this->processImageContent($backgroundImage);
+        Log::info("🖼️ [PDF-GENERATOR] Procesando imagen de fondo", [
+            'tipo' => gettype($backgroundImage),
+            'longitud' => is_string($backgroundImage) ? strlen($backgroundImage) : 'no-string',
+            'es_base64' => is_string($backgroundImage) && strpos($backgroundImage, 'data:image/') === 0,
+            'es_url_api' => is_string($backgroundImage) && strpos($backgroundImage, '/api/canvas/image/') === 0,
+            'preview' => is_string($backgroundImage) ? substr($backgroundImage, 0, 100) : 'no-string'
+        ]);
+        
+        $result = $this->processImageContent($backgroundImage);
+        
+        Log::info("🖼️ [PDF-GENERATOR] Resultado de imagen de fondo", [
+            'resultado_tipo' => gettype($result),
+            'resultado_longitud' => is_string($result) ? strlen($result) : 'no-string',
+            'resultado_preview' => is_string($result) ? substr($result, 0, 100) : 'no-string'
+        ]);
+        
+        return $result;
     }
 
     /**
@@ -568,7 +618,16 @@ class ProjectPDFController extends Controller
         
         // Crear instancia de DomPDF
         $dompdf = new Dompdf($options);
-        $dompdf->getOptions()->setChroot([public_path(), storage_path()]);
+        
+        // Configurar rutas accesibles: public, storage y directorio temporal
+        $allowedPaths = [
+            public_path(), 
+            storage_path(),
+            sys_get_temp_dir() // Permitir acceso al directorio temporal
+        ];
+        $dompdf->getOptions()->setChroot($allowedPaths);
+        
+        Log::info("📁 [PDF-GENERATOR] Rutas permitidas para DomPDF: " . json_encode($allowedPaths));
         
         // Cargar HTML
         $dompdf->loadHtml($html);
@@ -607,5 +666,176 @@ class ProjectPDFController extends Controller
         $date = now()->format('Y-m-d');
         
         return "{$baseName}_{$date}.pdf";
+    }
+
+    /**
+     * Limpiar archivos temporales
+     */
+    private function cleanupTempFiles()
+    {
+        foreach ($this->tempFiles as $tempFile) {
+            if (file_exists($tempFile)) {
+                try {
+                    unlink($tempFile);
+                    Log::info("🗑️ [PDF-GENERATOR] Archivo temporal eliminado: {$tempFile}");
+                } catch (\Exception $e) {
+                    Log::warning("⚠️ [PDF-GENERATOR] No se pudo eliminar archivo temporal: {$tempFile} - " . $e->getMessage());
+                }
+            }
+        }
+        $this->tempFiles = [];
+    }
+
+    /**
+     * Método debug para ver el HTML que se genera para el PDF
+     */
+    public function debugPDFHtml(Request $request, $projectId)
+    {
+        try {
+            Log::info("🔍 [PDF-DEBUG] Iniciando debug de HTML para proyecto: {$projectId}");
+            
+            // 1. BUSCAR Y VALIDAR EL PROYECTO
+            $project = CanvasProject::find($projectId);
+            
+            if (!$project) {
+                return response()->json([
+                    'error' => 'Proyecto no encontrado',
+                    'project_id' => $projectId
+                ], 404);
+            }
+
+            // 2. VALIDAR DATOS DEL PROYECTO
+            $pages = null;
+            
+            // Primero intentar obtener páginas desde el request
+            if ($request->has('pages') && is_array($request->get('pages'))) {
+                $pages = $request->get('pages');
+                Log::info("🔍 [PDF-DEBUG] Usando páginas del request: " . count($pages) . " páginas");
+            }
+            
+            // Si no hay páginas en el request, usar las del proyecto guardado
+            if (!$pages) {
+                if (empty($project->design_data)) {
+                    return response()->json(['error' => 'Proyecto sin datos de diseño'], 404);
+                }
+                
+                $designData = is_string($project->design_data) 
+                    ? json_decode($project->design_data, true) 
+                    : $project->design_data;
+                    
+                if (!isset($designData['pages']) || empty($designData['pages'])) {
+                    return response()->json(['error' => 'Proyecto sin páginas'], 404);
+                }
+                
+                $pages = $designData['pages'];
+                Log::info("🔍 [PDF-DEBUG] Usando páginas del proyecto guardado: " . count($pages) . " páginas");
+            }
+            
+            if (empty($pages)) {
+                return response()->json(['error' => 'No se encontraron páginas para procesar'], 404);
+            }
+
+            // 3. INSTANCIAR SERVICIO DE IMÁGENES
+            $this->imageService = new PDFImageService();
+            
+            // 4. PROCESAR Y VALIDAR PÁGINAS
+            $processedPages = $this->processProjectPages($pages);
+            
+            if (empty($processedPages)) {
+                return response()->json([
+                    'error' => 'No se pudieron procesar las páginas',
+                    'original_pages_count' => count($pages),
+                    'processed_pages_count' => 0
+                ], 400);
+            }
+
+            // 5. OBTENER CONFIGURACIÓN DEL PRESET
+            $presetConfig = $this->getPresetConfiguration($project);
+            
+            // 6. GENERAR HTML
+            $html = $this->generatePDFHtml($processedPages, $presetConfig, $project);
+            
+            if (empty($html)) {
+                return response()->json(['error' => 'Error generando HTML'], 500);
+            }
+
+            // 7. RETORNAR DEBUG INFO
+            return response()->json([
+                'success' => true,
+                'project_id' => $projectId,
+                'project_name' => $project->name,
+                'original_pages_count' => count($pages),
+                'processed_pages_count' => count($processedPages),
+                'preset_config' => $presetConfig,
+                'pages_debug' => $this->getPageDebugInfo($pages),
+                'processed_pages_debug' => $this->getPageDebugInfo($processedPages),
+                'html_preview' => substr($html, 0, 2000) . (strlen($html) > 2000 ? '...' : ''),
+                'html_full' => $html
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("❌ [PDF-DEBUG] Error: " . $e->getMessage());
+            
+            return response()->json([
+                'error' => 'Error en debug: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtiene información de debug de las páginas
+     */
+    private function getPageDebugInfo(array $pages)
+    {
+        $debug = [];
+        
+        foreach ($pages as $pageIndex => $page) {
+            $pageDebug = [
+                'page_number' => $pageIndex + 1,
+                'id' => $page['id'] ?? 'sin-id',
+                'background_color' => $page['backgroundColor'] ?? 'no-definido',
+                'background_image' => !empty($page['backgroundImage']),
+                'cells_count' => isset($page['cells']) ? count($page['cells']) : 0,
+                'elements' => []
+            ];
+            
+            if (isset($page['cells']) && is_array($page['cells'])) {
+                $elementCount = 0;
+                $imageCount = 0;
+                $textCount = 0;
+                
+                foreach ($page['cells'] as $cell) {
+                    if (isset($cell['elements']) && is_array($cell['elements'])) {
+                        foreach ($cell['elements'] as $element) {
+                            $elementCount++;
+                            
+                            if (isset($element['type'])) {
+                                if ($element['type'] === 'image') {
+                                    $imageCount++;
+                                } elseif ($element['type'] === 'text') {
+                                    $textCount++;
+                                }
+                                
+                                $pageDebug['elements'][] = [
+                                    'type' => $element['type'],
+                                    'has_content' => !empty($element['content'] ?? $element['src'] ?? $element['text'] ?? ''),
+                                    'position' => $element['position'] ?? 'no-definida',
+                                    'size' => $element['size'] ?? 'no-definido'
+                                ];
+                            }
+                        }
+                    }
+                }
+                
+                $pageDebug['total_elements'] = $elementCount;
+                $pageDebug['image_elements'] = $imageCount;
+                $pageDebug['text_elements'] = $textCount;
+            }
+            
+            $debug[] = $pageDebug;
+        }
+        
+        return $debug;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Canvas;
 
 use App\Http\Controllers\Controller;
+use App\Services\ThumbnailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -65,12 +66,29 @@ class ProjectSaveController extends Controller
                 $optimizedData = $compressedData;
             }
 
+            // Procesar thumbnails si están presentes
+            $processedThumbnails = [];
+            if (!empty($thumbnails)) {
+                Log::info("🖼️ [THUMBNAIL] Procesando thumbnails para proyecto {$projectId}", [
+                    'thumbnail_count' => count($thumbnails)
+                ]);
+                
+                $processedThumbnails = ThumbnailService::processThumbnails($thumbnails, $projectId);
+                
+                Log::info("✅ [THUMBNAIL] Thumbnails procesados para auto-save: " . count($processedThumbnails));
+            }
+
             // Usar el modelo Eloquent para encontrar el proyecto
             $project = \App\Models\CanvasProject::findOrFail($projectId);
 
             // Eloquent se encargará de la codificación JSON automáticamente
             $project->design_data = $optimizedData;
-            $project->thumbnails = $thumbnails;
+            
+            // Solo guardar thumbnails si se procesaron exitosamente
+            if (!empty($processedThumbnails)) {
+                $project->thumbnails = $processedThumbnails;
+            }
+            
             $project->progress_saved_at = Carbon::now();
             $project->is_autosave = true;
 
@@ -136,16 +154,32 @@ class ProjectSaveController extends Controller
             // Procesar imágenes base64 y convertirlas a archivos
             $processedData = $this->processImagesInDesignData($designData, $projectId);
 
+            // Procesar thumbnails si están presentes
+            $processedThumbnails = [];
+            if (!empty($thumbnails)) {
+                Log::info("🖼️ [THUMBNAIL] Procesando thumbnails para guardado manual proyecto {$projectId}", [
+                    'thumbnail_count' => count($thumbnails)
+                ]);
+                
+                $processedThumbnails = ThumbnailService::processThumbnails($thumbnails, $projectId);
+                
+                Log::info("✅ [THUMBNAIL] Thumbnails procesados para guardado manual: " . count($processedThumbnails));
+            }
+
             // Preparar datos para guardar
             $saveData = [
                 'design_data' => json_encode($processedData),
-                'thumbnails' => json_encode($thumbnails),
                 'manually_saved_at' => Carbon::now(),
                 'progress_saved_at' => Carbon::now(),
                 'is_finalized' => true,
                 'is_autosave' => false,
                 'updated_at' => Carbon::now()
             ];
+
+            // Solo guardar thumbnails si se procesaron exitosamente
+            if (!empty($processedThumbnails)) {
+                $saveData['thumbnails'] = json_encode($processedThumbnails);
+            }
 
             // Actualizar el registro
             DB::table('canvas_projects')

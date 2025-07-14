@@ -33,6 +33,7 @@ import {
     Lock,
     Pencil,
     CheckCircleIcon,
+    Save,
 } from "lucide-react";
 import { saveAs } from "file-saver";
 
@@ -128,8 +129,13 @@ export default function EditorLibro() {
 
                 // Realizar fetch al backend para obtener los datos del proyecto
                 const response = await fetch(`/api/canvas/projects/${projectId}`, {
+                    method: 'GET',
+                    credentials: 'include', // Incluir cookies de sesión
                     headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                        'X-Requested-With': 'XMLHttpRequest',
                     }
                 });
 
@@ -1352,12 +1358,13 @@ export default function EditorLibro() {
                                         elementId: element.id
                                     });
                                     
-                                    // Reemplazar el contenido por la ruta del servidor
+                                    // Reemplazar el contenido por una ruta temporal (se actualizará después)
                                     processedCell.elements.push({
                                         ...element,
-                                        content: `/api/canvas/image/${btoa(`images/projects/${projectId}/${finalFilename}`)}`,
+                                        content: element.content, // Mantener base64 temporalmente
                                         _wasBase64: true,
-                                        _originalSize: element.content.length
+                                        _originalSize: element.content.length,
+                                        _elementId: element.id // Para mapear después
                                     });
                                     
                                     console.log(`📸 [IMAGE-PROCESS] Imagen base64 procesada: ${element.id} -> ${finalFilename}`);
@@ -1400,6 +1407,34 @@ export default function EditorLibro() {
                 if (uploadResponse.ok) {
                     const uploadResult = await uploadResponse.json();
                     console.log(`✅ [IMAGE-UPLOAD] ${imagesToUpload.length} imágenes subidas exitosamente:`, uploadResult);
+                    
+                    // 🔄 ACTUALIZAR LAS URLs CON LAS RESPUESTAS DEL SERVIDOR
+                    if (uploadResult.uploadedImages) {
+                        // Crear mapa de elementId -> URL del servidor
+                        const elementToUrlMap = new Map();
+                        uploadResult.uploadedImages.forEach(uploadedImg => {
+                            elementToUrlMap.set(uploadedImg.elementId, uploadedImg.url);
+                            console.log(`🔄 [IMAGE-MAP] ${uploadedImg.elementId} -> ${uploadedImg.url}`);
+                        });
+                        
+                        // Actualizar las páginas procesadas con las URLs del servidor
+                        for (const page of processedPages) {
+                            if (page.cells) {
+                                for (const cell of page.cells) {
+                                    if (cell.elements) {
+                                        for (const element of cell.elements) {
+                                            if (element._wasBase64 && element._elementId && elementToUrlMap.has(element._elementId)) {
+                                                element.content = elementToUrlMap.get(element._elementId);
+                                                console.log(`✅ [IMAGE-UPDATE] Elemento ${element._elementId} actualizado con URL del servidor`);
+                                                // Limpiar propiedades temporales
+                                                delete element._elementId;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 } else {
                     const errorData = await uploadResponse.json().catch(() => ({ message: 'Error desconocido en upload' }));
                     console.error('❌ [IMAGE-UPLOAD] Error subiendo imágenes:', errorData);
@@ -1456,7 +1491,9 @@ export default function EditorLibro() {
             // CORRECCIÓN: Estructura exacta que espera el backend según ProjectSaveController
             const requestData = {
                 design_data: designData,
-                thumbnails: thumbnailsArray
+                thumbnails: Object.fromEntries(
+                    Object.entries(pageThumbnails).map(([pageId, thumbnail]) => [pageId, thumbnail])
+                )
             };
 
             // 📊 Calcular tamaño final (debería ser mucho menor ahora)
@@ -1505,21 +1542,23 @@ export default function EditorLibro() {
         }
     }, [pages, currentPage, workspaceDimensions, workspaceSize, selectedElement, selectedCell, history, historyIndex, projectData?.id, itemData?.name, itemData?.id, presetData?.id, pageThumbnails, processAndSaveImages]);
 
-    // Auto-save automático cada 30 segundos
+    // 💾 Auto-save de respaldo cada 5 minutos (solo como respaldo)
     useEffect(() => {
         if (!projectData?.id) return;
 
-        const autoSaveInterval = setInterval(() => {
+        const backupAutoSaveInterval = setInterval(() => {
             if (pages.length > 0) {
-                console.log('⏰ [AUTO-SAVE] Ejecutando auto-save automático...');
+                console.log('⏰ [BACKUP-AUTO-SAVE] Ejecutando auto-save de respaldo (5min)...');
                 autoSaveToDatabase(pages, false);
             }
-        }, 30000); // 30 segundos
+        }, 5 * 60 * 1000); // 5 minutos = 300,000ms
 
-        return () => clearInterval(autoSaveInterval);
+        return () => clearInterval(backupAutoSaveInterval);
     }, [autoSaveToDatabase, pages, projectData?.id]);
 
-    // Auto-save cuando cambian las páginas (debounced)
+    // 🚫 DESHABILITADO: Auto-save automático cuando cambian las páginas
+    // Ahora solo guardado manual + respaldo cada 5 minutos
+    /*
     const debouncedAutoSave = useCallback(
         debounce(() => {
             if (pages.length > 0 && projectData?.id) {
@@ -1533,6 +1572,34 @@ export default function EditorLibro() {
     useEffect(() => {
         debouncedAutoSave();
     }, [pages, debouncedAutoSave]);
+    */
+
+    // 💾 FUNCIÓN DE GUARDADO MANUAL
+    const saveProgressManually = useCallback(async () => {
+        if (!projectData?.id || pages.length === 0) {
+            toast.error('No hay datos para guardar');
+            return false;
+        }
+
+        try {
+            console.log('💾 [MANUAL-SAVE] Iniciando guardado manual...');
+            const success = await autoSaveToDatabase(pages, true); // force = true para guardado manual
+            
+            if (success) {
+                toast.success('Progreso guardado exitosamente');
+                console.log('✅ [MANUAL-SAVE] Guardado manual completado');
+                return true;
+            } else {
+                toast.error('Error al guardar el progreso');
+                console.error('❌ [MANUAL-SAVE] Error en guardado manual');
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ [MANUAL-SAVE] Error en guardado manual:', error);
+            toast.error('Error al guardar el progreso');
+            return false;
+        }
+    }, [autoSaveToDatabase, pages, projectData?.id]);
 
     // Función para obtener el storage key único basado en el proyecto
     const getStorageKey = () => {
@@ -2142,7 +2209,14 @@ export default function EditorLibro() {
                     dpi: 300,
                     includeBackgrounds: true,
                     optimize: true,
-                    pages: pagesWithContent.length
+                    pages: pagesWithContent,  // Enviar los datos completos de las páginas
+                    projectData: {
+                        id: projectData.id,
+                        name: projectData.name,
+                        design_data: {
+                            pages: pagesWithContent
+                        }
+                    }
                 })
             };
 
@@ -2151,49 +2225,70 @@ export default function EditorLibro() {
                 id: loadingToast
             });
 
-            // Intentar primero la ruta simplificada que ya probamos que funciona
+            // Intentar la ruta de test que sabemos que funciona
             let response;
+            
+            // Usar URL absoluta para asegurar que vaya al servidor Laravel correcto
+            const baseUrl = window.location.hostname === 'localhost' && window.location.port === '5174' 
+                ? 'http://127.0.0.1:8000'  // Si estamos en Vite dev server, usar Laravel server
+                : '';  // Si estamos en servidor normal, usar ruta relativa
+                
+            console.log('🌐 [PDF-EXPORT] Configuración de URL:', {
+                currentLocation: window.location.href,
+                hostname: window.location.hostname,
+                port: window.location.port,
+                baseUrl: baseUrl || 'relative',
+                finalUrl: `${baseUrl}/api/test/projects/${projectData.id}/export/pdf`
+            });
+                
             try {
-                response = await fetch(`/api/simple/projects/${projectData.id}/export/pdf`, requestConfig);
+                response = await fetch(`${baseUrl}/api/test/projects/${projectData.id}/export/pdf`, requestConfig);
+                console.log('📡 [PDF-EXPORT] Respuesta recibida:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
             } catch (networkError) {
+                console.error('🚨 [PDF-EXPORT] Error de red:', {
+                    error: networkError,
+                    message: networkError.message,
+                    name: networkError.name
+                });
+                
                 if (networkError.name === 'AbortError') {
                     throw new Error('Timeout: El PDF está tardando demasiado en generarse. Intenta con menos páginas.');
                 }
                 
-                console.warn('⚠️ [PDF-EXPORT] Error en ruta simplificada, intentando ruta principal...');
-                // Si falla, intentar la ruta principal
+                console.warn('⚠️ [PDF-EXPORT] Error en ruta de test, intentando ruta autenticada...');
+                // Si falla, intentar la ruta principal autenticada
                 try {
-                    response = await fetch(`/api/customer/projects/${projectData.id}/export/pdf`, requestConfig);
+                    response = await fetch(`${baseUrl}/api/customer/projects/${projectData.id}/export/pdf`, requestConfig);
                 } catch (fallbackError) {
                     if (fallbackError.name === 'AbortError') {
                         throw new Error('Timeout: El PDF está tardando demasiado en generarse. Intenta con menos páginas.');
                     }
                     
-                    // Como último recurso, intentar ruta de prueba
-                    console.warn('⚠️ [PDF-EXPORT] Ruta principal falló, intentando ruta de prueba...');
-                    response = await fetch(`/api/test/projects/${projectData.id}/export/pdf`, requestConfig);
+                    console.error('❌ [PDF-EXPORT] Todas las rutas fallaron:', fallbackError);
+                    throw new Error(`Error de conexión al generar el PDF: ${fallbackError.message}`);
                 }
             }
 
             // Limpiar timeout
             clearTimeout(timeoutId);
 
-            // Si la ruta simplificada da 401 o 404, intentar las otras rutas
+            // Si la ruta de test da 401 o 404, intentar ruta autenticada
             if (!response.ok && (response.status === 401 || response.status === 404)) {
-                console.warn('⚠️ [PDF-EXPORT] Ruta simplificada falló, intentando ruta principal...');
+                console.warn('⚠️ [PDF-EXPORT] Ruta de test falló, intentando ruta autenticada...');
                 try {
                     const fallbackConfig = { ...requestConfig };
                     delete fallbackConfig.signal; // Nuevo request sin el signal anterior
                     
-                    response = await fetch(`/api/customer/projects/${projectData.id}/export/pdf`, fallbackConfig);
+                    response = await fetch(`${baseUrl}/api/customer/projects/${projectData.id}/export/pdf`, fallbackConfig);
                     
-                    // Si también falla, intentar ruta de prueba
-                    if (!response.ok) {
-                        response = await fetch(`/api/test/projects/${projectData.id}/export/pdf`, fallbackConfig);
-                    }
                 } catch (fallbackError) {
-                    console.error('❌ [PDF-EXPORT] Todas las rutas fallaron:', fallbackError);
-                    throw fallbackError;
+                    console.error('❌ [PDF-EXPORT] Ruta autenticada también falló:', fallbackError);
+                    throw new Error('Error de conexión al generar el PDF. Verifica tu conexión a internet.');
                 }
             }
 
@@ -2206,54 +2301,37 @@ export default function EditorLibro() {
                         id: loadingToast
                     });
 
-                    // Usar un enfoque de streaming para archivos grandes
-                    const reader = response.body.getReader();
-                    const chunks = [];
-                    let receivedLength = 0;
-                    const contentLength = +response.headers.get('Content-Length') || 0;
-
-                    while (true) {
-                        const { done, value } = await reader.read();
+                    try {
+                        // Usar blob() directamente para evitar ERR_CONTENT_LENGTH_MISMATCH
+                        const blob = await response.blob();
                         
-                        if (done) break;
-                        
-                        chunks.push(value);
-                        receivedLength += value.length;
-                        
-                        // Actualizar progreso si conocemos el tamaño total
-                        if (contentLength > 0) {
-                            const progress = Math.round((receivedLength / contentLength) * 100);
-                            toast.loading(`📦 Descargando PDF... ${progress}%\n📊 ${(receivedLength / 1024 / 1024).toFixed(1)} MB de ${(contentLength / 1024 / 1024).toFixed(1)} MB`, {
-                                id: loadingToast
+                        if (blob.size > 0) {
+                            const fileName = `${projectData.name || 'proyecto'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                            const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+                            
+                            // Disparar descarga
+                            saveAs(blob, fileName);
+                            
+                            // Limpiar loading toast y mostrar éxito
+                            toast.dismiss(loadingToast);
+                            toast.success(`✅ PDF descargado exitosamente!\n📄 Archivo: ${fileName}\n📦 Tamaño: ${fileSizeMB} MB\n📁 Ubicación: Carpeta de Descargas`, {
+                                duration: 8000
                             });
+                            
+                            console.log('✅ [PDF-EXPORT] PDF descargado exitosamente:', {
+                                fileName,
+                                size: fileSizeMB + ' MB',
+                                pages: pagesWithContent.length
+                            });
+                        } else {
+                            console.error('❌ [PDF-EXPORT] PDF blob está vacío');
+                            toast.dismiss(loadingToast);
+                            toast.error('El PDF generado está vacío. Verifica que el proyecto tenga contenido.');
                         }
-                    }
-
-                    // Crear blob desde chunks
-                    const blob = new Blob(chunks, { type: 'application/pdf' });
-                    
-                    if (blob.size > 0) {
-                        const fileName = `${projectData.name || 'proyecto'}_${new Date().toISOString().split('T')[0]}.pdf`;
-                        const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
-                        
-                        // Disparar descarga
-                        saveAs(blob, fileName);
-                        
-                        // Limpiar loading toast y mostrar éxito
+                    } catch (blobError) {
+                        console.error('❌ [PDF-EXPORT] Error al procesar blob:', blobError);
                         toast.dismiss(loadingToast);
-                        toast.success(`✅ PDF descargado exitosamente!\n📄 Archivo: ${fileName}\n📦 Tamaño: ${fileSizeMB} MB\n📁 Ubicación: Carpeta de Descargas`, {
-                            duration: 8000
-                        });
-                        
-                        console.log('✅ [PDF-EXPORT] PDF descargado exitosamente:', {
-                            fileName,
-                            size: fileSizeMB + ' MB',
-                            pages: pagesWithContent.length
-                        });
-                    } else {
-                        toast.dismiss(loadingToast);
-                        toast.error('El PDF generado está vacío. Verifica que el proyecto tenga contenido.');
-                        console.error('❌ [PDF-EXPORT] PDF blob está vacío');
+                        toast.error(`Error al procesar el PDF: ${blobError.message}`);
                     }
                 } else {
                     // La respuesta no es un PDF, probablemente un error JSON
@@ -2901,7 +2979,7 @@ export default function EditorLibro() {
             // Paso 2: Preparar datos para generación de PDF en backend
             console.log('📄 Preparando datos para PDF backend...');
             const pdfData = {
-                project_data: {
+                design_data: {
                     id: projectData.id,
                     title: itemData?.name || 'Álbum Personalizado',
                     pages: pages,
@@ -3177,8 +3255,16 @@ export default function EditorLibro() {
                 }
             };
 
+            // Preparar datos para enviar
+            const requestData = {
+                design_data: designData,
+                thumbnails: Object.fromEntries(
+                    Object.entries(pageThumbnails).map(([pageId, thumbnail]) => [pageId, thumbnail])
+                )
+            };
+
             // Verificar el tamaño del payload
-            const dataString = JSON.stringify({ design_data: designData });
+            const dataString = JSON.stringify(requestData);
             const dataSizeKB = Math.round(dataString.length / 1024);
             const dataSizeMB = Math.round(dataSizeKB / 1024 * 100) / 100;
 
@@ -3616,7 +3702,19 @@ export default function EditorLibro() {
                                 >
                                     {isPDFGenerating ? 'Generando...' : 'PDF'}
                                 </Button>
-                                {/* Enhanced Auto-Save indicator */}
+                                {/* Botón de Guardado Manual */}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    tooltip="Guardar Progreso Manualmente"
+                                    onClick={saveProgressManually}
+                                    className="text-white hover:bg-white/10"
+                                    icon={<Save className="h-4 w-4" />}
+                                >
+                                    Guardar
+                                </Button>
+                                
+                                {/* Enhanced Auto-Save indicator - Ahora con guardado manual */}
                                 <SaveIndicator
                                     saveStatus={autoSave.saveStatus}
                                     lastSaved={autoSave.lastSaved}
@@ -3624,7 +3722,7 @@ export default function EditorLibro() {
                                     hasUnsavedChanges={autoSave.hasUnsavedChanges}
                                     isOnline={autoSave.isOnline}
                                     saveError={autoSave.saveError}
-                                    onManualSave={autoSave.saveManually}
+                                    onManualSave={saveProgressManually}
                                 />
 
                                 <Button

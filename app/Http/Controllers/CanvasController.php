@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Item;
 use App\Models\CanvasPreset;
 use App\Models\CanvasProject;
+use App\Services\ThumbnailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -240,6 +242,7 @@ class CanvasController extends Controller
 
             $request->validate([
                 'project_data' => 'required|array',
+                'thumbnails' => 'sometimes|array'
             ]);
 
             $user = auth()->user();
@@ -252,19 +255,46 @@ class CanvasController extends Controller
                 ->where('user_id', $user->id)
                 ->firstOrFail();
 
+            // Procesar thumbnails si están presentes
+            $processedThumbnails = [];
+            if ($request->has('thumbnails') && !empty($request->thumbnails)) {
+                Log::info("🖼️ [THUMBNAIL] Procesando thumbnails para proyecto {$projectId}", [
+                    'thumbnail_count' => count($request->thumbnails)
+                ]);
+                
+                $processedThumbnails = ThumbnailService::processThumbnails(
+                    $request->thumbnails, 
+                    $projectId
+                );
+                
+                Log::info("✅ [THUMBNAIL] Thumbnails procesados: " . count($processedThumbnails));
+            }
+
+            // Limpiar thumbnails base64 de los datos del proyecto para optimizar almacenamiento
+            $cleanProjectData = ThumbnailService::cleanThumbnailsFromData($request->project_data);
+
             // Actualizar los datos del proyecto
-            $project->update([
-                'project_data' => $request->project_data,
+            $updateData = [
+                'project_data' => $cleanProjectData,
                 'status' => 'draft', // Mantener como borrador mientras se edita
-            ]);
+            ];
+
+            // Solo guardar thumbnails si se procesaron exitosamente
+            if (!empty($processedThumbnails)) {
+                $updateData['thumbnails'] = json_encode($processedThumbnails);
+            }
+
+            $project->update($updateData);
 
             return response()->json([
                 'id' => $project->id,
                 'message' => 'Proyecto guardado exitosamente',
-                'project' => $project
+                'project' => $project,
+                'thumbnails_processed' => count($processedThumbnails)
             ]);
 
         } catch (\Exception $e) {
+            Log::error("❌ [SAVE] Error guardando proyecto: " . $e->getMessage());
             return response()->json([
                 'error' => 'Error al guardar el proyecto: ' . $e->getMessage()
             ], 500);

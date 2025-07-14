@@ -127,14 +127,25 @@ class ProjectPDFController extends Controller
 
             $filename = "proyecto-" . Str::slug($project->name ?? 'album') . "-" . date('Y-m-d') . ".pdf";
             
-            return response($pdfOutput, 200, [
+            // Guardar PDF temporalmente para evitar problemas de content-length
+            $tempPath = storage_path('app/temp/' . uniqid('pdf_') . '.pdf');
+            if (!is_dir(dirname($tempPath))) {
+                mkdir(dirname($tempPath), 0755, true);
+            }
+            file_put_contents($tempPath, $pdfOutput);
+            
+            // Limpiar cualquier output buffer
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Retornar descarga directa del archivo
+            return response()->download($tempPath, $filename, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-                'Content-Length' => $pdfSize,
                 'Cache-Control' => 'no-cache, no-store, must-revalidate',
                 'Pragma' => 'no-cache',
                 'Expires' => '0'
-            ]);
+            ])->deleteFileAfterSend(true);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             Log::warning("❌ [PDF-CONTROLLER] Proyecto no encontrado: {$projectId}");
@@ -196,7 +207,7 @@ class ProjectPDFController extends Controller
         try {
             // Si es una imagen base64, optimizarla
             if (Str::startsWith($imagePath, 'data:image/')) {
-                return $this->imageService->optimizeBase64Image($imagePath);
+                return $this->imageService->processBase64Image($imagePath);
             }
             
             // Si es una URL del API de canvas
@@ -206,7 +217,7 @@ class ProjectPDFController extends Controller
                 $fullPath = storage_path('app/' . $decodedPath);
 
                 if (file_exists($fullPath)) {
-                    return $this->imageService->optimizeImageForPDF($fullPath);
+                    return $this->imageService->processImageForPDF($fullPath);
                 }
             }
             
@@ -214,7 +225,7 @@ class ProjectPDFController extends Controller
             if (Str::startsWith($imagePath, '/storage/')) {
                 $fullPath = public_path($imagePath);
                 if (file_exists($fullPath)) {
-                    return $this->imageService->optimizeImageForPDF($fullPath);
+                    return $this->imageService->processImageForPDF($fullPath);
                 }
             }
             

@@ -52,12 +52,15 @@ class ProjectImageController extends Controller
                     $saved = Storage::put($fullPath, $imageContent);
 
                     if ($saved) {
+                        // Generar URL pública para acceder a la imagen
+                        $publicUrl = Storage::url($fullPath);
+                        
                         $uploadedImages[] = [
                             'elementId' => $imageData['elementId'],
                             'originalFilename' => $filename,
                             'savedFilename' => $uniqueFilename,
                             'path' => $fullPath,
-                            'url' => '/api/canvas/image/' . base64_encode($fullPath), // URL para servir la imagen
+                            'url' => $publicUrl, // URL directa del storage
                             'size' => strlen($imageContent),
                             'type' => $imageData['type']
                         ];
@@ -165,7 +168,7 @@ class ProjectImageController extends Controller
                 $images[] = [
                     'filename' => basename($file),
                     'path' => $file,
-                    'url' => '/api/canvas/image/' . base64_encode($file),
+                    'url' => Storage::url($file),
                     'size' => Storage::size($file),
                     'last_modified' => Storage::lastModified($file)
                 ];
@@ -206,7 +209,7 @@ class ProjectImageController extends Controller
             
             foreach ($allFiles as $file) {
                 $filename = basename($file);
-                $fileUrl = '/api/canvas/image/' . base64_encode($file);
+                $fileUrl = Storage::url($file);
                 
                 // Verificar si la imagen está en uso
                 $isUsed = false;
@@ -290,7 +293,7 @@ class ProjectImageController extends Controller
             $path = $request->file('image')->store($projectPath);
 
             // Generar la URL para servir la imagen
-            $url = '/api/canvas/image/' . base64_encode($path);
+            $url = Storage::url($path);
 
             return response()->json([
                 'success' => true,
