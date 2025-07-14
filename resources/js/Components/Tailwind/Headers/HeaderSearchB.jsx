@@ -688,7 +688,7 @@ const HeaderSearchB = ({
                                         fetchSearchSuggestions(search);
                                     }
                                 }}
-                                className="w-full pr-14 py-4 pl-4 border rounded-full font-normal focus:ring-0 customtext-neutral-dark placeholder:customtext-neutral-dark focus:outline-none bg-[#DFF4FF]"
+                                className="w-full pr-14 py-4 pl-4 border rounded-full font-normal focus:ring-0 customtext-neutral-dark placeholder:customtext-neutral-dark focus:outline-none bg-white"
                                 enterKeyHint="search"
                                 inputMode="search"
                                 autoComplete="on"
