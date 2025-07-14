@@ -252,4 +252,51 @@ class PDFImageService
     {
         $this->cleanupTempFiles();
     }
+
+    /**
+     * Procesa una imagen aplicando efecto cover usando Intervention Image
+     */
+    public function processImageWithCover($imagePath, $targetWidth, $targetHeight, $quality = 90)
+    {
+        try {
+            if (!file_exists($imagePath)) {
+                Log::warning("🖼️ [PDF-IMAGE-COVER] Archivo no encontrado: $imagePath");
+                return null;
+            }
+
+            // Validar dimensiones para evitar errores de memoria
+            $maxWidth = 2000;
+            $maxHeight = 2000;
+            
+            if ($targetWidth > $maxWidth || $targetHeight > $maxHeight) {
+                $ratio = min($maxWidth / $targetWidth, $maxHeight / $targetHeight);
+                $targetWidth = round($targetWidth * $ratio);
+                $targetHeight = round($targetHeight * $ratio);
+                
+                Log::info("📐 [PDF-IMAGE-COVER] Dimensiones ajustadas: {$targetWidth}x{$targetHeight}");
+            }
+
+            // Usar Intervention Image para aplicar cover
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            $image = $manager->read($imagePath);
+            
+            // Aplicar cover (mantiene proporción y recorta)
+            $image = $image->cover($targetWidth, $targetHeight);
+            
+            // Crear archivo temporal
+            $tempPath = sys_get_temp_dir() . '/pdf_cover_' . uniqid() . '.jpg';
+            $image->toJpeg($quality)->save($tempPath);
+            
+            // Registrar para limpieza
+            $this->tempFiles[] = $tempPath;
+            
+            Log::info("✅ [PDF-IMAGE-COVER] Imagen procesada con cover: {$tempPath}");
+            
+            return $tempPath;
+            
+        } catch (\Exception $e) {
+            Log::error("❌ [PDF-IMAGE-COVER] Error: " . $e->getMessage());
+            return $this->processImageForPDF($imagePath, 2400, $quality); // Fallback
+        }
+    }
 }

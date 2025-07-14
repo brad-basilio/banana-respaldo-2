@@ -400,7 +400,39 @@ class ProjectPDFController extends Controller
         // Procesar según el tipo de elemento
         switch ($element['type']) {
             case 'image':
-                $processed['content'] = $this->processImageContent($element['content'] ?? $element['src'] ?? null);
+                // Usar cover si tenemos dimensiones específicas
+                if (isset($element['size']['width']) && isset($element['size']['height'])) {
+                    // Obtener dimensiones reales del preset
+                    $presetConfig = $this->getPresetConfiguration($this->currentProject);
+                    
+                    // Las dimensiones del preset están en milímetros, convertir a pixels
+                    // 1 mm = 11.8 pixels a 300 DPI
+                    $presetWidthPx = $presetConfig['width'] * 11.8;
+                    $presetHeightPx = $presetConfig['height'] * 11.8;
+                    
+                    $targetWidth = ($widthPercent / 100) * $presetWidthPx;
+                    $targetHeight = ($heightPercent / 100) * $presetHeightPx;
+                    
+                    Log::info("📐 [PDF-GENERATOR] Calculando dimensiones cover desde preset", [
+                        'preset_width_mm' => $presetConfig['width'],
+                        'preset_height_mm' => $presetConfig['height'],
+                        'preset_width_px' => round($presetWidthPx),
+                        'preset_height_px' => round($presetHeightPx),
+                        'element_width_percent' => $widthPercent,
+                        'element_height_percent' => $heightPercent,
+                        'target_width_px' => round($targetWidth),
+                        'target_height_px' => round($targetHeight)
+                    ]);
+                    
+                    $processed['content'] = $this->processImageContentWithCover(
+                        $element['content'] ?? $element['src'] ?? null,
+                        round($targetWidth),
+                        round($targetHeight)
+                    );
+                } else {
+                    $processed['content'] = $this->processImageContent($element['content'] ?? $element['src'] ?? null);
+                }
+                
                 if (!$processed['content']) {
                     Log::warning("⚠️ [PDF-GENERATOR] Imagen del elemento {$index} no pudo ser procesada", [
                         'original_content' => $element['content'] ?? $element['src'] ?? 'null',
@@ -585,7 +617,22 @@ class ProjectPDFController extends Controller
             'preview' => is_string($backgroundImage) ? substr($backgroundImage, 0, 100) : 'no-string'
         ]);
         
-        $result = $this->processImageContent($backgroundImage);
+        // Para imágenes de fondo, usar dimensiones reales del preset
+        $presetConfig = $this->getPresetConfiguration($this->currentProject);
+        
+        // Las dimensiones del preset están en milímetros, convertir a pixels
+        // 1 mm = 11.8 pixels a 300 DPI
+        $pageWidth = $presetConfig['width'] * 11.8;
+        $pageHeight = $presetConfig['height'] * 11.8;
+        
+        Log::info("📐 [PDF-GENERATOR] Dimensiones de fondo desde preset", [
+            'preset_width_mm' => $presetConfig['width'],
+            'preset_height_mm' => $presetConfig['height'],
+            'page_width_px' => round($pageWidth),
+            'page_height_px' => round($pageHeight)
+        ]);
+        
+        $result = $this->processImageContentWithCover($backgroundImage, round($pageWidth), round($pageHeight));
         
         Log::info("🖼️ [PDF-GENERATOR] Resultado de imagen de fondo", [
             'resultado_tipo' => gettype($result),
@@ -618,32 +665,56 @@ class ProjectPDFController extends Controller
     private function getPresetConfiguration(CanvasProject $project)
     {
         $defaultConfig = [
-            'width' => 21, // cm
-            'height' => 29.7, // cm
+            'width' => 210, // mm (A4)
+            'height' => 297, // mm (A4)
             'orientation' => 'portrait'
         ];
         
-        // Intentar obtener desde el preset relacionado
+        // Intentar obtener desde el preset relacionado (PRIORIDAD)
         if ($project->canvasPreset) {
             $preset = $project->canvasPreset;
             
-            return [
-                'width' => $preset->width ?? $defaultConfig['width'],
-                'height' => $preset->height ?? $defaultConfig['height'],
-                'orientation' => ($preset->width > $preset->height) ? 'landscape' : 'portrait'
-            ];
+            Log::info("📐 [PDF-GENERATOR] Obteniendo configuración del CanvasPreset", [
+                'preset_id' => $preset->id,
+                'preset_name' => $preset->name,
+                'preset_width_mm' => $preset->width,
+                'preset_height_mm' => $preset->height,
+                'preset_dpi' => $preset->dpi ?? 300
+            ]);
+            
+            if ($preset->width && $preset->height) {
+                return [
+                    'width' => (float) $preset->width,
+                    'height' => (float) $preset->height,
+                    'orientation' => ($preset->width > $preset->height) ? 'landscape' : 'portrait',
+                    'dpi' => $preset->dpi ?? 300
+                ];
+            }
         }
         
-        // Intentar desde item_data
-        if (isset($project->item_data['preset'])) {
+        // Si no hay preset, intentar desde item_data
+        if (isset($project->item_data['preset']) && is_array($project->item_data['preset'])) {
             $presetData = $project->item_data['preset'];
             
-            return [
-                'width' => $presetData['width'] ?? $defaultConfig['width'],
-                'height' => $presetData['height'] ?? $defaultConfig['height'],
-                'orientation' => ($presetData['width'] > $presetData['height']) ? 'landscape' : 'portrait'
-            ];
+            Log::info("📐 [PDF-GENERATOR] Obteniendo configuración del item_data", [
+                'preset_data' => $presetData
+            ]);
+            
+            if (isset($presetData['width']) && isset($presetData['height'])) {
+                return [
+                    'width' => (float) $presetData['width'],
+                    'height' => (float) $presetData['height'],
+                    'orientation' => ($presetData['width'] > $presetData['height']) ? 'landscape' : 'portrait',
+                    'dpi' => $presetData['dpi'] ?? 300
+                ];
+            }
         }
+        
+        Log::warning("⚠️ [PDF-GENERATOR] No se encontró configuración del preset, usando valores por defecto", [
+            'project_id' => $project->id,
+            'has_canvas_preset' => !is_null($project->canvasPreset),
+            'has_item_data' => !empty($project->item_data)
+        ]);
         
         return $defaultConfig;
     }
@@ -909,5 +980,90 @@ class ProjectPDFController extends Controller
         }
         
         return $debug;
+    }
+
+    /**
+     * Procesa el contenido de una imagen con efecto cover
+     */
+    private function processImageContentWithCover($imageContent, $targetWidth, $targetHeight)
+    {
+        if (empty($imageContent)) {
+            return null;
+        }
+        
+        Log::info("🖼️ [PDF-GENERATOR] Procesando imagen con cover: {$targetWidth}x{$targetHeight}");
+        
+        // Si es una imagen base64, procesarla
+        if (strpos($imageContent, 'data:image/') === 0) {
+            try {
+                $base64String = substr($imageContent, strpos($imageContent, ',') + 1);
+                $decodedImage = base64_decode($base64String);
+                
+                if ($decodedImage === false) {
+                    Log::warning("⚠️ [PDF-GENERATOR] Error decodificando imagen base64");
+                    return $this->processImageContent($imageContent); // Fallback
+                }
+                
+                $tempPath = sys_get_temp_dir() . '/pdf_image_' . uniqid() . '.jpg';
+                file_put_contents($tempPath, $decodedImage);
+                
+                // Aplicar cover
+                $coverPath = $this->imageService->processImageWithCover($tempPath, $targetWidth, $targetHeight);
+                
+                // Limpiar archivo temporal original
+                if (file_exists($tempPath)) {
+                    unlink($tempPath);
+                }
+                
+                return $coverPath ?: $this->processImageContent($imageContent);
+                
+            } catch (\Exception $e) {
+                Log::error("❌ [PDF-GENERATOR] Error procesando imagen base64 con cover: " . $e->getMessage());
+                return $this->processImageContent($imageContent); // Fallback
+            }
+        }
+        
+        // Si es una URL de API interna
+        if (strpos($imageContent, '/api/canvas/image/') === 0) {
+            $absolutePath = $this->convertApiUrlToAbsolutePath($imageContent);
+            
+            if ($absolutePath && file_exists($absolutePath)) {
+                $coverPath = $this->imageService->processImageWithCover($absolutePath, $targetWidth, $targetHeight);
+                
+                if ($coverPath) {
+                    $this->tempFiles[] = $coverPath;
+                    return $coverPath;
+                }
+            }
+        }
+        
+        // Si es una ruta de storage
+        if (strpos($imageContent, 'storage/') === 0 || strpos($imageContent, '/storage/') === 0) {
+            $path = ltrim($imageContent, '/');
+            $fullPath = public_path($path);
+            
+            if (file_exists($fullPath)) {
+                $coverPath = $this->imageService->processImageWithCover($fullPath, $targetWidth, $targetHeight);
+                
+                if ($coverPath) {
+                    $this->tempFiles[] = $coverPath;
+                    return $coverPath;
+                }
+            }
+        }
+        
+        // Si es una ruta relativa desde public
+        $publicPath = public_path($imageContent);
+        if (file_exists($publicPath)) {
+            $coverPath = $this->imageService->processImageWithCover($publicPath, $targetWidth, $targetHeight);
+            
+            if ($coverPath) {
+                $this->tempFiles[] = $coverPath;
+                return $coverPath;
+            }
+        }
+        
+        // Fallback al método original
+        return $this->processImageContent($imageContent);
     }
 }
