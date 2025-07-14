@@ -42,17 +42,24 @@
             position: absolute;
             box-sizing: border-box;
             overflow: hidden;
+            object-fit: cover !important;
+            background-size: cover;
+            background-position: center;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+            image-rendering: crisp-edges;
         }
         
         /* 🖨️ IMÁGENES OPTIMIZADAS PARA IMPRESIÓN */
         .element img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: cover !important;
             image-rendering: -webkit-optimize-contrast;
             image-rendering: optimize-contrast;
             image-rendering: crisp-edges;
             max-width: none;
+
         }
         
         /* 🖨️ TEXTO OPTIMIZADO PARA IMPRESIÓN */

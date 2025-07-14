@@ -27,6 +27,11 @@ class ProjectPDFController extends Controller
     private $imageService;
 
     /**
+     * Proyecto actual siendo procesado
+     */
+    private $currentProject;
+
+    /**
      * Genera un PDF de alta calidad para un proyecto específico
      */
     public function generatePDF(Request $request, $projectId)
@@ -41,6 +46,7 @@ class ProjectPDFController extends Controller
             
             // 1. VALIDAR Y OBTENER EL PROYECTO
             $project = CanvasProject::findOrFail($projectId);
+            $this->currentProject = $project; // Asignar para uso global
             
             if (!$project) {
                 Log::error("❌ [PDF-GENERATOR] Proyecto no encontrado: {$projectId}");
@@ -249,6 +255,9 @@ class ProjectPDFController extends Controller
     {
         $processedPages = [];
         
+        // Ya no necesitamos calcular dimensiones del workspace porque los valores están normalizados
+        Log::info("📐 [PDF-GENERATOR] Procesando páginas con valores normalizados (0-1)");
+        
         foreach ($pages as $pageIndex => $page) {
             Log::info("🔄 [PDF-GENERATOR] Procesando página " . ($pageIndex + 1));
             
@@ -277,9 +286,9 @@ class ProjectPDFController extends Controller
                     'elements' => []
                 ];
                 
-                // Procesar elementos de la celda
+                // Procesar elementos de la celda - pasamos null como workspaceDimensions ya que no lo necesitamos
                 foreach ($cell['elements'] as $elementIndex => $element) {
-                    $processedElement = $this->processElement($element, $elementIndex);
+                    $processedElement = $this->processElement($element, $elementIndex, []);
                     
                     if ($processedElement) {
                         $processedCell['elements'][] = $processedElement;
@@ -304,27 +313,86 @@ class ProjectPDFController extends Controller
         
         return $processedPages;
     }
+    
+    /**
+     * Calcula las dimensiones del workspace basándose en el preset
+     */
+    private function getWorkspaceDimensions(CanvasProject $project)
+    {
+        // Usar dimensiones fijas del workspace del editor
+        // Estas son las dimensiones visuales del workspace, no las del preset físico
+        $workspaceWidth = 800;  // Ancho visual del workspace
+        $workspaceHeight = 600; // Alto visual del workspace
+        
+        // Si el preset tiene una proporción diferente, ajustar manteniendo el ancho
+        if ($project->canvasPreset) {
+            $preset = $project->canvasPreset;
+            
+            if ($preset->width && $preset->height) {
+                $aspectRatio = $preset->height / $preset->width;
+                
+                // Ajustar altura manteniendo proporción
+                $workspaceHeight = $workspaceWidth * $aspectRatio;
+                
+                Log::info("📐 [PDF-GENERATOR] Dimensiones ajustadas por proporción", [
+                    'preset_width_cm' => $preset->width,
+                    'preset_height_cm' => $preset->height,
+                    'aspect_ratio' => $aspectRatio,
+                    'workspace_width' => $workspaceWidth,
+                    'workspace_height' => $workspaceHeight
+                ]);
+            }
+        }
+        
+        return [
+            'width' => $workspaceWidth,
+            'height' => $workspaceHeight
+        ];
+    }
 
     /**
      * Procesa un elemento individual
      */
-    private function processElement(array $element, int $index)
+    private function processElement(array $element, int $index, array $workspaceDimensions)
     {
         if (!isset($element['type']) || !isset($element['position']) || !isset($element['size'])) {
             Log::warning("⚠️ [PDF-GENERATOR] Elemento {$index} no tiene estructura válida");
             return null;
         }
         
+        // Los valores en design_data ya están normalizados (0-1), solo necesitamos convertir a porcentajes
+        $xPercent = ($element['position']['x'] ?? 0) * 100;
+        $yPercent = ($element['position']['y'] ?? 0) * 100;
+        $widthPercent = ($element['size']['width'] ?? 0) * 100;
+        $heightPercent = ($element['size']['height'] ?? 0) * 100;
+        
+        Log::info("🔄 [PDF-GENERATOR] Elemento {$index} - Valores normalizados a porcentajes", [
+            'element_id' => $element['id'] ?? 'unknown',
+            'type' => $element['type'],
+            'original_normalized' => [
+                'x' => $element['position']['x'] ?? 0,
+                'y' => $element['position']['y'] ?? 0,
+                'width' => $element['size']['width'] ?? 0,
+                'height' => $element['size']['height'] ?? 0
+            ],
+            'converted_percentages' => [
+                'x' => round($xPercent, 2),
+                'y' => round($yPercent, 2),
+                'width' => round($widthPercent, 2),
+                'height' => round($heightPercent, 2)
+            ]
+        ]);
+        
         $processed = [
             'id' => $element['id'] ?? "element-{$index}",
             'type' => $element['type'],
             'position' => [
-                'x' => $element['position']['x'] ?? 0,
-                'y' => $element['position']['y'] ?? 0,
+                'x' => $xPercent,
+                'y' => $yPercent,
             ],
             'size' => [
-                'width' => $element['size']['width'] ?? 100,
-                'height' => $element['size']['height'] ?? 100,
+                'width' => $widthPercent,
+                'height' => $heightPercent,
             ],
             'zIndex' => $element['zIndex'] ?? 1,
         ];
@@ -419,6 +487,7 @@ class ProjectPDFController extends Controller
             if ($absolutePath && file_exists($absolutePath)) {
                 // Procesar imagen para optimizar para PDF
                 $optimizedPath = $this->imageService->processImageForPDF($absolutePath, 2480, 95);
+                Log("🖼️ [PDF-optimizedPath imagen de API: {$optimizedPath}");
                 
                 if ($optimizedPath) {
                     $this->tempFiles[] = $optimizedPath;
@@ -439,6 +508,8 @@ class ProjectPDFController extends Controller
                 
                 // Optimizar imagen
                 $optimizedPath = $this->imageService->processImageForPDF($fullPath, 2480, 95);
+
+                Log::info("🖼️ [PDF-GENERATOR] Optimización de imagen: {$optimizedPath}");
                 
                 if ($optimizedPath) {
                     $this->tempFiles[] = $optimizedPath;
@@ -696,6 +767,7 @@ class ProjectPDFController extends Controller
             
             // 1. BUSCAR Y VALIDAR EL PROYECTO
             $project = CanvasProject::find($projectId);
+            $this->currentProject = $project; // Asignar para uso global
             
             if (!$project) {
                 return response()->json([

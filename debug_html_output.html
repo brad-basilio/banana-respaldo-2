@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto Photobook matrimonio - PDF</title>
+    <style>
+        /* 🖨️ CONFIGURACIÓN DE PÁGINA PARA IMPRESIÓN PROFESIONAL */
+        @page {
+            margin: 0; /* Sin márgenes para usar toda la página */
+            size: 297cm 210cm;
+        }
+        
+        body {
+            font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+        
+        /* 🖨️ ESTILOS DE PÁGINA PARA CALIDAD PROFESIONAL */
+        .page {
+            page-break-after: always;
+            width: 297cm;
+            height: 210cm;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            box-sizing: border-box;
+        }
+        
+        .page:last-child {
+            page-break-after: auto;
+        }
+        
+        /* 🖨️ ELEMENTOS POSICIONADOS CON PRECISIÓN */
+        .element {
+            position: absolute;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        /* 🖨️ IMÁGENES OPTIMIZADAS PARA IMPRESIÓN */
+        .element img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+            image-rendering: crisp-edges;
+            max-width: none;
+        }
+        
+        /* 🖨️ TEXTO OPTIMIZADO PARA IMPRESIÓN */
+        .element .text-content {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 4px; /* Pequeño padding para separar del borde */
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
+            display: flex;
+            align-items: flex-start;
+            line-height: 1.2;
+        }
+        
+        /* 🖨️ FONDO DE PÁGINA OPTIMIZADO */
+        .page-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            object-fit: cover;
+        }
+        
+        /* 🖨️ CONTENEDOR DE ELEMENTOS */
+        .elements-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* 🖨️ PREVENIR PROBLEMAS DE RENDERIZADO */
+        * {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+        
+        /* 🖨️ ASEGURAR CALIDAD DE FUENTES */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+                        <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 1.25%; 
+                                                top: 1.7678571428571%; 
+                                                width: 10%; 
+                                                height: 3.5357142857143%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #000000; 
+                                                        font-size: 24px; 
+                                                        text-align: center; 
+                                                        font-weight: bold; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Photobook matrimonio
+                                            </div>
+                                            
+                                                                            </div>
+                                                                    <div class="element"
+                                         style="left: 3.125%; 
+                                                top: 5.3035714285714%; 
+                                                width: 6.25%; 
+                                                height: 8.8392857142857%; 
+                                                z-index: 2;">
+                                        
+                                                                                    
+                                            <img src="C:\xampp\htdocs\projects\bananalab_app\public\storage/images/item/fb8d9123-3e37-411b-9483-f36f1f7950c7.jpg" 
+                                                 alt="Imagen 2"
+                                                 style="object-fit: cover; image-rendering: high-quality;">
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 1
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 2
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 3
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 4
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 5
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 6
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 7
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 8
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 9
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 10
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 11
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 12
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 13
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 14
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 15
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 16
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 17
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 18
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 19
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 20
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 21
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 22
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 23
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 0.625%; 
+                                                top: 0.88392857142857%; 
+                                                width: 11.25%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #666666; 
+                                                        font-size: 16px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Página 24
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+                    <div class="page" 
+                 style="background-color: #ffffff;">
+                
+                
+                                    <img src="C:\Users\asus\AppData\Local\Temp\pdf9182.tmp.jpg" 
+                         class="page-background" 
+                         alt="Fondo de página 26"
+                         style="object-fit: cover;">
+                                
+                
+                <div class="elements-container">
+                                                                                                                                            <div class="element"
+                                         style="left: 5%; 
+                                                top: 7.9553571428571%; 
+                                                width: 2.5%; 
+                                                height: 1.7678571428571%; 
+                                                z-index: 1;">
+                                        
+                                                                                    
+                                            <div class="text-content"
+                                                 style="color: #000000; 
+                                                        font-size: 18px; 
+                                                        text-align: center; 
+                                                        font-weight: normal; 
+                                                        font-family: Arial; 
+                                                        background-color: transparent;
+                                                        line-height: normal;">
+                                                Fin
+                                            </div>
+                                            
+                                                                            </div>
+                                                                                                                        </div>
+            </div>
+            </body>
+</html>
