@@ -222,6 +222,9 @@
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
 
+    <!-- Culqi Checkout v4 -->
+    <script src="https://checkout.culqi.com/js/v4"></script>
+
     <script src="/lte/assets/libs/select2/js/select2.full.min.js" defer></script>    <!-- App js -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.js" defer></script>
     <script src="/lte/assets/libs/moment/min/moment.min.js" defer></script>
