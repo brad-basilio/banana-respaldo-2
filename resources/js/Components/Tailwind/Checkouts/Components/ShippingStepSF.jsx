@@ -390,7 +390,7 @@ export default function ShippingStepSF({
             Notify.add({
                 icon: "/assets/img/icon.svg",
                 title: "Seleccione envío",
-                body: "Debe elegir un método de envío",
+                body: "Debe elegir una zona de envío valido",
                 type: "danger",
             });
             return;

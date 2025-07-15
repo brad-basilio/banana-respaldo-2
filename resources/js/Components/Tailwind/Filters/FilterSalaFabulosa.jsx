@@ -102,7 +102,6 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
         subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
         price: null,
         name: GET.search || null,
-        name: GET.search || null,
         sort_by: "created_at",
         order: "desc",
     });
