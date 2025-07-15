@@ -234,6 +234,9 @@ Route::middleware('auth')->group(function () {
     // 🆕 Rutas para generación de PDF backend con dimensiones exactas
     Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
     Route::post('/projects/{projectId}/export/pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
+    Route::post('/projects/{projectId}/debug/html', [App\Http\Controllers\Api\ProjectPDFController::class, 'debugPDFHtml']);
+    Route::get('/test/pdf-layouts', [App\Http\Controllers\Api\ProjectPDFController::class, 'testPDFWithLayouts']);
+    Route::get('/projects/{projectId}/debug-real', [App\Http\Controllers\Api\ProjectPDFController::class, 'debugRealProject']);
     Route::get('/projects/{projectId}/pdf-info', [PDFGeneratorController::class, 'getPDFInfo']);
     Route::get('/projects/{projectId}/download-pdf', [PDFGeneratorController::class, 'downloadPDF']);
     

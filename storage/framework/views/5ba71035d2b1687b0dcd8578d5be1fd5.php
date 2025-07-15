@@ -127,42 +127,103 @@
                 
                 
                 <div class="elements-container">
-                    <?php if(isset($page['cells']) && count($page['cells']) > 0): ?>
-                        <?php $__currentLoopData = $page['cells']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cell): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <?php if(isset($cell['elements']) && count($cell['elements']) > 0): ?>
-                                <?php $__currentLoopData = $cell['elements']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $element): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <div class="element"
-                                         style="left: <?php echo e($element['position']['x']); ?>%; 
-                                                top: <?php echo e($element['position']['y']); ?>%; 
-                                                width: <?php echo e($element['size']['width']); ?>%; 
-                                                height: <?php echo e($element['size']['height']); ?>%; 
-                                                z-index: <?php echo e($element['zIndex'] ?? 1); ?>;">
+                    
+                    <?php if(isset($page['layoutInfo']) && $page['layoutInfo']): ?>
+                        
+                        <?php
+                            $layoutInfo = $page['layoutInfo'];
+                            $gridConfig = $layoutInfo['gridConfig'];
+                            $layoutStyle = $layoutInfo['style'] ?? [];
+                        ?>
+                        
+                        <div class="layout-container" 
+                             style="display: grid; 
+                                    grid-template-columns: repeat(<?php echo e($gridConfig['columns']); ?>, 1fr);
+                                    grid-template-rows: repeat(<?php echo e($gridConfig['rows']); ?>, 1fr);
+                                    height: 100%;
+                                    width: 100%;
+                                    <?php if(isset($layoutStyle['gap'])): ?>gap: <?php echo e($layoutStyle['gap']); ?>;<?php endif; ?>
+                                    <?php if(isset($layoutStyle['padding'])): ?>padding: <?php echo e($layoutStyle['padding']); ?>;<?php endif; ?>">
+                            
+                            <?php if(isset($page['cells']) && count($page['cells']) > 0): ?>
+                                <?php $__currentLoopData = $page['cells']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cellIndex => $cell): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="layout-cell" 
+                                         style="position: relative; overflow: hidden;
+                                                <?php if(isset($cell['gridPosition'])): ?>
+                                                    <?php $pos = $cell['gridPosition']; ?>
+                                                    grid-column: <?php echo e($pos['col-start']); ?> / <?php echo e($pos['col-end']); ?>;
+                                                    grid-row: <?php echo e($pos['row-start']); ?> / <?php echo e($pos['row-end']); ?>;
+                                                <?php endif; ?>">
                                         
-                                        <?php if($element['type'] === 'text'): ?>
-                                            
-                                           
-                                            <span class="text-content"
-                                                 style="color: <?php echo e($element['style']['color'] ?? '#000000'); ?>; 
-                                                        font-size: <?php echo e($element['style']['fontSize'] ?? '16px'); ?>; 
+                                        
+                                        <?php if(isset($cell['elements']) && count($cell['elements']) > 0): ?>
+                                            <?php $__currentLoopData = $cell['elements']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $element): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <div class="element"
+                                                     style="left: <?php echo e($element['position']['x']); ?>%; 
+                                                            top: <?php echo e($element['position']['y']); ?>%; 
+                                                            width: <?php echo e($element['size']['width']); ?>%; 
+                                                            height: <?php echo e($element['size']['height']); ?>%; 
+                                                            z-index: <?php echo e($element['zIndex'] ?? 1); ?>;">
                                                     
-                                                        font-weight: <?php echo e($element['style']['fontWeight'] ?? 'normal'); ?>; 
-                                                        font-family: <?php echo e($element['style']['fontFamily'] ?? 'sans-serif'); ?>; 
-                                                       
-                                                        line-height: <?php echo e($element['style']['lineHeight'] ?? '1.2'); ?>;
-                                                        max-width: max-content !important;">
-                                             <span ><?php echo e($element['content']); ?></span>
-                                            </span>
-                                            
-                                        <?php elseif($element['type'] === 'image' && !empty($element['content'])): ?>
-                                            
-                                            <img src="<?php echo e($element['content']); ?>" 
-                                                 alt="Imagen <?php echo e($loop->iteration); ?>"
-                                                 style="object-fit: cover; image-rendering: high-quality;">
+                                                    <?php if($element['type'] === 'text'): ?>
+                                                        <span class="text-content"
+                                                             style="color: <?php echo e($element['style']['color'] ?? '#000000'); ?>; 
+                                                                    font-size: <?php echo e($element['style']['fontSize'] ?? '16px'); ?>; 
+                                                                    font-weight: <?php echo e($element['style']['fontWeight'] ?? 'normal'); ?>; 
+                                                                    font-family: <?php echo e($element['style']['fontFamily'] ?? 'sans-serif'); ?>; 
+                                                                    line-height: <?php echo e($element['style']['lineHeight'] ?? '1.2'); ?>;
+                                                                    max-width: max-content !important;">
+                                                            <?php echo e($element['content']); ?>
+
+                                                        </span>
+                                                        
+                                                    <?php elseif($element['type'] === 'image' && !empty($element['content'])): ?>
+                                                        <img src="<?php echo e($element['content']); ?>" 
+                                                             alt="Imagen <?php echo e($loop->iteration); ?>"
+                                                             style="object-fit: cover; image-rendering: high-quality;">
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         <?php endif; ?>
                                     </div>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             <?php endif; ?>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </div>
+                    <?php else: ?>
+                        
+                        <?php if(isset($page['cells']) && count($page['cells']) > 0): ?>
+                            <?php $__currentLoopData = $page['cells']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cell): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php if(isset($cell['elements']) && count($cell['elements']) > 0): ?>
+                                    <?php $__currentLoopData = $cell['elements']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $element): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <div class="element"
+                                             style="left: <?php echo e($element['position']['x']); ?>%; 
+                                                    top: <?php echo e($element['position']['y']); ?>%; 
+                                                    width: <?php echo e($element['size']['width']); ?>%; 
+                                                    height: <?php echo e($element['size']['height']); ?>%; 
+                                                    z-index: <?php echo e($element['zIndex'] ?? 1); ?>;">
+                                            
+                                            <?php if($element['type'] === 'text'): ?>
+                                                <span class="text-content"
+                                                     style="color: <?php echo e($element['style']['color'] ?? '#000000'); ?>; 
+                                                            font-size: <?php echo e($element['style']['fontSize'] ?? '16px'); ?>; 
+                                                            font-weight: <?php echo e($element['style']['fontWeight'] ?? 'normal'); ?>; 
+                                                            font-family: <?php echo e($element['style']['fontFamily'] ?? 'sans-serif'); ?>; 
+                                                            line-height: <?php echo e($element['style']['lineHeight'] ?? '1.2'); ?>;
+                                                            max-width: max-content !important;">
+                                                    <?php echo e($element['content']); ?>
+
+                                                </span>
+                                                
+                                            <?php elseif($element['type'] === 'image' && !empty($element['content'])): ?>
+                                                <img src="<?php echo e($element['content']); ?>" 
+                                                     alt="Imagen <?php echo e($loop->iteration); ?>"
+                                                     style="object-fit: cover; image-rendering: high-quality;">
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php endif; ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>

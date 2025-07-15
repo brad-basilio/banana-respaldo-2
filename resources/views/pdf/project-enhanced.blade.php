@@ -127,42 +127,101 @@
                 
                 {{-- 🖨️ CONTENEDOR DE ELEMENTOS --}}
                 <div class="elements-container">
-                    @if(isset($page['cells']) && count($page['cells']) > 0)
-                        @foreach ($page['cells'] as $cell)
-                            @if(isset($cell['elements']) && count($cell['elements']) > 0)
-                                @foreach ($cell['elements'] as $element)
-                                    <div class="element"
-                                         style="left: {{ $element['position']['x'] }}%; 
-                                                top: {{ $element['position']['y'] }}%; 
-                                                width: {{ $element['size']['width'] }}%; 
-                                                height: {{ $element['size']['height'] }}%; 
-                                                z-index: {{ $element['zIndex'] ?? 1 }};">
+                    {{-- 📐 VERIFICAR SI HAY INFORMACIÓN DE LAYOUT --}}
+                    @if(isset($page['layoutInfo']) && $page['layoutInfo'])
+                        {{-- USAR SISTEMA DE LAYOUTS --}}
+                        @php
+                            $layoutInfo = $page['layoutInfo'];
+                            $gridConfig = $layoutInfo['gridConfig'];
+                            $layoutStyle = $layoutInfo['style'] ?? [];
+                        @endphp
+                        
+                        <div class="layout-container" 
+                             style="display: grid; 
+                                    grid-template-columns: repeat({{ $gridConfig['columns'] }}, 1fr);
+                                    grid-template-rows: repeat({{ $gridConfig['rows'] }}, 1fr);
+                                    height: 100%;
+                                    width: 100%;
+                                    @if(isset($layoutStyle['gap']))gap: {{ $layoutStyle['gap'] }};@endif
+                                    @if(isset($layoutStyle['padding']))padding: {{ $layoutStyle['padding'] }};@endif">
+                            
+                            @if(isset($page['cells']) && count($page['cells']) > 0)
+                                @foreach ($page['cells'] as $cellIndex => $cell)
+                                    <div class="layout-cell" 
+                                         style="position: relative; overflow: hidden;
+                                                @if(isset($cell['gridPosition']))
+                                                    @php $pos = $cell['gridPosition']; @endphp
+                                                    grid-column: {{ $pos['col-start'] }} / {{ $pos['col-end'] }};
+                                                    grid-row: {{ $pos['row-start'] }} / {{ $pos['row-end'] }};
+                                                @endif">
                                         
-                                        @if ($element['type'] === 'text')
-                                            {{-- 🖨️ ELEMENTO DE TEXTO OPTIMIZADO --}}
-                                           
-                                            <span class="text-content"
-                                                 style="color: {{ $element['style']['color'] ?? '#000000' }}; 
-                                                        font-size: {{ $element['style']['fontSize'] ?? '16px' }}; 
+                                        {{-- ELEMENTOS DENTRO DE LA CELDA --}}
+                                        @if(isset($cell['elements']) && count($cell['elements']) > 0)
+                                            @foreach ($cell['elements'] as $element)
+                                                <div class="element"
+                                                     style="left: {{ $element['position']['x'] }}%; 
+                                                            top: {{ $element['position']['y'] }}%; 
+                                                            width: {{ $element['size']['width'] }}%; 
+                                                            height: {{ $element['size']['height'] }}%; 
+                                                            z-index: {{ $element['zIndex'] ?? 1 }};">
                                                     
-                                                        font-weight: {{ $element['style']['fontWeight'] ?? 'normal' }}; 
-                                                        font-family: {{ $element['style']['fontFamily'] ?? 'sans-serif' }}; 
-                                                       
-                                                        line-height: {{ $element['style']['lineHeight'] ?? '1.2' }};
-                                                        max-width: max-content !important;">
-                                             <span >{{ $element['content'] }}</span>
-                                            </span>
-                                            
-                                        @elseif ($element['type'] === 'image' && !empty($element['content']))
-                                            {{-- 🖨️ ELEMENTO DE IMAGEN OPTIMIZADO --}}
-                                            <img src="{{ $element['content'] }}" 
-                                                 alt="Imagen {{ $loop->iteration }}"
-                                                 style="object-fit: cover; image-rendering: high-quality;">
+                                                    @if ($element['type'] === 'text')
+                                                        <span class="text-content"
+                                                             style="color: {{ $element['style']['color'] ?? '#000000' }}; 
+                                                                    font-size: {{ $element['style']['fontSize'] ?? '16px' }}; 
+                                                                    font-weight: {{ $element['style']['fontWeight'] ?? 'normal' }}; 
+                                                                    font-family: {{ $element['style']['fontFamily'] ?? 'sans-serif' }}; 
+                                                                    line-height: {{ $element['style']['lineHeight'] ?? '1.2' }};
+                                                                    max-width: max-content !important;">
+                                                            {{ $element['content'] }}
+                                                        </span>
+                                                        
+                                                    @elseif ($element['type'] === 'image' && !empty($element['content']))
+                                                        <img src="{{ $element['content'] }}" 
+                                                             alt="Imagen {{ $loop->iteration }}"
+                                                             style="object-fit: cover; image-rendering: high-quality;">
+                                                    @endif
+                                                </div>
+                                            @endforeach
                                         @endif
                                     </div>
                                 @endforeach
                             @endif
-                        @endforeach
+                        </div>
+                    @else
+                        {{-- FALLBACK: USAR SISTEMA ORIGINAL --}}
+                        @if(isset($page['cells']) && count($page['cells']) > 0)
+                            @foreach ($page['cells'] as $cell)
+                                @if(isset($cell['elements']) && count($cell['elements']) > 0)
+                                    @foreach ($cell['elements'] as $element)
+                                        <div class="element"
+                                             style="left: {{ $element['position']['x'] }}%; 
+                                                    top: {{ $element['position']['y'] }}%; 
+                                                    width: {{ $element['size']['width'] }}%; 
+                                                    height: {{ $element['size']['height'] }}%; 
+                                                    z-index: {{ $element['zIndex'] ?? 1 }};">
+                                            
+                                            @if ($element['type'] === 'text')
+                                                <span class="text-content"
+                                                     style="color: {{ $element['style']['color'] ?? '#000000' }}; 
+                                                            font-size: {{ $element['style']['fontSize'] ?? '16px' }}; 
+                                                            font-weight: {{ $element['style']['fontWeight'] ?? 'normal' }}; 
+                                                            font-family: {{ $element['style']['fontFamily'] ?? 'sans-serif' }}; 
+                                                            line-height: {{ $element['style']['lineHeight'] ?? '1.2' }};
+                                                            max-width: max-content !important;">
+                                                    {{ $element['content'] }}
+                                                </span>
+                                                
+                                            @elseif ($element['type'] === 'image' && !empty($element['content']))
+                                                <img src="{{ $element['content'] }}" 
+                                                     alt="Imagen {{ $loop->iteration }}"
+                                                     style="object-fit: cover; image-rendering: high-quality;">
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                @endif
+                            @endforeach
+                        @endif
                     @endif
                 </div>
             </div>
