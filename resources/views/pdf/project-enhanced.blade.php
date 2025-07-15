@@ -48,6 +48,8 @@
             image-rendering: -webkit-optimize-contrast;
             image-rendering: optimize-contrast;
             image-rendering: crisp-edges;
+            width:max-content !important;
+            max-width: max-content !important;
         }
         
         /* 🖨️ IMÁGENES OPTIMIZADAS PARA IMPRESIÓN */
@@ -64,14 +66,11 @@
         
         /* 🖨️ TEXTO OPTIMIZADO PARA IMPRESIÓN */
         .element .text-content {
-            width: 100%;
-            height: 100%;
+            width:max-content !important;
+            max-width:max-content !important;
             margin: 0;
             padding: 4px; /* Pequeño padding para separar del borde */
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            box-sizing: border-box;
+           
             display: flex;
             align-items: flex-start;
             line-height: 1.2;
@@ -141,16 +140,18 @@
                                         
                                         @if ($element['type'] === 'text')
                                             {{-- 🖨️ ELEMENTO DE TEXTO OPTIMIZADO --}}
-                                            <div class="text-content"
+                                           
+                                            <span class="text-content"
                                                  style="color: {{ $element['style']['color'] ?? '#000000' }}; 
                                                         font-size: {{ $element['style']['fontSize'] ?? '16px' }}; 
-                                                        text-align: {{ $element['style']['textAlign'] ?? 'left' }}; 
+                                                    
                                                         font-weight: {{ $element['style']['fontWeight'] ?? 'normal' }}; 
                                                         font-family: {{ $element['style']['fontFamily'] ?? 'sans-serif' }}; 
-                                                        background-color: {{ $element['style']['backgroundColor'] ?? 'transparent' }};
-                                                        line-height: {{ $element['style']['lineHeight'] ?? '1.2' }};">
-                                                {{ $element['content'] }}
-                                            </div>
+                                                       
+                                                        line-height: {{ $element['style']['lineHeight'] ?? '1.2' }};
+                                                        max-width: max-content !important;">
+                                             <span >{{ $element['content'] }}</span>
+                                            </span>
                                             
                                         @elseif ($element['type'] === 'image' && !empty($element['content']))
                                             {{-- 🖨️ ELEMENTO DE IMAGEN OPTIMIZADO --}}

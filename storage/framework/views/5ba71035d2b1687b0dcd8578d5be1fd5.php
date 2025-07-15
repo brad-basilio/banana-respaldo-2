@@ -48,6 +48,8 @@
             image-rendering: -webkit-optimize-contrast;
             image-rendering: optimize-contrast;
             image-rendering: crisp-edges;
+            width:max-content !important;
+            max-width: max-content !important;
         }
         
         /* 🖨️ IMÁGENES OPTIMIZADAS PARA IMPRESIÓN */
@@ -64,14 +66,11 @@
         
         /* 🖨️ TEXTO OPTIMIZADO PARA IMPRESIÓN */
         .element .text-content {
-            width: 100%;
-            height: 100%;
+            width:max-content !important;
+            max-width:max-content !important;
             margin: 0;
             padding: 4px; /* Pequeño padding para separar del borde */
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            box-sizing: border-box;
+           
             display: flex;
             align-items: flex-start;
             line-height: 1.2;
@@ -141,17 +140,18 @@
                                         
                                         <?php if($element['type'] === 'text'): ?>
                                             
-                                            <div class="text-content"
+                                           
+                                            <span class="text-content"
                                                  style="color: <?php echo e($element['style']['color'] ?? '#000000'); ?>; 
                                                         font-size: <?php echo e($element['style']['fontSize'] ?? '16px'); ?>; 
-                                                        text-align: <?php echo e($element['style']['textAlign'] ?? 'left'); ?>; 
+                                                    
                                                         font-weight: <?php echo e($element['style']['fontWeight'] ?? 'normal'); ?>; 
                                                         font-family: <?php echo e($element['style']['fontFamily'] ?? 'sans-serif'); ?>; 
-                                                        background-color: <?php echo e($element['style']['backgroundColor'] ?? 'transparent'); ?>;
-                                                        line-height: <?php echo e($element['style']['lineHeight'] ?? '1.2'); ?>;">
-                                                <?php echo e($element['content']); ?>
-
-                                            </div>
+                                                       
+                                                        line-height: <?php echo e($element['style']['lineHeight'] ?? '1.2'); ?>;
+                                                        max-width: max-content !important;">
+                                             <span ><?php echo e($element['content']); ?></span>
+                                            </span>
                                             
                                         <?php elseif($element['type'] === 'image' && !empty($element['content'])): ?>
                                             
