@@ -34,6 +34,7 @@ import {
     Pencil,
     CheckCircleIcon,
     Save,
+    Zap,
 } from "lucide-react";
 import { saveAs } from "file-saver";
 
@@ -2401,6 +2402,199 @@ export default function EditorLibro() {
         }
     };
 
+    // PDF RÁPIDO con thumbnails del backend
+    const handleExportPDFFromBackendThumbnails = async () => {
+        if (!projectData?.id) {
+            toast.error('No se ha cargado ningún proyecto.');
+            return;
+        }
+
+        if (isPDFGenerating) {
+            toast.warning('⏳ Ya se está generando un PDF. Por favor espera...');
+            return;
+        }
+
+        setIsPDFGenerating(true);
+        const loadingToast = toast.loading('⚡ Generando PDF rápido...', { duration: 0 });
+
+        try {
+            console.log('⚡ [PDF-THUMBNAILS] Iniciando generación con:', {
+                projectId: projectData.id,
+                totalPages: pages.length,
+                workspaceDimensions: workspaceDimensions
+            });
+
+            // Opción 1: Intentar usar thumbnails existentes del frontend
+            const hasExistingThumbnails = Object.keys(pageThumbnails).length > 0;
+            
+            if (hasExistingThumbnails) {
+                console.log('🖼️ [PDF-THUMBNAILS] Usando thumbnails existentes del frontend');
+                
+                // Crear PDF con thumbnails existentes
+                const pdf = new jsPDF({
+                    orientation: workspaceDimensions.width > workspaceDimensions.height ? 'landscape' : 'portrait',
+                    unit: 'px',
+                    format: [workspaceDimensions.width, workspaceDimensions.height]
+                });
+
+                let pagesAdded = 0;
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    const thumbnailUrl = pageThumbnails[page.id];
+
+                    if (thumbnailUrl) {
+                        try {
+                            const img = new Image();
+                            img.crossOrigin = 'anonymous';
+                            
+                            await new Promise((resolve, reject) => {
+                                img.onload = () => {
+                                    console.log(`✅ Imagen cargada para página ${i + 1}`);
+                                    resolve();
+                                };
+                                img.onerror = (error) => {
+                                    console.error(`❌ Error cargando imagen página ${i + 1}:`, error);
+                                    reject(error);
+                                };
+                                img.src = thumbnailUrl;
+                            });
+
+                            if (pagesAdded > 0) pdf.addPage();
+                            pdf.addImage(img, 'PNG', 0, 0, workspaceDimensions.width, workspaceDimensions.height);
+                            pagesAdded++;
+                            
+                        } catch (imgError) {
+                            console.error(`❌ Error procesando página ${i + 1}:`, imgError);
+                        }
+                    } else {
+                        console.warn(`⚠️ No hay thumbnail para página ${i + 1} (ID: ${page.id})`);
+                    }
+                }
+
+                if (pagesAdded > 0) {
+                    const fileName = `${projectData.name || 'proyecto'}_rapido_${new Date().toISOString().split('T')[0]}.pdf`;
+                    pdf.save(fileName);
+                    
+                    toast.dismiss(loadingToast);
+                    toast.success(`⚡ PDF rápido generado: ${fileName} (${pagesAdded} páginas)`);
+                    return;
+                } else {
+                    throw new Error('No se pudo procesar ninguna página');
+                }
+            }
+
+            // Opción 2: Generar thumbnails en el backend
+            console.log('🔄 [PDF-THUMBNAILS] Generando thumbnails en backend...');
+            
+            const response = await fetch(`/api/thumbnails/${projectData.id}/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify({
+                    pages: pages.map(page => ({
+                        id: page.id,
+                        type: page.type,
+                        cells: page.cells,
+                        layout: page.layout,
+                        backgroundColor: page.backgroundColor,
+                        backgroundImage: page.backgroundImage
+                    })),
+                    workspaceDimensions: workspaceDimensions,
+                    quality: 300
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Error del servidor:', errorText);
+                throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ [PDF-THUMBNAILS] Thumbnails del backend:', data);
+
+            if (!data.thumbnails || Object.keys(data.thumbnails).length === 0) {
+                throw new Error('El backend no devolvió thumbnails');
+            }
+
+            // Crear PDF con thumbnails del backend
+            const pdf = new jsPDF({
+                orientation: workspaceDimensions.width > workspaceDimensions.height ? 'landscape' : 'portrait',
+                unit: 'px',
+                format: [workspaceDimensions.width, workspaceDimensions.height]
+            });
+
+            let pagesAdded = 0;
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const thumbnailUrl = data.thumbnails[page.id];
+
+                if (thumbnailUrl) {
+                    try {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        
+                        await new Promise((resolve, reject) => {
+                            img.onload = () => {
+                                console.log(`✅ Imagen backend cargada para página ${i + 1}`);
+                                resolve();
+                            };
+                            img.onerror = (error) => {
+                                console.error(`❌ Error cargando imagen backend página ${i + 1}:`, error);
+                                reject(error);
+                            };
+                            img.src = thumbnailUrl;
+                        });
+
+                        if (pagesAdded > 0) pdf.addPage();
+                        pdf.addImage(img, 'PNG', 0, 0, workspaceDimensions.width, workspaceDimensions.height);
+                        pagesAdded++;
+                        
+                    } catch (imgError) {
+                        console.error(`❌ Error procesando página ${i + 1}:`, imgError);
+                    }
+                } else {
+                    console.warn(`⚠️ No hay thumbnail del backend para página ${i + 1} (ID: ${page.id})`);
+                }
+            }
+
+            if (pagesAdded === 0) {
+                throw new Error('No se pudo procesar ninguna página');
+            }
+
+            const fileName = `${projectData.name || 'proyecto'}_rapido_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(fileName);
+
+            toast.dismiss(loadingToast);
+            toast.success(`⚡ PDF rápido generado: ${fileName} (${pagesAdded} páginas)`);
+
+        } catch (error) {
+            console.error('❌ [PDF-THUMBNAILS] Error completo:', error);
+            toast.dismiss(loadingToast);
+            toast.error('❌ Error al generar PDF rápido: ' + error.message);
+        } finally {
+            setIsPDFGenerating(false);
+        }
+    };
+
+    // Función de debug para verificar thumbnails
+    const debugThumbnails = () => {
+        console.log('🔍 [DEBUG] Estado actual de thumbnails:', {
+            pageThumbnails: pageThumbnails,
+            totalThumbnails: Object.keys(pageThumbnails).length,
+            pages: pages.map(page => ({
+                id: page.id,
+                type: page.type,
+                hasThumbnail: !!pageThumbnails[page.id]
+            }))
+        });
+    };
+
+    // Exponer función de debug globalmente
+    window.debugThumbnails = debugThumbnails;
+
     // Función para limpiar thumbnails y liberar memoria
     const clearThumbnails = useCallback(() => {
         setPageThumbnails({});
@@ -3701,6 +3895,33 @@ export default function EditorLibro() {
                                     )}
                                 >
                                     {isPDFGenerating ? 'Generando...' : 'PDF'}
+                                </Button>
+                                
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    tooltip="PDF Rápido con Thumbnails"
+                                    onClick={handleExportPDFFromBackendThumbnails}
+                                    disabled={isPDFGenerating}
+                                    className={`text-white hover:bg-white/10 ${isPDFGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    icon={isPDFGenerating ? (
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                    ) : (
+                                        <Zap className="h-4 w-4" />
+                                    )}
+                                >
+                                    {isPDFGenerating ? 'Generando...' : 'PDF Rápido'}
+                                </Button>
+                                
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    tooltip="Debug Thumbnails"
+                                    onClick={debugThumbnails}
+                                    className="text-white hover:bg-white/10"
+                                    icon={<ImageIcon className="h-4 w-4" />}
+                                >
+                                    Debug
                                 </Button>
                                 {/* Botón de Guardado Manual */}
                                 <Button

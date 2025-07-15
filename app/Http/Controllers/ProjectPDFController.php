@@ -250,8 +250,16 @@ class ProjectPDFController extends Controller
         Log::info("🔨 [PDF-CONTROLLER] Generando HTML para PDF");
         
         try {
+            // Procesar páginas para añadir información de layout
+            $processedPages = array_map(function ($page) {
+                if (isset($page['layout'])) {
+                    $page['layoutInfo'] = $this->getLayoutInfo($page['layout']);
+                }
+                return $page;
+            }, $pages);
+            
             return View::make('pdf.project-optimized', [
-                'pages' => $pages,
+                'pages' => $processedPages,
                 'project' => $project,
                 'totalPages' => count($pages)
             ])->render();
@@ -271,5 +279,27 @@ class ProjectPDFController extends Controller
             'message' => $message,
             'timestamp' => now()->toISOString()
         ], $status);
+    }
+
+    /**
+     * Obtiene información del layout desde la configuración
+     */
+    private function getLayoutInfo($layoutName)
+    {
+        $layouts = config('layouts.layouts', []);
+        
+        if (!isset($layouts[$layoutName])) {
+            return null;
+        }
+        
+        $layout = $layouts[$layoutName];
+        
+        return [
+            'rows' => $layout['rows'],
+            'cols' => $layout['cols'],
+            'cells' => $layout['cells'],
+            'gap' => config('layouts.default_style.gap', '8px'),
+            'padding' => config('layouts.default_style.padding', '16px')
+        ];
     }
 }

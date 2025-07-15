@@ -1,0 +1,150 @@
+// ==========================================
+// CÓDIGO PARA AGREGAR PDF RÁPIDO AL EDITOR
+// ==========================================
+
+// 1. IMPORT (ya agregado):
+import { Zap } from "lucide-react";
+
+// 2. FUNCIÓN PARA GENERAR PDF RÁPIDO (agregar después de la función handleExportPDF):
+
+// 🚀 Función para generar PDF rápido usando thumbnails del backend
+const handleExportPDFFromBackendThumbnails = async () => {
+    if (!projectData?.id) {
+        toast.error('No se ha cargado ningún proyecto.');
+        return;
+    }
+
+    // Evitar múltiples ejecuciones simultáneas
+    if (isPDFGenerating) {
+        toast.warning('⏳ Ya se está generando un PDF. Por favor espera...');
+        return;
+    }
+
+    // Activar estado de loading
+    setIsPDFGenerating(true);
+
+    const loadingToast = toast.loading('⚡ Generando PDF rápido con thumbnails de alta calidad...', {
+        duration: 0
+    });
+
+    try {
+        console.log('⚡ [PDF-THUMBNAILS] Iniciando generación de PDF con thumbnails del backend...');
+
+        // Paso 1: Generar thumbnails en el backend
+        const thumbnailResponse = await fetch(`/api/thumbnails/${projectData.id}/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            },
+            body: JSON.stringify({
+                pages: pages.map(page => ({
+                    id: page.id,
+                    type: page.type,
+                    cells: page.cells,
+                    layout: page.layout,
+                    backgroundColor: page.backgroundColor,
+                    backgroundImage: page.backgroundImage
+                })),
+                workspaceDimensions: workspaceDimensions,
+                quality: 300 // DPI
+            })
+        });
+
+        if (!thumbnailResponse.ok) {
+            throw new Error('Error al generar thumbnails en el backend');
+        }
+
+        const thumbnailData = await thumbnailResponse.json();
+        console.log('✅ [PDF-THUMBNAILS] Thumbnails generados:', thumbnailData);
+
+        // Paso 2: Crear PDF usando jsPDF con los thumbnails
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: workspaceDimensions.width > workspaceDimensions.height ? 'landscape' : 'portrait',
+            unit: 'px',
+            format: [workspaceDimensions.width, workspaceDimensions.height]
+        });
+
+        // Procesar cada página
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            const thumbnailUrl = thumbnailData.thumbnails[page.id];
+
+            if (thumbnailUrl) {
+                // Cargar imagen thumbnail
+                const img = new Image();
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = thumbnailUrl;
+                });
+
+                // Agregar página al PDF
+                if (i > 0) {
+                    pdf.addPage();
+                }
+
+                // Agregar imagen a la página
+                pdf.addImage(
+                    img,
+                    'PNG',
+                    0,
+                    0,
+                    workspaceDimensions.width,
+                    workspaceDimensions.height,
+                    undefined,
+                    'FAST'
+                );
+            }
+        }
+
+        // Guardar PDF
+        const fileName = `${projectData.name || 'proyecto'}_thumbnails_${new Date().toISOString().split('T')[0]}.pdf`;
+        pdf.save(fileName);
+
+        toast.dismiss(loadingToast);
+        toast.success(`⚡ PDF rápido generado exitosamente!\n📄 Archivo: ${fileName}\n🖼️ Usando thumbnails de alta calidad`, {
+            duration: 6000
+        });
+
+        console.log('✅ [PDF-THUMBNAILS] PDF generado exitosamente:', fileName);
+
+    } catch (error) {
+        console.error('❌ [PDF-THUMBNAILS] Error:', error);
+        toast.dismiss(loadingToast);
+        toast.error('❌ Error al generar PDF con thumbnails: ' + error.message);
+    } finally {
+        setIsPDFGenerating(false);
+    }
+};
+
+// 3. BOTÓN EN EL HEADER (agregar después del botón PDF normal):
+
+<Button
+    variant="ghost"
+    size="sm"
+    tooltip={isPDFGenerating ? "Generando PDF..." : "PDF Rápido con Thumbnails"}
+    onClick={handleExportPDFFromBackendThumbnails}
+    disabled={isPDFGenerating}
+    className={`text-white hover:bg-white/10 ${isPDFGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+    icon={isPDFGenerating ? (
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+    ) : (
+        <Zap className="h-4 w-4" />
+    )}
+>
+    {isPDFGenerating ? 'Generando...' : 'PDF Rápido'}
+</Button>
+
+// ==========================================
+// INSTRUCCIONES DE INSTALACIÓN:
+// ==========================================
+
+1. Ya agregué el import de Zap a lucide-react
+2. Debes agregar la función handleExportPDFFromBackendThumbnails después de la función handleExportPDF
+3. Debes agregar el botón después del botón PDF normal en el header
+4. El botón usa el icono Zap (⚡) para diferenciarse del botón PDF normal
+5. Genera thumbnails de alta calidad en el backend y luego crea el PDF rápidamente
+
+¡YA ESTÁ TODO EL CÓDIGO LISTO PARA USAR!

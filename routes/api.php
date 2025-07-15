@@ -152,6 +152,15 @@ Route::post('/subscriptions', [SubscriptionController::class, 'save']);
 
 Route::get('/cover/{uuid}', [CoverController::class, 'full']);
 Route::get('/cover/thumbnail/{uuid}', [CoverController::class, 'thumbnail']);
+
+// Thumbnails de alta calidad para proyectos
+Route::prefix('thumbnails')->group(function () {
+    Route::post('/{projectId}/generate', [App\Http\Controllers\Api\ThumbnailController::class, 'generateProjectThumbnails']);
+    Route::post('/{projectId}/page/{pageIndex}', [App\Http\Controllers\Api\ThumbnailController::class, 'generatePageThumbnail']);
+    Route::get('/{projectId}', [App\Http\Controllers\Api\ThumbnailController::class, 'getProjectThumbnails']);
+    Route::delete('/{projectId}', [App\Http\Controllers\Api\ThumbnailController::class, 'deleteProjectThumbnails']);
+});
+
 Route::get('/mailing/notify', [BlogController::class, 'notifyToday']);
 Route::delete('/mailing/down/{id}', [SubscriptionController::class, 'delete'])->name('mailing.down');
 
