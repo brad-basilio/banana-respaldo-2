@@ -14,18 +14,23 @@ use App\Http\Controllers\Admin\CollectionController as AdminCollectionController
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\SocialController as AdminSocialController;
 use App\Http\Controllers\Admin\StrengthController as AdminStrengthController;
+use App\Http\Controllers\Admin\CertificationController as AdminCertificationController;
+use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\GeneralController as AdminGeneralController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\AdController as AdminAdController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
+use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
 
 use App\Http\Controllers\Admin\DeliveryPriceController as AdminDeliveryPriceController;
 use App\Http\Controllers\Admin\TypesDeliveryController as AdminTypesDeliveryController;
+use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SaleController as AdminSaleController;
+use App\Http\Controllers\Admin\SaleExportController as AdminSaleExportController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 
@@ -41,6 +46,7 @@ use App\Http\Controllers\Admin\ComboController as AdminComboController;
 use App\Http\Controllers\Admin\DeliveryZoneController as AdminDeliveryZoneController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\NotificationVariableController;
+use App\Http\Controllers\Api\NotificationVariablesController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
@@ -53,6 +59,7 @@ use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\CoverController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeliveryPriceController;
+use App\Http\Controllers\TypeDeliveryController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ItemImportController;
 use App\Http\Controllers\MessageController;
@@ -78,6 +85,14 @@ use App\Http\Controllers\UnifiedImportController;
 */
 
 Route::get('/ubigeo/search', [DeliveryPriceController::class, 'search'])->name('ubigeo.search');
+
+// Type Delivery routes
+Route::get('/type-delivery/{slug}', [TypeDeliveryController::class, 'getBySlug']);
+
+// Rutas públicas para tiendas (checkout)
+Route::get('/stores', [AdminStoreController::class, 'getActiveStores']);
+Route::get('/stores/by-ubigeo/{ubigeo}', [AdminStoreController::class, 'getByUbigeo']);
+
 Route::post('/scrap', [ScrapController::class, 'scrap']);
 Route::post('/scrap-shopsimon', [ScrapController::class, 'scrapShopSimon']);
 
@@ -89,6 +104,13 @@ Route::post('/unified-import/preview', [UnifiedImportController::class, 'preview
 Route::get('/unified-import/field-mappings', [UnifiedImportController::class, 'getFieldMappings']);
 
 Route::post('/complaints', [ComplaintController::class, 'saveComplaint']);
+Route::get('/notification-variables/{type}', [NotificationVariablesController::class, 'getVariables']);
+
+// Tracking de ecommerce
+Route::post('/tracking/add-to-cart', [App\Http\Controllers\Ecommerce\EcommerceTrackingController::class, 'trackAddToCart']);
+Route::post('/tracking/initiate-checkout', [App\Http\Controllers\Ecommerce\EcommerceTrackingController::class, 'trackInitiateCheckout']);
+Route::get('/tracking/purchase/{orderId}', [App\Http\Controllers\Ecommerce\EcommerceTrackingController::class, 'trackPurchase']);
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/signup', [AuthController::class, 'signup']);
 
@@ -119,10 +141,14 @@ Route::get('/indicators/media/{uuid}', [AdminIndicatorController::class, 'media'
 
 Route::get('/aboutuses/media/{uuid}', [AdminAboutusController::class, 'media']);
 Route::get('/strengths/media/{uuid}', [AdminStrengthController::class, 'media']);
+Route::get('/certifications/media/{uuid}', [AdminCertificationController::class, 'media']);
+Route::get('/partners/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/ads/media/{uuid}', [AdminAdController::class, 'media'])->withoutMiddleware('throttle');
+Route::get('/stores/media/{uuid}', [AdminStoreController::class, 'media']);
 
 Route::post('/posts/paginate', [PostController::class, 'paginate']);
 Route::post('/items/paginate', [ItemController::class, 'paginate']);
+Route::post('/items/convert-slugs', [ItemController::class, 'convertSlugsToIds']);
 
 Route::post('/messages', [MessageController::class, 'save']);
 Route::post('/subscriptions', [SubscriptionController::class, 'save']);
@@ -138,6 +164,7 @@ Route::post('/items/update-items', [ItemController::class, 'updateViews']);
 Route::post('/items/relations-items', [ItemController::class, 'relationsItems']);
 Route::post('/items/variations-items', [ItemController::class, 'variationsItems'])->withoutMiddleware('throttle');
 Route::post('/items/searchProducts', [ItemController::class, 'searchProduct']);
+Route::get('/items/tags', [ItemController::class, 'getTags']);
 
 Route::post('/pago', [PaymentController::class, 'charge']);
 Route::get('/pago/{sale_id}', [PaymentController::class, 'getPaymentStatus']);
@@ -166,6 +193,9 @@ Route::get('/sales/track/{code}', [SaleController::class, 'track']);
 
 Route::get('/person/{dni}', [PersonController::class, 'find']);
 
+// Ruta pública para aplicar reglas de descuento al carrito
+Route::post('/discount-rules/apply-to-cart', [AdminDiscountRulesController::class, 'applyToCart']);
+
 Route::middleware('auth')->group(function () {
   Route::get('/notification-variables/{type}', [NotificationVariableController::class, 'variables']);
   Route::post('/upload-image', [ImageUploadController::class, 'store']);
@@ -175,6 +205,9 @@ Route::middleware('auth')->group(function () {
   Route::get('/profile/thumbnail/{uuid}', [AdminProfileController::class, 'thumbnail']);
   Route::post('/profile', [AdminProfileController::class, 'saveProfile']);
   Route::patch('/profile', [AdminProfileController::class, 'save']);
+
+  // Ruta de exportación sin middleware de permisos
+  Route::get('/admin/sales/export-data', [AdminSaleExportController::class, 'exportData']);
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminHomeController::class, 'dashboard']);
@@ -203,6 +236,20 @@ Route::middleware('auth')->group(function () {
     Route::delete('/coupons/{id}', [AdminCouponController::class, 'delete']);
     Route::post('/coupons/validate', [AdminCouponController::class, 'validateCoupon']);
     Route::get('/coupons/generate-code', [AdminCouponController::class, 'generateCode']);
+
+    // Reglas de Descuento
+    Route::post('/discount-rules', [AdminDiscountRulesController::class, 'save']);
+    Route::post('/discount-rules/paginate', [AdminDiscountRulesController::class, 'paginate']);
+    Route::patch('/discount-rules/{field}', [AdminDiscountRulesController::class, 'boolean']);
+    Route::delete('/discount-rules/{id}', [AdminDiscountRulesController::class, 'delete']);
+    Route::patch('/discount-rules/{id}/toggle-active', [AdminDiscountRulesController::class, 'toggleActive']);
+    Route::post('/discount-rules/{id}/duplicate', [AdminDiscountRulesController::class, 'duplicate']);
+    Route::get('/discount-rules/products', [AdminDiscountRulesController::class, 'getProducts']);
+    Route::post('/discount-rules/products/by-ids', [AdminDiscountRulesController::class, 'getProductsByIds']);
+    Route::get('/discount-rules/categories', [AdminDiscountRulesController::class, 'getCategories']);
+    Route::post('/discount-rules/categories/by-ids', [AdminDiscountRulesController::class, 'getCategoriesByIds']);
+    Route::get('/discount-rules/rule-types', [AdminDiscountRulesController::class, 'getRuleTypes']);
+    Route::get('/discount-rules/{id}/usage-stats', [AdminDiscountRulesController::class, 'getUsageStats']);
 
     Route::post('/ads', [AdminAdController::class, 'save']);
     Route::post('/ads/paginate', [AdminAdController::class, 'paginate']);
@@ -317,8 +364,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/types_delivery/{field}', [AdminTypesDeliveryController::class, 'boolean']);
     Route::delete('/types_delivery/{id}', [AdminTypesDeliveryController::class, 'delete']);
 
+    Route::post('/stores', [AdminStoreController::class, 'save']);
+    Route::post('/stores/paginate', [AdminStoreController::class, 'paginate']);
+    Route::patch('/stores/status', [AdminStoreController::class, 'status']);
+    Route::patch('/stores/{field}', [AdminStoreController::class, 'boolean']);
+    Route::delete('/stores/{id}', [AdminStoreController::class, 'delete']);
+    Route::get('/stores/{id}', [AdminStoreController::class, 'show']);
+
     Route::post('/tags', [AdminTagController::class, 'save']);
     Route::post('/tags/paginate', [AdminTagController::class, 'paginate']);
+    Route::post('/tags/update-promotional-status', [AdminTagController::class, 'updatePromotionalStatus']);
     Route::patch('/tags/status', [AdminTagController::class, 'status']);
     Route::patch('/tags/{field}', [AdminTagController::class, 'boolean']);
     Route::delete('/tags/{id}', [AdminTagController::class, 'delete']);
@@ -334,6 +389,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/strengths/status', [AdminStrengthController::class, 'status']);
     Route::patch('/strengths/{field}', [AdminStrengthController::class, 'boolean']);
     Route::delete('/strengths/{id}', [AdminStrengthController::class, 'delete']);
+
+    Route::post('/certifications', [AdminCertificationController::class, 'save']);
+    Route::post('/certifications/paginate', [AdminCertificationController::class, 'paginate']);
+    Route::patch('/certifications/status', [AdminCertificationController::class, 'status']);
+    Route::patch('/certifications/{field}', [AdminCertificationController::class, 'boolean']);
+    Route::delete('/certifications/{id}', [AdminCertificationController::class, 'delete']);
+
+    Route::post('/partners', [AdminPartnerController::class, 'save']);
+    Route::post('/partners/paginate', [AdminPartnerController::class, 'paginate']);
+    Route::patch('/partners/status', [AdminPartnerController::class, 'status']);
+    Route::patch('/partners/{field}', [AdminPartnerController::class, 'boolean']);
+    Route::delete('/partners/{id}', [AdminPartnerController::class, 'delete']);
 
     Route::post('/socials', [AdminSocialController::class, 'save']);
     Route::post('/socials/paginate', [AdminSocialController::class, 'paginate']);

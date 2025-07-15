@@ -12,11 +12,14 @@ import Number2Currency from "../Utils/Number2Currency";
 import Modal from "../Components/Adminto/Modal";
 import Tippy from "@tippyjs/react";
 import SaleStatusesRest from "../Actions/Admin/SaleStatusesRest";
+import SaleExportRest from "../Actions/Admin/SaleExportRest";
+import * as XLSX from 'xlsx';
 import SelectFormGroup from "../Components/Adminto/form/SelectFormGroup";
 import { renderToString } from "react-dom/server";
 
 const salesRest = new SalesRest();
 const saleStatusesRest = new SaleStatusesRest();
+const saleExportRest = new SaleExportRest();
 
 const Sales = ({ statuses = [] }) => {
     const gridRef = useRef();
@@ -72,9 +75,400 @@ const Sales = ({ statuses = [] }) => {
     const onModalOpen = async (saleId) => {
         notifyClientRef.current.checked = true
         const newSale = await salesRest.get(saleId);
+        console.log("Sale data loaded:", newSale.data); // Debug: ver todos los datos que llegan
         setSaleLoaded(newSale.data);
         setSaleStatuses(newSale.data.tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
         $(modalRef.current).modal("show");
+    };
+
+    const [exportFilters, setExportFilters] = useState({
+        startDate: '',
+        endDate: '',
+        status: ''
+    });
+
+    const showExportModal = () => {
+        Swal.fire({
+            title: '<div style="display: flex; align-items: center; justify-content: center; gap: 12px; color: #2c3e50;"><i class="fas fa-file-excel" style="color: #1e7e34; font-size: 28px;"></i><span style="font-weight: 600;">Exportar Ventas a Excel</span></div>',
+            html: `
+                <div style="padding: 25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);">
+                    
+                   
+                    
+                    <!-- Formulario de Fechas -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
+                        
+                        <!-- Fecha Inicio -->
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 4px solid #28a745;">
+                            <label style="display: block; margin-bottom: 12px; font-weight: 600; color: #495057; font-size: 14px;">
+                                <i class="fas fa-play-circle" style="color: #28a745; margin-right: 8px;"></i>
+                                Fecha de Inicio
+                            </label>
+                            <input 
+                                type="date" 
+                                id="startDate" 
+                                style="
+                                    width: 100%; 
+                                    padding: 12px 16px; 
+                                    border: 2px solid #e9ecef; 
+                                    border-radius: 8px; 
+                                    font-size: 14px; 
+                                    transition: all 0.3s ease;
+                                    background: #ffffff;
+                                    color: #495057;
+                                    font-family: inherit;
+                                " 
+                                onFocus="this.style.borderColor='#28a745'; this.style.boxShadow='0 0 0 3px rgba(40, 167, 69, 0.15)'; this.style.transform='translateY(-1px)'"
+                                onBlur="this.style.borderColor='#e9ecef'; this.style.boxShadow='none'; this.style.transform='translateY(0)'"
+                            >
+                        </div>
+                        
+                        <!-- Fecha Fin -->
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-left: 4px solid #dc3545;">
+                            <label style="display: block; margin-bottom: 12px; font-weight: 600; color: #495057; font-size: 14px;">
+                                <i class="fas fa-stop-circle" style="color: #dc3545; margin-right: 8px;"></i>
+                                Fecha de Fin
+                            </label>
+                            <input 
+                                type="date" 
+                                id="endDate" 
+                                style="
+                                    width: 100%; 
+                                    padding: 12px 16px; 
+                                    border: 2px solid #e9ecef; 
+                                    border-radius: 8px; 
+                                    font-size: 14px; 
+                                    transition: all 0.3s ease;
+                                    background: #ffffff;
+                                    color: #495057;
+                                    font-family: inherit;
+                                " 
+                                onFocus="this.style.borderColor='#dc3545'; this.style.boxShadow='0 0 0 3px rgba(220, 53, 69, 0.15)'; this.style.transform='translateY(-1px)'"
+                                onBlur="this.style.borderColor='#e9ecef'; this.style.boxShadow='none'; this.style.transform='translateY(0)'"
+                            >
+                        </div>
+                    </div>
+                    
+                  
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-file-excel"></i> Exportar Excel',
+            cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            width: '650px',
+            preConfirm: () => {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+
+                // Validación básica
+                if (startDate && endDate && startDate > endDate) {
+                    Swal.showValidationMessage('La fecha de inicio no puede ser mayor a la fecha fin');
+                    return false;
+                }
+
+                return {
+                    startDate,
+                    endDate,
+                    status: '' // Siempre vacío ya que no hay filtro de estado
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const filters = result.value;
+                exportToExcel(filters);
+            }
+        });
+    };
+
+    const exportToExcel = async (filters = {}) => {
+        try {
+            // Mostrar indicador de carga
+            Swal.fire({
+                title: 'Exportando datos...',
+                text: 'Por favor espere mientras se preparan los datos para exportación',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Preparar parámetros para la consulta
+            const params = new URLSearchParams();
+            if (filters.startDate) params.append('start_date', filters.startDate);
+            if (filters.endDate) params.append('end_date', filters.endDate);
+            if (filters.status) params.append('status', filters.status);
+
+            // Obtener datos completos desde el controlador especializado
+            const url = `/api/admin/sales/export-data${params.toString() ? '?' + params.toString() : ''}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Error al obtener los datos');
+            }
+
+            const salesData = data.data;
+
+            if (salesData.length === 0) {
+                Swal.fire({
+                    title: "Sin datos",
+                    text: `No hay ventas para exportar con los filtros seleccionados.
+                           ${filters.startDate ? `\nFecha inicio: ${filters.startDate}` : ''}
+                           ${filters.endDate ? `\nFecha fin: ${filters.endDate}` : ''}
+                           ${filters.status ? `\nEstado filtrado: ${saleStatuses.find(s => s.id == filters.status)?.name || 'Desconocido'}` : ''}`,
+                    icon: "info"
+                });
+                return;
+            }
+
+            // Formatear datos para Excel
+            const excelData = salesData.map(sale => ({
+                'ID_PEDIDO': sale.correlative_code,
+                'FECHA': sale.created_at,
+                'ESTADO': sale.status_name,
+                'CLIENTE_NOMBRES': sale.fullname,
+                'CLIENTE_EMAIL': sale.email,
+                'CLIENTE_TELEFONO': sale.phone,
+                'TIPO_DOCUMENTO': sale.document_type,
+                'NUMERO_DOCUMENTO': sale.document,
+                'RAZON_SOCIAL': sale.business_name,
+                'TIPO_COMPROBANTE': sale.invoice_type,
+                'METODO_PAGO': sale.payment_method,
+                'ID_TRANSACCION': sale.culqi_charge_id,
+                'ESTADO_PAGO': sale.payment_status,
+                'TIPO_ENTREGA': sale.delivery_type,
+                'DIRECCION_ENTREGA': sale.full_address,
+                'TIENDA_RETIRO': sale.store_name,
+                'DIRECCION_TIENDA': sale.store_address,
+                'TELEFONO_TIENDA': sale.store_phone,
+                'HORARIO_TIENDA': sale.store_schedule,
+                'REFERENCIA': sale.reference,
+                'COMENTARIO': sale.comment,
+                'UBIGEO': sale.ubigeo,
+                'PRODUCTOS': sale.products_formatted,
+                'CANTIDAD_PRODUCTOS': sale.products_count,
+                'CANTIDAD_TOTAL': sale.products_total_quantity,
+                'SUBTOTAL': sale.subtotal,
+                'COSTO_ENVIO': sale.delivery_cost,
+                'DESCUENTO_PAQUETE': sale.bundle_discount,
+                'DESCUENTO_RENOVACION': sale.renewal_discount,
+                'DESCUENTO_CUPON': sale.coupon_discount,
+                'CODIGO_CUPON': sale.coupon_code,
+                'DESCUENTO_PROMOCION': sale.promotion_discount,
+                'PROMOCIONES_APLICADAS': sale.applied_promotions,
+                'TOTAL_FINAL': sale.total_amount
+            }));
+
+            // Crear libro de Excel
+            const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+            // Configurar ancho de columnas optimizado
+            const columnWidths = [
+                { wch: 15 }, // ID_PEDIDO
+                { wch: 18 }, // FECHA
+                { wch: 12 }, // ESTADO
+                { wch: 25 }, // CLIENTE_NOMBRES
+                { wch: 30 }, // CLIENTE_EMAIL
+                { wch: 15 }, // CLIENTE_TELEFONO
+                { wch: 15 }, // TIPO_DOCUMENTO
+                { wch: 15 }, // NUMERO_DOCUMENTO
+                { wch: 30 }, // RAZON_SOCIAL
+                { wch: 15 }, // TIPO_COMPROBANTE
+                { wch: 15 }, // METODO_PAGO
+                { wch: 20 }, // ID_TRANSACCION
+                { wch: 15 }, // ESTADO_PAGO
+                { wch: 15 }, // TIPO_ENTREGA
+                { wch: 50 }, // DIRECCION_ENTREGA
+                { wch: 25 }, // TIENDA_RETIRO
+                { wch: 30 }, // DIRECCION_TIENDA
+                { wch: 15 }, // TELEFONO_TIENDA
+                { wch: 20 }, // HORARIO_TIENDA
+                { wch: 20 }, // REFERENCIA
+                { wch: 30 }, // COMENTARIO
+                { wch: 10 }, // UBIGEO
+                { wch: 60 }, // PRODUCTOS
+                { wch: 10 }, // CANTIDAD_PRODUCTOS
+                { wch: 10 }, // CANTIDAD_TOTAL
+                { wch: 12 }, // SUBTOTAL
+                { wch: 12 }, // COSTO_ENVIO
+                { wch: 15 }, // DESCUENTO_PAQUETE
+                { wch: 18 }, // DESCUENTO_RENOVACION
+                { wch: 15 }, // DESCUENTO_CUPON
+                { wch: 15 }, // CODIGO_CUPON
+                { wch: 18 }, // DESCUENTO_PROMOCION
+                { wch: 40 }, // PROMOCIONES_APLICADAS
+                { wch: 12 }  // TOTAL_FINAL
+            ];
+
+            worksheet['!cols'] = columnWidths;
+            
+            // Agregar hoja al libro
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Ventas_Facturacion');
+
+            // Generar nombre del archivo con información de filtros
+            let filename = 'ventas_facturacion';
+            if (filters.startDate || filters.endDate) {
+                filename += '_' + (filters.startDate || 'inicio') + '_al_' + (filters.endDate || 'fin');
+            }
+            if (filters.status) {
+                const statusName = saleStatuses.find(s => s.id == filters.status)?.name || 'estado';
+                filename += '_' + statusName.toLowerCase().replace(/\s+/g, '_');
+            }
+            filename += '_' + moment().format('YYYY-MM-DD_HH-mm') + '.xlsx';
+
+            // Descargar archivo
+            XLSX.writeFile(workbook, filename);
+
+            // Mostrar mensaje de éxito con estadísticas detalladas
+            let filterInfo = '';
+            if (filters.startDate) filterInfo += `\n📅 Desde: ${filters.startDate}`;
+            if (filters.endDate) filterInfo += `\n📅 Hasta: ${filters.endDate}`;
+            if (filters.status) {
+                const statusName = saleStatuses.find(s => s.id == filters.status)?.name;
+                filterInfo += `\n📊 Estado: ${statusName}`;
+            }
+
+            Swal.fire({
+                title: '<div style="display: flex; align-items: center; justify-content: center; gap: 12px; color: #155724;"><i class="fas fa-check-circle" style="color: #28a745; font-size: 28px;"></i><span style="font-weight: 600;">¡Exportación Exitosa!</span></div>',
+                html: `
+                    <div style="
+                        background: linear-gradient(135deg, #d4edda 0%, #f8f9fa 100%);
+                        border-radius: 16px;
+                        padding: 25px;
+                        margin: 20px 0;
+                        border-left: 5px solid #28a745;
+                        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.15);
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    ">
+                        <!-- Estadísticas principales -->
+                        <div style="
+                            display: grid; 
+                            grid-template-columns: 1fr 1fr; 
+                            gap: 20px; 
+                            margin-bottom: 20px;
+                        ">
+                            <!-- Total exportado -->
+                            <div style="
+                                background: white;
+                                padding: 18px;
+                                border-radius: 12px;
+                                text-align: center;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                                border-top: 3px solid #17a2b8;
+                            ">
+                                <div style="color: #17a2b8; font-size: 24px; margin-bottom: 8px;">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div style="font-size: 28px; font-weight: bold; color: #2c3e50; margin-bottom: 4px;">
+                                    ${salesData.length}
+                                </div>
+                                <div style="font-size: 13px; color: #6c757d; font-weight: 500;">
+                                    Ventas Exportadas
+                                </div>
+                            </div>
+                            
+                            <!-- Archivo generado -->
+                            <div style="
+                                background: white;
+                                padding: 18px;
+                                border-radius: 12px;
+                                text-align: center;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                                border-top: 3px solid #28a745;
+                            ">
+                                <div style="color: #28a745; font-size: 24px; margin-bottom: 8px;">
+                                    <i class="fas fa-file-excel"></i>
+                                </div>
+                                <div style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 4px; word-break: break-all;">
+                                    ${filename}
+                                </div>
+                                <div style="font-size: 13px; color: #6c757d; font-weight: 500;">
+                                    Archivo Excel
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${filterInfo ? `
+                        <!-- Información de filtros -->
+                        <div style="
+                            background: white;
+                            padding: 18px;
+                            border-radius: 12px;
+                            border-left: 4px solid #ffc107;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                        ">
+                            <div style="
+                                display: flex; 
+                                align-items: center; 
+                                margin-bottom: 12px;
+                                color: #856404;
+                                font-weight: 600;
+                                font-size: 15px;
+                            ">
+                                <i class="fas fa-filter" style="margin-right: 10px; color: #ffc107;"></i>
+                                Filtros Aplicados
+                            </div>
+                            <div style="
+                                font-size: 14px; 
+                                color: #495057; 
+                                line-height: 1.6;
+                                background: #fff8e1;
+                                padding: 12px;
+                                border-radius: 8px;
+                                border: 1px solid #ffeaa7;
+                            ">
+                                ${filterInfo.replace(/\n/g, '<br/>')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Mensaje de confirmación -->
+                        <div style="
+                            text-align: center;
+                            margin-top: 20px;
+                            padding: 15px;
+                            background: rgba(40, 167, 69, 0.1);
+                            border-radius: 10px;
+                            border: 1px solid rgba(40, 167, 69, 0.2);
+                        ">
+                            <div style="color: #155724; font-size: 15px; font-weight: 500;">
+                                <i class="fas fa-download" style="margin-right: 8px;"></i>
+                                El archivo se ha descargado exitosamente
+                            </div>
+                        </div>
+                    </div>
+                `,
+                icon: "success",
+                confirmButtonText: '<i class="fas fa-thumbs-up"></i> ¡Perfecto!',
+                confirmButtonColor: '#28a745',
+                timer: 8000,
+                timerProgressBar: true,
+                width: '700px'
+            });
+
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            Swal.fire({
+                title: "Error en la exportación",
+                text: error.message || "No se pudo exportar los datos. Intente nuevamente.",
+                icon: "error"
+            });
+        }
     };
 
     useEffect(() => {
@@ -99,7 +493,9 @@ const Sales = ({ statuses = [] }) => {
         Number(saleLoaded?.delivery || 0) -
         Number(saleLoaded?.bundle_discount || 0) -
         Number(saleLoaded?.renewal_discount || 0) -
-        Number(saleLoaded?.coupon_discount || 0);
+        Number(saleLoaded?.coupon_discount || 0) 
+     // -Number(saleLoaded?.promotion_discount || 0)
+        ;
 
     return (
         <>
@@ -109,6 +505,18 @@ const Sales = ({ statuses = [] }) => {
                 title="Pedidos"
                 rest={salesRest}
                 toolBar={(container) => {
+                    container.unshift({
+                        widget: "dxButton",
+                        location: "after",
+                        options: {
+                            icon: "exportxlsx",
+                            text: "Exportar para Facturación",
+                            hint: "Exportar datos completos para facturador",
+                            onClick: showExportModal,
+                            type: "normal",
+                            stylingMode: "outlined"
+                        },
+                    });
                     container.unshift({
                         widget: "dxButton",
                         location: "after",
@@ -282,11 +690,66 @@ const Sales = ({ statuses = [] }) => {
                                             <th>Teléfono:</th>
                                             <td>{saleLoaded?.phone}</td>
                                         </tr>
-
-                                        {saleLoaded?.delivery_type &&
-                                            //== "express"  (
+                                        {(saleLoaded?.document_type || saleLoaded?.documentType) && (
                                             <tr>
-                                                <th>Dirección:</th>
+                                                <th>Tipo de documento:</th>
+                                                <td>{saleLoaded?.document_type || saleLoaded?.documentType}</td>
+                                            </tr>
+                                        )}
+                                        {saleLoaded?.document && (
+                                            <tr>
+                                                <th>Número de documento:</th>
+                                                <td>{saleLoaded?.document}</td>
+                                            </tr>
+                                        )}
+                                        
+                                        {saleLoaded?.delivery_type && (
+                                            <tr>
+                                                <th>Tipo de entrega:</th>
+                                                <td>
+                                                    <span className="badge bg-info">
+                                                        {saleLoaded?.delivery_type === 'store_pickup' ? 'Retiro en Tienda' : 
+                                                         saleLoaded?.delivery_type === 'free' ? 'Envío Gratis' : 
+                                                         saleLoaded?.delivery_type === 'express' ? 'Envío Express' : 
+                                                         saleLoaded?.delivery_type === 'standard' ? 'Envío Estándar' :
+                                                         saleLoaded?.delivery_type === 'agency' ? 'Entrega en Agencia' : 
+                                                         saleLoaded?.delivery_type}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {saleLoaded?.delivery_type === 'store_pickup' && saleLoaded?.store && (
+                                            <tr>
+                                                <th>Tienda para retiro:</th>
+                                                <td>
+                                                    <strong>{saleLoaded?.store?.name}</strong>
+                                                    <small className="text-muted d-block">
+                                                        {saleLoaded?.store?.address}
+                                                        {saleLoaded?.store?.district && (
+                                                            <>, {saleLoaded?.store?.district}</>
+                                                        )}
+                                                        {saleLoaded?.store?.province && (
+                                                            <>, {saleLoaded?.store?.province}</>
+                                                        )}
+                                                    </small>
+                                                    {saleLoaded?.store?.phone && (
+                                                        <small className="text-info d-block">
+                                                            📞 {saleLoaded?.store?.phone}
+                                                        </small>
+                                                    )}
+                                                    {saleLoaded?.store?.schedule && (
+                                                        <small className="text-success d-block">
+                                                            🕒 {saleLoaded?.store?.schedule}
+                                                        </small>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {saleLoaded?.delivery_type && saleLoaded?.delivery_type !== 'store_pickup' && (
+                                            <tr>
+                                                <th>Dirección de entrega:</th>
                                                 <td>
                                                     {saleLoaded?.address}{" "}
                                                     {saleLoaded?.number}
@@ -306,8 +769,7 @@ const Sales = ({ statuses = [] }) => {
                                                     </small>
                                                 </td>
                                             </tr>
-                                            // )
-                                        }
+                                        )}
 
                                         {saleLoaded?.reference && (
                                             <tr>
@@ -336,6 +798,8 @@ const Sales = ({ statuses = [] }) => {
                                                 </td>
                                             </tr>
                                         )}
+
+                                   
 
                                         {saleLoaded?.invoiceType && (
                                             <tr>

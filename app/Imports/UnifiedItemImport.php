@@ -56,6 +56,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         return [
             'collection' => ['collection', 'colleccion', 'coleccion'],
             'categoria' => ['categoria', 'category'],
+            'summary' => ['summary', 'resumen', 'descripcion_corta'],
             'subcategoria' => ['subcategoria', 'subcategory', 'sub_categoria'],
             'marca' => ['marca', 'brand'],
             'sku' => ['sku', 'codigo', 'code'],
@@ -79,6 +80,11 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 'especificaciones_tecnicas_separado_por_slash_para_filas_y_dos_puntos_para_columnas',
                 'especificaciones_tecnicas',
                 'specs_tecnicas'
+            ],
+            'especificaciones_iconos' => [
+                'especificaciones_iconos_separado_por_comas',
+                'especificaciones_iconos',
+                'specs_iconos'
             ]
         ];
     }
@@ -94,10 +100,10 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         ItemImage::truncate();
         ItemSpecification::truncate();
         Item::truncate();
-        // SubCategory::truncate();
-        // Collection::truncate();
+        SubCategory::truncate();
+        Collection::truncate();
         // Category::truncate();
-        // Brand::truncate();
+        Brand::truncate();
         
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
@@ -217,7 +223,8 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 'sku' => $sku,
                 'name' => $nombreProducto,
                 'description' => $this->getFieldValue($row, 'descripcion', ''),
-                'price' => $precio,
+                'summary' => $this->getFieldValue($row, 'summary', ''),
+                'price' => $precio ?? 0,
                 'discount' => $descuento,
                 'final_price' => $finalPrice,
                 'discount_percent' => $discountPercent,
@@ -228,6 +235,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 'image' => $this->getMainImage($sku),
                 'slug' => $slug,
                 'stock' => $this->getNumericValue($row, 'stock', 10),
+                'pdf' => $this->getPdfFile($sku),
             ];
 
             // Agregar campos opcionales si existen
@@ -354,6 +362,12 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             $specs = $this->getFieldValue($row, 'especificaciones_tecnicas');
             $this->saveSpecificationsTecnicas($item, $specs, 'tecnica');
         }
+
+        // Especificaciones con iconos
+        if ($this->hasField($row, 'especificaciones_iconos')) {
+            $specs = $this->getFieldValue($row, 'especificaciones_iconos');
+            $this->saveSpecificationsIcon($item, $specs, 'icono');
+        }
     }
 
     /**
@@ -433,6 +447,43 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         }
     }
 
+
+    private function saveSpecificationsIcon(Item $item, ?string $specs, string $type): void
+    {
+        if (empty($specs) || !is_string($specs)) {
+            return;
+        }
+
+        $specsArray = explode(',', $specs);
+        foreach ($specsArray as $spec) {
+            $spec = trim($spec);
+            if (empty($spec)) {
+                continue;
+            }
+            
+            if ($type === 'icono') {
+                ItemSpecification::create([
+                    'item_id' => $item->id,
+                    'type' => $type,
+                    'title' => '',
+                    'description' => $spec,
+                ]);
+            } else {
+                $parts = explode(':', $spec, 2);
+                if (count($parts) == 2) {
+                    $title = trim($parts[0]);
+                    $description = trim($parts[1]);
+                    ItemSpecification::create([
+                        'item_id' => $item->id,
+                        'type' => $type,
+                        'title' => $title,
+                        'description' => $description,
+                    ]);
+                }
+            }
+        }
+    }
+
     /**
      * Obtener imagen principal del producto
      */
@@ -465,22 +516,42 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
     private function saveGalleryImages(Item $item, string $sku): void
     {
         $extensions = ['png', 'jpg', 'jpeg', 'webp'];
-        $index = 2; // Empezar desde _2 ya que _1 puede ser la imagen principal
-
+        
+        // Primero verificar si existe la imagen principal (sku.extension)
+        $hasMainImage = false;
+        foreach ($extensions as $ext) {
+            if (Storage::exists("images/item/{$sku}.{$ext}")) {
+                $hasMainImage = true;
+                break;
+            }
+        }
+        
+        // Determinar el índice inicial
+        $startIndex = $hasMainImage ? 1 : 2;
+        $index = $startIndex;
+        
         while (true) {
             $found = false;
             
-            foreach ($extensions as $ext) {
-                $filename = "{$sku}_{$index}.{$ext}";
-                $path = "images/item/{$filename}";
-                
-                if (Storage::exists($path)) {
-                    ItemImage::create([
-                        'item_id' => $item->id,
-                        'url' => $filename,
-                    ]);
-                    $found = true;
-                    break;
+            // Probar ambos formatos: _01 y _1
+            $formats = [
+                sprintf("_%02d", $index), // Formato _01, _02, etc.
+                "_".$index                // Formato _1, _2, etc.
+            ];
+            
+            foreach ($formats as $suffix) {
+                foreach ($extensions as $ext) {
+                    $filename = "{$sku}{$suffix}.{$ext}";
+                    $path = "images/item/{$filename}";
+                    
+                    if (Storage::exists($path)) {
+                        ItemImage::create([
+                            'item_id' => $item->id,
+                            'url' => $filename,
+                        ]);
+                        $found = true;
+                        break 2; // Salir de ambos foreachs
+                    }
                 }
             }
 
@@ -490,6 +561,35 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             $index++;
         }
     }
+    
+    // private function saveGalleryImages(Item $item, string $sku): void
+    // {
+    //     $extensions = ['png', 'jpg', 'jpeg', 'webp'];
+    //     $index = 2; // Empezar desde _2 ya que _1 puede ser la imagen principal
+
+    //     while (true) {
+    //         $found = false;
+            
+    //         foreach ($extensions as $ext) {
+    //             $filename = "{$sku}_{$index}.{$ext}";
+    //             $path = "images/item/{$filename}";
+                
+    //             if (Storage::exists($path)) {
+    //                 ItemImage::create([
+    //                     'item_id' => $item->id,
+    //                     'url' => $filename,
+    //                 ]);
+    //                 $found = true;
+    //                 break;
+    //             }
+    //         }
+
+    //         if (!$found) {
+    //             break;
+    //         }
+    //         $index++;
+    //     }
+    // }
 
     /**
      * Verificar si una fila está vacía
@@ -556,5 +656,19 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
     public function getFieldMappings(): array
     {
         return $this->fieldMappings;
+    }
+
+    /**
+     * Obtener archivo PDF del producto basado en el SKU
+     */
+    private function getPdfFile(string $sku): ?string
+    {
+        $path = "images/item/{$sku}.pdf";
+        
+        if (Storage::exists($path)) {
+            return "{$sku}.pdf";
+        }
+        
+        return null;
     }
 }

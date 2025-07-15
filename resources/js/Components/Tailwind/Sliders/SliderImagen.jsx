@@ -73,7 +73,7 @@ const SliderImagen = ({ items, data }) => {
                             }}
                             loop={true}
                             spaceBetween={30}
-                            slidesPerView={1}
+                            slidesPerView={2}
                             onSwiper={(swiper) => (swiperRef.current = swiper)}
                             breakpoints={{
                                 640: { slidesPerView: 3 },
@@ -87,13 +87,13 @@ const SliderImagen = ({ items, data }) => {
                             {items.filter((brand) => brand.image).map((brand, index) => (
                                 <SwiperSlide key={index}>
                                     <div 
-                                        className="group w-full flex items-center justify-center px-2 font-font-secondary"
-                                        style={{ height: imagesLoaded ? '80px' : 'auto' }}
+                                        className={`group w-full flex items-center justify-center px-2 font-font-secondary ${imagesLoaded ? 'h-[50px] lg:h-[80px]' : 'auto'}`}
+                             
                                     >
                                         <img
                                             src={`/storage/images/brand/${brand.image}`}
                                             alt={brand.name}
-                                            className="brand-logo max-h-[60px] w-auto object-contain grayscale brightness-0 invert hover:scale-105 transition-transform cursor-pointer"
+                                            className="brand-logo max-h-[50px] lg:max-h-[60px] w-auto object-contain grayscale brightness-0 invert hover:scale-105 transition-transform cursor-pointer"
                                             onLoad={handleImagesLoad}
                                             style={{
                                                 maxWidth: '80%',

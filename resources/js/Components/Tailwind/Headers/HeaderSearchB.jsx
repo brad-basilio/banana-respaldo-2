@@ -9,10 +9,12 @@ import {
     User,
     Settings,
     CreditCard,
+    Home,
 } from "lucide-react";
 import CartModal from "../Components/CartModal";
 import Logout from "../../../Actions/Logout";
 import MobileMenu from "./Components/MobileMenu";
+import ProfileImage from "./Components/ProfileImage";
 import { motion, AnimatePresence } from "framer-motion";
 
 const HeaderSearchB = ({
@@ -30,7 +32,7 @@ const HeaderSearchB = ({
     const messageWhatsappObj = generals.find(
         (item) => item.correlative === "message_whatsapp"
     );
-
+    
     const phoneWhatsapp = phoneWhatsappObj?.description ?? null;
     const messageWhatsapp = messageWhatsappObj?.description ?? null;
 
@@ -41,13 +43,26 @@ const HeaderSearchB = ({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isFixed, setIsFixed] = useState(false);
 
+    // Estados para búsqueda predictiva
+    const [searchSuggestions, setSearchSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+    const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+    const suggestionItemsRef = useRef([]); // Ref para elementos de sugerencia
+
+
     const menuRef = useRef(null);
     const searchRef = useRef(null);
     const mobileSearchInputRef = useRef(null);
     const desktopSearchInputRef = useRef(null);
+    const suggestionsRef = useRef(null);
+    const searchTimeoutRef = useRef(null);
+
+    // refs para scroll automático en sugerencias
+    const suggestionRefs = useRef([]);
 
     const totalCount = cart.reduce((acc, item) => Number(acc) + Number(item.quantity), 0);
-    
+
     // Función para verificar si estamos en rutas donde no queremos mostrar la búsqueda móvil
     // Usando window.location directamente para máxima compatibilidad
     const shouldHideMobileSearch = () => {
@@ -62,6 +77,97 @@ const HeaderSearchB = ({
         }
     };
 
+    // Función para obtener sugerencias de búsqueda
+    const fetchSearchSuggestions = async (query) => {
+        if (!query.trim() || query.length < 2) {
+            setSearchSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        setIsLoadingSuggestions(true);
+
+        try {
+            const response = await fetch('/api/items/paginate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    take: 8, // Máximo 8 sugerencias
+                    skip: 0,
+                    filter: [
+                        ['name', 'contains', query],
+                        'or',
+                        ['summary', 'contains', query],
+                        'or',
+                        ['description', 'contains', query]
+                    ],
+                    sort: [{ selector: 'name', desc: false }],
+                    requireTotalCount: false,
+                    with: 'category,brand' // Incluir relaciones necesarias
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Error en la búsqueda');
+            }
+
+            const data = await response.json();
+
+            if (data.status === 200 && Array.isArray(data.data)) {
+                setSearchSuggestions(data.data);
+                setShowSuggestions(data.data.length > 0);
+            } else {
+                setSearchSuggestions([]);
+                setShowSuggestions(false);
+            }
+        } catch (error) {
+            console.error('Error fetching search suggestions:', error);
+            setSearchSuggestions([]);
+            setShowSuggestions(false);
+        } finally {
+            setIsLoadingSuggestions(false);
+        }
+    };
+
+    // Función para manejar cambios en el input de búsqueda
+    const handleSearchChange = (value) => {
+        setSearch(value);
+        setSelectedSuggestionIndex(-1);
+
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        searchTimeoutRef.current = setTimeout(() => {
+            fetchSearchSuggestions(value);
+        }, 300);
+    };
+
+    // Función para limpiar sugerencias
+    const clearSuggestions = () => {
+        setShowSuggestions(false);
+        setSearchSuggestions([]);
+        setSelectedSuggestionIndex(-1);
+    };
+
+    // Función para seleccionar una sugerencia
+    const selectSuggestion = (suggestion) => {
+        if (!suggestion) return;
+
+        setShowSuggestions(false);
+        setSearchMobile(false);
+
+        // Navegar a la página del producto
+        const url = suggestion.slug
+            ? `/product/${suggestion.slug}`
+            : `/catalogo?search=${encodeURIComponent(suggestion.name)}`;
+
+        window.location.href = url;
+    };
+
     useEffect(() => {
         function handleClickOutside(event) {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -73,6 +179,12 @@ const HeaderSearchB = ({
                 if (!search.trim()) {
                     setSearchMobile(false);
                 }
+            }
+            // Manejar click fuera de las sugerencias
+            if (suggestionsRef.current && !suggestionsRef.current.contains(event.target) &&
+                !desktopSearchInputRef.current?.contains(event.target) &&
+                !mobileSearchInputRef.current?.contains(event.target)) {
+                clearSuggestions();
             }
         }
 
@@ -99,20 +211,48 @@ const HeaderSearchB = ({
     // useEffect para manejar el escape en la búsqueda móvil
     useEffect(() => {
         const handleKeyPress = (event) => {
-            if (event.key === 'Escape' && searchMobile) {
-                setSearchMobile(false);
-                setSearch("");
+            if (event.key === 'Escape') {
+                if (showSuggestions) {
+                    clearSuggestions();
+                } else if (searchMobile) {
+                    setSearchMobile(false);
+                    setSearch("");
+                }
             }
         };
 
-        if (searchMobile) {
+        if (searchMobile || showSuggestions) {
             document.addEventListener("keydown", handleKeyPress);
         }
 
         return () => {
             document.removeEventListener("keydown", handleKeyPress);
         };
-    }, [searchMobile]);
+    }, [searchMobile, showSuggestions]);
+
+    // Cleanup timeout en unmount
+    useEffect(() => {
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Efecto para scroll automático al seleccionar sugerencias
+    useEffect(() => {
+        if (
+            selectedSuggestionIndex >= 0 &&
+            suggestionRefs.current[selectedSuggestionIndex] &&
+            suggestionsRef.current
+        ) {
+            // Usar scrollIntoView para asegurar que la sugerencia seleccionada esté visible
+            suggestionRefs.current[selectedSuggestionIndex].scrollIntoView({
+                block: 'nearest',
+                behavior: 'smooth',
+            });
+        }
+    }, [selectedSuggestionIndex]);
 
     const menuVariants = {
         hidden: {
@@ -166,6 +306,7 @@ const HeaderSearchB = ({
     // Función para manejar el submit del form (mejorada)
     const handleFormSubmit = (event) => {
         event.preventDefault();
+        clearSuggestions();
         if (search.trim()) {
             const trimmedSearch = search.trim();
             window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
@@ -176,6 +317,7 @@ const HeaderSearchB = ({
     // Función específica para el input móvil
     const handleMobileSearch = (event) => {
         event.preventDefault();
+        clearSuggestions();
         if (search.trim()) {
             const trimmedSearch = search.trim();
             setSearchMobile(false); // Cerrar el input móvil
@@ -184,18 +326,143 @@ const HeaderSearchB = ({
         return false;
     };
 
-    // Función para manejar el Enter y el icono de búsqueda del teclado móvil
-    const handleKeyDown = (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            if (search.trim()) {
-                const trimmedSearch = search.trim();
-                setSearchMobile(false); // Cerrar el input móvil si está abierto
-                window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
-            }
+    // --- SUGERENCIAS Y SCROLL INTELIGENTE ---
+    function scrollToSuggestion(index) {
+        const container = suggestionsRef.current;
+        const el = suggestionItemsRef.current[index];
+        if (!container || !el) return;
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        if (elRect.top < containerRect.top) {
+            // Scroll up
+            container.scrollTop -= (containerRect.top - elRect.top);
+        } else if (elRect.bottom > containerRect.bottom) {
+            // Scroll down
+            container.scrollTop += (elRect.bottom - containerRect.bottom);
+        }
+    }
+
+    // --- HANDLER DE TECLADO ---
+    const handleKeyDown = (e) => {
+        if (!showSuggestions || searchSuggestions.length === 0) return;
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => {
+                    const next = prev < searchSuggestions.length - 1 ? prev + 1 : prev;
+                    setTimeout(() => scrollToSuggestion(next), 0);
+                    return next;
+                });
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => {
+                    const next = prev > 0 ? prev - 1 : 0;
+                    setTimeout(() => scrollToSuggestion(next), 0);
+                    return next;
+                });
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < searchSuggestions.length) {
+                    selectSuggestion(searchSuggestions[selectedSuggestionIndex]);
+                } else if (search.trim()) {
+                    handleFormSubmit(e);
+                }
+                break;
+            case 'Escape':
+                setShowSuggestions(false);
+                break;
+            default:
+                break;
         }
     };
 
+    // --- SUGERENCIAS DE BÚSQUEDA ---
+    const SearchSuggestions = ({ suggestions, isLoading, onSelect, selectedIndex }) => {
+        if (!showSuggestions) return null;
+        return (
+            <motion.div
+                ref={suggestionsRef}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[60] max-h-80 overflow-y-auto mt-1"
+            >
+                {isLoading ? (
+                    <div className="p-4 text-center customtext-neutral-dark">
+                        <div className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            Buscando...
+                        </div>
+                    </div>
+                ) : suggestions.length > 0 ? (
+                    <ul className="py-2">
+                        {suggestions.map((suggestion, index) => (
+                            <li
+                                key={suggestion.id}
+                                ref={el => suggestionItemsRef.current[index] = el}
+                            >
+                                <button
+                                    data-suggestion-button
+                                    onMouseDown={e => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setTimeout(() => onSelect(suggestion), 0);
+                                    }}
+                                    className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${index === selectedIndex ? 'bg-primary/10 border-l-4 border-primary' : ''}`}
+                                    type="button"
+                                >
+                                    <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+                                        {suggestion.image ? (
+                                            <img
+                                                src={`/api/items/media/${suggestion.image}`}
+                                                alt={suggestion.name}
+                                                className="w-full h-full object-cover"
+                                                onError={e => {
+                                                    e.target.style.display = 'none';
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center customtext-neutral-dark">
+                                                <Search size={16} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-medium customtext-neutral-dark truncate">
+                                            {suggestion.name}
+                                        </div>
+                                        {suggestion.category && (
+                                            <div className="text-sm customtext-neutral-dark truncate">
+                                                {suggestion.category.name}
+                                            </div>
+                                        )}
+                                        {suggestion.final_price && (
+                                            <div className="text-sm font-semibold customtext-primary">
+                                                S/ {parseFloat(suggestion.final_price).toFixed(2)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <div className="p-4 text-center customtext-neutral-dark">
+                        No se encontraron productos
+                    </div>
+                )}
+            </motion.div>
+        );
+    };
+    console.log(isUser);
+    // Determinar si el usuario es cliente (no admin ni superadmin, usando roles array)
+    let isCustomer = false;
+    if (isUser && Array.isArray(isUser.roles)) {
+        const roleNames = isUser.roles.map(r => r.name?.toLowerCase());
+        isCustomer = !roleNames.includes('admin') && !roleNames.includes('root');
+    }
     return (
         <header className={`w-full top-0 left-0 z-50 transition-all duration-300 ${isFixed ? "fixed bg-white shadow-lg" : "relative bg-white"}`}>
             <div className="px-primary  bg-white 2xl:px-0 2xl:max-w-7xl mx-auto py-4 font-font-secondary text-base font-semibold">
@@ -219,10 +486,44 @@ const HeaderSearchB = ({
                                     <div ref={menuRef} className="relative">
                                         <button
                                             aria-label="user"
-                                            className="flex items-center gap-2 hover:customtext-primary transition-colors duration-300"
+                                            className="flex items-center gap-2 hover:customtext-primary transition-all duration-300 relative group"
                                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                                         >
-                                            <CircleUser className="customtext-primary" width="1.5rem" />
+                                            <div className="relative transform group-hover:scale-105 transition-transform duration-200">
+                                                {isUser.uuid ? (
+                                                    <div className="relative">
+                                                        <ProfileImage 
+                                                            uuid={isUser.uuid}
+                                                            name={isUser.name}
+                                                            lastname={isUser.lastname}
+                                                            className="!w-6 !h-6 rounded-full object-cover border-2 border-primary ring-secondary transition-all duration-300"
+                                                        />
+                                                        <div className="relative" style={{ display: 'none' }}>
+                                                            <CircleUser 
+                                                                className="customtext-primary  border-primary rounded-full   ring-secondary transition-all duration-300" 
+                                                                width="1.5rem" 
+                                                            />
+                                                        </div>
+                                                        {/* Punto indicador online animado */}
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                            <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                            <div className="w-full h-full bg-primary rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="relative">
+                                                        <CircleUser 
+                                                            className="customtext-primary border-2 border-primary rounded-full  ring-secondary  transition-all duration-300" 
+                                                            width="1.5rem" 
+                                                        />
+                                                        {/* Punto indicador online animado */}
+                                                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                            <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                            <div className="w-full h-full bg-primary rounded-full"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </button>
 
                                         <AnimatePresence>
@@ -232,32 +533,79 @@ const HeaderSearchB = ({
                                                     animate="visible"
                                                     exit="exit"
                                                     variants={menuVariants}
-                                                    className="absolute z-50 top-full right-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
+                                                    className="absolute z-50 top-full -left-20 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
                                                 >
                                                     <div className="p-4">
                                                         <ul className="space-y-3">
-                                                            {menuItems.map((item, index) => (
-                                                                <li key={index}>
-                                                                    {item.onClick ? (
-                                                                        <button
-                                                                            aria-label="menu-items"
-                                                                            onClick={item.onClick}
-                                                                            className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
-                                                                        >
-                                                                            {item.icon}
-                                                                            <span>{item.label}</span>
-                                                                        </button>
-                                                                    ) : (
+                                                            {isCustomer ? (
+                                                                menuItems.map((item, index) => (
+                                                                    <li key={index}>
+                                                                        {item.onClick ? (
+                                                                            <button
+                                                                                aria-label="menu-items"
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    setIsMenuOpen(false);
+                                                                                    // Pequeño delay para que la animación se complete
+                                                                                    setTimeout(() => {
+                                                                                        item.onClick();
+                                                                                    }, 150);
+                                                                                }}
+                                                                                className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </button>
+                                                                        ) : (
+                                                                            <a
+                                                                                href={item.href}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setIsMenuOpen(false);
+                                                                                }}
+                                                                                className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
+                                                                            >
+                                                                                {item.icon}
+                                                                                <span>{item.label}</span>
+                                                                            </a>
+                                                                        )}
+                                                                    </li>
+                                                                ))
+                                                            ) : (
+                                                                <>
+                                                                    <li>
                                                                         <a
-                                                                            href={item.href}
-                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                            href="/admin/home"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setIsMenuOpen(false);
+                                                                            }}
+                                                                            className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                         >
-                                                                            {item.icon}
-                                                                            <span>{item.label}</span>
+                                                                            <Home size={16} />
+                                                                            <span>Dashboard</span>
                                                                         </a>
-                                                                    )}
-                                                                </li>
-                                                            ))}
+                                                                    </li>
+                                                                    <li>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setIsMenuOpen(false);
+                                                                                // Pequeño delay para que la animación se complete
+                                                                                setTimeout(() => {
+                                                                                    Logout();
+                                                                                }, 150);
+                                                                            }}
+                                                                            className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
+                                                                        >
+                                                                            <DoorClosed size={16} />
+                                                                            <span>Cerrar Sesión</span>
+                                                                        </button>
+                                                                    </li>
+                                                                </>
+                                                            )}
                                                         </ul>
                                                     </div>
                                                 </motion.div>
@@ -331,16 +679,21 @@ const HeaderSearchB = ({
                                 ref={desktopSearchInputRef}
                                 type="search"
                                 name="search"
-                                placeholder="Buscar productos"
+                                placeholder="Estoy buscando..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
+                                onFocus={() => {
+                                    if (search.trim().length >= 2) {
+                                        fetchSearchSuggestions(search);
+                                    }
+                                }}
+                                className="w-full pr-14 py-4 pl-4 border rounded-full font-normal focus:ring-0 customtext-neutral-dark placeholder:customtext-neutral-dark focus:outline-none bg-white"
                                 enterKeyHint="search"
                                 inputMode="search"
-                                autoComplete="off"
+                                autoComplete="on"
                                 role="searchbox"
-                                aria-label="Buscar productos"
+                                aria-label="Estoy buscando..."
                             />
                             <button
                                 type="submit"
@@ -350,6 +703,14 @@ const HeaderSearchB = ({
                                 <Search />
                             </button>
                         </form>
+
+                        <AnimatePresence>
+                            <SearchSuggestions
+                                suggestions={searchSuggestions}
+                                isLoading={isLoadingSuggestions}
+                                onSelect={selectSuggestion}
+                            />
+                        </AnimatePresence>
                     </div>
 
                     {/* Account and Cart */}
@@ -359,10 +720,37 @@ const HeaderSearchB = ({
                                 {isUser ? (
                                     <button
                                         aria-label="user"
-                                        className="customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-colors duration-300"
+                                        className="customtext-neutral-dark flex items-center gap-2 hover:customtext-primary pr-6 transition-all duration-300 relative group"
                                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                                     >
-                                        <CircleUser className="customtext-primary" />
+                                        <div className="relative transform group-hover:scale-105 transition-transform duration-200">
+                                            {isUser.uuid ? (
+                                                <div className="relative">
+                                                    <ProfileImage 
+                                                        uuid={isUser.uuid}
+                                                        name={isUser.name}
+                                                        lastname={isUser.lastname}
+                                                        className="w-8 h-8 rounded-full object-cover border-2 border-primary ring-secondary transition-all duration-300"
+                                                    />
+                                                    {/* Punto indicador online animado */}
+                                                    <div className="absolute -bottom-[-0.115rem] -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                        <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                        <div className="w-full h-full bg-primary rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="relative">
+                                                    <CircleUser 
+                                                        className="customtext-primary border-2 border-primary rounded-full  ring-secondary group-hover:ring-green-300 transition-all duration-300" 
+                                                    />
+                                                    {/* Punto indicador online animado */}
+                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary border-2 border-white rounded-full animate-pulse">
+                                                        <div className="w-full h-full bg-primary rounded-full animate-ping opacity-75 absolute"></div>
+                                                        <div className="w-full h-full bg-primary rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                         <span className="hidden md:inline">{isUser.name}</span>
                                     </button>
                                 ) : (
@@ -382,29 +770,76 @@ const HeaderSearchB = ({
                                             className="absolute z-50 top-full left-0 bg-white shadow-xl border-t rounded-xl w-48 mt-2"
                                         >
                                             <div className="p-4">
-                                                <ul className="space-y-3">
-                                                    {menuItems.map((item, index) => (
-                                                        <li key={index}>
-                                                            {item.onClick ? (
-                                                                <button
-                                                                    aria-label="menu-items"
-                                                                    onClick={item.onClick}
-                                                                    className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
-                                                                >
-                                                                    {item.icon}
-                                                                    <span>{item.label}</span>
-                                                                </button>
-                                                            ) : (
+                                                <ul className="space-y-4">
+                                                    {isCustomer ? (
+                                                        menuItems.map((item, index) => (
+                                                            <li key={index}>
+                                                                {item.onClick ? (
+                                                                    <button
+                                                                        aria-label="menu-items"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            setIsMenuOpen(false);
+                                                                            // Pequeño delay para que la animación se complete
+                                                                            setTimeout(() => {
+                                                                                item.onClick();
+                                                                            }, 150);
+                                                                        }}
+                                                                        className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
+                                                                    >
+                                                                        {item.icon}
+                                                                        <span>{item.label}</span>
+                                                                    </button>
+                                                                ) : (
+                                                                    <a
+                                                                        href={item.href}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setIsMenuOpen(false);
+                                                                        }}
+                                                                        className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
+                                                                    >
+                                                                        {item.icon}
+                                                                        <span>{item.label}</span>
+                                                                    </a>
+                                                                )}
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <>
+                                                            <li>
                                                                 <a
-                                                                    href={item.href}
-                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary transition-colors duration-300"
+                                                                    href="/admin/home"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setIsMenuOpen(false);
+                                                                    }}
+                                                                    className="flex items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
                                                                 >
-                                                                    {item.icon}
-                                                                    <span>{item.label}</span>
+                                                                    <Home size={16} />
+                                                                    <span>Dashboard</span>
                                                                 </a>
-                                                            )}
-                                                        </li>
-                                                    ))}
+                                                            </li>
+                                                            <li>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        setIsMenuOpen(false);
+                                                                        // Pequeño delay para que la animación se complete
+                                                                        setTimeout(() => {
+                                                                            Logout();
+                                                                        }, 150);
+                                                                    }}
+                                                                    className="flex w-full items-center gap-3 customtext-neutral-dark text-sm hover:customtext-primary hover:bg-gray-50 transition-all duration-300 p-2 rounded-lg"
+                                                                >
+                                                                    <DoorClosed size={16} />
+                                                                    <span>Cerrar Sesión</span>
+                                                                </button>
+                                                            </li>
+                                                        </>
+                                                    )}
                                                 </ul>
                                             </div>
                                         </motion.div>
@@ -431,7 +866,7 @@ const HeaderSearchB = ({
                             {/* Desktop: botón "Haz tu Pedido" */}
                             <a
                                 aria-label="primary-button"
-                                className="hidden lg:block px-4 py-3 bg-primary text-white rounded-full hover:brightness-125 transition-colors duration-300"
+                                className={`${data.class ? data.class : 'bg-primary'} hidden lg:block px-6 py-2.5 text-white font-medium rounded-3xl hover:brightness-125 transition-colors duration-300`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 href={
@@ -440,7 +875,7 @@ const HeaderSearchB = ({
                                         : "#"
                                 }
                             >
-                                Haz tu Pedido
+                                Haz tu pedido
                             </a>
                             {/* Mobile: búsqueda expandible */}
                             <div className="md:hidden relative w-full max-w-xl mx-auto">
@@ -469,8 +904,13 @@ const HeaderSearchB = ({
                                                 name="search"
                                                 placeholder="Buscar productos"
                                                 value={search}
-                                                onChange={(e) => setSearch(e.target.value)}
+                                                onChange={(e) => handleSearchChange(e.target.value)}
                                                 onKeyDown={handleKeyDown}
+                                                onFocus={() => {
+                                                    if (search.trim().length >= 2) {
+                                                        fetchSearchSuggestions(search);
+                                                    }
+                                                }}
                                                 className="w-full pr-14 py-4 pl-4 border rounded-full focus:ring-0 focus:outline-none"
                                                 autoFocus
                                                 enterKeyHint="search"
@@ -479,9 +919,9 @@ const HeaderSearchB = ({
                                                 role="searchbox"
                                                 aria-label="Buscar productos"
                                                 onBlur={() => {
-                                                    // Solo cerrar si no hay búsqueda activa
+                                                    // Solo cerrar si no hay búsqueda activa y no hay sugerencias
                                                     setTimeout(() => {
-                                                        if (!search.trim()) {
+                                                        if (!search.trim() && !showSuggestions) {
                                                             setSearchMobile(false);
                                                         }
                                                     }, 200);
@@ -492,6 +932,7 @@ const HeaderSearchB = ({
                                                     type="button"
                                                     onClick={() => {
                                                         setSearch("");
+                                                        clearSuggestions();
                                                         setSearchMobile(false);
                                                     }}
                                                     className="p-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors"
@@ -508,6 +949,15 @@ const HeaderSearchB = ({
                                                 </button>
                                             </div>
                                         </form>
+
+                                        <AnimatePresence>
+                                            <SearchSuggestions
+                                                suggestions={searchSuggestions}
+                                                isLoading={isLoadingSuggestions}
+                                                onSelect={selectSuggestion}
+                                                selectedIndex={selectedSuggestionIndex}
+                                            />
+                                        </AnimatePresence>
                                     </div>
                                 )}
                             </div>
@@ -517,19 +967,21 @@ const HeaderSearchB = ({
 
                 {/* NUEVA SECCIÓN MÓVIL*/}
                 {data?.mobileSearch && !shouldHideMobileSearch() && (
-                <div className="block md:hidden mt-6 space-y-4">
-                  
-                   
-                 
-                        <div className="w-full ">
+                    <div className="block md:hidden mt-6 space-y-4">
+                        <div className="w-full relative">
                             <form onSubmit={handleMobileSearch} role="search" className="relative w-full">
                                 <input
                                     type="search"
                                     name="search"
                                     placeholder="Buscar productos..."
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
                                     onKeyDown={handleKeyDown}
+                                    onFocus={() => {
+                                        if (search.trim().length >= 2) {
+                                            fetchSearchSuggestions(search);
+                                        }
+                                    }}
                                     className="w-full pr-14 py-3 font-normal pl-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent focus:outline-none bg-gray-50"
                                     enterKeyHint="search"
                                     inputMode="search"
@@ -545,10 +997,18 @@ const HeaderSearchB = ({
                                     <Search size={18} />
                                 </button>
                             </form>
+
+                            <AnimatePresence>
+                                <SearchSuggestions
+                                    suggestions={searchSuggestions}
+                                    isLoading={isLoadingSuggestions}
+                                    onSelect={selectSuggestion}
+                                    selectedIndex={selectedSuggestionIndex}
+                                />
+                            </AnimatePresence>
                         </div>
-                   
-                </div>
-                )} 
+                    </div>
+                )}
             </div>
 
             <AnimatePresence>
@@ -580,7 +1040,7 @@ const HeaderSearchB = ({
             />
 
             <div className="flex justify-end w-full mx-auto z-[100] relative">
-                <div className="hidden lg:block fixed bottom-6 sm:bottom-[2rem] lg:bottom-[4rem] z-20 cursor-pointer">
+                <div className="block fixed bottom-6 sm:bottom-[2rem] lg:bottom-[4rem] z-20 cursor-pointer">
                     <a
                         target="_blank"
                         id="whatsapp-toggle"
@@ -589,7 +1049,7 @@ const HeaderSearchB = ({
                         <img
                             src="/assets/img/whatsapp.svg"
                             alt="whatsapp"
-                            className="mr-3 w-16 h-16 md:w-[80px] md:h-[80px] animate-bounce duration-300"
+                            className="mr-3 w-12 h-12 md:w-[60px] md:h-[60px] animate-bounce duration-300"
                         />
                     </a>
                 </div>

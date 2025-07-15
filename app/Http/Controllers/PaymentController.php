@@ -9,6 +9,8 @@ use App\Models\SaleStatus;
 use App\Models\User;
 use App\Models\Coupon;
 use App\Notifications\PurchaseSummaryNotification;
+use App\Helpers\PixelHelper;
+use App\Helpers\NotificationHelper;
 use Culqi\Culqi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,11 +29,11 @@ class PaymentController extends Controller
         try {
             // Debug: Log de todos los datos recibidos
             Log::info('PaymentController - Datos recibidos:', $request->all());
-            
+
             // Redondear y convertir el monto a centavos para Culqi
             $amountInSoles = round((float)$request->amount, 2);
             $amountInCents = round($amountInSoles * 100);
-            
+
             Log::info('PaymentController - Monto procesado:', [
                 'amount_original' => $request->amount,
                 'amount_type' => gettype($request->amount),
@@ -40,11 +42,11 @@ class PaymentController extends Controller
                 'delivery' => $request->delivery,
                 'coupon_discount' => $request->coupon_discount
             ]);
-            
+
             $culqi = new Culqi([
                 'api_key' => config('services.culqi.secret_key'),
             ]);
-            
+
             // Crear el intento de pago
             try {
                 Log::info('PaymentController - Intentando crear cargo en Culqi:', [
@@ -52,14 +54,14 @@ class PaymentController extends Controller
                     'email' => $request->email,
                     'token' => $request->token
                 ]);
-                
+
                 $charge = $culqi->Charges->create([
                     "amount" => $amountInCents,  // Usar el monto redondeado en centavos
                     "currency_code" => "PEN",
                     "email" => $request->email,
                     "source_id" => $request->token
                 ]);
-                
+
                 Log::info('PaymentController - Respuesta de Culqi:', [
                     'charge_id' => $charge->id ?? 'No ID',
                     'charge_outcome' => $charge->outcome ?? 'No outcome',
@@ -95,9 +97,11 @@ class PaymentController extends Controller
                 'code' => $request->orderNumber,
                 'amount' => $request->amount,
                 'coupon_code' => $request->coupon_code,
-                'coupon_discount' => $request->coupon_discount
+                'coupon_discount' => $request->coupon_discount,
+                'applied_promotions' => $request->applied_promotions,
+                'promotion_discount' => $request->promotion_discount
             ]);
-            
+
             $sale = Sale::create([
                 'code' => $request->orderNumber,
                 'user_id' => $request->user_id,
@@ -117,9 +121,13 @@ class PaymentController extends Controller
                 'comment' => $request->comment,
                 'amount' => $request->amount,
                 'delivery' => $request->delivery,
+                'delivery_type' => $request->delivery_type,
+                'store_id' => $request->store_id,
                 'coupon_id' => $request->coupon_id,
                 'coupon_code' => $request->coupon_code,
                 'coupon_discount' => $request->coupon_discount ?? 0,
+                'applied_promotions' => $request->applied_promotions ? json_encode($request->applied_promotions) : null,
+                'promotion_discount' => $request->promotion_discount ?? 0,
                 'culqi_charge_id' => $charge->id,
                 'payment_status' => 'pagado',
                 'status_id' => $saleStatusPagado ? $saleStatusPagado->id : null,
@@ -128,29 +136,30 @@ class PaymentController extends Controller
                 'document' => $request->document,
                 'businessName' => $request->businessName
             ]);
-            
+
             Log::info('PaymentController - Venta creada exitosamente', ['sale_id' => $sale->id]);
 
             // Registrar detalles de la venta y actualizar stock
             Log::info('PaymentController - Procesando detalles de venta', ['cart_items' => count($request->cart)]);
-            
+
             foreach ($request->cart as $item) {
                 $itemId = is_array($item) ? $item['id'] ?? null : $item->id ?? null;
                 $itemName = is_array($item) ? $item['name'] ?? null : $item->name ?? null;
                 $itemPrice = is_array($item) ? $item['final_price'] ?? null : $item->final_price ?? null;
                 $itemQuantity = is_array($item) ? $item['quantity'] ?? null : $item->quantity ?? null;
-
+                $itemImage = is_array($item) ? $item['image'] ?? null : $item->image ?? null;
                 SaleDetail::create([
                     'sale_id' => $sale->id,
                     'item_id' => $itemId,
                     'name' => $itemName,
                     'price' => $itemPrice,
                     'quantity' => $itemQuantity,
+                    'image' => $itemImage,
                 ]);
 
                 Item::where('id', $itemId)->decrement('stock', $itemQuantity);
             }
-            
+
             Log::info('PaymentController - Detalles de venta procesados exitosamente');
 
             // Incrementar el contador de uso del cupón si se aplicó uno
@@ -169,7 +178,8 @@ class PaymentController extends Controller
             if (Auth::check()) {
                 $userJpa = User::find(Auth::user()->id);
                 $userJpa->phone = $request->phone;
-                $userJpa->dni = $request->dni;
+                $userJpa->document_type = $request->documentType;
+                $userJpa->document_number = $request->document;
                 $userJpa->country = $request->country;
                 $userJpa->department = $request->department;
                 $userJpa->province = $request->province;
@@ -178,7 +188,7 @@ class PaymentController extends Controller
                 $userJpa->address = $request->address;
                 $userJpa->reference = $request->reference;
                 $userJpa->number = $request->number;
-            
+
                 $userJpa->save();
             }
 
@@ -189,12 +199,36 @@ class PaymentController extends Controller
                 'coupon_discount' => $sale->coupon_discount
             ]);
 
-            // Enviar correo de resumen de compra
+            // Generar scripts de tracking de conversión
+            $orderData = [
+                'order_id' => $sale->id,
+                'total' => $sale->amount,
+                'product_ids' => collect($request->cart)->pluck('id')->toArray(),
+                'user_id' => $sale->user_id,
+                'email' => $sale->email,
+                'phone' => $sale->phone,
+                'items' => collect($request->cart)->map(function ($item) {
+                    return [
+                        'item_id' => is_array($item) ? $item['id'] : $item->id,
+                        'item_name' => is_array($item) ? $item['name'] : $item->name,
+                        'price' => is_array($item) ? $item['final_price'] : $item->final_price,
+                        'quantity' => is_array($item) ? $item['quantity'] : $item->quantity
+                    ];
+                })->toArray()
+            ];
+
+            $conversionScripts = PixelHelper::trackPurchase($orderData);
+            Log::info('PaymentController - Scripts de conversión generados');
+
+            // Enviar correo de resumen de compra al cliente y administrador
             try {
                 Log::info('PaymentController - Preparando notificación de email');
                 $details = $sale->details ?? $sale->saleDetails ?? $sale->sale_details ?? SaleDetail::where('sale_id', $sale->id)->get();
-                $sale->notify(new PurchaseSummaryNotification($sale, $details));
-                Log::info('PaymentController - Email enviado exitosamente');
+
+                // Usar el helper para enviar tanto al cliente como al administrador
+                NotificationHelper::sendToClientAndAdmin($sale, new PurchaseSummaryNotification($sale, $details));
+
+                Log::info('PaymentController - Email enviado exitosamente al cliente y administrador');
             } catch (\Exception $emailException) {
                 Log::warning('PaymentController - Error enviando email (no crítico)', [
                     'error' => $emailException->getMessage()
@@ -208,9 +242,10 @@ class PaymentController extends Controller
                 'culqi_response' => $charge,
                 'sale' => $request->cart,
                 'code' => $request->orderNumber,
-                'delivery' => $request->delivery
+                'delivery' => $request->delivery,
+                'conversion_scripts' => $conversionScripts,
+                'sale_id' => $sale->id
             ]);
-            
         } catch (\Exception $e) {
             Log::error('PaymentController - Error completo', [
                 'message' => $e->getMessage(),
@@ -218,7 +253,7 @@ class PaymentController extends Controller
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'message' => 'Error en el pago: ' . $e->getMessage(),
                 'status' => false,

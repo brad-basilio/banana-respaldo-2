@@ -3,7 +3,7 @@ import { Fetch, Notify } from "sode-extend-react"
 class ProfileRest {
   static save = async (request) => {
     try {
-      const { status, result } = await Fetch('/api/admin/profile', {
+      const { status, result } = await Fetch('/api/profile', {
         method: 'PATCH',
         body: JSON.stringify(request)
       })

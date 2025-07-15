@@ -134,7 +134,7 @@ const RepositoryDropzone = ({ files: filesDB, height = 'calc(100vh - 240px)', se
   }
 
   const onCopyLinkClicked = ({ name, file, relative = false }) => {
-    const download_link = relative ? `/cloud/${file}` : `${Global.APP_URL}/cloud/${file}`
+    const download_link = relative ? `/repository/${file}` : `${Global.APP_URL}/cloud/${file}`
     Clipboard.copy(download_link, () => {
       Notify.add({
         title: 'Enlace copiado',

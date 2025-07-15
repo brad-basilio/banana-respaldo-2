@@ -7,23 +7,63 @@ import ProductNavigationSwiper from "../Products/ProductNavigationSwiper";
 import ReactModal from "react-modal";
 import HtmlContent from "../../../Utils/HtmlContent";
 import { X } from "lucide-react";
+import useEcommerceTracking from "../../../Hooks/useEcommerceTracking";
 
 export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items, generals }) {
     const [currentStep, setCurrentStep] = useState(1);
     const totalPrice = cart.reduce((acc, item) => acc + item.final_price * item.quantity, 0);
     
+    // Hook de tracking
+    const { 
+        trackCheckoutPageView, 
+        trackInitiateCheckout, 
+        trackPurchase,
+        resetTracking
+    } = useEcommerceTracking();
+    
     // Corregir cálculo del IGV y subtotal
     const subTotal = parseFloat((totalPrice / 1.18).toFixed(2));
     const igv = parseFloat((totalPrice - subTotal).toFixed(2));
     const [envio, setEnvio] = useState(0);
-    const totalFinal = subTotal + igv + parseFloat(envio);
-    const [sale, setSale] = useState([]);
-    const [code, setCode] = useState([]);
-    const [delivery, setDelivery] = useState([]);
     
     // Estados para el cupón
     const [couponDiscount, setCouponDiscount] = useState(0);
     const [couponCode, setCouponCode] = useState(null);
+    
+    // Estados para descuentos automáticos
+    const [automaticDiscounts, setAutomaticDiscounts] = useState([]);
+    const [automaticDiscountTotal, setAutomaticDiscountTotal] = useState(0);
+    
+    // Calcular total final con todos los descuentos
+    const totalWithoutDiscounts = subTotal + igv + parseFloat(envio);
+    const totalAllDiscounts = couponDiscount + automaticDiscountTotal;
+    const totalFinal = Math.max(0, totalWithoutDiscounts - totalAllDiscounts);
+    
+    const [sale, setSale] = useState([]);
+    const [code, setCode] = useState([]);
+    const [delivery, setDelivery] = useState([]);
+
+    // Estado para tracking de conversión
+    const [conversionScripts, setConversionScripts] = useState(null);
+
+    // Tracking inicial del checkout
+    useEffect(() => {
+        // Track vista inicial del checkout
+        trackCheckoutPageView(currentStep, cart);
+        
+        // Reset tracking cuando se monta el componente
+        return () => resetTracking();
+    }, []);
+
+    // Tracking cuando cambia el paso
+    useEffect(() => {
+        trackCheckoutPageView(currentStep, cart);
+        
+        // Track InitiateCheckout cuando llegan al paso 2 (Shipping)
+        if (currentStep === 2) {
+            trackInitiateCheckout(cart, totalFinal);
+        }
+    }, [currentStep]);
 
     // useEffect(() => {
     //     const script = document.createElement("script");
@@ -97,6 +137,11 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         igv={igv}
                         totalFinal={totalFinal}
                         openModal={openModal}
+                        automaticDiscounts={automaticDiscounts}
+                        setAutomaticDiscounts={setAutomaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        setAutomaticDiscountTotal={setAutomaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
                     />
                 )}
 
@@ -120,6 +165,14 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         openModal={openModal}
                         setCouponDiscount={setCouponDiscount}
                         setCouponCode={setCouponCode}
+                        automaticDiscounts={automaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
+                        conversionScripts={conversionScripts}
+                        setConversionScripts={setConversionScripts}
+                        onPurchaseComplete={(orderId, scripts) => {
+                            trackPurchase(orderId, scripts);
+                        }}
                     />
                 )}
 
@@ -134,6 +187,14 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                         totalFinal={totalFinal}
                         couponDiscount={couponDiscount}
                         couponCode={couponCode}
+                        automaticDiscounts={automaticDiscounts}
+                        automaticDiscountTotal={automaticDiscountTotal}
+                        totalWithoutDiscounts={totalWithoutDiscounts}
+                        conversionScripts={conversionScripts}
+                        setConversionScripts={setConversionScripts}
+                        onPurchaseComplete={(orderId, scripts) => {
+                            trackPurchase(orderId, scripts);
+                        }}
                     />
                 )}
             </div>
@@ -144,22 +205,45 @@ export default function CheckoutSteps({ cart, setCart, user, ubigeos = [], items
                     generals.find((x) => x.correlative == key)?.description ??
                     "";
                 return (
-                    <ReactModal
+                     <ReactModal
                         key={index}
                         isOpen={modalOpen === index}
                         onRequestClose={closeModal}
                         contentLabel={title}
-                        className="absolute left-1/2 -translate-x-1/2 bg-white p-6 rounded-xl shadow-lg w-[95%] max-w-4xl my-8"
-                        overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-50"
+                        className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center p-4 z-50"
+                        overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-[999]"
+                        ariaHideApp={false}
                     >
-                        <button
-                            onClick={closeModal}
-                            className="float-right text-red-500 hover:text-red-700 transition-all duration-300 "
-                        >
-                            <X width="2rem" strokeWidth="4px" />
-                        </button>
-                        <h2 className="text-2xl font-bold mb-4">{title}</h2>
-                        <HtmlContent className="prose" html={content} />
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                <h2 className="text-2xl font-bold text-gray-900 pr-4">{title}</h2>
+                                <button
+                                    onClick={closeModal}
+                                    className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full"
+                                    aria-label="Cerrar modal"
+                                >
+                                    <X size={24} strokeWidth={2} />
+                                </button>
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="prose prose-gray max-w-none">
+                                    <HtmlContent html={content} />
+                                </div>
+                            </div>
+                            
+                            {/* Footer */}
+                            <div className="flex justify-end p-6 border-t border-gray-200">
+                                <button
+                                    onClick={closeModal}
+                                    className="px-6 py-2 bg-primary text-white rounded-lg  transition-colors duration-200 font-medium"
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
                     </ReactModal>
                 );
             })}

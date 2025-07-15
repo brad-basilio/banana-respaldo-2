@@ -7,11 +7,15 @@ import { processCulqiPayment } from "../../../../Actions/culqiPayment";
 import ButtonPrimary from "./ButtonPrimary";
 import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
+import SelectForm from "./SelectForm";
 import OptionCard from "./OptionCard";
-import { InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
+import FreeItemsDisplay from "./FreeItemsDisplay";
+import StorePickupSelector from "./StorePickupSelector";
+import { Globe, InfoIcon, UserRoundX, XCircle, XOctagonIcon } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { debounce } from "lodash";
 import { toast } from "sonner";
+import Global from "../../../../Utils/Global";
 
 export default function ShippingStep({
     cart,
@@ -31,14 +35,174 @@ export default function ShippingStep({
     openModal,
     setCouponDiscount: setParentCouponDiscount,
     setCouponCode: setParentCouponCode,
+    automaticDiscounts = [], // Se usará como reglas, no como descuentos ya calculados
+    automaticDiscountTotal = 0,
+    totalWithoutDiscounts,
+    conversionScripts,
+    setConversionScripts,
+    onPurchaseComplete,
 }) {
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
+    
+
+    // Estados para los descuentos automáticos calculados
+    const [autoDiscounts, setAutoDiscounts] = useState([]);
+    const [autoDiscountTotal, setAutoDiscountTotal] = useState(0);
+
+    // Get free items from automatic discounts calculados
+    const freeItems = autoDiscounts.reduce((items, discount) => {
+        if (discount.free_items && Array.isArray(discount.free_items)) {
+            return [...items, ...discount.free_items];
+        }
+        return items;
+    }, []);
+
+    // Función para calcular todos los descuentos automáticos
+    const calculateAutomaticDiscounts = (cart, rules) => {
+        let discounts = [];
+        let totalDiscount = 0;
+
+        for (const rule of rules) {
+            switch (rule.type) {
+                case 'buy_x_get_y': {
+                    // Ejemplo: compra 2 lleva 1 gratis
+                    cart.forEach(item => {
+                        if (rule.product_ids?.includes(item.id)) {
+                            const sets = Math.floor(item.quantity / (rule.buy + rule.get));
+                            if (sets > 0 && rule.get > 0) {
+                                const freeQty = sets * rule.get;
+                                const discount = freeQty * item.final_price;
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                    free_items: [{ ...item, quantity: freeQty }],
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'quantity_discount': {
+                    // Ejemplo: 2x1, 3x2 (paga menos por comprar más)
+                    cart.forEach(item => {
+                        if (rule.product_ids?.includes(item.id)) {
+                            const sets = Math.floor(item.quantity / rule.buy);
+                            if (sets > 0 && rule.pay < rule.buy) {
+                                const discount = sets * (rule.buy - rule.pay) * item.final_price;
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'tiered_discount': {
+                    // Ejemplo: compra 5 lleva 6 (1 gratis por cada 5)
+                    cart.forEach(item => {
+                        if (rule.product_ids?.includes(item.id)) {
+                            const sets = Math.floor(item.quantity / rule.tier);
+                            if (sets > 0 && rule.free > 0) {
+                                const freeQty = sets * rule.free;
+                                const discount = freeQty * item.final_price;
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                    free_items: [{ ...item, quantity: freeQty }],
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'category_discount': {
+                    // Descuento por categoría
+                    cart.forEach(item => {
+                        if (rule.category_ids?.includes(item.category_id)) {
+                            const discount = item.final_price * item.quantity * (rule.percent / 100);
+                            if (discount > 0) {
+                                discounts.push({
+                                    name: rule.name,
+                                    amount: discount,
+                                    description: rule.description,
+                                });
+                                totalDiscount += discount;
+                            }
+                        }
+                    });
+                    break;
+                }
+                case 'cart_discount': {
+                    // Descuento por total del carrito
+                    const cartTotal = cart.reduce((sum, item) => sum + item.final_price * item.quantity, 0);
+                    if (cartTotal >= (rule.min_total || 0)) {
+                        const discount = rule.percent ? cartTotal * (rule.percent / 100) : (rule.amount || 0);
+                        if (discount > 0) {
+                            discounts.push({
+                                name: rule.name,
+                                amount: discount,
+                                description: rule.description,
+                            });
+                            totalDiscount += discount;
+                        }
+                    }
+                    break;
+                }
+                case 'bundle_discount': {
+                    // Descuento por paquete/combo
+                    const hasAll = rule.product_ids?.every(pid => cart.some(item => item.id === pid));
+                    if (hasAll && rule.amount > 0) {
+                        discounts.push({
+                            name: rule.name,
+                            amount: rule.amount,
+                            description: rule.description,
+                        });
+                        totalDiscount += rule.amount;
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        return { discounts, totalDiscount };
+    };
+
+    // Recalcular descuentos automáticos cuando cambie el carrito o las reglas
+    useEffect(() => {
+        if (automaticDiscounts && Array.isArray(automaticDiscounts) && automaticDiscounts.length > 0) {
+            const { discounts, totalDiscount } = calculateAutomaticDiscounts(cart, automaticDiscounts);
+            setAutoDiscounts(discounts);
+            setAutoDiscountTotal(totalDiscount);
+        } else {
+            setAutoDiscounts([]);
+            setAutoDiscountTotal(0);
+        }
+    }, [cart, automaticDiscounts]);
+    
+    // Tipos de documentos como en ComplaintStech
+    const typesDocument = [
+        { value: "dni", label: "DNI" },
+        { value: "ruc", label: "RUC" },
+        { value: "ce", label: "CE" },
+        { value: "pasaporte", label: "Pasaporte" },
+    ];
+    
     const [formData, setFormData] = useState({
         name: user?.name || "",
         lastname: user?.lastname || "",
         email: user?.email || "",
         phone: user?.phone || "",
+        documentType: user?.document_type?.toLowerCase() || "", // Normalizar a minúsculas para que coincida con las opciones
+        document: user?.document_number || "", // Número de documento (obligatorio)
         department: user?.department || "",
         province: user?.province || "",
         district: user?.district || "",
@@ -46,8 +210,7 @@ export default function ShippingStep({
         number: user?.number || "",
         comment: "",
         reference: user?.reference || "",
-        ubigeo: user?.ubigeo || null,
-    });
+        ubigeo: user?.ubigeo || null,    });
    
     useEffect(() => {
         if (user?.ubigeo && user?.district && user?.province && user?.department) {
@@ -65,7 +228,29 @@ export default function ShippingStep({
           setSelectedUbigeo(defaultOption); // Actualiza el estado del ubigeo seleccionado
           handleUbigeoChange(defaultOption);
         }
-      }, [user]);
+    }, [user]);
+
+    // Efecto para actualizar formData cuando cambien los datos del usuario
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.name || prev.name,
+                lastname: user.lastname || prev.lastname,
+                email: user.email || prev.email,
+                phone: user.phone || prev.phone,
+                documentType: user.document_type?.toLowerCase() || prev.documentType,
+                document: user.document_number || prev.document,
+                department: user.department || prev.department,
+                province: user.province || prev.province,
+                district: user.district || prev.district,
+                address: user.address || prev.address,
+                number: user.number || prev.number,
+                reference: user.reference || prev.reference,
+                ubigeo: user.ubigeo || prev.ubigeo,
+            }));
+        }
+    }, [user]);
 
     const [loading, setLoading] = useState(false);
     const [paymentLoading, setPaymentLoading] = useState(false);
@@ -74,13 +259,23 @@ export default function ShippingStep({
     const [costsGet, setCostsGet] = useState(null);
     const [errors, setErrors] = useState({});
     const [searchInput, setSearchInput] = useState("");
+    const [expandedCharacteristics, setExpandedCharacteristics] = useState(false);
+    
     
     // Estados para cupones
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState(null);
-    const [couponDiscount, setCouponDiscount] = useState(0);
+    // El descuento del cupón se calcula sobre el total real, no solo el subtotal
+    const [couponDiscount, setCouponDiscount] = useState(0); // solo para compatibilidad visual
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState("");
+
+    // Estados para retiro en tienda
+    const [selectedStore, setSelectedStore] = useState(null);
+    const [showStoreSelector, setShowStoreSelector] = useState(false);
+
+    // Estado para modal de login
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     // Función de validación mejorada con alertas específicas
     const validateForm = () => {
@@ -101,6 +296,24 @@ export default function ShippingStep({
             newErrors.lastname = "Apellido es requerido";
             toast.error("Campo requerido", {
                 description: "Por favor ingrese su apellido",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!formData.documentType.trim()) {
+            newErrors.documentType = "Tipo de documento es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor seleccione el tipo de documento",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
+        if (!formData.document.trim()) {
+            newErrors.document = "Número de documento es requerido";
+            toast.error("Campo requerido", {
+                description: "Por favor ingrese su número de documento",
                 icon: <XCircle className="h-5 w-5 text-red-500" />,
                 duration: 3000,
                 position: "top-center",
@@ -167,14 +380,31 @@ export default function ShippingStep({
                 position: "top-center",
             });
         }
+        
+        // Validar tienda seleccionada si es retiro en tienda
+        if (selectedOption === "store_pickup" && !selectedStore) {
+            newErrors.store = "Seleccione una tienda para el retiro";
+            toast.error("Tienda requerida", {
+                description: "Por favor seleccione una tienda para retirar su pedido",
+                icon: <XCircle className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "top-center",
+            });
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
+    // Función para manejar la selección de tienda
+    const handleStoreSelect = (store) => {
+        setSelectedStore(store);
+        setErrors(prev => ({ ...prev, store: "" }));
+    };
+
     // Función para enfocar el primer campo con error y hacer scroll suave
     const focusFirstError = (errors) => {
-        const errorOrder = ['name', 'lastname', 'email', 'phone', 'ubigeo', 'address', 'shipping'];
+        const errorOrder = ['name', 'lastname', 'documentType', 'document', 'email', 'phone', 'ubigeo', 'address', 'shipping'];
         
         for (const fieldName of errorOrder) {
             if (errors[fieldName]) {
@@ -299,12 +529,41 @@ export default function ShippingStep({
 
         setLoading(true);
         try {
+            // Calcular el total del carrito para la lógica condicional
+            const cartTotal = cart.reduce((sum, item) => sum + (item.final_price * item.quantity), 0);
+            
+            console.log('🛒 ShippingStep - Cart total calculado:', cartTotal);
+            console.log('🛒 ShippingStep - Cart items:', cart.map(item => ({
+                name: item.name,
+                price: item.final_price,
+                quantity: item.quantity,
+                total: item.final_price * item.quantity
+            })));
+            console.log('💰 ShippingStep - Comparación de totales:');
+            console.log('   - Cart total (solo productos):', cartTotal);
+            console.log('   - SubTotal prop:', subTotal);
+            console.log('   - IGV prop:', igv);
+            console.log('   - Total con IGV:', subTotal + igv);
+            console.log('   - Total final prop:', totalFinal);
+            
             const response = await DeliveryPricesRest.getShippingCost({
                 ubigeo: data.reniec,
+                cart_total: cartTotal, // Enviar el total del carrito
             });
 
+            console.log('📦 ShippingStep - Respuesta del backend:', response.data);
+            console.log('✅ ShippingStep - Califica para envío gratis?', response.data.qualifies_free_shipping);
+            console.log('💰 ShippingStep - Umbral requerido:', response.data.free_shipping_threshold);
+            console.log('🔍 ShippingStep - is_free:', response.data.is_free);
+            console.log('🔍 ShippingStep - Descripción standard:', response.data.standard?.description);
+            console.log('🔍 ShippingStep - Tipo standard:', response.data.standard?.type);
+
             const options = [];
-            if (response.data.is_free) {
+            let hasStorePickup = false;
+
+            // 1. ENVÍO GRATIS: SOLO para zonas con is_free=true Y que califiquen por monto
+            if (response.data.is_free && response.data.qualifies_free_shipping) {
+                console.log('✅ ShippingStep - Es zona is_free=true Y califica por monto - Agregando envío GRATIS');
                 options.push({
                     type: "free",
                     price: 0,
@@ -312,37 +571,111 @@ export default function ShippingStep({
                     deliveryType: response.data.standard.type,
                     characteristics: response.data.standard.characteristics,
                 });
+            }
 
-                if (response.data.express.price > 0) {
+            // 2. ENVÍO NORMAL: Si existe standard, siempre agregarlo (excepto para zonas is_free que califican para gratis)
+            if (response.data.standard) {
+                // Solo agregar envío normal si NO es zona gratis que califica, o si es zona gratis que NO califica
+                if (!response.data.is_free || (response.data.is_free && !response.data.qualifies_free_shipping)) {
+                    console.log('📦 ShippingStep - Agregando envío NORMAL');
+                    
+                    // Limpiar cualquier mención de "envío gratis" en la descripción si NO es zona is_free
+                    let cleanDescription = response.data.standard.description;
+                    if (!response.data.is_free) {
+                        // Para zonas que NO son is_free, remover cualquier mención de envío gratis
+                        cleanDescription = cleanDescription
+                            .replace(/envío gratis.*?/gi, '')
+                            .replace(/envio gratis.*?/gi, '')
+                            .replace(/gratis.*?compras.*?/gi, '')
+                            .replace(/mayor.*?200.*?/gi, '')
+                            .replace(/200.*?mayor.*?/gi, '')
+                            .replace(/\s+/g, ' ') // Limpiar espacios extras
+                            .trim();
+                        
+                        // Si queda vacío, usar una descripción por defecto
+                        if (!cleanDescription) {
+                            cleanDescription = "Delivery a domicilio";
+                        }
+                    }
+                    
                     options.push({
-                        type: "express",
-                        price: response.data.express.price,
-                        description: response.data.express.description,
-                        deliveryType: response.data.express.type,
-                        characteristics: response.data.express.characteristics,
+                        type: "standard",
+                        price: response.data.standard.price,
+                        description: cleanDescription,
+                        deliveryType: response.data.standard.type,
+                        characteristics: response.data.standard.characteristics,
                     });
                 }
-            } else if (response.data.is_agency) {
+            }
+
+            // 3. ENVÍO EXPRESS: Si existe express, siempre agregarlo
+            if (response.data.express && response.data.express.price > 0) {
+                console.log('⚡ ShippingStep - Agregando envío EXPRESS');
+                options.push({
+                    type: "express",
+                    price: response.data.express.price,
+                    description: response.data.express.description,
+                    deliveryType: response.data.express.type,
+                    characteristics: response.data.express.characteristics,
+                });
+            }
+
+            // 4. ENVÍO AGENCIA: Si existe agency, agregarlo
+            if (response.data.is_agency && response.data.agency) {
+                console.log('🏢 ShippingStep - Agregando envío por AGENCIA');
                 options.push({
                     type: "agency",
-                    price: 0,
+                    price: response.data.agency.price || 0,
                     description: response.data.agency.description,
                     deliveryType: response.data.agency.type,
                     characteristics: response.data.agency.characteristics,
                 });
+            }
+
+            // 5. RETIRO EN TIENDA: Si está disponible, marcar para agregar después
+            if (response.data.is_store_pickup) {
+                console.log('🏪 ShippingStep - Retiro en tienda disponible');
+                hasStorePickup = true;
+            }
+
+            // Si hay retiro en tienda disponible, agregar la opción usando los datos que ya vienen en la respuesta
+            if (hasStorePickup || response.data.is_store_pickup) {
+                // Evitar duplicados si ya existe la opción
+                const alreadyHasStorePickup = options.some(opt => opt.type === "store_pickup");
+                if (!alreadyHasStorePickup) {
+                    // Usar los datos que ya vienen en la respuesta de DeliveryPricesRest.getShippingCost()
+                    if (response.data.store_pickup) {
+                        options.push({
+                            type: "store_pickup",
+                            price: response.data.store_pickup.price,
+                            description: response.data.store_pickup.description,
+                            deliveryType: response.data.store_pickup.type,
+                            characteristics: response.data.store_pickup.characteristics,
+                        });
+                    } else {
+                        // Si no hay datos específicos de store_pickup, usar valores por defecto
+                        options.push({
+                            type: "store_pickup",
+                            price: 0,
+                            description: "Retira tu pedido en una de nuestras tiendas",
+                            deliveryType: "Retiro en Tienda",
+                            characteristics: ["Sin costo de envío", "Horarios flexibles", "Atención personalizada"],
+                        });
+                    }
+                }
+                setShowStoreSelector(true);
             } else {
-                options.push({
-                    type: "standard",
-                    price: response.data.standard.price,
-                    description: response.data.standard.description,
-                    deliveryType: response.data.standard.type,
-                    characteristics: response.data.standard.characteristics,
-                });
+                setShowStoreSelector(false);
+                setSelectedStore(null);
             }
 
             setShippingOptions(options);
-            setSelectedOption(options[0].type);
-            setEnvio(options[0].price);
+            setSelectedOption(options[0]?.type || null);
+            setEnvio(options[0]?.price || 0);
+            setExpandedCharacteristics(false); // Reset expansion state when location changes
+            
+            console.log('📋 ShippingStep - Opciones finales de envío:', options);
+            console.log('🚚 ShippingStep - Precio de envío seleccionado:', options[0]?.price || 0);
         } catch (error) {
             //console.error("Error al obtener precios de envío:", error);
             toast.error("Sin cobertura", {
@@ -355,6 +688,7 @@ export default function ShippingStep({
             setShippingOptions([]);
             setSelectedOption(null);
             setEnvio(0);
+            setExpandedCharacteristics(false); // Reset expansion state on error
         }
         setLoading(false);
     };
@@ -366,12 +700,7 @@ export default function ShippingStep({
         if (paymentLoading) return;
 
         if (!user) {
-            toast.error("Acceso requerido", {
-                description: `Debe iniciar sesión para continuar.`,
-                icon: <UserRoundX className="h-5 w-5 text-red-500" />,
-                duration: 3000,
-                position: "bottom-center",
-            });
+            setShowLoginModal(true);
             return;
         }
 
@@ -382,6 +711,8 @@ export default function ShippingStep({
         // Validación sin mostrar toast aún
         if (!formData.name.trim()) currentErrors.name = "Nombre es requerido";
         if (!formData.lastname.trim()) currentErrors.lastname = "Apellido es requerido";
+        if (!formData.documentType.trim()) currentErrors.documentType = "Tipo de documento es requerido";
+        if (!formData.document.trim()) currentErrors.document = "Número de documento es requerido";
         if (!formData.email.trim()) {
             currentErrors.email = "Email es requerido";
         } else if (!emailRegex.test(formData.email)) {
@@ -403,7 +734,9 @@ export default function ShippingStep({
             const firstErrorKey = Object.keys(currentErrors)[0];
             const errorMessages = {
                 name: "Por favor ingrese su nombre",
-                lastname: "Por favor ingrese su apellido", 
+                lastname: "Por favor ingrese su apellido",
+                documentType: "Por favor seleccione el tipo de documento",
+                document: "Por favor ingrese su número de documento",
                 email: currentErrors.email?.includes("inválido") ? "Por favor ingrese un correo electrónico válido" : "Por favor ingrese su correo electrónico",
                 phone: currentErrors.phone?.includes("9 dígitos") ? "El teléfono debe tener exactamente 9 dígitos" : "Por favor ingrese su número de teléfono",
                 ubigeo: "Por favor seleccione su ubicación de entrega",
@@ -431,13 +764,19 @@ export default function ShippingStep({
                 ...formData,
                 fullname: `${formData.name} ${formData.lastname}`,
                 country: "Perú",
+                document_type: formData.documentType, // Cambiar a document_type para que coincida con lo que espera el backend
                 amount: roundToTwoDecimals(finalTotalWithCoupon),
                 delivery: roundToTwoDecimals(envio),
+                delivery_type: selectedOption, // Agregar tipo de entrega
+                store_id: selectedOption === "store_pickup" ? selectedStore?.id : null, // ID de tienda si es retiro en tienda
                 cart: cart,
                 // Información del cupón - todos redondeados a 2 decimales
                 coupon_id: appliedCoupon?.id || null,
                 coupon_code: appliedCoupon?.code || null,
                 coupon_discount: roundToTwoDecimals(couponDiscount || 0),
+                // Información de promociones automáticas
+                applied_promotions: automaticDiscounts || [],
+                promotion_discount: roundToTwoDecimals(automaticDiscountTotal || 0),
             };
 
             console.log("📦 Request completo a enviar:", request);
@@ -447,13 +786,38 @@ export default function ShippingStep({
 
             const response = await processCulqiPayment(request);
 
+            console.log('📋 Respuesta completa del procesamiento:', response);
+
             if (response.status) {
+                console.log('✅ Pago exitoso, procesando respuesta...');
+                
                 setSale(response.sale);
                 setDelivery(response.delivery);
                 setCode(response.code);
+                
+                // Capturar scripts de conversión si están disponibles
+                if (response.conversion_scripts) {
+                    console.log('Scripts de conversión recibidos:', response.conversion_scripts);
+                    setConversionScripts(response.conversion_scripts);
+                    
+                    // Llamar al callback de compra completada si está disponible
+                    if (onPurchaseComplete) {
+                        console.log('🎯 Ejecutando callback onPurchaseComplete...');
+                        try {
+                            await onPurchaseComplete(response.sale_id, response.conversion_scripts);
+                            console.log('✅ Callback onPurchaseComplete ejecutado exitosamente');
+                        } catch (callbackError) {
+                            console.error('❌ Error en callback onPurchaseComplete:', callbackError);
+                            // No lanzar el error para que continúe el flujo
+                        }
+                    }
+                }
+                
+                console.log('🛒 Limpiando carrito y continuando...');
                 setCart([]);
                 onContinue();
             } else {
+                console.log('❌ Pago rechazado:', response);
                 toast.error("Error en el pago", {
                     description: response.message || "Pago rechazado",
                     icon: <XOctagonIcon className="h-5 w-5 text-red-500" />,
@@ -462,8 +826,13 @@ export default function ShippingStep({
                 });
             }
         } catch (error) {
+            console.error('💥 Error completo en handlePayment:', error);
+            console.error('💥 Stack trace:', error.stack);
+            console.error('💥 Error name:', error.name);
+            console.error('💥 Error message:', error.message);
+            
             toast.error("Lo sentimos, no puede continuar con la compra", {
-                description: `Ocurrió un error al procesar el pedido.`,
+                description: `Ocurrió un error al procesar el pedido: ${error.message}`,
                 icon: <XOctagonIcon className="h-5 w-5 text-red-500" />,
                 duration: 3000,
                 position: "bottom-center",
@@ -515,6 +884,8 @@ export default function ShippingStep({
             // Limpiar errores de campos que ahora tienen valores válidos
             if (formData.name.trim()) delete newErrors.name;
             if (formData.lastname.trim()) delete newErrors.lastname;
+            if (formData.documentType.trim()) delete newErrors.documentType;
+            if (formData.document.trim()) delete newErrors.document;
             if (formData.email.trim()) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (emailRegex.test(formData.email)) delete newErrors.email;
@@ -663,11 +1034,94 @@ export default function ShippingStep({
         return parseFloat(number.toFixed(2));
     };
 
-    // Calcular total final con descuento de cupón, redondeado correctamente
-    const finalTotalWithCoupon = roundToTwoDecimals(totalFinal - couponDiscount);
+    // Calcular el total base antes de cupón
+    const totalBase = roundToTwoDecimals(subTotal) + roundToTwoDecimals(igv) + roundToTwoDecimals(envio) - roundToTwoDecimals(autoDiscountTotal);
+
+    // Calcular el descuento del cupón sobre el total base
+    let calculatedCouponDiscount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage' || appliedCoupon.type === 'percent') {
+            calculatedCouponDiscount = (totalBase * Number(appliedCoupon.value)) / 100;
+        } else if (appliedCoupon.type === 'fixed') {
+            calculatedCouponDiscount = Number(appliedCoupon.value);
+        }
+    }
+    // Sincronizar el estado para mantener compatibilidad visual
+    useEffect(() => {
+        setCouponDiscount(roundToTwoDecimals(calculatedCouponDiscount));
+        if (setParentCouponDiscount) setParentCouponDiscount(roundToTwoDecimals(calculatedCouponDiscount));
+    }, [appliedCoupon, subTotal, igv, envio, autoDiscountTotal]);
+
+    const finalTotalWithCoupon = Math.max(0, roundToTwoDecimals(totalBase - calculatedCouponDiscount));
+
+    // Componente Modal de Login
+    const LoginModal = () => {
+        if (!showLoginModal) return null;
+
+        // Función para cerrar modal al hacer clic en el backdrop
+        const handleBackdropClick = (e) => {
+            if (e.target === e.currentTarget) {
+                setShowLoginModal(false);
+            }
+        };
+
+        return (
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                onClick={handleBackdropClick}
+            >
+                <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl transform transition-all">
+                    <div className="text-center">
+                        <div className="mb-6">
+                            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+                                <UserRoundX className="h-8 w-8 customtext-primary" />
+                            </div>
+                            <h2 className="text-2xl font-bold customtext-neutral-dark mb-3">
+                                Acceso requerido
+                            </h2>
+                            <p className="customtext-neutral-light text-sm leading-relaxed">
+                                Para continuar con su compra necesita iniciar sesión o crear una cuenta nueva.
+                            </p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => {
+                                    window.location.href = "/iniciar-sesion";
+                                }}
+                                className="w-full py-3 px-6 bg-primary text-white font-semibold rounded-lg  focus:outline-none focus:ring-2  focus:ring-offset-2 transition duration-200 transform hover:scale-[1.02]"
+                            >
+                                Iniciar sesión
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    window.location.href = "/crear-cuenta";
+                                }}
+                                className="w-full py-3 px-6 bg-accent text-white font-semibold rounded-lg  focus:outline-none focus:ring-2  focus:ring-offset-2 transition duration-200 transform hover:scale-[1.02]"
+                            >
+                                Crear cuenta nueva
+                            </button>
+                            
+                            <button
+                                onClick={() => setShowLoginModal(false)}
+                                className="w-full py-3 px-6 customtext-neutral-light hover:customtext-neutral-dark border border-secondary rounded-lg hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
+        <>
+            {/* Modal de Login */}
+            <LoginModal />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-5 md:gap-8">
             <div className="lg:col-span-3">
                 <form className="space-y-4 md:space-y-6 bg-white p-4 md:p-6 rounded-xl shadow-sm" onSubmit={handlePayment}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -699,6 +1153,42 @@ export default function ShippingStep({
                             }}
                             required
                             className={`border-gray-200 ${errors.lastname ? 'border-red-500 bg-red-50' : ''}`}
+                        />
+                    </div>
+
+                    {/* Campos de documento en una fila */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <SelectForm
+                                label="Tipo de documento"
+                                options={typesDocument}
+                                placeholder="Selecciona tu documento"
+                                labelClass="block text-sm 2xl:!text-base mb-1 customtext-neutral-dark"
+                                value={formData.documentType}
+                                error={errors.documentType}
+                                onChange={(value) => {
+                                    setFormData(prev => ({ ...prev, documentType: value }));
+                                    if (value && errors.documentType) {
+                                        setErrors(prev => ({ ...prev, documentType: '' }));
+                                    }
+                                }}
+                                required
+                            />
+                        </div>
+                        <InputForm
+                            name="document"
+                            label="Número de documento"
+                            value={formData.document}
+                            error={errors.document}
+                            onChange={(e) => {
+                                setFormData(prev => ({ ...prev, document: e.target.value }));
+                                if (e.target.value.trim() && errors.document) {
+                                    setErrors(prev => ({ ...prev, document: '' }));
+                                }
+                            }}
+                            placeholder="Ej: 12345678"
+                            required
+                            className={`border-gray-200 ${errors.document ? 'border-red-500 bg-red-50' : ''}`}
                         />
                     </div>
 
@@ -838,25 +1328,86 @@ export default function ShippingStep({
                                         onSelect={() => {
                                             setSelectedOption(option.type);
                                             setEnvio(option.price);
-                                            setErrors(prev => ({ ...prev, shipping: '' }));
+                                            setErrors(prev => ({ ...prev, shipping: '', store: '' }));
+                                            setExpandedCharacteristics(false); // Reset expansion when changing shipping option
+                                            
+                                            // Reset tienda seleccionada si no es retiro en tienda
+                                            if (option.type !== "store_pickup") {
+                                                setSelectedStore(null);
+                                            }
                                         }}
                                     />
                                 ))}
                             </div>
                             {selectedOption && shippingOptions.length > 0 && (
                                 <div className="space-y-3 mt-4">
-                                    {shippingOptions
-                                        .find((o) => o.type === selectedOption)
-                                        ?.characteristics?.map((char, index) => (
-                                            <div key={`char-${index}`} className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl">
-                                                <div className="w-5 flex-shrink-0">
-                                                    <InfoIcon className="customtext-primary" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium customtext-neutral-dark">{char}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    {(() => {
+                                        const characteristics = shippingOptions
+                                            .find((o) => o.type === selectedOption)
+                                            ?.characteristics || [];
+                                        
+                                        const shouldShowButton = characteristics.length > 1;
+                                        const displayedCharacteristics = shouldShowButton && !expandedCharacteristics 
+                                            ? characteristics.slice(0, 1) 
+                                            : characteristics;
+
+                                        return (
+                                            <>
+                                                {displayedCharacteristics.map((char, index) => (
+                                                    <div key={`char-${index}`} className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl">
+                                                        <div className="w-5 flex-shrink-0">
+                                                            <InfoIcon className="customtext-primary" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium customtext-neutral-dark">{char}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                
+                                                {shouldShowButton && (
+                                                    <div className="flex justify-center mt-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExpandedCharacteristics(!expandedCharacteristics)}
+                                                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium customtext-primary hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                                                        >
+                                                            <span>
+                                                                {expandedCharacteristics 
+                                                                    ? 'Ver menos información' 
+                                                                    : `Ver más información (${characteristics.length - 1} más)`}
+                                                            </span>
+                                                            <svg 
+                                                                className={`w-4 h-4 transition-transform duration-200 ${expandedCharacteristics ? 'rotate-180' : ''}`} 
+                                                                fill="none" 
+                                                                stroke="currentColor" 
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Selector de tienda para retiro en tienda */}
+                    {selectedOption === "store_pickup" && showStoreSelector && (
+                        <div className="space-y-4 mt-6">
+                            <StorePickupSelector 
+                                ubigeoCode={formData.ubigeo}
+                                onStoreSelect={handleStoreSelect}
+                                selectedStore={selectedStore}
+                                className="border border-gray-200 rounded-xl p-4"
+                            />
+                            {errors.store && (
+                                <div className="text-red-500 text-sm mt-2 flex items-center gap-2">
+                                    <XCircle className="h-4 w-4" />
+                                    {errors.store}
                                 </div>
                             )}
                         </div>
@@ -893,8 +1444,8 @@ export default function ShippingStep({
                             />
                             <div>
                                 <h4 className="font-medium">{item.name}</h4>
-                                <p className="text-sm text-gray-600">Cantidad: {item.quantity}</p>
-                                <p className="text-sm text-gray-600">S/ {Number2Currency(item.final_price)}</p>
+                                <p className="text-sm customtext-neutral-light">Cantidad: {item.quantity}</p>
+                                <p className="text-sm customtext-neutral-light">S/ {Number2Currency(item.final_price)}</p>
                             </div>
                         </div>
                     ))}
@@ -981,11 +1532,13 @@ export default function ShippingStep({
                                             </div>
                                             <div>
                                                 <p className="customtext-primary font-semibold text-sm">
-                                                    Cupón aplicado: {appliedCoupon.code}
+                                                    Descto. {appliedCoupon.type === 'percentage' 
+                                                        ? `${appliedCoupon.value}%` 
+                                                        : `S/${Number2Currency(appliedCoupon.value)}`}
                                                 </p>
-                                              {/*  <p className="customtext-primary text-xs mt-1">
-                                                    {appliedCoupon.name}
-                                                </p> */}
+                                                <p className="customtext-primary text-xs mt-1">
+                                                    {appliedCoupon.code}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="text-right w-4/12">
@@ -1000,6 +1553,59 @@ export default function ShippingStep({
                         </div>
                     </div>
 
+                    {/* Sección de descuentos automáticos */}
+                    {autoDiscounts && autoDiscounts.length > 0 && (
+                        <div className="space-y-4 border-t pt-4">
+                            <div className="space-y-3">
+                                <div className="text-sm font-medium customtext-neutral-dark mb-2">
+                                    🎉 Descuentos automáticos aplicados:
+                                </div>
+                                {autoDiscounts.map((discount, index) => (
+                                    <div key={index} className=" border-2  rounded-xl p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 w-8/12">
+                                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="customtext-neutral-dark font-semibold text-sm">
+                                                        {discount.name}
+                                                    </p>
+                                                    {discount.description && (
+                                                        <p className="customtext-neutral-dark text-xs mt-1">
+                                                            {discount.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="text-right w-4/12">
+                                                <span className="customtext-neutral-dark font-bold text-base">
+                                                    -S/ {Number2Currency(discount.amount)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {autoDiscountTotal > 0 && (
+                                    <div className="l p-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="customtext-neutral-dark font-semibold">Total descuentos automáticos:</span>
+                                            <span className="customtext-neutral-dark font-bold text-lg">
+                                                -S/ {Number2Currency(autoDiscountTotal)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Productos gratuitos {freeItems.length > 0 && (
+                        <FreeItemsDisplay freeItems={freeItems} />
+                    )} */}
+                    
                   
 
                     <div className="pt-4 border-t-2">
@@ -1018,11 +1624,20 @@ export default function ShippingStep({
                         {paymentLoading ? "Procesando..." : `Pagar S/ ${Number2Currency(roundToTwoDecimals(finalTotalWithCoupon))}`}
                     </ButtonPrimary>
 
+                    <ButtonSecondary 
+                        onClick={noContinue} 
+                        className="w-full mt-3"
+                        disabled={paymentLoading}
+                    >
+                        Regresar al carrito
+                    </ButtonSecondary>
+
                     <p className="text-xs md:text-sm customtext-neutral-dark">
                             Al realizar tu pedido, aceptas los <a href="#" onClick={() => openModal(1)} className="customtext-primary font-bold">Términos y Condiciones</a>, y que nosotros usaremos sus datos personales de acuerdo con nuestra <a href="#" onClick={() => openModal(0)} className="customtext-primary font-bold">Política de Privacidad</a>.
                         </p>
                 </div>
             </div>
         </div>
+        </>
     );
 }

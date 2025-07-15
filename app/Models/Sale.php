@@ -44,6 +44,7 @@ class Sale extends Model
         'amount',
         'delivery',
         'delivery_type',
+        'store_id',
         'status_id',
         'coupon_id',
         'coupon_code',
@@ -56,9 +57,22 @@ class Sale extends Model
         'businessName',
         'payment_method',
         'payment_proof',
-        'coupon_id',
-        'coupon_discount',
+        'applied_promotions',
+        'promotion_discount',
         'total_amount',
+        'bundle_discount',
+        'renewal_discount',
+        'zip_code',
+    ];
+
+    protected $casts = [
+        'applied_promotions' => 'array',
+        'promotion_discount' => 'decimal:2',
+        'coupon_discount' => 'decimal:2',
+        'bundle_discount' => 'decimal:2',
+        'renewal_discount' => 'decimal:2',
+        'amount' => 'decimal:2',
+        'delivery' => 'decimal:2',
     ];
 
     public function details()
@@ -95,6 +109,11 @@ class Sale extends Model
     public function coupon()
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function scopeWithUser($query)

@@ -42,6 +42,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\TrackUserSession::class,
             \App\Http\Middleware\TrackAnalyticsEvents::class,
             \App\Http\Middleware\TrackCartAnalytics::class,
+            \App\Http\Middleware\InjectPixelsMiddleware::class,
         ],
 
         'guest' => [

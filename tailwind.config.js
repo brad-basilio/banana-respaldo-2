@@ -12,6 +12,7 @@ export default {
                 "font-general": ["Lato", "serif"], //"Lato" "serif" usado para Sala Fabulosa
                 "font-primary": ["Rajdhani", "sans-serif"], // usado para Stech Peru
                 "font-secondary": ["Open Sans", "serif"],
+                "playfair": ["Playfair", "serif"],
             },
             colors: {
                 primary: {
@@ -27,11 +28,12 @@ export default {
                     800: "#1e40af",
                     900: "#1e3a8a",
                 },
-                accent: "#10b981", // Color verde para acentos
+                
                 neutral: {
                     dark: "#1f2937",
                     light: "#f9fafb"
-                }
+                },
+                
             },
             margin: {
                 primary: "5%",
@@ -43,7 +45,9 @@ export default {
                 "right-25": "75% center", // Esto desplaza la imagen 75% a la derecha y la centra verticalmente
                 "right-10": "90% center", // Esto desplaza la imagen 90% a la derecha y la centra verticalmente
             },
-            // Puedes agregar personalizaciones aquí si es necesario
+            fontStyle: {
+                'oblique-light': 'oblique 5deg',
+            },
         },
     },
     plugins: [

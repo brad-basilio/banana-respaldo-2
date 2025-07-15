@@ -14,15 +14,39 @@ class GeneralSeeder extends Seeder
     public function run(): void
     {
         // Helper para limpiar llaves y caracteres invisibles
-        $clean_blade_vars = function($html) {
+        $clean_blade_vars = function ($html) {
             // Reemplaza comillas y caracteres raros por los normales
             $html = str_replace([
-                '“', '”', '‘', '’', '′', '‵', '‹', '›', '«', '»',
-                '‐', '–', '—', '−',
+                '“',
+                '”',
+                '‘',
+                '’',
+                '′',
+                '‵',
+                '‹',
+                '›',
+                '«',
+                '»',
+                '‐',
+                '–',
+                '—',
+                '−',
                 ' ', // espacio no-break
             ], [
-                '"', '"', "'", "'", "'", "'", "'", "'", '"', '"',
-                '-', '-', '-', '-',
+                '"',
+                '"',
+                "'",
+                "'",
+                "'",
+                "'",
+                "'",
+                "'",
+                '"',
+                '"',
+                '-',
+                '-',
+                '-',
+                '-',
                 ' ',
             ], $html);
             // Elimina espacios invisibles
@@ -41,7 +65,8 @@ class GeneralSeeder extends Seeder
             [
                 'correlative' => 'order_status_changed_email',
                 'name' => 'Diseño de email de cambio de estado de pedido',
-                'description' => $clean_blade_vars(<<<'HTML'
+                'description' => $clean_blade_vars(
+                    <<<'HTML'
 
 <h1>¡Hola!</h1>
 <p>El estado de tu pedido #{{ orderId }} ha cambiado a: <strong>{{ status }}</strong></p>
@@ -53,7 +78,8 @@ HTML
             [
                 'correlative' => 'claim_email',
                 'name' => 'Diseño de email de reclamo',
-                'description' => $clean_blade_vars(<<<'HTML'
+                'description' => $clean_blade_vars(
+                    <<<'HTML'
 
 <h1>¡Hola {{ nombre }}!</h1>
 <p>Hemos recibido tu reclamo/queja y te enviamos un respaldo de lo que registraste:</p>
@@ -153,56 +179,62 @@ HTML
 <p>{{ config('app.name') }}<br>&copy; {{ date('Y') }}</p>
 HTML
             ],
-            // [
-            //     'correlative' => 'phone_contact',
-            //     'name' => 'Teléfono de contacto',
-            //     'description' => '+51 945 622 983'
-            // ],
-            // [
-            //     'correlative' => 'email_contact',
-            //     'name' => 'Correo de contacto',
-            //     'description' => 'soporte@trasciende.com'
-            // ],
-            // [
-            //     'correlative' => 'address',
-            //     'name' => 'Dirección',
-            //     'description' => 'Calle Nicanor Rocca de Vergallo 493, Magdalena del Mar Lima -Perú'
-            // ],
-            // [
-            //     'correlative' => 'opening_hours',
-            //     'name' => 'Horarios de atención',
-            //     'description' => 'De lunes a viernes - 10 am a 7pm'
-            // ],
-            // [
-            //     'correlative' => 'support_phone',
-            //     'name' => 'Número de soporte',
-            //     'description' => '+51 945 622 983'
-            // ],
-            // [
-            //     'correlative' => 'support_email',
-            //     'name' => 'Correo de soporte',
-            //     'description' => 'soporte@trasciende.com'
-            // ],
-            // [
-            //     'correlative' => 'privacy_policy',
-            //     'name' => 'Política de privacidad',
-            //     'description' => 'Nuestra política de privacidad protege la información personal de nuestros usuarios...'
-            // ],
-            // [
-            //     'correlative' => 'terms_conditions',
-            //     'name' => 'Términos y condiciones',
-            //     'description' => 'Al usar nuestros servicios, usted acepta los siguientes términos y condiciones...'
-            // ],
-            // [
-            //     'correlative' => 'location',
-            //     'name' => 'Ubicación',
-            //     'description' => '-12.097029,-77.037251'
-            // ]
+            [
+                'correlative' => 'phone_contact',
+                'name' => 'Teléfono de contacto',
+                'description' => '+51 945 622 983'
+            ],
+            [
+                'correlative' => 'email_contact',
+                'name' => 'Correo de contacto',
+                'description' => 'soporte@trasciende.com'
+            ],
+            [
+                'correlative' => 'address',
+                'name' => 'Dirección',
+                'description' => 'Calle Nicanor Rocca de Vergallo 493, Magdalena del Mar Lima -Perú'
+            ],
+            [
+                'correlative' => 'opening_hours',
+                'name' => 'Horarios de atención',
+                'description' => 'De lunes a viernes - 10 am a 7pm'
+            ],
+            [
+                'correlative' => 'support_phone',
+                'name' => 'Número de soporte',
+                'description' => '+51 945 622 983'
+            ],
+            [
+                'correlative' => 'support_email',
+                'name' => 'Correo de soporte',
+                'description' => 'soporte@trasciende.com'
+            ],
+            [
+                'correlative' => 'privacy_policy',
+                'name' => 'Política de privacidad',
+                'description' => 'Nuestra política de privacidad protege la información personal de nuestros usuarios...'
+            ],
+            [
+                'correlative' => 'terms_conditions',
+                'name' => 'Términos y condiciones',
+                'description' => 'Al usar nuestros servicios, usted acepta los siguientes términos y condiciones...'
+            ],
+            [
+                'correlative' => 'location',
+                'name' => 'Ubicación',
+                'description' => '-12.097029,-77.037251'
+            ]
+            ,
+             [
+                'correlative' => 'admin_claim_email',
+                'name' => 'Plantilla Email Admin - Nuevo Reclamo',
+                'description' => 'soporte@trasciende.com'
+            ]
         ];
 
         foreach ($generalData as $data) {
             $data['description'] = $clean_blade_vars($data['description']);
-            General::updateOrCreate(
+            General::firstOrCreate(
                 ['correlative' => $data['correlative']],
                 [
                     'name' => $data['name'],

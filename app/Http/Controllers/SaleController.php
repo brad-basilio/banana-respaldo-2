@@ -82,6 +82,10 @@ class SaleController extends BasicController
             $saleJpa->number = $sale['number'];
             $saleJpa->reference = $sale['reference'];
             $saleJpa->comment = $sale['comment'];
+            
+            // Document info
+            $saleJpa->documentType = $sale['document_type'] ?? null;
+            $saleJpa->document = $sale['document'] ?? null;
 
             if (Auth::check()) {
                 $userJpa = User::find(Auth::user()->id);
@@ -134,6 +138,7 @@ class SaleController extends BasicController
                 $saleJpa->renewal_discount = $renewal;
             }
 
+            // Manejar descuentos por cupones
             if (isset($sale['coupon']) && $sale['coupon']) {
                 [$couponStatus, $couponJpa] = CouponController::verify(
                     $sale['coupon'],
@@ -153,6 +158,15 @@ class SaleController extends BasicController
                 
                 // Incrementar el contador de uso del cupón
                 $couponJpa->incrementUsage();
+            }
+
+            // Manejar promociones automáticas
+            if (isset($sale['applied_promotions']) && $sale['applied_promotions']) {
+                $saleJpa->applied_promotions = json_encode($sale['applied_promotions']);
+            }
+            
+            if (isset($sale['promotion_discount']) && $sale['promotion_discount'] > 0) {
+                $saleJpa->promotion_discount = $sale['promotion_discount'];
             }
 
             $saleJpa->amount = Math::round($totalPrice * 10) / 10;
@@ -235,6 +249,10 @@ class SaleController extends BasicController
         // $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
         $body['status_id'] = 'bd60fc99-c0c0-463d-b738-1c72d7b085f5';
         $body['user_id'] = Auth::id();
+        
+        // Document info
+        $body['documentType'] = $request->document_type ?? null;
+        $body['document'] = $request->document ?? null;
 
         // Manejar cupón si está presente
         if (isset($body['coupon_code']) && $body['coupon_code']) {
@@ -288,7 +306,18 @@ class SaleController extends BasicController
         if ($request->coupon_id != 'null' && $request->coupon_discount > 0) {
             $totalPrice -= $request->coupon_discount ?? 0;
         }
-
+        
+        // Aplicar descuento por promociones automáticas si existe
+        if ($request->has('promotion_discount') && $request->promotion_discount > 0) {
+            $totalPrice -= $request->promotion_discount;
+            
+            // Guardar información de promociones aplicadas
+            if ($request->has('applied_promotions')) {
+                $jpa->applied_promotions = json_encode($request->applied_promotions);
+                $jpa->promotion_discount = $request->promotion_discount;
+            }
+        }
+        
         $jpa->amount = $totalPrice;
         $jpa->save();
 

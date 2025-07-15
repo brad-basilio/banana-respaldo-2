@@ -21,7 +21,6 @@
                     "color",
                     "isCopyright",
                     "border_color"
-
                 ],
                 "using": {
                     "model": "Social"
@@ -50,6 +49,26 @@
                 "image": "top-bar-copyright.png",
                 "generals": [
                     "copyright"
+                ],
+                "data": [
+                    "background"
+                ]
+            },
+            {
+                "id": "TopBarPanni",
+                "name": "Paani con redes sociales",
+                "image": "top-bar-socials.png",
+                "data": [
+                    "background_color",
+                    "color",
+                    "isCopyright",
+                    "border_color"
+                ],
+                "using": {
+                    "model": "Social"
+                },
+                "generals": [
+                    "cintillo"
                 ]
             }
         ]
@@ -109,8 +128,6 @@
                     "link_cart",
                     "showLoginCart",
                     "mobileSearch"
-                   
-                    
                 ],
                 "using": {
                     "model": "Category",
@@ -123,7 +140,7 @@
                     "message_whatsapp"
                 ]
             },
-             {
+            {
                 "id": "HeaderMakita",
                 "name": "HeaderMakita",
                 "image": "header-with-search.png",
@@ -197,6 +214,26 @@
                     "phone_whatsapp",
                     "message_whatsapp"
                 ]
+            },
+            {
+                "id": "HeaderSimple",
+                "name": "Header - Simple",
+                "image": "header-with-search.png",
+                "data": [
+                    "class",
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Category",
+                    "with": [
+                        "subcategories"
+                    ]
+                },
+                "generals": [
+                    "phone_whatsapp",
+                    "message_whatsapp",
+                    "email_contact"
+                ]
             }
         ]
     },
@@ -225,6 +262,19 @@
             {
                 "id": "CarruselBenefitsInifinite",
                 "name": "Beneficios",
+                "data": [
+                    "background"
+                ],
+                "using": {
+                    "model": "Indicator"
+                }
+            },
+            {
+                "id": "CarruselBenefitsInifinite2dn1",
+                "name": "CarruselBenefitsInifinite2dn1",
+                "data": [
+                    "background"
+                ],
                 "using": {
                     "model": "Indicator"
                 }
@@ -232,7 +282,6 @@
             {
                 "id": "CarruselBenefitsPaani",
                 "name": "Beneficios Paani",
-               
                 "using": {
                     "model": "Indicator"
                 }
@@ -250,6 +299,16 @@
             {
                 "id": "CarruselBananaLab",
                 "name": "CarruselBananaLab",
+                "data": [
+                    "background"
+                ],
+                "using": {
+                    "model": "Indicator"
+                }
+            },
+            {
+                "id": "CarruselBenefitsSwiper",
+                "name": "Beneficios Simple Swiper",
                 "data": [
                     "background"
                 ],
@@ -340,7 +399,6 @@
                     "showNavigation",
                     "imageBgPosition",
                     "overlayMobile"
-                
                 ],
                 "using": {
                     "model": "Slider",
@@ -360,7 +418,6 @@
                 "data": [
                     "title",
                     "description"
-                 
                 ],
                 "using": {
                     "model": "Item",
@@ -417,6 +474,24 @@
                         "name",
                         "description",
                         "image"
+                    ]
+                }
+            },
+            {
+                "id": "SliderTwoColumnSwiper",
+                "name": "Two Column Swiper",
+                "image": "slider-simple.png",
+                "data": [
+                    "pagination"
+                ],
+                "using": {
+                    "model": "Slider",
+                    "fields": [
+                        "name",
+                        "description",
+                        "bg_image",
+                        "button_text",
+                        "button_link"
                     ]
                 }
             }
@@ -508,6 +583,206 @@
                 ]
             },
             {
+                "id": "CatalagoFiltrosAko",
+                "name": "Producto Catalogo Filtro - Ako",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "CatalagoFiltrosPaani",
+                "name": "Producto Catalogo Filtro - Paani",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "CatalagoFiltrosPaani",
+                "name": "Producto Catalogo Filtro - Paani",
+                "image": "products-list.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
+                ],
+                "options": [
+                    {
+                        "id": "default",
+                        "name": "Lista estándar",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "with_variants",
+                        "name": "Lista con variantes",
+                        "using": {
+                            "model": "Item",
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags"
+                            ],
+                            "fields": [
+                                "id",
+                                "name",
+                                "slug",
+                                "price",
+                                "final_price",
+                                "image",
+                                "color"
+                            ],
+                            "group_by_name": true
+                        }
+                    }
+                ]
+            },
+            {
                 "id": "FilterSalaFabulosa",
                 "name": "Filtro SalaFabulosa",
                 "image": "products-list.png",
@@ -527,8 +802,17 @@
                         "name": "Lista estándar",
                         "using": {
                             "model": "Item",
-                            "with": ["category", "subcategory", "brand","collection"],
-                            "relations": ["category", "tags","collection"],
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
                             "fields": [
                                 "id",
                                 "name",
@@ -545,8 +829,17 @@
                         "name": "Lista con variantes",
                         "using": {
                             "model": "Item",
-                            "with": ["category", "subcategory", "brand","collection"],
-                            "relations": ["category", "tags","collection"],
+                            "with": [
+                                "category",
+                                "subcategory",
+                                "brand",
+                                "collection"
+                            ],
+                            "relations": [
+                                "category",
+                                "tags",
+                                "collection"
+                            ],
                             "fields": [
                                 "id",
                                 "name",
@@ -779,6 +1072,24 @@
                 }
             },
             {
+                "id": "CategoryBoxSwiper",
+                "name": "Carousel Category Box",
+                "image": "categories-carousel.png",
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_catalog"
+                ],
+                "using": {
+                    "model": "Category",
+                    "limit": 10,
+                    "filters": [
+                        "featured"
+                    ]
+                }
+            },
+            {
                 "id": "CategoryFlex",
                 "name": "Flex",
                 "image": "categories-carousel.png",
@@ -791,17 +1102,26 @@
                 ],
                 "using": {
                     "model": "Category",
-                    "filters": ["featured"]
+                    "filters": [
+                        "featured"
+                    ]
                 }
             },
             {
                 "id": "CategoryGridInfinite",
                 "name": "CategoryGridInfinite",
                 "image": "categories-carousel.png",
-                "data": ["path", "title", "description", "link_catalog"],
+                "data": [
+                    "path",
+                    "title",
+                    "description",
+                    "link_catalog"
+                ],
                 "using": {
                     "model": "Category",
-                    "filters": ["featured"]
+                    "filters": [
+                        "featured"
+                    ]
                 }
             },
             {
@@ -834,6 +1154,7 @@
                 "image": "categories-simple.png",
                 "data": [
                     "title",
+                    "centrado",
                     "path"
                 ],
                 "using": {
@@ -965,7 +1286,7 @@
                     "limit": 12
                 }
             },
-              {
+            {
                 "id": "ProductMakita",
                 "name": "ProductMakita",
                 "image": "products-list.png",
@@ -1046,6 +1367,94 @@
                 }
             },
             {
+                "id": "ProductNavigationSwiperSimple",
+                "name": "NavegacionSwiper Simple",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
+                    "limit": 20
+                }
+            },
+            {
+                "id": "ProductNavigationSwiperPaani",
+                "name": "NavegacionSwiper Paani",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart",
+                    "background",
+                    "text_button",
+                    "backgroundboton"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ],
+                    "limit": 20
+                }
+            },
+            {
+                "id": "ProductFeaturedSwiper",
+                "name": "Navegacion Swiper Featured",
+                "image": "products-list.png",
+                "data": [
+                    "title",
+                    "path",
+                    "description",
+                    "link_catalog",
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Item",
+                    "filters": [
+                        "featured",
+                        "recommended",
+                        "offering",
+                        "is_new",
+                        "views"
+                    ],
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand",
+                        "specifications"
+                    ],
+                    "limit": 20
+                }
+            },
+            {
                 "id": "ProductBananaLab",
                 "name": "ProductBananaLab",
                 "image": "products-list.png",
@@ -1107,6 +1516,10 @@
                 "name": "Simple"
             },
             {
+                "id": "BannerSimpleD2",
+                "name": "Simple D2en1"
+            },
+            {
                 "id": "BannerAd",
                 "name": "Anuncio",
                 "data": [
@@ -1121,15 +1534,22 @@
                     "image_position"
                 ]
             },
-             {
+            {
+                "id": "BannerPublicitarioPaani",
+                "name": "BannerPublicitarioPaani",
+                "data": [
+                    "title",
+                    "image_position"
+                ]
+            },
+            {
                 "id": "BannerCTAMakita",
                 "name": "BannerCTAMakita",
                 "using": {
                     "model": "Strength"
                 }
-               
             },
-             {
+            {
                 "id": "BannerContactMakita",
                 "name": "BannerContactMakita",
                 "data": [
@@ -1163,6 +1583,16 @@
                 "name": "Estatico",
                 "using": {
                     "model": "Aboutus"
+                }
+            },
+            {
+                "id": "BannerStaticSecond",
+                "name": "Estatico 2",
+                "data": [
+                    "title"
+                ],
+                "using": {
+                    "model": "Certification"
                 }
             },
             {
@@ -1242,7 +1672,11 @@
                 "name": "Simple",
                 "using": {
                     "model": "Item",
-                    "with": ["category", "subcategory", "brand"]
+                    "with": [
+                        "category",
+                        "subcategory",
+                        "brand"
+                    ]
                 }
             },
             {
@@ -1264,13 +1698,20 @@
                 "using": {
                     "model": "Item",
                     "flied": "slug"
-                }
+                },
+                "generals": [
+                    "phone_whatsapp",
+                    "message_whatsapp",
+                    "delivery_policy"
+                ]
             },
-             {
+            {
                 "id": "ProductDetailPaani",
                 "name": "ProductDetailPaani",
                 "data": [
-                    "link_cart"
+                    "link_cart",
+                    "background",
+                    "backgroundboton"
                 ],
                 "using": {
                     "model": "Item",
@@ -1284,6 +1725,28 @@
             {
                 "id": "ProductDetailSF",
                 "name": "ProductDetailSF",
+                "data": [
+                    "link_cart"
+                ],
+                "using": {
+                    "model": "Item",
+                    "field": "slug",
+                    "with": [
+                        "variants",
+                        "images",
+                        "specifications",
+                        "features"
+                    ],
+                    "relations": [
+                        "category",
+                        "brand",
+                        "subcategory"
+                    ]
+                }
+            },
+            {
+                "id": "ProductDetailAko",
+                "name": "ProductDetailAko",
                 "data": [
                     "link_cart"
                 ],
@@ -1407,7 +1870,9 @@
             {
                 "id": "CheckoutStepsSF",
                 "name": "StepsSF",
-                "data": ["title"],
+                "data": [
+                    "title"
+                ],
                 "json": {
                     "prefixes": "./prefijocelular.json"
                 },
@@ -1445,6 +1910,15 @@
                 "data": [
                     "redirect"
                 ]
+            },
+            {
+                "id": "ContactAko",
+                "name": "ContactAko",
+                "data": [
+                    "redirect",
+                    "title",
+                    "description"
+                ]
             }
         ]
     },
@@ -1477,6 +1951,14 @@
                 "name": "Simple",
                 "data": [
                     "title"
+                ]
+            },
+            {
+                "id": "FaqAko",
+                "name": "Faqs Ako",
+                "data": [
+                    "title",
+                    "description"
                 ]
             }
         ]
@@ -1533,9 +2015,26 @@
                     ]
                 }
             },
-             {
+            {
                 "id": "BlogSectionMakita",
                 "name": "BlogSectionMakita",
+                "data": [
+                    "title",
+                    "description",
+                    "button_text",
+                    "link_blog"
+                ],
+                "using": {
+                    "model": "Post",
+                    "limit": 4,
+                    "with": [
+                        "category"
+                    ]
+                }
+            },
+            {
+                "id": "BlogSectionAko",
+                "name": "BlogSectionAko",
                 "data": [
                     "title",
                     "description",
@@ -1607,11 +2106,11 @@
                 "data": [
                     "title"
                 ],
-               "using": {
+                "using": {
                     "model": "Post",
                     "field": "slug",
                     "with": [
-                        "category"       
+                        "category"
                     ],
                     "relations": [
                         "category"
@@ -1643,6 +2142,32 @@
                     "description",
                     "about_url"
                 ]
+            },
+            {
+                "id": "AboutAko",
+                "name": "AboutAko",
+                "data": [
+                    "url_imagen",
+                    "title",
+                    "description",
+                    "about_url"
+                ],
+                "using": {
+                    "model": "Aboutus"
+                }
+            },
+            {
+                "id": "AboutPaani",
+                "name": "AboutPaani",
+                "data": [
+                    "url_imagen",
+                    "title",
+                    "description",
+                    "about_url"
+                ],
+                "using": {
+                    "model": "Aboutus"
+                }
             }
         ]
     },
@@ -1723,8 +2248,8 @@
                     "support_phone",
                     "support_email"
                 ]
-            }, 
-             {
+            },
+            {
                 "id": "FooterMakita",
                 "name": "FooterMakita",
                 "image": "footer-simple.png",
@@ -1741,7 +2266,7 @@
                     "support_phone",
                     "support_email"
                 ]
-            }, 
+            },
             {
                 "id": "FooterPaani",
                 "name": "FooterPaani",
@@ -1852,6 +2377,9 @@
                 "data": [
                     "steps",
                     "selected"
+                ],
+                "generals": [
+                    "terms_conditions"
                 ]
             },
             {
@@ -1867,16 +2395,15 @@
             }
         ]
     },
-     {
+    {
         "id": "testimonials",
         "name": "Testimonials",
         "options": [
             {
                 "id": "TestimonialsPaani",
                 "name": "Paani",
-               "using": {
+                "using": {
                     "model": "Testimony"
-                  
                 }
             }
         ]
@@ -1920,22 +2447,46 @@
         ]
     },
     {
-        "id": "agradecimiento",
-        "name": "Agradecimiento",
+        "id": "agradecimientos",
+        "name": "Agradecimientos",
         "options": [
             {
-                "id": "agradecimientoSF",
+                "id": "AgradecimientoSF",
                 "name": "AgradecimientoSF"
+            },
+            {
+                "id": "AgradecimientoAko",
+                "name": "AgradecimientoAko",
+                "using": {
+                    "model": "Social"
+                }
             }
         ]
     },
-     {
+    {
         "id": "brands",
         "name": "Brands",
         "options": [
             {
                 "id": "BrandMakita",
                 "name": "BrandMakita"
+            }
+        ]
+    },
+    {
+        "id": "partner",
+        "name": "Partners",
+        "options": [
+            {
+                "id": "PartnerSimple",
+                "name": "PartnerSimple",
+                "using": {
+                    "model": "Partner"
+                },
+                "data": [
+                    "title",
+                    "background"
+                ]
             }
         ]
     }

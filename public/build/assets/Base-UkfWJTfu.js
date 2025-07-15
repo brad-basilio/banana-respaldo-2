@@ -1,1 +1,0 @@
-import"./AboutSimple-Cf8x2fCZ.js";import"./index-BH53Isel.js";import"./Header--6Wi0hm8.js";import"./Footer-DeONd7SK.js";import"./TopBar-C0fekrkN.js";import"./index-yBjzXJbu.js";import"./preload-helper-BfFHrpNk.js";

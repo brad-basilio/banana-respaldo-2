@@ -14,6 +14,10 @@ import {
     Share2,
     CheckCircle2,
     ChevronRight,
+    MessageCircle,
+    Truck,
+    X,
+    ZoomIn,
 } from "lucide-react";
 
 import ItemsRest from "../../../Actions/ItemsRest";
@@ -21,16 +25,21 @@ import Swal from "sweetalert2";
 import { Notify } from "sode-extend-react";
 import ProductInfinite from "../Products/ProductInfinite";
 import CartModal from "../Components/CartModal";
+import { motion } from "framer-motion";
 
 import { Navigation, Grid, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/grid";
 import { Swiper, SwiperSlide } from "swiper/react";
+import ReactModal from "react-modal";
+import HtmlContent from "../../../Utils/HtmlContent";
 
 
 
-const ProductDetail = ({ item, data, setCart, cart }) => {
+
+
+const ProductDetail = ({ item, data, setCart, cart, generals }) => {
     console.log(item);
     const itemsRest = new ItemsRest();
     const [modalOpen, setModalOpen] = useState(false);
@@ -38,6 +47,13 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
         url: item?.image,
         type: "main",
     });
+
+    // Estados para la funcionalidad de zoom
+    const [isZoomEnabled, setIsZoomEnabled] = useState(false);
+    const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [lastMousePosition, setLastMousePosition] = useState({ x: 0, y: 0 });
+    const imageRef = useRef(null);
 
     const [quantity, setQuantity] = useState(1);
     const handleChange = (e) => {
@@ -49,14 +65,123 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
     /*ESPECIFICACIONES */
     const [isExpanded, setIsExpanded] = useState(false);
     const [isSpecificationsExpanded, setIsSpecificationsExpanded] = useState(false);
-    
+
     // Referencias para medir contenido
     const descriptionRef = useRef(null);
     const specificationsRef = useRef(null);
-    
+
     // Estados para controlar si se necesita "Ver más"
     const [needsDescriptionExpand, setNeedsDescriptionExpand] = useState(false);
     const [needsSpecificationsExpand, setNeedsSpecificationsExpand] = useState(false);
+
+    // Estados para modal de políticas de envío
+    const [deliveryPolicyModalOpen, setDeliveryPolicyModalOpen] = useState(false);
+    
+    // Estados para modal de tiendas
+    const [storeListModalOpen, setStoreListModalOpen] = useState(false);
+    const [stores, setStores] = useState([]);
+    const [loadingStores, setLoadingStores] = useState(false);
+
+    // Funciones para manejar el zoom de la imagen
+    const handleZoomClick = () => {
+        console.log('Zoom clicked, current state:', isZoomEnabled);
+        setIsZoomEnabled(!isZoomEnabled);
+        if (!isZoomEnabled) {
+            // Centrar la imagen cuando se activa el zoom
+            setZoomPosition({ x: 50, y: 50 });
+        }
+        setIsDragging(false);
+    };
+
+    const handleMouseDown = (e) => {
+        if (!isZoomEnabled) return;
+        setIsDragging(true);
+        setLastMousePosition({ x: e.clientX, y: e.clientY });
+        e.preventDefault();
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isZoomEnabled || !imageRef.current) return;
+
+        if (isDragging) {
+            // Modo arrastre: mover el zoom basado en el delta del mouse
+            const deltaX = e.clientX - lastMousePosition.x;
+            const deltaY = e.clientY - lastMousePosition.y;
+            
+            setZoomPosition(prev => {
+                // Ajustar la sensibilidad para movimiento más suave
+                const sensitivity = 0.3; // Reducir para movimiento más suave
+                const newX = Math.max(0, Math.min(100, prev.x - deltaX * sensitivity));
+                const newY = Math.max(0, Math.min(100, prev.y - deltaY * sensitivity));
+                return { x: newX, y: newY };
+            });
+            
+            setLastMousePosition({ x: e.clientX, y: e.clientY });
+        } else {
+            // Modo hover: seguir el cursor suavemente cuando no se arrastra
+            const rect = imageRef.current.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            const limitedX = Math.max(10, Math.min(90, x)); // Evitar bordes extremos
+            const limitedY = Math.max(10, Math.min(90, y));
+            
+            // Interpolación muy suave para el hover
+            setZoomPosition(prev => ({
+                x: prev.x + (limitedX - prev.x) * 0.1,
+                y: prev.y + (limitedY - prev.y) * 0.1
+            }));
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+        // No desactivar el zoom automáticamente, permitir que el usuario lo controle
+    };
+
+    // WhatsApp configuration
+    const phone_whatsapp = generals?.find(
+        (general) => general.correlative === "phone_whatsapp"
+    );
+
+    const numeroWhatsApp = phone_whatsapp?.description;
+    const mensajeWhatsApp = encodeURIComponent(
+        `¡Hola! Tengo dudas sobre este producto: ${item?.name}`
+    );
+    const linkWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsApp}`;
+
+    const handleClickWhatsApp = () => {
+        window.open(linkWhatsApp, "_blank");
+    };
+
+    // Función para cargar las tiendas
+    const loadStores = async () => {
+        setLoadingStores(true);
+        try {
+            const response = await fetch('/api/stores');
+            const result = await response.json();
+            if (result.status) {
+                setStores(result.data || []);
+            }
+        } catch (error) {
+            console.error('Error loading stores:', error);
+            setStores([]);
+        } finally {
+            setLoadingStores(false);
+        }
+    };
+
+    // Función para abrir el modal de tiendas
+    const handleStoreListModal = () => {
+        setStoreListModalOpen(true);
+        if (stores.length === 0) {
+            loadStores();
+        }
+    };
 
     const onAddClicked = (product) => {
         const newCart = structuredClone(cart);
@@ -89,7 +214,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
             handleViewUpdate(item);
         }
     }, [item]); // Agregar `item` como dependencia
-    
+
     // useEffect para verificar si se necesita el botón "Ver más"
     useEffect(() => {
         const checkContentHeight = () => {
@@ -99,7 +224,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                 const maxHeight = 400; // 400px que es nuestra altura máxima
                 setNeedsDescriptionExpand(contentHeight > maxHeight);
             }
-            
+
             // Verificar especificaciones
             if (specificationsRef.current) {
                 const contentHeight = specificationsRef.current.scrollHeight;
@@ -110,10 +235,10 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
 
         // Verificar después de que el contenido se haya renderizado
         setTimeout(checkContentHeight, 100);
-        
+
         // También verificar cuando cambie el tamaño de la ventana
         window.addEventListener('resize', checkContentHeight);
-        
+
         return () => {
             window.removeEventListener('resize', checkContentHeight);
         };
@@ -218,6 +343,40 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
     const navigationPrevRef = useRef(null);
     const navigationNextRef = useRef(null);
 
+    // useEffect para manejar eventos globales del mouse (para el drag)
+    useEffect(() => {
+        const handleGlobalMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        const handleGlobalMouseMove = (e) => {
+            if (isDragging && isZoomEnabled && imageRef.current) {
+                const deltaX = e.clientX - lastMousePosition.x;
+                const deltaY = e.clientY - lastMousePosition.y;
+                
+                setZoomPosition(prev => {
+                    // Sensibilidad ajustada para movimiento más suave y controlado
+                    const sensitivity = 0.25;
+                    const newX = Math.max(5, Math.min(95, prev.x - deltaX * sensitivity));
+                    const newY = Math.max(5, Math.min(95, prev.y - deltaY * sensitivity));
+                    return { x: newX, y: newY };
+                });
+                
+                setLastMousePosition({ x: e.clientX, y: e.clientY });
+            }
+        };
+
+        if (isDragging) {
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+        }
+
+        return () => {
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+            document.removeEventListener('mousemove', handleGlobalMouseMove);
+        };
+    }, [isDragging, isZoomEnabled, lastMousePosition]);
+
     return (
         <>
             {/* Versión Mobile */}
@@ -256,14 +415,14 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                         >
                             {[item?.image, ...item?.images]
                                 .filter((image, index, self) =>
-                                    index === self.findIndex((img) => img.url === image.url)
+                                    index === self.findIndex((img) => img?.url === image?.url)
                                 )
                                 .map((img, i) => (
                                     <SwiperSlide key={i}>
                                         <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                                             <img
-                                                src={`/storage/images/item/${img.url || img}`}
-                                                className="w-full h-full object-contain"
+                                                src={`/storage/images/item/${img?.url || img}`}
+                                                className="w-full h-full object-cover aspect-square"
                                                 loading="lazy"
                                                 onError={(e) => (e.target.src = "/api/cover/thumbnail/null")}
                                             />
@@ -299,7 +458,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                         S/ {item?.price}
                                     </span>
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1">SKU: {item?.sku}</div>
+                                <div className="text-xs customtext-neutral-light mt-1">SKU: {item?.sku}</div>
                             </div>
                             <div className="bg-secondary customtext-primary px-3 py-1 rounded-full text-sm">
                                 {Number(item?.discount_percent).toFixed(0)}% OFF
@@ -384,36 +543,73 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                         </div>
                     </div>
 
-                    {/* Entrega y Soporte 
-                    <div className="mt-6 space-y-4">
-                        <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-gray-100 p-2 rounded-full">
-                                    <Home className="w-6 h-6 customtext-primary" />
+                    {/* Entrega y Soporte */}
+                    {/* Delivery Options - Mejoradas */}
+                    <div className="border rounded-lg overflow-hidden flex flex-col mt-8 justify-center">
+                        <button
+                            onClick={() => setDeliveryPolicyModalOpen(true)}
+                            className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-4"
+                        >
+                            <div className="flex gap-2 items-center">
+                                <div className="bg-secondary min-w-12 min-h-12 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                    <Truck className="w-8 h-8 customtext-primary" />
                                 </div>
                                 <div>
-                                    <p className="font-medium">Despacho a domicilio</p>
-                                    <p className="text-sm text-gray-500">Disponible para esta zona</p>
+                                    <p className="font-semibold text-sm text-start customtext-neutral-dark">Envío a domicilio</p>
+                                    <p className="text-start text-xs customtext-neutral-light mt-1 underline">Consultar</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4 mt-4">
-                                <div className="bg-gray-100 p-2 rounded-full">
-                                    <Store className="w-6 h-6 customtext-primary" />
+                        </button>
+                        
+                        <button
+                            onClick={handleStoreListModal}
+                            className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-4"
+                        >
+                            <div className="flex gap-2 items-center">
+                                <div className="bg-secondary min-w-12 min-h-12 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                    <Store className="w-8 h-8 customtext-primary" />
                                 </div>
                                 <div>
-                                    <p className="font-medium">Retiro en tienda</p>
-                                    <p className="text-sm text-gray-500">Ver horarios de atención</p>
+                                    <p className="font-semibold text-start text-sm customtext-neutral-dark">Retiro en tienda</p>
+                                    <p className="text-start text-xs customtext-neutral-light mt-1 underline">Consultar tiendas disponibles</p>
                                 </div>
                             </div>
-                        </div>
+                        </button>
+                                {/* Support - Mejorado */}
+                                <motion.div
 
-                        <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <Phone className="w-5 h-5 customtext-primary" />
-                                <span className="font-medium">Soporte: 01 203 7074</span>
+                                   className="w-full p-6 cursor-pointer hover:bg-gray-50 transition-colors duration-200 flex items-center  gap-4"
+                                >
+                                    <motion.div
+                                        className=" flex flex-row rounded-xl gap-3"
+                                      
+                                    >
+
+                                        <div className="bg-secondary min-w-12 max-w-12 min-h-12 max-h-12 flex items-center justify-center rounded-full flex-shrink-0">
+                                            <svg
+                                                className="w-8 h-8 customtext-primary"
+                                                fill="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.531 3.488" />
+                                            </svg>
+                                        </div>
+                                        <div className="font-semibold text-sm customtext-neutral-dark cursor-pointer">
+                                            <p>
+                                                ¿Tienes dudas?
+                                                Haz{" "}
+                                                <a
+                                                    className="underline"
+                                                    onClick={handleClickWhatsApp}
+                                                >
+                                                    clic aquí
+                                                </a>{" "}
+                                                y chatea con nosotros
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
                             </div>
-                        </div>
-                    </div>*/}
                 </div>
 
                 {/* Bottom Navigation */}
@@ -461,7 +657,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                                 type: "main",
                                             })
                                         }
-                                        className={`w-16 h-16  rounded-lg p-2 border-2 ${selectedImage.url === item?.image
+                                        className={`w-16 h-16  rounded-lg p-1 border-2 ${selectedImage.url === item?.image
                                             ? "border-primary "
                                             : "border-gray-200"
                                             }`}
@@ -469,7 +665,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                         <img
                                             src={`/storage/images/item/${item?.image}`}
                                             alt="Main Thumbnail"
-                                            className="w-full h-full object-contain"
+                                            className="w-full h-full object-cover rounded-lg aspect-square"
                                             onError={(e) =>
                                             (e.target.src =
                                                 "/api/cover/thumbnail/null")
@@ -483,19 +679,19 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                             key={index}
                                             onClick={() =>
                                                 setSelectedImage({
-                                                    url: image.url,
+                                                    url: image?.url,
                                                     type: "gallery",
                                                 })
                                             }
-                                            className={`w-16 h-16 border-2 rounded-lg p-2 ${selectedImage.url === image.url
+                                            className={`w-16 h-16 border-2 rounded-lg p-1 ${selectedImage.url === image.url
                                                 ? "border-primary"
                                                 : "border-gray-200"
                                                 }`}
                                         >
                                             <img
-                                                src={`/storage/images/item/${image.url}`}
+                                                src={`/storage/images/item/${image?.url}`}
                                                 alt={`Thumbnail ${index + 1}`}
-                                                className="w-full h-full object-contain"
+                                                className="w-full h-full object-cover rounded-lg aspect-square"
                                                 onError={(e) =>
                                                 (e.target.src =
                                                     "/api/cover/thumbnail/null")
@@ -506,20 +702,110 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                 </div>
 
                                 {/* Main Image */}
-                                <div className="flex-1">
-                                    <img
-                                        src={
-                                            selectedImage.type === "main"
-                                                ? `/storage/images/item/${selectedImage.url}`
-                                                : `/storage/images/item/${selectedImage.url}`
-                                        }
-                                        onError={(e) =>
-                                        (e.target.src =
-                                            "/api/cover/thumbnail/null")
-                                        }
-                                        alt="Product main"
-                                        className="w-full h-auto object-contain"
-                                    />
+                                <div className="flex-1 relative group">
+                                    {/* Zoom Icon */}
+                                    <button
+                                        onClick={handleZoomClick}
+                                        className={`absolute top-3 right-3 z-10 p-2 rounded-full shadow-lg transition-all duration-200 ${
+                                            isZoomEnabled 
+                                                ? 'bg-primary text-white opacity-100' 
+                                                : 'bg-white/90 hover:bg-white text-gray-700 hover:text-primary group-hover:opacity-100 opacity-60'
+                                        }`}
+                                        title={isZoomEnabled ? "Desactivar zoom" : "Activar zoom"}
+                                    >
+                                        <ZoomIn className="w-5 h-5" />
+                                    </button>
+
+                                    <div
+                                        className={`relative overflow-hidden rounded-lg select-none ${
+                                            isZoomEnabled 
+                                                ? isDragging 
+                                                    ? 'cursor-grabbing' 
+                                                    : 'cursor-grab'
+                                                : 'cursor-pointer'
+                                        }`}
+                                        onMouseMove={handleMouseMove}
+                                        onMouseDown={handleMouseDown}
+                                        onMouseUp={handleMouseUp}
+                                        onMouseLeave={handleMouseLeave}
+                                        onClick={() => !isZoomEnabled && handleZoomClick()}
+                                        style={{
+                                            height: 'auto',
+                                            position: 'relative'
+                                        }}
+                                    >
+                                        <img
+                                            ref={imageRef}
+                                            src={
+                                                selectedImage.type === "main"
+                                                    ? `/storage/images/item/${selectedImage?.url}`
+                                                    : `/storage/images/item/${selectedImage?.url}`
+                                            }
+                                            onError={(e) =>
+                                            (e.target.src =
+                                                "/api/cover/thumbnail/null")
+                                            }
+                                            alt="Product main"
+                                            className="w-full rounded-lg object-cover aspect-square"
+                                            style={{
+                                                ...(isZoomEnabled
+                                                    ? {
+                                                          transform: `scale(2.5)`,
+                                                          transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                                                          transition: isDragging 
+                                                              ? 'none' 
+                                                              : 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform-origin 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                      }
+                                                    : {
+                                                          transform: 'scale(1)',
+                                                          transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                                                      }),
+                                                userSelect: 'none',
+                                                pointerEvents: 'auto'
+                                            }}
+                                            draggable={false}
+                                        />
+                                        
+                                        {/* Overlay visual para indicar que se puede hacer zoom */}
+                                        {!isZoomEnabled && (
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 rounded-lg flex items-center justify-center">
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/75 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                                                     Click para activar zoom
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Indicador cuando el zoom está activo */}
+                                        {isZoomEnabled && (
+                                            <div className="absolute bottom-3 left-3 bg-primary text-white px-3 py-2 rounded-lg text-xs font-medium shadow-lg border border-white/20">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                                    <span>
+                                                        {isDragging ? 'Arrastrando vista...' : 'Mantén presionado y arrastra'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Indicador de posición con mini-mapa */}
+                                        {isZoomEnabled && (
+                                            <div className="absolute top-4 left-4 bg-black/20 text-white p-2 rounded-lg shadow-lg">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    {/* Mini mapa */}
+                                                    <div className="relative w-12 h-12 bg-white/20 border border-white/40 rounded">
+                                                        <div 
+                                                            className="absolute w-3 h-3 bg-primary border border-white rounded-sm shadow-sm transition-all duration-200"
+                                                            style={{
+                                                                left: `${(zoomPosition.x / 100) * (48 - 12)}px`,
+                                                                top: `${(zoomPosition.y / 100) * (48 - 12)}px`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -563,23 +849,34 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
 
                                     {/* Quantity */}
                                     <div className="mt-4">
-                                        <div className="flex items-center gap-4 mb-2">
-                                            <div className="flex items-center space-x-4 customtext-neutral-light text-sm">
-                                                <span className="">
-                                                    Cantidad
-                                                </span>
-                                                <div className="relative flex items-center border rounded-md px-2 py-1">
-                                                    <input
-                                                        type="number"
-                                                        value={quantity}
-                                                        onChange={handleChange}
-                                                        min="1"
-                                                        max="10"
-                                                        className="w-10 py-1 customtext-neutral-dark text-center bg-transparent outline-none appearance-none"
-                                                    />
+                                        <div className="flex flex-col gap-3">
+                                            <span className="customtext-neutral-dark text-sm font-medium">
+                                                Cantidad
+                                            </span>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                                                    <button
+                                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity <= 1}
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <div className="w-12 h-10 flex items-center justify-center border-x border-gray-300 bg-gray-50">
+                                                        <span className="customtext-neutral-dark font-medium text-sm">
+                                                            {quantity}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity >= 10}
+                                                    >
+                                                        +
+                                                    </button>
                                                 </div>
-                                                <span className="">
-                                                    Máximo 10 unidades.
+                                                <span className="customtext-neutral-light text-xs">
+                                                    Máximo 10 unidades
                                                 </span>
                                             </div>
                                         </div>
@@ -720,51 +1017,76 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                     </button>
                                 </div>
                             </div>
-                            {/* Delivery Options */}
-                            <div className="border rounded-lg">
-                                <div className="flex gap-6 items-center justify-center py-4 customtext-neutral-dark">
-                                    <div className="p-4">
-                                        <div className="bg-[#F7F9FB] py-4 px-5 rounded-full w-max h-max">
-                                            <Home className="w-6 h-6 mx-auto mb-1 customtext-primary" />
+                            {/* Delivery Options - Mejoradas */}
+                            <div className="border rounded-lg overflow-hidden flex justify-center">
+                                <button
+                                    onClick={() => setDeliveryPolicyModalOpen(true)}
+                                    className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center  gap-4"
+                                >
+                                    <div className=" flex gap-2 items-center">
+                                        <div className="bg-secondary min-w-10 min-h-10 rounded-full mx-auto  flex items-center justify-center">
+                                            <Truck className="w-6 h-6 customtext-primary" />
                                         </div>
-
-                                        <p className="font-semibold text-sm">
-                                            Despacho
-                                        </p>
-                                        <p className="font-semibold text-sm">
-                                            a domicilio
-                                        </p>
-                                    </div>
-                                    <div className="p-4 text-center">
-                                        <div className="bg-[#F7F9FB] py-4 px-5 rounded-full w-max h-max">
-                                            <Store className="w-6 h-6 mx-auto mb-1 customtext-primary" />
+                                        <div>
+                                            <p className="font-semibold text-start text-sm customtext-neutral-dark">Envío a domicilio</p>
+                                            <p className="text-start text-xs customtext-neutral-light mt-1 underline" >Consultar </p>
                                         </div>
-
-                                        <p className="font-semibold text-sm">
-                                            Retira
-                                        </p>
-                                        <p className="font-semibold text-sm">
-                                            en tienda
-                                        </p>
                                     </div>
-                                </div>
+
+                                </button>
+
+                                <button
+                                    onClick={handleStoreListModal}
+                                    className="w-full p-6 hover:bg-gray-50 transition-colors duration-200 flex items-center gap-4"
+                                >
+                                    <div className="flex gap-2 items-center">
+                                        <div className="bg-secondary min-w-10 min-h-10 rounded-full mx-auto flex items-center justify-center">
+                                            <Store className="w-6 h-6 customtext-primary" />
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-start text-sm customtext-neutral-dark">Retiro en tienda</p>
+                                            <p className="text-start text-xs customtext-neutral-light mt-1 underline">Consultar</p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* Support - Mejorado */}
+                                <motion.div
+
+                                   className="w-full p-6 cursor-pointer hover:bg-gray-50 transition-colors duration-200 flex items-center  gap-4"
+                                >
+                                    <motion.div
+                                        className=" flex flex-row rounded-xl gap-3"
+                                      
+                                    >
+
+                                        <div className="bg-secondary min-w-10 max-w-10 min-h-10 max-h-10 flex items-center justify-center rounded-full flex-shrink-0">
+                                            <svg
+                                                className="w-6 h-6 customtext-primary"
+                                                fill="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.531 3.488" />
+                                            </svg>
+                                        </div>
+                                        <div className="font-semibold text-sm customtext-neutral-dark cursor-pointer">
+                                            <p>
+                                                ¿Tienes dudas?
+                                                Haz{" "}
+                                                <a
+                                                    className="underline"
+                                                    onClick={handleClickWhatsApp}
+                                                >
+                                                    clic aquí
+                                                </a>{" "}
+                                             
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
                             </div>
 
-                            {/* Support */}
-                            <div className="mt-8 bg-[#F7F9FB] rounded-lg p-6 space-y-4 customtext-neutral-dark">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Phone className="w-5 h-5 customtext-primary" />
-                                    <span className="text-sm font-semibold">
-                                        ¿Necesitas ayuda? Llámanos al 012037074
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm ">
-                                    <CircleUserRound className="w-5 h-5 customtext-primary" />
-                                    <span className="text-sm font-semibold">
-                                        Soporte técnico
-                                    </span>
-                                </div>
-                            </div>
+
                         </div>
 
                         {/* Right Column - Product Info */}
@@ -801,7 +1123,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                             </div>
                             <div className="flex gap-8 border-b-2 pb-8">
                                 {/* Specifications */}
-                                <div className="flex-1 w-6/12 ">
+                                <div className="flex-1 w-7/12 ">
                                     <div className="bg-[#F7F9FB] rounded-lg p-6">
                                         <h3 className="font-medium text-sm mb-4">
                                             Especificaciones principales
@@ -809,7 +1131,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                         <ul
                                             className={`space-y-2  customtext-neutral-light mb-4 transition-all duration-300 ${expandedSpecificationMain
                                                 ? "max-h-full"
-                                                : "max-h-24 overflow-hidden"
+                                                : "max-h-28 overflow-hidden"
                                                 }`}
                                             style={{ listStyleType: "disc" }}
                                         >
@@ -819,9 +1141,9 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                                     "principal" && (
                                                         <li
                                                             key={index}
-                                                            className="flex gap-2"
+                                                            className="flex gap-2 items-start"
                                                         >
-                                                            <CircleCheckIcon className="customtext-primary" />
+                                                            <CircleCheckIcon className="customtext-primary min-w-5 min-h-5 max-w-5 max-h-5 mt-1" />
                                                             {spec.description}
                                                         </li>
                                                     )
@@ -848,7 +1170,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                 </div>
 
                                 {/* Price Section */}
-                                <div className=" w-6/12 ">
+                                <div className=" w-5/12 ">
                                     <p className="text-sm customtext-neutral-light mb-1">
                                         Precio:{" "}
                                         <span className="line-through">
@@ -856,10 +1178,10 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                         </span>
                                     </p>
                                     <div className="flex items-center gap-4 relative ">
-                                        <span className="text-[40px] font-bold ">
+                                        <span className="text-[36px] font-bold ">
                                             S/ {item?.final_price}
                                         </span>
-                                        <span className=" absolute -top-8 right-0 bg-[#F93232] text-white font-bold px-3 py-2 rounded-xl">
+                                        <span className=" absolute text-sm -top-8 right-0 bg-[#F93232] text-white font-bold px-3 py-2 rounded-xl">
                                             -
                                             {Number(
                                                 item?.discount_percent
@@ -870,23 +1192,34 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
 
                                     {/* Quantity */}
                                     <div className="mt-4">
-                                        <div className="flex items-center gap-4 mb-2">
-                                            <div className="flex items-center space-x-4 customtext-neutral-light text-sm">
-                                                <span className="">
-                                                    Cantidad
-                                                </span>
-                                                <div className="relative flex items-center border rounded-md px-2 py-1">
-                                                    <input
-                                                        type="number"
-                                                        value={quantity}
-                                                        onChange={handleChange}
-                                                        min="1"
-                                                        max="10"
-                                                        className="w-10 py-1 customtext-neutral-dark text-center bg-transparent outline-none appearance-none"
-                                                    />
+                                        <div className="flex flex-col gap-3">
+                                            <span className="customtext-neutral-dark text-sm font-medium">
+                                                Cantidad
+                                            </span>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                                                    <button
+                                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity <= 1}
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <div className="w-12 h-10 flex items-center justify-center border-x border-gray-300 bg-gray-50">
+                                                        <span className="customtext-neutral-dark font-medium text-sm">
+                                                            {quantity}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                                                        className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors duration-200 customtext-neutral-dark font-semibold text-lg"
+                                                        disabled={quantity >= 10}
+                                                    >
+                                                        +
+                                                    </button>
                                                 </div>
-                                                <span className="">
-                                                    Máximo 10 unidades.
+                                                <span className="customtext-neutral-light text-xs">
+                                                    Máximo 10 unidades
                                                 </span>
                                             </div>
                                         </div>
@@ -989,13 +1322,13 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                         </div>
                     </div>
                 </div>
-                <div className=" grid gap-20 md:grid-cols-2 bg-white rounded-xl p-8 mt-12">
+                <div className=" grid gap-32 md:grid-cols-2 bg-white rounded-xl p-8 mt-12">
                     {/* Specifications Section */}
                     <div>
                         <h2 className="text-2xl font-bold customtext-neutral-dark mb-4 border-b pb-4">
                             Especificaciones
                         </h2>
-                        <div 
+                        <div
                             ref={specificationsRef}
                             className={`space-y-1 transition-all duration-300 ${!isSpecificationsExpanded
                                 ? "max-h-[400px] overflow-hidden"
@@ -1007,12 +1340,12 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                     spec.type === "general" && (
                                         <div
                                             key={index}
-                                            className={`grid grid-cols-2 gap-4 p-4 ${index % 2 === 0
+                                            className={`flex gap-4 px-4 py-1 ${index % 2 === 0
                                                 ? "bg-[#F7F9FB]"
                                                 : "bg-white"
                                                 }`}
                                         >
-                                            <div className="customtext-neutral-light">
+                                            <div className="customtext-neutral-light min-w-56 max-w-56">
                                                 {spec.title}
                                             </div>
                                             <div className="customtext-neutral-dark">
@@ -1052,7 +1385,7 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                                 Acerca de este artículo
                             </h3>
                             <div
-                                className="customtext-neutral-dark"
+                                className="customtext-neutral-dark prose prose-base"
                                 dangerouslySetInnerHTML={{
                                     __html: item?.description,
                                 }}
@@ -1092,6 +1425,258 @@ const ProductDetail = ({ item, data, setCart, cart }) => {
                     cart={cart}
                     setCart={setCart}
                 />)}
+
+            {/* Modal de Políticas de Envío */}
+            {deliveryPolicyModalOpen && (
+                   <ReactModal
+                        
+                        isOpen={deliveryPolicyModalOpen}
+                          onRequestClose={() => setDeliveryPolicyModalOpen(false)}
+                        contentLabel={"Políticas de Envío"}
+                        className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center p-4 z-50"
+                        overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-[999]"
+                        ariaHideApp={false}
+                    >
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                <h2 className="text-2xl font-bold text-gray-900 pr-4">Políticas de Envío</h2>
+                                <button
+                                    onClick={() => setDeliveryPolicyModalOpen(false)}
+                                    className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full"
+                                    aria-label="Cerrar modal"
+                                >
+                                    <X size={24} strokeWidth={2} />
+                                </button>
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="prose prose-gray max-w-none">
+                                    <HtmlContent html={generals?.find(g => g.correlative === 'delivery_policy')?.description} />
+                                </div>
+                            </div>
+                            
+                            {/* Footer */}
+                            <div className="flex justify-end p-6 border-t border-gray-200">
+                                <button
+                                    onClick={() => setDeliveryPolicyModalOpen(false)}
+                                    className="px-6 py-2 bg-primary text-white rounded-lg  transition-colors duration-200 font-medium"
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </ReactModal>
+
+          
+            )}
+
+            {/* Modal de Listado de Tiendas */}
+            {storeListModalOpen && (
+                <ReactModal
+                    isOpen={storeListModalOpen}
+                    onRequestClose={() => setStoreListModalOpen(false)}
+                    contentLabel={"Tiendas Disponibles"}
+                    className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center p-4 z-50"
+                    overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-[999]"
+                    ariaHideApp={false}
+                >
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <Store className="w-8 h-8 text-primary" />
+                                <h2 className="text-2xl font-bold text-gray-900">Nuestras Tiendas</h2>
+                            </div>
+                            <button
+                                onClick={() => setStoreListModalOpen(false)}
+                                className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full"
+                                aria-label="Cerrar modal"
+                            >
+                                <X size={24} strokeWidth={2} />
+                            </button>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {loadingStores ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                        <p className="text-gray-600">Cargando tiendas...</p>
+                                    </div>
+                                </div>
+                            ) : stores.length === 0 ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="text-center">
+                                        <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                        <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay tiendas disponibles</h3>
+                                        <p className="text-gray-500">Por el momento no tenemos tiendas registradas.</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                    {stores.map((store) => (
+                                        <div key={store.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                                            {/* Store Image */}
+                                            <div className="mb-4">
+                                                {store.image ? (
+                                                    <img 
+                                                        src={`/storage/images/stores/${store.image}`}
+                                                        alt={store.name}
+                                                        className="w-full h-32 object-cover rounded-lg"
+                                                        onError={(e) => {
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextElementSibling.style.display = 'flex';
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <div className={`w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center ${store.image ? 'hidden' : 'flex'}`}>
+                                                    <Store className="w-12 h-12 text-gray-400" />
+                                                </div>
+                                            </div>
+
+                                            {/* Store Header */}
+                                            <div className="mb-4">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <h3 className="font-bold text-lg text-gray-900 flex-1">{store.name}</h3>
+                                                    {/* Badge del tipo de establecimiento */}
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                        store.type === 'tienda' ? 'bg-green-100 text-green-800' :
+                                                        store.type === 'oficina' ? 'bg-blue-100 text-blue-800' :
+                                                        store.type === 'almacen' ? 'bg-yellow-100 text-yellow-800' :
+                                                        store.type === 'showroom' ? 'bg-purple-100 text-purple-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                        {store.type === 'tienda' ? 'Tienda' :
+                                                         store.type === 'oficina' ? 'Oficina' :
+                                                         store.type === 'almacen' ? 'Almacén' :
+                                                         store.type === 'showroom' ? 'Showroom' :
+                                                         store.type || 'Otro'}
+                                                    </span>
+                                                </div>
+                                                
+                                              
+                                            </div>
+
+                                            {/* Store Details */}
+                                            <div className="space-y-3">
+                                                {/* Address */}
+                                                <div className="flex items-start gap-2">
+                                                    <Home className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                                                    <p className="text-sm text-gray-700 leading-relaxed">{store.address}</p>
+                                                </div>
+
+                                                {/* Phone */}
+                                                {store.phone && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <p className="text-sm text-gray-700">{store.phone}</p>
+                                                    </div>
+                                                )}
+
+                                                {/* Manager */}
+                                                {store.manager && (
+                                                    <div className="flex items-center gap-2">
+                                                        <CircleUserRound className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                                        <p className="text-sm text-gray-700">Encargado: {store.manager}</p>
+                                                    </div>
+                                                )}
+
+                                                {/* Business Hours */}
+                                                {store.business_hours && (
+                                                    <div className="bg-white rounded-md p-3 mt-3">
+                                                        <div className="text-xs font-medium text-gray-700 mb-2">Horarios de atención:</div>
+                                                        <div className="text-xs text-gray-600">
+                                                            {(() => {
+                                                                try {
+                                                                    const hours = typeof store.business_hours === 'string' 
+                                                                        ? JSON.parse(store.business_hours) 
+                                                                        : store.business_hours;
+                                                                    
+                                                                    const today = new Date().toLocaleDateString('es-PE', { weekday: 'long' });
+                                                                    const todayMap = {
+                                                                        'lunes': 'Lunes',
+                                                                        'martes': 'Martes',
+                                                                        'miércoles': 'Miércoles',
+                                                                        'jueves': 'Jueves',
+                                                                        'viernes': 'Viernes',
+                                                                        'sábado': 'Sábado',
+                                                                        'domingo': 'Domingo'
+                                                                    };
+                                                                    
+                                                                    const todaySpanish = todayMap[today.toLowerCase()] || today;
+                                                                    const todaySchedule = hours.find(h => 
+                                                                        h.day.toLowerCase() === todaySpanish.toLowerCase()
+                                                                    );
+                                                                    
+                                                                    if (todaySchedule) {
+                                                                        const status = todaySchedule.closed 
+                                                                            ? `Hoy: Cerrado` 
+                                                                            : `Hoy: ${todaySchedule.open} - ${todaySchedule.close}`;
+                                                                        
+                                                                        const isOpen = !todaySchedule.closed && (() => {
+                                                                            const now = new Date();
+                                                                            const currentTime = now.getHours() * 60 + now.getMinutes();
+                                                                            const [openHour, openMin] = todaySchedule.open.split(':').map(Number);
+                                                                            const [closeHour, closeMin] = todaySchedule.close.split(':').map(Number);
+                                                                            const openTime = openHour * 60 + openMin;
+                                                                            const closeTime = closeHour * 60 + closeMin;
+                                                                            return currentTime >= openTime && currentTime <= closeTime;
+                                                                        })();
+
+                                                                        return (
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span>{status}</span>
+                                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                                                    isOpen 
+                                                                                        ? 'bg-green-100 text-green-800' 
+                                                                                        : 'bg-red-100 text-red-800'
+                                                                                }`}>
+                                                                                    {isOpen ? 'Abierto' : 'Cerrado'}
+                                                                                </span>
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    return "Horarios disponibles";
+                                                                } catch (e) {
+                                                                    return "Horarios disponibles";
+                                                                }
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Description */}
+                                                {store.description && (
+                                                    <div className="pt-2 border-t border-gray-200">
+                                                        <p className="text-xs text-gray-600 leading-relaxed">{store.description}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+                            <p className="text-sm text-gray-600">
+                                {stores.length > 0 && `${stores.length} tienda${stores.length !== 1 ? 's' : ''} disponible${stores.length !== 1 ? 's' : ''}`}
+                            </p>
+                            <button
+                                onClick={() => setStoreListModalOpen(false)}
+                                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors duration-200 font-medium"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </ReactModal>
+            )}
+
             <CartModal
                 data={data}
                 cart={cart}

@@ -236,6 +236,11 @@ class BasicController extends Controller
     try {
 
       $body = $this->beforeSave($request);
+      
+      // Debug logging
+      \Log::info('BasicController save - Body after beforeSave:', $body);
+      \Log::info('BasicController save - ID check: ' . (isset($body['id']) ? 'ID existe: ' . $body['id'] : 'ID no existe'));
+      
       $snake_case = Text::camelToSnakeCase(str_replace('App\\Models\\', '', $this->model));
       if ($snake_case === "item_image") {
         $snake_case = 'item';
@@ -252,14 +257,19 @@ class BasicController extends Controller
       }
 
       $jpa = $this->model::find(isset($body['id']) ? $body['id'] : null);
+      
+      // Debug logging
+      \Log::info('BasicController save - Model find result: ' . ($jpa ? 'Encontrado ID: ' . $jpa->id : 'No encontrado'));
 
       if (!$jpa) {
         $body['slug'] = Crypto::randomUUID();
         $jpa = $this->model::create($body);
         $isNew = true;
+        \Log::info('BasicController save - Creando nuevo registro con ID: ' . $jpa->id);
       } else {
         $jpa->update($body);
         $isNew = false;
+        \Log::info('BasicController save - Actualizando registro existente ID: ' . $jpa->id);
       }
 
       $table = (new $this->model)->getTable();
@@ -374,9 +384,14 @@ class BasicController extends Controller
 
       $dataBeforeDelete = $this->model::find($id);
       if (!$dataBeforeDelete) throw new Exception('El registro que intenta eliminar no existe');
-      if ($this->softDeletion) {
+      
+      // Verificar si la tabla tiene el campo 'status' antes de hacer soft delete
+      $table = (new $this->model)->getTable();
+      $hasStatusColumn = Schema::hasColumn($table, 'status');
+      
+      if ($this->softDeletion && $hasStatusColumn) {
         $deleted = $this->model::where('id', $id)
-          ->update(\array_merge(['status' => null], $body));
+          ->update(\array_merge(['status' => false], $body));
       } else {
         $deleted = $this->model::where('id', $id)
           ->delete();

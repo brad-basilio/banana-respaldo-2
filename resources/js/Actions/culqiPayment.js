@@ -13,17 +13,38 @@ function generarNumeroOrdenConPrefijoYFecha() {
 export const processCulqiPayment = (request) => {
     return new Promise((resolve, reject) => {
         try {
-            console.log(request);
+            console.log("🔄 Iniciando proceso de pago con Culqi...", request);
+            
+            // ✅ Verificar que Culqi esté disponible
+            if (typeof window.Culqi === 'undefined') {
+                console.error("❌ Error: Culqi no está definido. Verifique que el script de Culqi esté cargado.");
+                reject("Error en la integración con Culqi: Script no cargado");
+                return;
+            }
+            
+            if (!Global.CULQI_PUBLIC_KEY) {
+                console.error("❌ Error: CULQI_PUBLIC_KEY no está configurado");
+                reject("Error de configuración: Clave pública de Culqi no encontrada");
+                return;
+            }
+            
             const orderNumber = generarNumeroOrdenConPrefijoYFecha(
                 request.email
             );
-            console.log(orderNumber);
+            console.log("📝 Número de orden generado:", orderNumber);
             
             // Variable para rastrear si el pago se completó
             let paymentCompleted = false;
             
-            // ✅ Configurar Culqi
-            window.Culqi.publicKey = Global.CULQI_PUBLIC_KEY; // Reemplaza con tu clave pública
+            // ✅ Configurar Culqi con validación
+            try {
+                window.Culqi.publicKey = Global.CULQI_PUBLIC_KEY;
+                console.log("✅ Clave pública configurada exitosamente");
+            } catch (error) {
+                console.error("❌ Error al configurar la clave pública:", error);
+                reject("Error en la integración con Culqi: No se pudo configurar la clave pública");
+                return;
+            }
             
             // Convertir a céntimos de forma más precisa
             const amountInSoles = parseFloat(request.amount.toFixed(2));

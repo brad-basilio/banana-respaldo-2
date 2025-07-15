@@ -20,12 +20,12 @@ const FaqSimple = ({ faqs }) => {
                 <h1 className="text-[40px] font-bold text-center mb-4 cusomtext-neutral-dark">
                     Preguntas frecuentes
                 </h1>
-                <p className="text-center  cusomtext-neutral-light mb-12 max-w-3xl mx-auto">
+               {/* <p className="text-center  cusomtext-neutral-light mb-12 max-w-3xl mx-auto">
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit.
                     Vivamus eu fermentum justo, ac fermentum nulla. Sed sed
                     scelerisque urna, vitae ultricies libero. Pellentesque
                     vehicula et urna in venenatis.
-                </p>
+                </p> */}
 
                 <div className="flex flex-wrap justify-between">
                     {faqs.map((faq) => (
@@ -36,7 +36,7 @@ const FaqSimple = ({ faqs }) => {
                         >
                             <div className="p-4 rounded-lg shadow-sm bg-[#F7F9FB]">
                                 <div className="flex justify-between items-start p-4">
-                                    <h3 className="text-xl font-semibold pr-8">
+                                    <h3 className="text-base font-semibold pr-8">
                                         {faq.question}
                                     </h3>
                                     <button className="customtext-primary flex-shrink-0">
@@ -48,7 +48,7 @@ const FaqSimple = ({ faqs }) => {
                                     </button>
                                 </div>
                                 {expandedFaqs.has(faq.id) && faq.answer && (
-                                    <p className="mt-4 p-4 customtext-neutral-light text-lg">
+                                    <p className="mt-4 p-4 customtext-neutral-light text-sm">
                                         {faq.answer}
                                     </p>
                                 )}

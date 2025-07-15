@@ -50,17 +50,19 @@ const Items = ({ categories, brands, collections }) => {
     const textureRef = useRef();
     const descriptionRef = useRef();
     const skuRef = useRef();
+    const pdfRef = useRef();
     // Nuevos campos
 
     const stockRef = useRef();
+    const linkvideoRef = useRef();
 
     const featuresRef = useRef([]);
-
     const specificationsRef = useRef([]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedCollection, setSelectedCollection] = useState(null);
+    const [currentPdf, setCurrentPdf] = useState("");
     /*ADD NEW LINES GALLERY */
 
     const [gallery, setGallery] = useState([]);
@@ -118,11 +120,11 @@ const Items = ({ categories, brands, collections }) => {
     }, [itemData]);
 
     const onModalOpen = (data) => {
-        console.log('data total',data);
+      
         setItemData(data || null); // Guardamos los datos en el estado
         if (data?.id) setIsEditing(true);
         else setIsEditing(false);
-
+        setCurrentPdf(data?.pdf ? `/storage/images/item/${data.pdf}` : "");
         idRef.current.value = data?.id || "";
         $(categoryRef.current)
             .val(data?.category_id || null)
@@ -142,22 +144,31 @@ const Items = ({ categories, brands, collections }) => {
         skuRef.current.value = data?.sku || "";
         colorRef.current.value = data?.color || "";
         summaryRef.current.value = data?.summary || "";
+        linkvideoRef.current.value = data?.linkvideo || "";
         priceRef.current.value = data?.price || 0;
         discountRef.current.value = data?.discount || 0;
-
+        
         SetSelectValue(tagsRef.current, data?.tags ?? [], "id", "name");
 
         bannerRef.current.value = null;
+
         imageRef.current.value = null;
+
+       
+
         bannerRef.image.src = `/storage/images/item/${
             data?.banner ?? "undefined"
         }`;
+
         imageRef.image.src = `/storage/images/item/${
             data?.image ?? "undefined"
         }`;
+
         textureRef.image.src = `/storage/images/item/${
             data?.texture ?? "undefined"
         }`;
+
+        setCurrentPdf(data?.pdf ? `/storage/images/item/${data?.pdf}` : "");
 
         descriptionRef.editor.root.innerHTML = data?.description ?? "";
 
@@ -178,20 +189,34 @@ const Items = ({ categories, brands, collections }) => {
             setSpecifications(data.specifications.map(spec => ({
                 type: spec.type,
                 title: spec.title,
-                description: spec.description
+                description: spec.description,
+                image: spec.image || "",
             })));
         } else {
             setSpecifications([]);
         }
+        
         // Nuevos campos
-
+        setFeatures(data?.features?.map(f => typeof f === 'object' ? f : { feature: f }) || []);
         stockRef.current.value = data?.stock;
-
         $(modalRef.current).modal("show");
     };
 
     const onModalSubmit = async (e) => {
         e.preventDefault();
+
+        // Limpia características vacías
+        const cleanFeatures = features.filter(f => {
+            if (typeof f === 'string') return f.trim() !== '';
+            if (typeof f === 'object') return f.feature?.trim() !== '';
+            return false;
+        });
+
+        // Limpia especificaciones vacías
+        const cleanSpecs = specifications.filter(s => 
+            (s.title && s.title.trim() !== '') || 
+            (s.description && s.description.trim() !== '')
+        );
 
         const request = {
             id: idRef.current.value || undefined,
@@ -208,15 +233,22 @@ const Items = ({ categories, brands, collections }) => {
             tags: $(tagsRef.current).val(),
             description: descriptionRef.current.value,
             stock: stockRef.current.value,
-            specifications: JSON.stringify(specifications),
+            features: cleanFeatures,
+            specifications: cleanSpecs,
+            linkvideo:linkvideoRef.current.value,
         };
 
+
+
         const formData = new FormData();
+        
         for (const key in request) {
-            formData.append(key, request[key]);
+            if (key === 'features' || key === 'specifications') {
+                formData.append(key, JSON.stringify(request[key]));
+            } else {
+                formData.append(key, request[key]);
+            }
         }
-        formData.append("features", JSON.stringify(features)); // Características (array de strings)
-        formData.append("specifications", JSON.stringify(specifications)); // Especificaciones (array de objetos)
 
         const image = imageRef.current.files[0];
         if (image) {
@@ -229,6 +261,12 @@ const Items = ({ categories, brands, collections }) => {
         const banner = bannerRef.current.files[0];
         if (banner) {
             formData.append("banner", banner);
+        }
+
+        const pdf = pdfRef.current.files[0];
+        
+        if (pdf) {
+            formData.append("pdf", pdf);
         }
 
         //TODO: Preparar los datos de la galería
@@ -291,7 +329,7 @@ const Items = ({ categories, brands, collections }) => {
     const [specifications, setSpecifications] = useState([]); // Especificaciones
 
     // Opciones del campo "type"
-    const typeOptions = ["General", "Principal"];
+    const typeOptions = ["Principal", "General", "Icono"];
     const [showImportModal, setShowImportModal] = useState(false);
     const modalImportRef = useRef();
     const onModalImportOpen = () => {
@@ -696,7 +734,7 @@ const Items = ({ categories, brands, collections }) => {
                             multiple
                         />
                     </div>
-                    <div className="col-md-4">
+                    <div className="col-md-5">
                         {/*Agregar aqui lo que falta */}
                         <InputFormGroup
                             eRef={nameRef}
@@ -708,6 +746,36 @@ const Items = ({ categories, brands, collections }) => {
                             label="Color"
                             required
                         />
+
+                        <div className="col-12">
+                            <label className="form-label">Archivo PDF</label>
+                            <input 
+                                ref={pdfRef}
+                                type="file" 
+                                className="form-control" 
+                                accept=".pdf" 
+                            />
+                            <small className="text-muted">Subir documento PDF relacionado al producto</small>
+                        </div>
+
+                        {currentPdf && (
+                            <div className="my-2">
+                                <a 
+                                    href={currentPdf} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="btn btn-sm btn-outline-primary"
+                                >
+                                    <i className="fas fa-file-pdf me-1"></i> Ver PDF actual
+                                </a>
+                            </div>
+                        )}
+
+                        <InputFormGroup
+                            eRef={linkvideoRef}
+                            label="Link de video"
+                        />
+                       
                         <ImageFormGroup
                             eRef={textureRef}
                             label="Imagen Textura"
@@ -725,6 +793,7 @@ const Items = ({ categories, brands, collections }) => {
                             ref={featuresRef}
                             label="Características"
                             structure=""
+                            value={features}
                             onChange={setFeatures}
                         />
 
@@ -738,7 +807,7 @@ const Items = ({ categories, brands, collections }) => {
                             typeOptions={typeOptions}
                         />
                     </div>
-                    <div className="col-md-5">
+                    <div className="col-md-4">
                         <div className="row">
                             <ImageFormGroup
                                 eRef={bannerRef}

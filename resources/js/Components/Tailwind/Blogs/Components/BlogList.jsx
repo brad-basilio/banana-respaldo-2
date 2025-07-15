@@ -5,7 +5,7 @@ import { NoResults } from "../../Components/Resources/NoResult";
 export default function BlogList({ data, posts, postsLatest, loading, isFilter }) {
   return (
     <section
-      className={`font-paragraph ${isFilter ? "pb-16" : "pt-8 pb-16"}`}
+      className={`font-paragraph ${isFilter ? "pb-16" : "pb-16"}`}
     >
       <div className="px-[5%]  mx-auto">
         {!isFilter ? (

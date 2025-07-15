@@ -22,7 +22,7 @@ const Generals = ({ generals }) => {
 
   // First add these to your formData state
   // Filtrar solo los generales que son plantillas de email (excluyendo correo de soporte)
-  const emailTemplates = generals.filter(g => g.correlative.endsWith('_email') && g.correlative !== 'support_email');
+  const emailTemplates = generals.filter(g => g.correlative.endsWith('_email') && g.correlative !== 'support_email'&& g.correlative !== 'coorporative_email');
   const [showPreview, setShowPreview] = useState(false);
   const [selectedEmailCorrelative, setSelectedEmailCorrelative] = useState(emailTemplates[0]?.correlative || "");
   const [templateVariables, setTemplateVariables] = useState({});
@@ -89,8 +89,8 @@ const Generals = ({ generals }) => {
     supportEmail:
       generals.find((x) => x.correlative == "support_email")
         ?.description ?? "",
-    corporativeEmail:
-      generals.find((x) => x.correlative == "corporative_email")
+    coorporativeEmail:
+      generals.find((x) => x.correlative == "coorporative_email")
         ?.description ?? "",
     privacyPolicy:
       generals.find((x) => x.correlative == "privacy_policy")
@@ -147,6 +147,49 @@ const Generals = ({ generals }) => {
           description: ""
         }
       ],
+    // Píxeles de tracking
+    googleAnalyticsId:
+      generals.find((x) => x.correlative == "google_analytics_id")
+        ?.description ?? "",
+    googleTagManagerId:
+      generals.find((x) => x.correlative == "google_tag_manager_id")
+        ?.description ?? "",
+    facebookPixelId:
+      generals.find((x) => x.correlative == "facebook_pixel_id")
+        ?.description ?? "",
+    googleAdsConversionId:
+      generals.find((x) => x.correlative == "google_ads_conversion_id")
+        ?.description ?? "",
+    googleAdsConversionLabel:
+      generals.find((x) => x.correlative == "google_ads_conversion_label")
+        ?.description ?? "",
+    tiktokPixelId:
+      generals.find((x) => x.correlative == "tiktok_pixel_id")
+        ?.description ?? "",
+    hotjarId:
+      generals.find((x) => x.correlative == "hotjar_id")
+        ?.description ?? "",
+    clarityId:
+      generals.find((x) => x.correlative == "clarity_id")
+        ?.description ?? "",
+    linkedinInsightTag:
+      generals.find((x) => x.correlative == "linkedin_insight_tag")
+        ?.description ?? "",
+    twitterPixelId:
+      generals.find((x) => x.correlative == "twitter_pixel_id")
+        ?.description ?? "",
+    pinterestTagId:
+      generals.find((x) => x.correlative == "pinterest_tag_id")
+        ?.description ?? "",
+    snapchatPixelId:
+      generals.find((x) => x.correlative == "snapchat_pixel_id")
+        ?.description ?? "",
+    customHeadScripts:
+      generals.find((x) => x.correlative == "custom_head_scripts")
+        ?.description ?? "",
+    customBodyScripts:
+      generals.find((x) => x.correlative == "custom_body_scripts")
+        ?.description ?? "",
   });
 
   const [activeTab, setActiveTab] = useState("general");
@@ -242,6 +285,11 @@ const Generals = ({ generals }) => {
           correlative: "support_email",
           name: "Correo de soporte",
           description: formData.supportEmail,
+        },
+        {
+          correlative: "coorporative_email",
+          name: "Correo corporativo",
+          description: formData.coorporativeEmail,
         },
         {
           correlative: "privacy_policy",
@@ -373,6 +421,77 @@ const Generals = ({ generals }) => {
           name: 'Envio gratis a partir de',
           description: formData.shippingFree,
         },
+        // Píxeles de tracking
+        {
+          correlative: "google_analytics_id",
+          name: "Google Analytics ID",
+          description: formData.googleAnalyticsId,
+        },
+        {
+          correlative: "google_tag_manager_id",
+          name: "Google Tag Manager ID",
+          description: formData.googleTagManagerId,
+        },
+        {
+          correlative: "facebook_pixel_id",
+          name: "Facebook Pixel ID",
+          description: formData.facebookPixelId,
+        },
+        {
+          correlative: "google_ads_conversion_id",
+          name: "Google Ads Conversion ID",
+          description: formData.googleAdsConversionId,
+        },
+        {
+          correlative: "google_ads_conversion_label",
+          name: "Google Ads Conversion Label",
+          description: formData.googleAdsConversionLabel,
+        },
+        {
+          correlative: "tiktok_pixel_id",
+          name: "TikTok Pixel ID",
+          description: formData.tiktokPixelId,
+        },
+        {
+          correlative: "hotjar_id",
+          name: "Hotjar ID",
+          description: formData.hotjarId,
+        },
+        {
+          correlative: "clarity_id",
+          name: "Microsoft Clarity ID",
+          description: formData.clarityId,
+        },
+        {
+          correlative: "linkedin_insight_tag",
+          name: "LinkedIn Insight Tag ID",
+          description: formData.linkedinInsightTag,
+        },
+        {
+          correlative: "twitter_pixel_id",
+          name: "Twitter Pixel ID",
+          description: formData.twitterPixelId,
+        },
+        {
+          correlative: "pinterest_tag_id",
+          name: "Pinterest Tag ID",
+          description: formData.pinterestTagId,
+        },
+        {
+          correlative: "snapchat_pixel_id",
+          name: "Snapchat Pixel ID",
+          description: formData.snapchatPixelId,
+        },
+        {
+          correlative: "custom_head_scripts",
+          name: "Scripts Personalizados (Head)",
+          description: formData.customHeadScripts,
+        },
+        {
+          correlative: "custom_body_scripts",
+          name: "Scripts Personalizados (Body)",
+          description: formData.customBodyScripts,
+        },
       ]);
       // alert('Datos guardados exitosamente');
     } catch (error) {
@@ -459,6 +578,17 @@ const Generals = ({ generals }) => {
             role="tab"
           >
             Envio Gratis
+          </button>
+        </li>
+       
+        <li className="nav-item" role="presentation">
+          <button
+            className={`nav-link ${activeTab === "pixels" ? "active" : ""}`}
+            onClick={() => setActiveTab("pixels")}
+            type="button"
+            role="tab"
+          >
+            Píxeles & Analytics
           </button>
         </li>
         </ul>
@@ -740,9 +870,9 @@ const Generals = ({ generals }) => {
                 required
               />
             </div>
-            <div className="mb-2">
+             <div className="mb-2">
               <label
-                htmlFor="corporativeEmail"
+                htmlFor="coorporativeEmail"
                 className="form-label"
               >
                 Correo corporativo
@@ -750,15 +880,14 @@ const Generals = ({ generals }) => {
               <input
                 type="email"
                 className="form-control"
-                id="corporativeEmail"
-                value={formData.corporativeEmail}
+                id="coorporativeEmail"
+                value={formData.coorporativeEmail}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    corporativeEmail: e.target.value,
+                    coorporativeEmail: e.target.value,
                   })
                 }
-                required
               />
             </div>
             <div className="mb-2">
@@ -782,6 +911,7 @@ const Generals = ({ generals }) => {
                 required
               />
             </div>
+           
             <div className="mb-2">
               <label
                 htmlFor="phoneWhatsapp"
@@ -1363,6 +1493,253 @@ const Generals = ({ generals }) => {
                   })}
                 />
               </div>
+          </div>
+
+          <div
+            className={`tab-pane fade ${activeTab === "corporate" ? "show active" : ""
+              }`}
+            role="tabpanel"
+          >
+            <div className="mb-2">
+              <label className="form-label">Email Corporativo Principal</label>
+              <input
+                type="email"
+                placeholder="contacto@empresa.com"
+                className="form-control"
+                value={formData.coorporativeEmail}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  coorporativeEmail: e.target.value
+                })}
+              />
+              <small className="text-muted">Este email se usará para comunicaciones corporativas y notificaciones del sistema</small>
+            </div>
+          </div>
+
+          <div
+            className={`tab-pane fade ${activeTab === "pixels" ? "show active" : ""
+              }`}
+            role="tabpanel"
+          >
+            <div className="row">
+              <div className="col-md-6">
+                <h5 className="mb-3">Google Analytics & Ads</h5>
+                <div className="mb-3">
+                  <label className="form-label">Google Analytics ID</label>
+                  <input
+                    type="text"
+                    placeholder="G-XXXXXXXXXX o UA-XXXXXXXX-X"
+                    className="form-control"
+                    value={formData.googleAnalyticsId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      googleAnalyticsId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID de Google Analytics para tracking de visitas</small>
+                </div>
+                
+                <div className="mb-3">
+                  <label className="form-label">Google Tag Manager ID</label>
+                  <input
+                    type="text"
+                    placeholder="GTM-XXXXXXX"
+                    className="form-control"
+                    value={formData.googleTagManagerId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      googleTagManagerId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID de Google Tag Manager</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Google Ads Conversion ID</label>
+                  <input
+                    type="text"
+                    placeholder="AW-XXXXXXXXX"
+                    className="form-control"
+                    value={formData.googleAdsConversionId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      googleAdsConversionId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID de conversión de Google Ads</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Google Ads Conversion Label</label>
+                  <input
+                    type="text"
+                    placeholder="xxxxxxxxxxxxxxxxxxxxxxx"
+                    className="form-control"
+                    value={formData.googleAdsConversionLabel}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      googleAdsConversionLabel: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">Etiqueta de conversión de Google Ads</small>
+                </div>
+
+                <h5 className="mb-3">Redes Sociales</h5>
+                <div className="mb-3">
+                  <label className="form-label">Facebook Pixel ID</label>
+                  <input
+                    type="text"
+                    placeholder="XXXXXXXXXXXXXXX"
+                    className="form-control"
+                    value={formData.facebookPixelId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      facebookPixelId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID del píxel de Facebook</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">TikTok Pixel ID</label>
+                  <input
+                    type="text"
+                    placeholder="XXXXXXXXXXXXXXXXX"
+                    className="form-control"
+                    value={formData.tiktokPixelId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      tiktokPixelId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID del píxel de TikTok</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">LinkedIn Insight Tag ID</label>
+                  <input
+                    type="text"
+                    placeholder="XXXXXXX"
+                    className="form-control"
+                    value={formData.linkedinInsightTag}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      linkedinInsightTag: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID del Insight Tag de LinkedIn</small>
+                </div>
+              </div>
+
+              <div className="col-md-6">
+                <h5 className="mb-3">Otras Plataformas</h5>
+                <div className="mb-3">
+                  <label className="form-label">Hotjar ID</label>
+                  <input
+                    type="text"
+                    placeholder="XXXXXXX"
+                    className="form-control"
+                    value={formData.hotjarId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      hotjarId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID de Hotjar para mapas de calor</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Microsoft Clarity ID</label>
+                  <input
+                    type="text"
+                    placeholder="xxxxxxxxxx"
+                    className="form-control"
+                    value={formData.clarityId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      clarityId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID de Microsoft Clarity</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Twitter Pixel ID</label>
+                  <input
+                    type="text"
+                    placeholder="o1234"
+                    className="form-control"
+                    value={formData.twitterPixelId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      twitterPixelId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID del píxel de Twitter</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Pinterest Tag ID</label>
+                  <input
+                    type="text"
+                    placeholder="26xxxxxxxxxxxxxxxxxx"
+                    className="form-control"
+                    value={formData.pinterestTagId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      pinterestTagId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID del tag de Pinterest</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Snapchat Pixel ID</label>
+                  <input
+                    type="text"
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    className="form-control"
+                    value={formData.snapchatPixelId}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      snapchatPixelId: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">ID del píxel de Snapchat</small>
+                </div>
+
+                <h5 className="mb-3">Scripts Personalizados</h5>
+                <div className="mb-3">
+                  <label className="form-label">Scripts en Head</label>
+                  <textarea
+                    rows="4"
+                    placeholder="Scripts que se insertarán en el &lt;head&gt;"
+                    className="form-control"
+                    value={formData.customHeadScripts}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      customHeadScripts: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">Scripts personalizados para el &lt;head&gt;</small>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Scripts en Body</label>
+                  <textarea
+                    rows="4"
+                    placeholder="Scripts que se insertarán antes del &lt;/body&gt;"
+                    className="form-control"
+                    value={formData.customBodyScripts}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      customBodyScripts: e.target.value
+                    })}
+                  />
+                  <small className="text-muted">Scripts personalizados para el final del &lt;body&gt;</small>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

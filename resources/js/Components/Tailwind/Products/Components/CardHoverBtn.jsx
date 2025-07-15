@@ -44,7 +44,8 @@ const CardHoverBtn = ({
 
     return (
         <>
-            <motion.div
+            <motion.a
+            href={`/product/${product.slug}`}
                 key={product.id}
                 className={`group px-1 md:px-2 w-full flex-shrink-0 font-font-secondary cursor-pointer relative`}
                 initial={{ opacity: 0, y: 20 }}
@@ -90,7 +91,7 @@ const CardHoverBtn = ({
                                 alt={product.name}
                                 className="w-full h-full object-cover bg-slate-100"
                                 loading="lazy"
-                                whileHover={{ scale: 1.1 }}
+                               
                                 transition={{ duration: 0.3 }}
                             />
                         </motion.div>
@@ -165,7 +166,11 @@ const CardHoverBtn = ({
                             <motion.button
                                 aria-label="Agregar al carrito"
                                 className="py-0 px-3 border border-primary rounded-xl customtext-primary transition-all duration-300 hover:opacity-90 min-w-[48px] flex items-center justify-center"
-                                onClick={() => onAddClicked(product)}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onAddClicked(product);
+                                }}
                                 whileTap={{ scale: 0.95 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
                             >
@@ -202,7 +207,11 @@ const CardHoverBtn = ({
                         <motion.button
                             aria-label="Agregar al carrito"
                             className="py-3 px-3 border-2 border-primary rounded-xl customtext-primary transition-all duration-300 hover:opacity-90 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
-                            onClick={() => onAddClicked(product)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onAddClicked(product);
+                            }}
                             whileTap={{ scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
@@ -262,7 +271,7 @@ const CardHoverBtn = ({
                         </div>
                     </div>
                 </motion.div>
-            </motion.div>
+            </motion.a>
             <CartModal
                 data={data}
                 cart={cart}

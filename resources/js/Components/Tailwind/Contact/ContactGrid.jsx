@@ -1,8 +1,8 @@
 import { Mail, Phone, Building2, Store } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import MessagesRest from "../../../Actions/MessagesRest";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, Marker, InfoWindow } from "@react-google-maps/api";
 import Global from "../../../Utils/Global";
 import { toast } from "sonner";
 const messagesRest = new MessagesRest();
@@ -33,6 +33,188 @@ const ContactGrid = ({ data, contacts }) => {
     const [sending, setSending] = useState(false);
     const [phoneValue, setPhoneValue] = useState("");
     const [phoneError, setPhoneError] = useState("");
+    const [offices, setOffices] = useState([]);
+    const [loadingOffices, setLoadingOffices] = useState(true);
+    const [stores, setStores] = useState([]);
+    const [loadingStores, setLoadingStores] = useState(true);
+    const [selectedStore, setSelectedStore] = useState(null);
+
+    // Cargar oficinas desde la API
+    useEffect(() => {
+        const loadOffices = async () => {
+            try {
+                setLoadingOffices(true);
+                const response = await fetch('/api/stores');
+                const result = await response.json();
+                
+                console.log('API Response:', result); // Para debug
+                
+                // La respuesta puede venir envuelta en un objeto con una propiedad 'data'
+                let data = result;
+                if (result.data) {
+                    data = result.data;
+                } else if (result.body) {
+                    data = result.body;
+                }
+                
+                // Verificar que data sea un array antes de filtrar
+                if (Array.isArray(data)) {
+                    // Filtrar solo las oficinas
+                    const officesData = data.filter(store => store.type === 'oficina' && store.status !== false);
+                    setOffices(officesData);
+                } else {
+                    console.error('API response is not an array:', result);
+                    setOffices([]);
+                }
+            } catch (error) {
+                console.error('Error loading offices:', error);
+                setOffices([]);
+            } finally {
+                setLoadingOffices(false);
+            }
+        };
+        
+        loadOffices();
+    }, []);
+
+    // Cargar todas las tiendas para el mapa
+    useEffect(() => {
+        const loadStores = async () => {
+            try {
+                setLoadingStores(true);
+                const response = await fetch('/api/stores');
+                const result = await response.json();
+                
+                console.log('Stores API Response:', result);
+                
+                let data = result;
+                if (result.data) {
+                    data = result.data;
+                } else if (result.body) {
+                    data = result.body;
+                }
+                
+                if (Array.isArray(data)) {
+                    // Filtrar tiendas activas que tengan coordenadas válidas
+                    const validStores = data.filter(store => 
+                        store.status !== false && 
+                        store.latitude && 
+                        store.longitude &&
+                        store.latitude !== "0" && 
+                        store.longitude !== "0"
+                    );
+                    setStores(validStores);
+                    console.log('Valid stores loaded:', validStores);
+                } else {
+                    console.error('Stores API response is not an array:', result);
+                    setStores([]);
+                }
+            } catch (error) {
+                console.error('Error loading stores:', error);
+                setStores([]);
+            } finally {
+                setLoadingStores(false);
+            }
+        };
+        
+        loadStores();
+    }, []);
+
+    // Función para crear iconos personalizados según el tipo de tienda
+    const getStoreIcon = (type) => {
+        const iconBase = {
+            url: '',
+            scaledSize: { width: 40, height: 40 },
+            origin: { x: 0, y: 0 },
+            anchor: { x: 20, y: 40 }
+        };
+
+        switch (type?.toLowerCase()) {
+            case 'tienda':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#10b981" stroke="#fff" stroke-width="3"/>
+                            <path d="M12 18h16v12H12V18zm4-6h8v6h-8v-6z" fill="#fff"/>
+                            <rect x="14" y="20" width="2" height="2" fill="#10b981"/>
+                            <rect x="18" y="20" width="2" height="2" fill="#10b981"/>
+                            <rect x="22" y="20" width="2" height="2" fill="#10b981"/>
+                            <rect x="26" y="20" width="2" height="2" fill="#10b981"/>
+                        </svg>
+                    `)
+                };
+            case 'oficina':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#3b82f6" stroke="#fff" stroke-width="3"/>
+                            <rect x="12" y="14" width="16" height="14" fill="#fff" rx="1"/>
+                            <rect x="14" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="18" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="22" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="26" y="16" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="14" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="18" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="22" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="26" y="20" width="2" height="2" fill="#3b82f6"/>
+                            <rect x="18" y="24" width="4" height="4" fill="#3b82f6"/>
+                        </svg>
+                    `)
+                };
+            case 'agencia':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#f59e0b" stroke="#fff" stroke-width="3"/>
+                            <path d="M20 12l8 6v12h-6v-8h-4v8h-6V18l8-6z" fill="#fff"/>
+                            <circle cx="20" cy="16" r="2" fill="#f59e0b"/>
+                        </svg>
+                    `)
+                };
+            case 'almacen':
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="#8b5cf6" stroke="#fff" stroke-width="3"/>
+                            <rect x="10" y="16" width="20" height="12" fill="#fff" rx="1"/>
+                            <rect x="12" y="18" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="17" y="18" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="22" y="18" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="12" y="22" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="17" y="22" width="4" height="3" fill="#8b5cf6"/>
+                            <rect x="22" y="22" width="4" height="3" fill="#8b5cf6"/>
+                            <path d="M20 10l8 4v2H12v-2l8-4z" fill="#fff"/>
+                        </svg>
+                    `)
+                };
+            default:
+                return {
+                    ...iconBase,
+                    url: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill=Global.APP_COLOR_PRIMARY stroke="#fff" stroke-width="3"/>
+                            <circle cx="20" cy="20" r="8" fill="#fff"/>
+                            <circle cx="20" cy="20" r="4" fill=Global.APP_COLOR_PRIMARY/>
+                        </svg>
+                    `)
+                };
+        }
+    };
+
+    // Función para obtener el color del tipo de tienda
+    const getStoreTypeColor = (type) => {
+        switch (type?.toLowerCase()) {
+            case 'tienda': return Global.APP_COLOR_PRIMARY;
+            case 'oficina': return Global.APP_COLOR_PRIMARY;
+            case 'agencia': return Global.APP_COLOR_PRIMARY;
+            case 'almacen': return Global.APP_COLOR_SECONDARY;
+            default: return Global.APP_COLOR_TERTIARY;
+        }
+    };
 
     // Formatea el teléfono en formato 999 999 999
     const formatPhone = (value) => {
@@ -99,6 +281,15 @@ const ContactGrid = ({ data, contacts }) => {
         };
 
         const result = await messagesRest.save(request);
+        
+        // Limpiar campos inmediatamente después del envío exitoso
+        if (nameRef.current) nameRef.current.value = "";
+        if (phoneRef.current) phoneRef.current.value = "";
+        setPhoneValue("");
+        setPhoneError("");
+        if (emailRef.current) emailRef.current.value = "";
+        if (descriptionRef.current) descriptionRef.current.value = "";
+        
         toast.success("Mensaje enviado", {
             description: 'Tu mensaje ha sido enviado correctamente. ¡Nos pondremos en contacto contigo pronto!',
             duration: 3000,
@@ -108,15 +299,6 @@ const ContactGrid = ({ data, contacts }) => {
         setSending(false);
 
         if (!result) return;
-
-        // Limpiar campos solo después de éxito
-        if (nameRef.current) nameRef.current.value = "";
-        if (phoneRef.current) setPhoneValue("");
-        setPhoneError("");
-        if (emailRef.current) emailRef.current.value = "";
-        if (descriptionRef.current) descriptionRef.current.value = "";
-       
-      
 
         if (data.redirect) {
             location.href = data.redirect;
@@ -179,7 +361,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 type="text"
                                 name="name"
                                 placeholder="Nombre completo"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -199,7 +381,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 value={phoneValue}
                                 onChange={handlePhoneChange}
                                 maxLength={11}
-                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 ${phoneError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                                 required
                                 aria-describedby={phoneError ? "phone-error" : "phone-help"}
                                 aria-invalid={phoneError ? "true" : "false"}
@@ -234,7 +416,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 type="email"
                                 name="email"
                                 placeholder="Correo Electrónico"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -251,7 +433,7 @@ const ContactGrid = ({ data, contacts }) => {
                                 name="message"
                                 placeholder="Deja tu mensaje..."
                                 rows="6"
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all duration-200"
                                 required
                                 whileFocus={{ scale: 1.02, borderColor: "#3B82F6" }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -319,7 +501,7 @@ const ContactGrid = ({ data, contacts }) => {
                             resolver tus dudas.
                         </p>
                         <a
-                            href="mailto:{getContact('email_contact')}"
+                            href={`mailto:${getContact('email_contact')}`}
                             className="customtext-primary font-bold hover:no-underline"
                         >
                             {getContact("email_contact")}
@@ -353,7 +535,7 @@ const ContactGrid = ({ data, contacts }) => {
                             profesional.
                         </p>
                         <a
-                            href="tel:+51987456324"
+                            href={`tel:${getContact("phone_contact")}`}
                             className="customtext-primary hover:no-underline font-bold"
                         >
                             {getContact("phone_contact")}
@@ -370,11 +552,10 @@ const ContactGrid = ({ data, contacts }) => {
                             scale: 1.02,
                             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
                             backgroundColor: "#ffffff",
-                           
                         }}
                     >
                         <motion.div 
-                            className="flex items-center gap-3 customtext-primary mb-2"
+                            className="flex items-center gap-3 customtext-primary mb-4"
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ duration: 0.5, delay: 1.4 }}
@@ -388,21 +569,64 @@ const ContactGrid = ({ data, contacts }) => {
                             <motion.h3 
                                 className="customtext-neutral-dark font-bold text-lg"
                             >
-                                Oficinas
+                                Nuestras Oficinas
                             </motion.h3>
                         </motion.div>
-                        <motion.p 
-                            className="customtext-neutral-light mb-2"
-                            whileHover={{ x: 3, opacity: 0.8 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                        >
-                            Visítanos en nuestra oficina para conocer nuestras
-                            soluciones de tratamiento en persona.
-                        </motion.p>
-                        <p className="customtext-primary font-bold">
-                            {" "}
-                            {getContact("address")}
-                        </p>
+                        
+                        {loadingOffices ? (
+                            <div className="flex items-center justify-center py-4">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                <span className="ml-2 text-sm customtext-neutral-light">Cargando oficinas...</span>
+                            </div>
+                        ) : offices.length === 0 ? (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <motion.p 
+                                    className="customtext-neutral-light mb-2"
+                                    whileHover={{ x: 3, opacity: 0.8 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                >
+                                    Visítanos en nuestra oficina para conocer nuestras
+                                    soluciones de tratamiento en persona.
+                                </motion.p>
+                                <p className="customtext-primary font-bold">
+                                    {getContact("address")}
+                                </p>
+                            </motion.div>
+                        ) : (
+                            <div className="space-y-4">
+                                <motion.p 
+                                    className="customtext-neutral-light mb-3"
+                                    whileHover={{ x: 3, opacity: 0.8 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                >
+                                    Visítanos en cualquiera de nuestras oficinas para atención personalizada.
+                                </motion.p>
+                                
+                                {offices.map((office, index) => (
+                                    <motion.div
+                                        key={office.id}
+                                        className="bg-white p-4 rounded-lg border border-gray-100 hover:shadow-md transition-shadow duration-200"
+                                        initial={{ x: -20, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        transition={{ duration: 0.4, delay: 1.5 + (index * 0.1) }}
+                                        whileHover={{ x: 2, scale: 1.01 }}
+                                    >
+                                        <h4 className="customtext-neutral-dark font-bold mb-2">
+                                            {office.name}
+                                        </h4>
+                                        <p  className="customtext-primary font-bold">
+                                            {office.address}
+                                        </p>
+                                       
+                                       
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
                     </motion.div>
 
                     <motion.div 
@@ -436,11 +660,7 @@ const ContactGrid = ({ data, contacts }) => {
                         </motion.div>
                         <motion.p 
                             className="customtext-primary font-bold"
-                            whileHover={{ 
-                                x: 8,
-                                color: "#6d28d9",
-                                textShadow: "0 0 8px rgba(124, 58, 237, 0.3)"
-                            }}
+                         
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         >
                             {" "}
@@ -450,27 +670,124 @@ const ContactGrid = ({ data, contacts }) => {
                 </motion.div>
             </motion.div>
             <motion.div 
-                className="mx-auto 2xl:max-w-7xl   gap-12 bg-white rounded-xl px-8 py-8"
+                className="mx-auto 2xl:max-w-7xl gap-12 bg-white rounded-xl px-8 py-8"
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 1.4 }}
             >
-                {console.log(getContact("location"))}
+                <motion.div className="mb-6">
+                    <motion.h3 
+                        className="text-2xl font-bold customtext-neutral-dark mb-2"
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 1.5 }}
+                    >
+                        Nuestras Ubicaciones
+                    </motion.h3>
+                    <motion.p 
+                        className="customtext-neutral-light mb-4"
+                        initial={{ y: -20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 1.6 }}
+                    >
+                        Encuentra nuestras tiendas, oficinas y agencias más cercanas a tu ubicación.
+                    </motion.p>
+                    
+               
+                </motion.div>
+
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 1.6 }}
+                    transition={{ duration: 0.6, delay: 1.8 }}
+                    className="relative"
                 >
+                    {loadingStores && (
+                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-xl">
+                            <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                <span className="customtext-neutral-light">Cargando ubicaciones...</span>
+                            </div>
+                        </div>
+                    )}
+                    
                     <LoadScript
                         googleMapsApiKey={Global.GMAPS_API_KEY}
                         className="rounded-xl"
                     >
                         <GoogleMap
-                            mapContainerStyle={{ width: "100%", height: "400px" }}
-                            zoom={10}
-                            center={locationGps}
+                            mapContainerStyle={{ width: "100%", height: "500px", borderRadius: "12px" }}
+                            zoom={stores.length > 0 ? 14 : 20}
+                            center={stores.length > 0 ? {
+                                lat: stores.reduce((sum, store) => sum + parseFloat(store.latitude), 0) / stores.length,
+                                lng: stores.reduce((sum, store) => sum + parseFloat(store.longitude), 0) / stores.length
+                            } : locationGps}
+                            options={{
+                                styles: [
+                                    {
+                                        featureType: "poi",
+                                        elementType: "labels",
+                                        stylers: [{ visibility: "off" }]
+                                    }
+                                ]
+                            }}
                         >
-                            <Marker position={locationGps} />
+                            {/* Marcadores de todas las tiendas */}
+                            {stores.map((store) => (
+                                <Marker
+                                    key={store.id}
+                                    position={{
+                                        lat: parseFloat(store.latitude),
+                                        lng: parseFloat(store.longitude)
+                                    }}
+                                    icon={store.type?.toLowerCase() === 'tienda' ? 
+                                        {
+                                            scaledSize: { width: 40, height: 40 }
+                                        } : 
+                                        {
+                                            scaledSize: { width: 25, height: 25 }
+                                        }
+                                    }
+                                    title={`${store.name} (${store.type})`}
+                                    onClick={() => setSelectedStore(store)}
+                                />
+                            ))}
+                            
+                            {/* InfoWindow para mostrar detalles de la tienda seleccionada */}
+                            {selectedStore && (
+                                <InfoWindow
+                                    position={{
+                                        lat: parseFloat(selectedStore.latitude),
+                                        lng: parseFloat(selectedStore.longitude)
+                                    }}
+                                    onCloseClick={() => setSelectedStore(null)}
+                                >
+                                    <div style={{ padding: "10px", maxWidth: "250px" }}>
+                                        <h4 style={{ margin: "0 0 8px 0", color: getStoreTypeColor(selectedStore.type), fontWeight: "bold" }}>
+                                            {selectedStore.name}
+                                        </h4>
+                                        <p style={{ margin: "0 0 5px 0", color: Global.APP_COLOR_PRIMARY, fontSize: "12px", textTransform: "uppercase", fontWeight: "500" }}>
+                                            {selectedStore.type}
+                                        </p>
+                                        <p style={{ margin: "0 0 8px 0", color: "#374151", lineHeight: "1.4" }}>
+                                            📍 {selectedStore.address}
+                                        </p>
+                                        {selectedStore.phone && (
+                                            <p style={{ margin: "0 0 8px 0", color: Global.APP_COLOR_PRIMARY }}>
+                                                📞 <a href={`tel:${selectedStore.phone}`} style={{ color: getStoreTypeColor(selectedStore.type), textDecoration: "none" }}>
+                                                    {selectedStore.phone}
+                                                </a>
+                                            </p>
+                                        )}
+                                        {selectedStore.schedule && (
+                                            <p style={{ margin: "0", color: Global.APP_COLOR_PRIMARY, fontSize: "13px" }}>
+                                                🕒 {selectedStore.schedule}
+                                            </p>
+                                        )}
+                                    </div>
+                                </InfoWindow>
+                            )}
+                         
                         </GoogleMap>
                     </LoadScript>
                 </motion.div>

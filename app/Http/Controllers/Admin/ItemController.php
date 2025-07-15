@@ -24,7 +24,7 @@ class ItemController extends BasicController
 {
     public $model = Item::class;
     public $reactView = 'Admin/Items';
-    public $imageFields = ['image', 'banner', 'texture'];
+    public $imageFields = ['image', 'banner', 'texture', 'pdf'];
     public $prefix4filter = 'items';
 
     public function mediaGallery(Request $request, string $uuid)
@@ -171,7 +171,7 @@ class ItemController extends BasicController
     public function setPaginationInstance(Request $request, string $model)
     {
         return $model::select(['items.*'])
-            ->with(['category', 'subcategory', 'brand', 'images', 'collection', 'specifications'])
+            ->with(['category', 'subcategory', 'brand', 'images', 'collection', 'specifications', 'features'])
             ->leftJoin('categories AS category', 'category.id', 'items.category_id');
     }
 
@@ -213,18 +213,16 @@ class ItemController extends BasicController
 
         // Decodificar features y specifications
         $features = json_decode($request->input('features'), true);
+     
         $specifications = json_decode($request->input('specifications'), true);
-
+        
         // Procesar features
-        if ($features && is_array($features)) {
-
+        if (is_array($features)) {
             (new ItemFeatureController())->saveFeatures($jpa, $features);
         }
 
         // Procesar specifications
-        if ($specifications && is_array($specifications)) {
-
-            // Guardar cada specification asociada al item
+        if (is_array($specifications)) {
             (new ItemSpecificationController())->saveSpecifications($jpa, $specifications);
         }
 

@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             SystemSeeder::class,
             SystemColorSeeder::class,
             NewUserSeeder::class,
+            StatusSeeder::class,
         ]);
 
         File::save(storage_path('app/pages.json'), '[]');

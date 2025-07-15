@@ -8,9 +8,11 @@ import Global from "../../../Utils/Global";
 import HtmlContent from "../../../Utils/HtmlContent";
 import { X } from "lucide-react";
 
-const FooterTermsCTASocials = ({ data, pages, generals }) => {
+const FooterTermsCTASocials = ({ data, pages, socials, generals }) => {
   const subscriptionsRest = new SubscriptionsRest();
   const emailRef = useRef();
+
+  console.log(socials)
 
   const [modalOpen, setModalOpen] = useState(null);
   const [saving, setSaving] = useState();
@@ -156,6 +158,24 @@ const FooterTermsCTASocials = ({ data, pages, generals }) => {
               </Tippy>
             </div>
           </form>
+          <ul className="text-white text-sm flex gap-2 mt-8">
+            {socials.map((item) => (
+              <li key={item.id}>
+                <Tippy content={`Ver ${item.name} en ${item.description}`}>
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center h-10 w-10 border-2 border-white text-lg rounded-full hover:bg-white hover:bg-opacity-10 transition-all"
+                  >
+                    {item.icon && (
+                      <i className={`fab ${item.icon}`}></i>
+                    )}
+                  </a>
+                </Tippy>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
       {Object.keys(policyItems).map((key, index) => {
