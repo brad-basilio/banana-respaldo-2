@@ -100,7 +100,7 @@ const LoadingFallback = () => {
                             e.target.src = "/assets/img/logo-bk.svg";
                         }}
                         className={`${
-                            isMobile ? 'w-24 sm:w-32' : 'w-48 lg:w-64'
+                            isMobile ? 'w-36' : 'w-48 lg:w-64'
                         } transition-all duration-300 opacity-50`}
                         loading="eager"
                         decoding="async"
@@ -109,7 +109,7 @@ const LoadingFallback = () => {
                 
                 {/* Mantener barra de progreso pero más sutil */}
                 <div className={`mt-4 bg-gray-200 rounded-full h-1 ${
-                    isMobile ? 'w-24' : 'w-48'
+                    isMobile ? 'w-32' : 'w-48'
                 }`}>
                     <div 
                         className="bg-primary h-1 rounded-full transition-all duration-500"
@@ -117,9 +117,7 @@ const LoadingFallback = () => {
                     ></div>
                 </div>
                 
-                <p className={`mt-2 text-neutral-dark/70 ${
-                    isMobile ? 'text-xs' : 'text-sm'
-                }`}>Finalizando...</p>
+               
             </div>
         );
     }
