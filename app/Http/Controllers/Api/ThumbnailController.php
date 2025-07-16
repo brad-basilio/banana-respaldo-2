@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CanvasProject;
 use App\Services\ThumbnailGeneratorService;
+use App\Services\ThumbnailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -147,6 +148,65 @@ class ThumbnailController extends Controller
     }
 
     /**
+     * Guarda thumbnails base64 como archivos
+     */
+    public function saveThumbnailsAsFiles(Request $request, $projectId)
+    {
+        try {
+            Log::info("🖼️ [THUMBNAIL] Guardando thumbnails como archivos para proyecto: {$projectId}");
+
+            $project = CanvasProject::findOrFail($projectId);
+            $thumbnails = $request->get('thumbnails', []);
+
+            if (empty($thumbnails)) {
+                return response()->json(['error' => 'No se proporcionaron thumbnails'], 400);
+            }
+
+            $savedThumbnails = [];
+            
+            foreach ($thumbnails as $thumbnail) {
+                if (!isset($thumbnail['page_id']) || !isset($thumbnail['thumbnail_data'])) {
+                    continue;
+                }
+                
+                $pageId = $thumbnail['page_id'];
+                $thumbnailData = $thumbnail['thumbnail_data'];
+                
+                // Validar que sea base64
+                if (!str_starts_with($thumbnailData, 'data:image/')) {
+                    Log::warning("⚠️ [THUMBNAIL] Thumbnail no es base64 para página: {$pageId}");
+                    continue;
+                }
+                
+                // Guardar como archivo
+                $thumbnailUrl = $this->thumbnailService->saveBase64AsFile($project, $pageId, $thumbnailData);
+                
+                if ($thumbnailUrl) {
+                    $savedThumbnails[] = [
+                        'page_id' => $pageId,
+                        'thumbnail_url' => $thumbnailUrl,
+                        'status' => 'saved'
+                    ];
+                    Log::info("✅ [THUMBNAIL] Thumbnail guardado para página {$pageId}: {$thumbnailUrl}");
+                } else {
+                    Log::error("❌ [THUMBNAIL] Error guardando thumbnail para página: {$pageId}");
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'saved_thumbnails' => $savedThumbnails,
+                'project_id' => $projectId,
+                'total_saved' => count($savedThumbnails)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("❌ [THUMBNAIL] Error guardando thumbnails: " . $e->getMessage());
+            return response()->json(['error' => 'Error guardando thumbnails como archivos'], 500);
+        }
+    }
+
+    /**
      * Elimina thumbnails de un proyecto
      */
     public function deleteProjectThumbnails($projectId)
@@ -165,6 +225,29 @@ class ThumbnailController extends Controller
         } catch (\Exception $e) {
             Log::error("❌ [THUMBNAIL] Error eliminando thumbnails: " . $e->getMessage());
             return response()->json(['error' => 'Error eliminando thumbnails'], 500);
+        }
+    }
+
+    /**
+     * Cargar thumbnails existentes desde archivos
+     */
+    public function loadExistingThumbnails(Request $request, $projectId)
+    {
+        try {
+            $pages = $request->input('pages', []);
+            
+            // Cargar thumbnails existentes usando ThumbnailService
+            $existingThumbnails = ThumbnailService::loadExistingThumbnails($projectId, $pages);
+            
+            Log::info("📸 [THUMBNAIL] Thumbnails existentes cargados para proyecto {$projectId}", [
+                'count' => count($existingThumbnails)
+            ]);
+            
+            return response()->json($existingThumbnails);
+            
+        } catch (\Exception $e) {
+            Log::error("❌ [THUMBNAIL] Error cargando thumbnails existentes: " . $e->getMessage());
+            return response()->json([], 500);
         }
     }
 }

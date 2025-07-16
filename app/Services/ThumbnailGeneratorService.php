@@ -5,7 +5,8 @@ namespace App\Services;
 use App\Models\CanvasProject;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManagerStatic as Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class ThumbnailGeneratorService
 {
@@ -136,7 +137,9 @@ class ThumbnailGeneratorService
             return [
                 'page_index' => $pageIndex,
                 'page_id' => $page['id'] ?? "page-{$pageIndex}",
-                'url' => $thumbnailPath,
+                'pdf_filename' => "page-{$pageIndex}-pdf.png", // Archivo para PDF
+                'thumbnail_filename' => "page-{$pageIndex}-thumbnail.png", // Archivo para sidebar
+                'thumbnail_url' => $thumbnailPath, // URL completa para usar inmediatamente
                 'width' => $finalWidth,
                 'height' => $finalHeight,
                 'quality' => $config['quality'] ?? 95,
@@ -288,38 +291,85 @@ class ThumbnailGeneratorService
     }
 
     /**
-     * Guardar thumbnail
+     * Guardar thumbnail (alta calidad para PDF + thumbnail pequeño para sidebar)
      */
     private function saveThumbnail($canvas, CanvasProject $project, int $pageIndex, array $config)
     {
-        $format = $config['format'] ?? 'png';
         $quality = $config['quality'] ?? 95;
         
-        // Generar nombre único
-        $filename = "thumbnail_{$project->id}_page_{$pageIndex}_" . time() . ".{$format}";
-        $directory = "thumbnails/{$project->id}";
-        $relativePath = "{$directory}/{$filename}";
-        $fullPath = storage_path("app/public/{$relativePath}");
+        // 🔄 NUEVA ESTRUCTURA: Nombres más descriptivos
+        $pdfFilename = "page-{$pageIndex}-pdf.png";        // Para PDFs de alta calidad
+        $thumbnailFilename = "page-{$pageIndex}-thumbnail.png"; // Para sidebar
+        
+        $projectPath = "images/thumbnails/{$project->id}";
+        $pdfRelativePath = "{$projectPath}/{$pdfFilename}";
 
-        // Crear directorio si no existe
-        if (!is_dir(dirname($fullPath))) {
-            mkdir(dirname($fullPath), 0755, true);
+        // Crear directorio si no existe usando Storage
+        if (!Storage::exists($projectPath)) {
+            Storage::makeDirectory($projectPath);
         }
 
-        // Guardar imagen
-        switch ($format) {
-            case 'jpg':
-            case 'jpeg':
-                imagejpeg($canvas, $fullPath, $quality);
-                break;
-            case 'png':
-            default:
-                imagepng($canvas, $fullPath, (int)((100 - $quality) / 10));
-                break;
-        }
+        // 1. Guardar thumbnail de alta calidad (para PDF) como PNG
+        ob_start();
+        imagepng($canvas, null, 9); // PNG con máxima compresión (0-9)
+        $imageContent = ob_get_contents();
+        ob_end_clean();
 
-        // Retornar URL pública
-        return asset("storage/{$relativePath}");
+        // Guardar usando Storage en la carpeta correcta (storage/app/images/thumbnails)
+        $pdfRelativePath = "images/thumbnails/{$project->id}/{$pdfFilename}";
+        $saved = Storage::put($pdfRelativePath, $imageContent);
+
+        if ($saved) {
+            // 2. Generar thumbnail pequeño para sidebar usando Intervention Image
+            $this->generateSidebarThumbnail($canvas, $project, $pageIndex, $thumbnailFilename);
+            
+            // Retornar URL usando el servicio de imágenes
+            $encodedPath = base64_encode($pdfRelativePath);
+            return "/api/canvas/serve-image/{$encodedPath}";
+        } else {
+            throw new \Exception("Error guardando thumbnail: {$pdfFilename}");
+        }
+    }
+
+    /**
+     * Generar thumbnail pequeño para sidebar
+     */
+    private function generateSidebarThumbnail($canvas, CanvasProject $project, int $pageIndex, string $filename)
+    {
+        try {
+            // Convertir canvas GD a string
+            ob_start();
+            imagepng($canvas, null, 9); // PNG para mejor calidad
+            $imageContent = ob_get_contents();
+            ob_end_clean();
+
+            // Crear manager de Intervention Image v3
+            $manager = new ImageManager(new Driver());
+            
+            // Crear imagen con Intervention Image v3
+            $image = $manager->read($imageContent);
+            
+            // Redimensionar para sidebar (150x200 px) manteniendo aspecto
+            $image->scale(600, 800);
+            
+            // Guardar en storage/app/images/thumbnails para mantener consistencia
+            $sidebarPath = "images/thumbnails/{$project->id}";
+            $sidebarFullPath = "{$sidebarPath}/{$filename}";
+            
+            // Crear directorio si no existe
+            if (!Storage::exists($sidebarPath)) {
+                Storage::makeDirectory($sidebarPath);
+            }
+            
+            // Guardar como PNG para sidebar usando Storage::put
+            $image->save(storage_path("app/{$sidebarFullPath}"));
+            
+            Log::info("✅ [THUMBNAIL-SERVICE] Thumbnail sidebar generado: {$filename}");
+            
+        } catch (\Exception $e) {
+            Log::error("❌ [THUMBNAIL-SERVICE] Error generando thumbnail sidebar: " . $e->getMessage());
+            // No lanzar excepción, solo log del error
+        }
     }
 
     /**
@@ -456,37 +506,40 @@ class ThumbnailGeneratorService
      */
     public function getStoredThumbnails(CanvasProject $project)
     {
-        $thumbnailDir = storage_path("app/public/thumbnails/{$project->id}");
-        
-        if (!is_dir($thumbnailDir)) {
-            return [];
-        }
-
         $thumbnails = [];
-        $files = glob($thumbnailDir . '/thumbnail_*.{png,jpg,jpeg}', GLOB_BRACE);
+        $projectPath = "images/thumbnails/{$project->id}";
         
-        foreach ($files as $file) {
-            $filename = basename($file);
-            $relativePath = "thumbnails/{$project->id}/{$filename}";
+        if (Storage::exists($projectPath)) {
+            $files = Storage::files($projectPath);
             
-            // Extraer índice de página del nombre
-            preg_match('/page_(\d+)/', $filename, $matches);
-            $pageIndex = isset($matches[1]) ? (int)$matches[1] : 0;
+            foreach ($files as $file) {
+                $filename = basename($file);
+                
+                // Extraer el índice de página del nombre del archivo
+                if (preg_match('/page-(\d+)-thumbnail\.png/', $filename, $matches)) {
+                    $pageIndex = (int)$matches[1];
+                    
+                    // Generar URL usando el servicio de imágenes
+                    $encodedPath = base64_encode($file);
+                    $thumbnailUrl = "/api/canvas/serve-image/{$encodedPath}";
+                    
+                    $thumbnails[] = [
+                        'page_index' => $pageIndex,
+                        'page_id' => "page-{$pageIndex}",
+                        'thumbnail_filename' => $filename,
+                        'thumbnail_url' => $thumbnailUrl,
+                        'file_path' => $file,
+                        'last_modified' => Storage::lastModified($file)
+                    ];
+                }
+            }
             
-            $thumbnails[] = [
-                'page_index' => $pageIndex,
-                'url' => asset("storage/{$relativePath}"),
-                'path' => $file,
-                'size' => filesize($file),
-                'created_at' => date('Y-m-d H:i:s', filemtime($file))
-            ];
+            // Ordenar por índice de página
+            usort($thumbnails, function($a, $b) {
+                return $a['page_index'] - $b['page_index'];
+            });
         }
-
-        // Ordenar por página
-        usort($thumbnails, function($a, $b) {
-            return $a['page_index'] <=> $b['page_index'];
-        });
-
+        
         return $thumbnails;
     }
 
@@ -495,26 +548,24 @@ class ThumbnailGeneratorService
      */
     public function deleteStoredThumbnails(CanvasProject $project)
     {
-        $thumbnailDir = storage_path("app/public/thumbnails/{$project->id}");
-        
-        if (!is_dir($thumbnailDir)) {
-            return 0;
-        }
-
-        $files = glob($thumbnailDir . '/thumbnail_*.*');
+        $projectPath = "images/thumbnails/{$project->id}";
         $deleted = 0;
         
-        foreach ($files as $file) {
-            if (unlink($file)) {
-                $deleted++;
+        if (Storage::exists($projectPath)) {
+            $files = Storage::files($projectPath);
+            
+            foreach ($files as $file) {
+                if (Storage::delete($file)) {
+                    $deleted++;
+                }
+            }
+            
+            // Eliminar el directorio si está vacío
+            if (count(Storage::files($projectPath)) === 0) {
+                Storage::deleteDirectory($projectPath);
             }
         }
-
-        // Eliminar directorio si está vacío
-        if (count(glob($thumbnailDir . '/*')) === 0) {
-            rmdir($thumbnailDir);
-        }
-
+        
         return $deleted;
     }
 
@@ -529,6 +580,73 @@ class ThumbnailGeneratorService
             }
         }
         $this->tempFiles = [];
+    }
+
+    /**
+     * Guarda un thumbnail base64 como archivo
+     */
+    public function saveBase64AsFile(CanvasProject $project, $pageId, $thumbnailData)
+    {
+        try {
+            Log::info("🖼️ [THUMBNAIL-SERVICE] Guardando thumbnail base64 como archivo para página: {$pageId}");
+
+            // Validar formato base64
+            if (!str_starts_with($thumbnailData, 'data:image/')) {
+                Log::error("❌ [THUMBNAIL-SERVICE] Datos no son base64 válidos");
+                return null;
+            }
+
+            // Extraer información del base64
+            $parts = explode(';base64,', $thumbnailData);
+            if (count($parts) !== 2) {
+                Log::error("❌ [THUMBNAIL-SERVICE] Formato base64 inválido");
+                return null;
+            }
+
+            $imageData = base64_decode($parts[1]);
+            if ($imageData === false) {
+                Log::error("❌ [THUMBNAIL-SERVICE] Error decodificando base64");
+                return null;
+            }
+
+            // Obtener extensión de la imagen
+            $mimeType = $parts[0];
+            $extension = 'png'; // Por defecto PNG
+            if (strpos($mimeType, 'jpeg') !== false) {
+                $extension = 'jpg';
+            } elseif (strpos($mimeType, 'png') !== false) {
+                $extension = 'png';
+            } elseif (strpos($mimeType, 'webp') !== false) {
+                $extension = 'webp';
+            }
+
+            // Definir ruta del archivo
+            $thumbnailsDir = "images/thumbnails/{$project->id}";
+            $filename = "page_{$pageId}.{$extension}";
+            $filePath = "{$thumbnailsDir}/{$filename}";
+
+            // Crear directorio si no existe
+            if (!Storage::exists($thumbnailsDir)) {
+                Storage::makeDirectory($thumbnailsDir);
+            }
+
+            // Guardar archivo
+            $success = Storage::put($filePath, $imageData);
+
+            if ($success) {
+                $encodedPath = base64_encode($filePath);
+                $thumbnailUrl = "/api/canvas/serve-image/{$encodedPath}";
+                Log::info("✅ [THUMBNAIL-SERVICE] Thumbnail guardado: {$thumbnailUrl}");
+                return $thumbnailUrl;
+            } else {
+                Log::error("❌ [THUMBNAIL-SERVICE] Error guardando archivo");
+                return null;
+            }
+
+        } catch (\Exception $e) {
+            Log::error("❌ [THUMBNAIL-SERVICE] Error guardando thumbnail: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**

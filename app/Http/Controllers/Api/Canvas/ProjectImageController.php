@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class ProjectImageController extends Controller
 {
@@ -43,15 +46,20 @@ class ProjectImageController extends Controller
                         continue;
                     }
 
-                    // Generar nombre único para evitar conflictos
+                    // Generar nombre único personalizado para evitar conflictos
                     $filename = $imageData['filename'];
-                    $uniqueFilename = $this->generateUniqueFilename($projectPath, $filename);
+                    $pathInfo = pathinfo($filename);
+                    $timestamp = time();
+                    $uniqueFilename = $pathInfo['filename'] . '-fullquality-' . $timestamp . '.' . ($pathInfo['extension'] ?? 'jpg');
                     $fullPath = $projectPath . '/' . $uniqueFilename;
 
-                    // Guardar la imagen en storage/app/ - COMO BasicController
+                    // Guardar la imagen principal
                     $saved = Storage::put($fullPath, $imageContent);
 
                     if ($saved) {
+                        // Generar miniatura automáticamente
+                        $thumbnailResult = $this->generateThumbnail($fullPath, $uniqueFilename, $projectPath);
+                        
                         // Generar URL pública para acceder a la imagen
                         $publicUrl = Storage::url($fullPath);
                         
@@ -61,11 +69,16 @@ class ProjectImageController extends Controller
                             'savedFilename' => $uniqueFilename,
                             'path' => $fullPath,
                             'url' => $publicUrl, // URL directa del storage
+                            'thumbnail_url' => $thumbnailResult['url'] ?? null,
+                            'thumbnail_path' => $thumbnailResult['path'] ?? null,
                             'size' => strlen($imageContent),
                             'type' => $imageData['type']
                         ];
 
                         Log::info("✅ [IMAGE-UPLOAD] Imagen guardada: {$imageData['elementId']} -> {$uniqueFilename}");
+                        if ($thumbnailResult['success']) {
+                            Log::info("✅ [THUMBNAIL] Miniatura generada: {$thumbnailResult['filename']}");
+                        }
                     } else {
                         Log::error("❌ [IMAGE-UPLOAD] Error guardando imagen: {$imageData['elementId']}");
                     }
@@ -161,18 +174,46 @@ class ProjectImageController extends Controller
     {
         try {
             $projectPath = "images/projects/{$projectId}";
+            $thumbnailPath = $projectPath . '/thumbnails';
+            
             $files = Storage::files($projectPath);
             
             $images = [];
             foreach ($files as $file) {
+                $filename = basename($file);
+                
+                // Generar nombre de la miniatura correspondiente
+                $pathInfo = pathinfo($filename);
+                $thumbnailFilename = str_replace('-fullquality', '-thumbnail', $pathInfo['filename']) . '.jpg';
+                $thumbnailFullPath = $thumbnailPath . '/' . $thumbnailFilename;
+                
+                // Verificar si existe la miniatura
+                $thumbnailUrl = null;
+                if (Storage::exists($thumbnailFullPath)) {
+                    $encodedThumbnailPath = base64_encode($thumbnailFullPath);
+                    $thumbnailUrl = "/api/canvas/serve-image/{$encodedThumbnailPath}";
+                }
+                
+                // Generar URL para la imagen principal
+                $encodedPath = base64_encode($file);
+                $imageUrl = "/api/canvas/serve-image/{$encodedPath}";
+                
                 $images[] = [
-                    'filename' => basename($file),
+                    'id' => pathinfo($filename, PATHINFO_FILENAME), // ID único basado en el nombre
+                    'filename' => $filename,
                     'path' => $file,
-                    'url' => Storage::url($file),
+                    'url' => $imageUrl,
+                    'thumbnail_url' => $thumbnailUrl,
+                    'has_thumbnail' => $thumbnailUrl !== null,
                     'size' => Storage::size($file),
                     'last_modified' => Storage::lastModified($file)
                 ];
             }
+            
+            // Ordenar por fecha de modificación (más recientes primero)
+            usort($images, function($a, $b) {
+                return $b['last_modified'] - $a['last_modified'];
+            });
             
             return response()->json([
                 'success' => true,
@@ -259,14 +300,94 @@ class ProjectImageController extends Controller
             $file = Storage::get($path);
             $mimeType = Storage::mimeType($path);
             
-            return response($file)
-                ->header('Content-Type', $mimeType)
-                ->header('Cache-Control', 'public, max-age=31536000') // Cache por 1 año
-                ->header('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + 31536000));
+            // Verificar si es un thumbnail (cache más corto) o imagen normal (cache largo)
+            $isThumbnail = str_contains($path, '/thumbnails/') || str_contains($path, '-thumbnail.');
+            
+            if ($isThumbnail) {
+                // Cache corto para thumbnails (1 hora) para permitir actualizaciones
+                // En desarrollo, desactivar cache completamente
+                if (config('app.env') === 'local') {
+                    return response($file)
+                        ->header('Content-Type', $mimeType)
+                        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                        ->header('Pragma', 'no-cache')
+                        ->header('Expires', '0');
+                } else {
+                    return response($file)
+                        ->header('Content-Type', $mimeType)
+                        ->header('Cache-Control', 'public, max-age=3600') // 1 hora
+                        ->header('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + 3600));
+                }
+            } else {
+                // Cache largo para imágenes normales (1 año)
+                return response($file)
+                    ->header('Content-Type', $mimeType)
+                    ->header('Cache-Control', 'public, max-age=31536000') // Cache por 1 año
+                    ->header('Expires', gmdate('D, d M Y H:i:s \G\M\T', time() + 31536000));
+            }
                 
         } catch (\Exception $e) {
             Log::error("❌ [IMAGE-SERVE] Error sirviendo imagen: " . $e->getMessage());
             return response()->json(['error' => 'Error sirviendo imagen'], 500);
+        }
+    }
+
+    /**
+     * Generar miniatura de una imagen
+     */
+    private function generateThumbnail($imagePath, $originalFilename, $projectPath)
+    {
+        try {
+            // Leer la imagen original desde storage
+            $imageContent = Storage::get($imagePath);
+            
+            if (!$imageContent) {
+                return ['success' => false, 'error' => 'No se pudo leer la imagen original'];
+            }
+
+            // Crear instancia de Intervention Image Manager
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($imageContent);
+            
+            // Generar nombre personalizado para la miniatura
+            $pathInfo = pathinfo($originalFilename);
+            $timestamp = time();
+            $thumbnailFilename = $pathInfo['filename'] . '-thumbnail.jpg'; // Siempre JPG para miniaturas
+            $thumbnailPath = $projectPath . '/thumbnails/' . $thumbnailFilename;
+            
+            // Crear directorio de miniaturas si no existe
+            $thumbnailDir = $projectPath . '/thumbnails';
+            if (!Storage::exists($thumbnailDir)) {
+                Storage::makeDirectory($thumbnailDir);
+            }
+
+            // Redimensionar imagen manteniendo proporción (150x150 máximo)
+            $image->cover(150, 150);
+
+            // Convertir a JPG con 85% calidad para reducir tamaño
+            $encodedImage = $image->toJpeg(85);
+
+            // Guardar la miniatura en storage/app (NO en public)
+            $thumbnailSaved = Storage::put($thumbnailPath, $encodedImage);
+
+            if ($thumbnailSaved) {
+                // Generar URL usando el servicio de imágenes (no Storage::url)
+                $encodedThumbnailPath = base64_encode($thumbnailPath);
+                $thumbnailUrl = "/api/canvas/serve-image/{$encodedThumbnailPath}";
+                
+                return [
+                    'success' => true,
+                    'filename' => $thumbnailFilename,
+                    'path' => $thumbnailPath,
+                    'url' => $thumbnailUrl
+                ];
+            } else {
+                return ['success' => false, 'error' => 'Error guardando miniatura'];
+            }
+
+        } catch (\Exception $e) {
+            Log::error("❌ [THUMBNAIL] Error generando miniatura: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -289,16 +410,30 @@ class ProjectImageController extends Controller
                 Storage::makeDirectory($projectPath);
             }
 
-            // Guardar la imagen
-            $path = $request->file('image')->store($projectPath);
+            // Generar nombre personalizado
+            $originalName = $request->file('image')->getClientOriginalName();
+            $pathInfo = pathinfo($originalName);
+            $timestamp = time();
+            $fullQualityFilename = $pathInfo['filename'] . '-fullquality-' . $timestamp . '.' . $pathInfo['extension'];
+            
+            // Guardar la imagen con nombre personalizado
+            $path = $request->file('image')->storeAs($projectPath, $fullQualityFilename);
 
-            // Generar la URL para servir la imagen
-            $url = Storage::url($path);
+            // Generar miniatura automáticamente
+            $thumbnailResult = $this->generateThumbnail($path, $fullQualityFilename, $projectPath);
+
+            // Generar la URL usando el servicio de imágenes (no Storage::url)
+            $encodedPath = base64_encode($path);
+            $url = "/api/canvas/serve-image/{$encodedPath}";
 
             return response()->json([
                 'success' => true,
                 'url' => $url,
                 'path' => $path,
+                'thumbnail_url' => $thumbnailResult['url'] ?? null,
+                'thumbnail_path' => $thumbnailResult['path'] ?? null,
+                'has_thumbnail' => $thumbnailResult['success'] ?? false,
+                'filename' => $fullQualityFilename
             ]);
 
         } catch (\Exception $e) {

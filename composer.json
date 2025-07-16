@@ -13,6 +13,7 @@
         "geoip2/geoip2": "^3.2",
         "guzzlehttp/guzzle": "^7.2",
         "inertiajs/inertia-laravel": "^1.2",
+        "intervention/image": "^3.11",
         "jenssegers/agent": "^2.6",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",

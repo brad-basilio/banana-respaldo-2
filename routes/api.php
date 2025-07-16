@@ -54,7 +54,7 @@ use App\Http\Controllers\Admin\CanvasPresetController as AdminCanvasPresetContro
 use App\Http\Controllers\CanvasController;
 use App\Http\Controllers\CanvasProjectController;
 use App\Http\Controllers\Api\Canvas\ProjectSaveController;
-use App\Http\Controllers\ProjectPDFController;
+// use App\Http\Controllers\ProjectPDFController;
 use App\Http\Controllers\Api\SimplePDFController;
 use App\Http\Controllers\PDFGeneratorController;
 use App\Http\Controllers\CartPDFController;
@@ -158,6 +158,8 @@ Route::prefix('thumbnails')->group(function () {
     Route::post('/{projectId}/generate', [App\Http\Controllers\Api\ThumbnailController::class, 'generateProjectThumbnails']);
     Route::post('/{projectId}/page/{pageIndex}', [App\Http\Controllers\Api\ThumbnailController::class, 'generatePageThumbnail']);
     Route::get('/{projectId}', [App\Http\Controllers\Api\ThumbnailController::class, 'getProjectThumbnails']);
+    Route::post('/{projectId}/save-as-files', [App\Http\Controllers\Api\ThumbnailController::class, 'saveThumbnailsAsFiles']);
+    Route::post('/{projectId}/existing', [App\Http\Controllers\Api\ThumbnailController::class, 'loadExistingThumbnails']);
     Route::delete('/{projectId}', [App\Http\Controllers\Api\ThumbnailController::class, 'deleteProjectThumbnails']);
 });
 
@@ -202,8 +204,8 @@ Route::post('/discount-rules/apply-to-cart', [AdminDiscountRulesController::clas
 
 // 🧪 TEMPORAL: Ruta de prueba para PDF sin autenticación (SOLO DESARROLLO)
 if (app()->environment('local')) {
-    Route::post('/test/projects/{projectId}/export/pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
-    Route::post('/test/projects/{projectId}/debug/html', [App\Http\Controllers\Api\ProjectPDFController::class, 'debugPDFHtml']);
+    // Route::post('/test/projects/{projectId}/export/pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
+    // Route::post('/test/projects/{projectId}/debug/html', [App\Http\Controllers\Api\ProjectPDFController::class, 'debugPDFHtml']);
 }
 
 Route::middleware('auth')->group(function () {
@@ -232,11 +234,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/canvas-projects/{id}', [CustomerCanvasProjectController::class, 'delete']);
 
     // 🆕 Rutas para generación de PDF backend con dimensiones exactas
-    Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
-    Route::post('/projects/{projectId}/export/pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
-    Route::post('/projects/{projectId}/debug/html', [App\Http\Controllers\Api\ProjectPDFController::class, 'debugPDFHtml']);
-    Route::get('/test/pdf-layouts', [App\Http\Controllers\Api\ProjectPDFController::class, 'testPDFWithLayouts']);
-    Route::get('/projects/{projectId}/debug-real', [App\Http\Controllers\Api\ProjectPDFController::class, 'debugRealProject']);
+    // Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\ProjectPDFController::class, 'generatePDF']);
+    // Route::post('/projects/{projectId}/export/pdf', [App\Http\Controllers\ProjectPDFController::class, 'generatePDF']);
+    // Route::post('/projects/{projectId}/debug/html', [App\Http\Controllers\ProjectPDFController::class, 'debugPDFHtml']);
+    // Route::get('/test/pdf-layouts', [App\Http\Controllers\ProjectPDFController::class, 'testPDFWithLayouts']);
+    // Route::get('/projects/{projectId}/debug-real', [App\Http\Controllers\ProjectPDFController::class, 'debugRealProject']);
     Route::get('/projects/{projectId}/pdf-info', [PDFGeneratorController::class, 'getPDFInfo']);
     Route::get('/projects/{projectId}/download-pdf', [PDFGeneratorController::class, 'downloadPDF']);
     
@@ -477,9 +479,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/canvas-presets/{id}', [AdminCanvasPresetController::class, 'get']);
 
     // Project PDF admin routes (accessible to admins)
-    Route::get('/projects/{projectId}/pdf', [ProjectPDFController::class, 'getPDF']);
-    Route::get('/projects/{projectId}/info', [ProjectPDFController::class, 'getProjectInfo']);
-    Route::get('/projects/pdfs/list', [ProjectPDFController::class, 'listProjectsWithPDFs']);
+    // Route::get('/projects/{projectId}/pdf', [ProjectPDFController::class, 'getPDF']);
+    // Route::get('/projects/{projectId}/info', [ProjectPDFController::class, 'getProjectInfo']);
+    // Route::get('/projects/pdfs/list', [ProjectPDFController::class, 'listProjectsWithPDFs']);
 
 
   });
@@ -512,9 +514,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 🖼️ Servir imágenes desde storage/app - COMO BasicController
     Route::get('/canvas/image/{encodedPath}', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'serveImage']);
+    Route::get('/canvas/serve-image/{encodedPath}', [App\Http\Controllers\Api\Canvas\ProjectImageController::class, 'serveImage']);
 
     // Project PDF generation route (for frontend users)
-    Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
+    // Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\ProjectPDFController::class, 'generatePDF']);
 
     Route::patch('/account/email', [AdminAccountController::class, 'email']);
     Route::patch('/account/password', [AdminAccountController::class, 'password']);

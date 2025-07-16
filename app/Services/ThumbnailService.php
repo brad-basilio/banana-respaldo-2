@@ -4,7 +4,6 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class ThumbnailService
 {
@@ -29,16 +28,32 @@ class ThumbnailService
                 return null;
             }
 
-            // Generar nombre único para el archivo (siguiendo el patrón de las imágenes del proyecto)
-            $fileName = "images/thumbnails/{$projectId}/{$pageId}_" . time() . ".{$imageType}";
+            // Obtener el índice de la página desde el pageId
+            $pageIndex = self::getPageIndexFromPageId($pageId);
             
-            // Guardar archivo en storage/app (igual que las imágenes del proyecto)
-            $saved = Storage::put($fileName, $decodedImage);
+            // Crear directorio si no existe
+            $projectPath = "images/thumbnails/{$projectId}";
+            if (!Storage::exists($projectPath)) {
+                Storage::makeDirectory($projectPath);
+            }
             
-            if ($saved) {
-                // Devolver URL pública (igual que las imágenes del proyecto)
-                $url = '/storage/' . $fileName;
-                Log::info("ThumbnailService: Thumbnail guardado exitosamente: {$fileName}");
+            // 🔄 NUEVA ESTRUCTURA: Usar naming consistente con ThumbnailGeneratorService
+            $pdfFilename = "page-{$pageIndex}-pdf.png";        // Para PDFs de alta calidad
+            $thumbnailFilename = "page-{$pageIndex}-thumbnail.png"; // Para sidebar
+            
+            // Guardar como PNG para PDF (alta calidad)
+            $pdfPath = "{$projectPath}/{$pdfFilename}";
+            $savedPdf = Storage::put($pdfPath, $decodedImage);
+            
+            if ($savedPdf) {
+                // Generar thumbnail pequeño para sidebar usando Intervention Image
+                self::generateSidebarThumbnailFromBase64($decodedImage, $projectId, $pageIndex, $thumbnailFilename);
+                
+                // Devolver URL usando el servicio de imágenes con timestamp para evitar cache
+                $encodedPath = base64_encode($pdfPath);
+                $timestamp = time();
+                $url = "/api/canvas/serve-image/{$encodedPath}?v={$timestamp}";
+                Log::info("ThumbnailService: Thumbnail guardado exitosamente: {$pdfFilename}");
                 return $url;
             }
 
@@ -64,6 +79,11 @@ class ThumbnailService
         if (is_string($thumbnailsData)) {
             $thumbnailsData = json_decode($thumbnailsData, true);
         }
+
+        Log::info("📸 [THUMBNAIL-SERVICE] Procesando thumbnails para proyecto {$projectId}", [
+            'thumbnails_recibidos' => array_keys($thumbnailsData ?? []),
+            'total_thumbnails' => count($thumbnailsData ?? [])
+        ]);
 
         if (!is_array($thumbnailsData)) {
             return [];
@@ -120,5 +140,135 @@ class ThumbnailService
         }
 
         return $data;
+    }
+
+    /**
+     * Obtiene el índice de la página desde el pageId
+     */
+    private static function getPageIndexFromPageId($pageId)
+    {
+        // Si el pageId ya es un número, usarlo directamente
+        if (is_numeric($pageId)) {
+            return (int)$pageId;
+        }
+        
+        // Casos especiales para portada y contraportada
+        if ($pageId === 'page-cover') {
+            return 0;
+        }
+        
+        if ($pageId === 'page-final') {
+            // La contraportada va al final, necesitamos calcular el índice correcto
+            // Por ahora, usar un índice alto (22) que debería funcionar para la mayoría de casos
+            return 22;
+        }
+        
+        // Intentar extraer el número del pageId (ej: "page-content-2" -> 2)
+        if (preg_match('/page-content-(\d+)/', $pageId, $matches)) {
+            return (int)$matches[1];
+        }
+        
+        // Intentar extraer el número del pageId (ej: "page-2" -> 2)
+        if (preg_match('/page-(\d+)/', $pageId, $matches)) {
+            return (int)$matches[1];
+        }
+        
+        // Si no se puede extraer, intentar con el final del pageId
+        if (preg_match('/(\d+)$/', $pageId, $matches)) {
+            return (int)$matches[1];
+        }
+        
+        // Por defecto, retornar 0
+        return 0;
+    }
+
+    /**
+     * Generar thumbnail pequeño para sidebar usando Intervention Image
+     */
+    private static function generateSidebarThumbnailFromBase64($imageData, $projectId, $pageIndex, $filename)
+    {
+        try {
+            // Crear manager de Intervention Image v3
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            
+            // Crear imagen con Intervention Image v3
+            $image = $manager->read($imageData);
+            
+            // Redimensionar para sidebar (1200x1600 px) manteniendo aspecto
+            $image->scale(1200, 1600);
+            
+            // Guardar en storage/app/images/thumbnails para mantener consistencia
+            $sidebarPath = "images/thumbnails/{$projectId}";
+            $sidebarFullPath = "{$sidebarPath}/{$filename}";
+            
+            // Crear directorio si no existe
+            if (!Storage::exists($sidebarPath)) {
+                Storage::makeDirectory($sidebarPath);
+            }
+            
+            // Guardar como PNG para sidebar usando Storage::put
+            $image->save(storage_path("app/{$sidebarFullPath}"));
+            
+            Log::info("✅ [THUMBNAIL-SERVICE] Thumbnail sidebar generado: {$filename}");
+            
+        } catch (\Exception $e) {
+            Log::error("❌ [THUMBNAIL-SERVICE] Error generando thumbnail sidebar: " . $e->getMessage());
+            // No lanzar excepción, solo log del error
+        }
+    }
+
+    /**
+     * Cargar thumbnails existentes desde archivos para un proyecto
+     */
+    public static function loadExistingThumbnails($projectId, $pages = [])
+    {
+        $thumbnails = [];
+        
+        try {
+            $projectPath = "images/thumbnails/{$projectId}";
+            
+            Log::info("📸 [THUMBNAIL-SERVICE] Cargando thumbnails existentes para proyecto {$projectId}", [
+                'path' => $projectPath,
+                'pages_count' => count($pages)
+            ]);
+            
+            if (Storage::exists($projectPath)) {
+                // Buscar archivos de thumbnail para cada página
+                foreach ($pages as $index => $page) {
+                    $pageId = $page['id'] ?? "page-{$index}";
+                    $thumbnailFilename = "page-{$index}-thumbnail.png";
+                    $thumbnailPath = "{$projectPath}/{$thumbnailFilename}";
+                    
+                    Log::info("📸 [THUMBNAIL-SERVICE] Verificando thumbnail", [
+                        'page_id' => $pageId,
+                        'index' => $index,
+                        'filename' => $thumbnailFilename,
+                        'path' => $thumbnailPath,
+                        'exists' => Storage::exists($thumbnailPath)
+                    ]);
+                    
+                    if (Storage::exists($thumbnailPath)) {
+                        // Generar URL para el thumbnail con timestamp para evitar cache
+                        $encodedPath = base64_encode($thumbnailPath);
+                        $timestamp = Storage::lastModified($thumbnailPath);
+                        $thumbnails[$pageId] = "/api/canvas/serve-image/{$encodedPath}?v={$timestamp}";
+                        
+                        Log::info("📸 [THUMBNAIL-SERVICE] Thumbnail encontrado", [
+                            'page_id' => $pageId,
+                            'url' => $thumbnails[$pageId]
+                        ]);
+                    }
+                }
+            }
+            
+            Log::info("📸 [THUMBNAIL-SERVICE] Thumbnails cargados", [
+                'thumbnails_encontrados' => array_keys($thumbnails),
+                'total_thumbnails' => count($thumbnails)
+            ]);
+        } catch (\Exception $e) {
+            Log::error("ThumbnailService: Error cargando thumbnails existentes: " . $e->getMessage());
+        }
+        
+        return $thumbnails;
     }
 }

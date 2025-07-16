@@ -111,6 +111,74 @@ export const processImagesForSave = async (pages, projectId) => {
     return processedPages;
 };
 
+// Función para guardar thumbnails como archivos
+export const saveThumbnailsAsFiles = async (projectId, pageThumbnails) => {
+    try {
+        console.log(`🔍 [DEBUG] saveThumbnailsAsFiles llamada con:`, {
+            projectId,
+            thumbnailsCount: Object.keys(pageThumbnails).length
+        });
+        
+        const thumbnailsToSave = [];
+        
+        for (const [pageId, thumbnailData] of Object.entries(pageThumbnails)) {
+            console.log(`🔍 [DEBUG] Procesando thumbnail para página ${pageId}:`, {
+                hasData: !!thumbnailData,
+                isBase64: thumbnailData && thumbnailData.startsWith('data:image/'),
+                dataLength: thumbnailData ? thumbnailData.length : 0
+            });
+            
+            // Solo procesar thumbnails que son base64
+            if (thumbnailData && thumbnailData.startsWith('data:image/')) {
+                thumbnailsToSave.push({
+                    page_id: pageId,
+                    thumbnail_data: thumbnailData
+                });
+            }
+        }
+        
+        if (thumbnailsToSave.length === 0) {
+            console.log('ℹ️ [THUMBNAILS] No hay thumbnails base64 para guardar');
+            return;
+        }
+        
+        console.log(`🖼️ [THUMBNAILS] Guardando ${thumbnailsToSave.length} thumbnails como archivos...`);
+        console.log(`🔍 [DEBUG] URL del endpoint: /api/thumbnails/${projectId}/save-as-files`);
+        
+        const response = await fetch(`/api/thumbnails/${projectId}/save-as-files`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            credentials: 'include',
+            body: JSON.stringify({ thumbnails: thumbnailsToSave })
+        });
+        
+        console.log(`🔍 [DEBUG] Respuesta del servidor:`, {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ [THUMBNAILS] Error respuesta del servidor:', errorText);
+            throw new Error(`Error al guardar thumbnails: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ [THUMBNAILS] Thumbnails guardados como archivos:', result);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ [THUMBNAILS] Error guardando thumbnails:', error);
+        throw error;
+    }
+};
+
 // Función principal para guardar proyecto
 export const saveProjectData = async (pages, projectData, itemData, presetData, workspaceDimensions, pageThumbnails, isAutoSave = false) => {
     try {
@@ -170,6 +238,17 @@ export const saveProjectData = async (pages, projectData, itemData, presetData, 
         
         const result = await response.json();
         console.log(`✅ [SAVE] ${isAutoSave ? 'Auto-guardado' : 'Guardado'} exitoso:`, result);
+        
+        // Si es guardado manual y tenemos thumbnails, guardarlos como archivos
+        if (!isAutoSave && pageThumbnails && Object.keys(pageThumbnails).length > 0) {
+            console.log('🖼️ [SAVE] Guardando thumbnails como archivos...');
+            try {
+                await saveThumbnailsAsFiles(projectData.id, pageThumbnails);
+                console.log('✅ [SAVE] Thumbnails guardados como archivos');
+            } catch (error) {
+                console.warn('⚠️ [SAVE] Error guardando thumbnails como archivos:', error);
+            }
+        }
         
         return { success: true, data: result };
         

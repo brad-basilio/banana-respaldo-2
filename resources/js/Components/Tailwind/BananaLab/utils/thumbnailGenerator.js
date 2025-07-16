@@ -389,7 +389,7 @@ export async function generateAccurateThumbnails({ pages, workspaceDimensions, p
             const thumbnailCanvas = document.createElement('canvas');
             const thumbnailCtx = thumbnailCanvas.getContext('2d');
             
-            const maxSize = 600; // Tamaño máximo para thumbnails
+            const maxSize = 1200; // Tamaño máximo para thumbnails (aumentado para mejor calidad)
             const scale = Math.min(maxSize / canvas.width, maxSize / canvas.height);
             
             thumbnailCanvas.width = Math.round(canvas.width * scale);
@@ -409,7 +409,8 @@ export async function generateAccurateThumbnails({ pages, workspaceDimensions, p
             // Convertir a data URL
             newThumbnails[page.id] = thumbnailCanvas.toDataURL('image/png', 0.9);
             
-            console.log(`✅ [WORKSPACE REPLICA] Thumbnail generado para ${page.id}: ${thumbnailCanvas.width}x${thumbnailCanvas.height}`);
+            console.log(`✅ [WORKSPACE REPLICA] Thumbnail generado para ${page.id} (${page.type}): ${thumbnailCanvas.width}x${thumbnailCanvas.height}`);
+            console.log(`📋 [WORKSPACE REPLICA] ID de la página: ${page.id}, Tipo: ${page.type}`);
             
         } catch (error) {
             console.error(`❌ [WORKSPACE REPLICA] Error generando thumbnail para página ${page.id}:`, error);
@@ -418,5 +419,7 @@ export async function generateAccurateThumbnails({ pages, workspaceDimensions, p
     }
 
     console.log('🎯 [WORKSPACE REPLICA] ¡Generación COMPLETADA! Thumbnails idénticos al workspace.');
+    console.log('📋 [WORKSPACE REPLICA] Thumbnails generados:', Object.keys(newThumbnails));
+    console.log('📊 [WORKSPACE REPLICA] Total de thumbnails:', Object.keys(newThumbnails).length);
     return newThumbnails;
 }
