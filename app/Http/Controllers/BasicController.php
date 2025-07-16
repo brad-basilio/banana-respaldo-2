@@ -247,7 +247,6 @@ class BasicController extends Controller
       }
 
       foreach ($this->imageFields as $field) {
-
         if (!$request->hasFile($field)) continue;
         $full = $request->file($field);
         $uuid = Crypto::randomUUID();
@@ -263,7 +262,6 @@ class BasicController extends Controller
       \Log::info('BasicController save - Model find result: ' . ($jpa ? 'Encontrado ID: ' . $jpa->id : 'No encontrado'));
 
       if (!$jpa) {
-        
         $body['slug'] = Crypto::randomUUID();
         $jpa = $this->model::create($body);
         $isNew = true;
@@ -282,6 +280,11 @@ class BasicController extends Controller
         if (Schema::hasColumn($table, 'color') && !empty($jpa->color)) {
             $slugBase .= '-' . $jpa->color;
         }
+
+        if (Schema::hasColumn($table, 'talla') && !empty($jpa->talla)) {
+            $slugBase .= '-' . $jpa->talla;
+        }
+
         $slug = Str::slug($slugBase);
         // Verificar si el slug ya existe para otro registro
         $slugExists = $this->model::where('slug', $slug)

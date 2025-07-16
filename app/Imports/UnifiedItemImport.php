@@ -210,7 +210,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             }
 
             // 5️⃣ Generar slug único para el producto
-            $slug = $this->generateUniqueSlug($nombreProducto, $this->getFieldValue($row, 'color'));
+            $slug = $this->generateUniqueSlug($nombreProducto, $this->getFieldValue($row, 'color'), $this->getFieldValue($row, 'talla'));
 
             // 6️⃣ Preparar datos del precio
             $precio = $this->getNumericValue($row, 'precio');
@@ -241,6 +241,10 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             // Agregar campos opcionales si existen
             if ($this->hasField($row, 'color')) {
                 $itemData['color'] = $this->getFieldValue($row, 'color');
+            }
+
+            if ($this->hasField($row, 'talla')) {
+                $itemData['talla'] = $this->getFieldValue($row, 'talla');
             }
 
             $item = Item::create($itemData);
@@ -322,9 +326,9 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
     /**
      * Generar slug único para el producto
      */
-    private function generateUniqueSlug(string $nombre, ?string $color = null): string
+    private function generateUniqueSlug(string $nombre, ?string $color = null, ?string $talla = null): string
     {
-        $baseSlug = Str::slug($nombre . ($color ? '-' . $color : ''));
+        $baseSlug = Str::slug($nombre . ($color ? '-' . $color : '') . '-' . ($talla ? '-' . $talla : ''));
         $slug = $baseSlug;
         
         $counter = 1;

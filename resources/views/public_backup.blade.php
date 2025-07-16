@@ -209,6 +209,8 @@
 
     @inertia
 
+    
+
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
 
@@ -254,6 +256,8 @@
                     lazyImageObserver.observe(lazyImage);
                 });
             }
+
+            // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
 
