@@ -49,24 +49,97 @@ const Partner = React.lazy(() => import("./Components/Tailwind/Partner"));
 const Agradecimientos = React.lazy(() => import("./Components/Tailwind/Agradecimientos"));
 
 // Componente de carga para usar con Suspense
-const LoadingFallback = () => (
-    <div className="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
-
-        <div className="animate-bounce">
-            <img
-
-                src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`}
-                alt={Global.APP_NAME}
-                onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "/assets/img/logo-bk.svg";
-                }}
-
-                className=" w-64 lg:w-96 transition-all duration-300 transform hover:scale-105"
-            />
+const LoadingFallback = () => {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [showFallback, setShowFallback] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+    
+    useEffect(() => {
+        // Detectar mobile
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        
+        // Timeout diferenciado para mobile vs desktop
+        const timeout = setTimeout(() => {
+            setShowFallback(false);
+        }, isMobile ? 1500 : 2500); // Mobile: 1.5s, Desktop: 2.5s
+        
+        return () => {
+            clearTimeout(timeout);
+            window.removeEventListener('resize', checkMobile);
+        };
+    }, [isMobile]);
+    
+    // Fallback rápido para mobile
+    if (isMobile && !showFallback) {
+        return (
+            <div className="fixed inset-0 flex flex-col justify-center items-center bg-white z-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="mt-2 text-sm text-neutral-dark">Cargando...</p>
+            </div>
+        );
+    }
+    
+    // Fallback completo para desktop o tiempo inicial
+    if (!showFallback) {
+        return (
+            <div className="fixed inset-0 flex flex-col justify-center items-center bg-white/95 backdrop-blur-sm z-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <p className="mt-4 text-neutral-dark">Cargando...</p>
+            </div>
+        );
+    }
+    
+    return (
+        <div className="fixed inset-0 flex flex-col justify-center items-center bg-white/95 backdrop-blur-sm z-50">
+            <div className="animate-bounce">
+                <img
+                    src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`}
+                    alt={Global.APP_NAME}
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/assets/img/logo-bk.svg";
+                    }}
+                    onLoad={() => {
+                        setIsLoaded(true);
+                        // En mobile, ocultar más rápido una vez cargado
+                        if (isMobile) {
+                            setTimeout(() => setShowFallback(false), 300);
+                        }
+                    }}
+                    className={`${
+                        isMobile ? 'w-32 sm:w-48' : 'w-64 lg:w-96'
+                    } transition-all duration-300 transform hover:scale-105 ${
+                        isLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    loading="eager"
+                    decoding="async"
+                />
+            </div>
+            
+            {/* Spinner de respaldo si la imagen no carga */}
+            {!isLoaded && (
+                <div className={`animate-spin rounded-full border-b-2 border-primary mt-4 ${
+                    isMobile ? 'h-8 w-8' : 'h-12 w-12'
+                }`}></div>
+            )}
+            
+            {/* Indicador de progreso optimizado para mobile */}
+            {isMobile && (
+                <div className="mt-4 w-32 bg-gray-200 rounded-full h-1">
+                    <div 
+                        className="bg-primary h-1 rounded-full transition-all duration-300"
+                        style={{ width: isLoaded ? '100%' : '30%' }}
+                    ></div>
+                </div>
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 const itemsRest = new ItemsRest();
 
@@ -124,6 +197,22 @@ const System = ({
             setCart(newCart);
         });
     }, [null]);
+
+    // Preload crítico para mobile
+    useEffect(() => {
+        const isMobile = window.innerWidth <= 768;
+        
+        if (isMobile) {
+            // Preload componentes críticos solo en mobile
+            const criticalComponents = ['Header', 'Footer', 'Product', 'Cart'];
+            
+            criticalComponents.forEach(component => {
+                import(`./Components/Tailwind/${component}`).catch(() => {
+                    // Silenciar errores de preload
+                });
+            });
+        }
+    }, []);
 
     const getSystem = ({ component, value, data, itemsId, visible }) => {
         if (visible == 0) return <></>;
