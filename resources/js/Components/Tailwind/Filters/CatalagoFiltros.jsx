@@ -110,7 +110,7 @@ const SkeletonCard = ({ delay = 0 }) => {
                 ease: "easeOut"
             }}
         >
-            <div className="px-4 h-full">
+            <div className="px-2 h-full">
                 <div className="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full">
                     {/* Contenedor principal con altura fija similar a las tarjetas reales */}
                     <div className="flex flex-col h-[400px] lg:h-[460px] xl:h-[400px] 2xl:h-[430px]">
@@ -386,10 +386,426 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
 
         if (filters.name) {
-            transformedFilters.push(["name", "contains", filters.name]);
+            // Buscar en múltiples campos como HeaderSearchB
+            const searchConditions = [
+                ["name", "contains", filters.name],
+                "or",
+                ["summary", "contains", filters.name],
+                "or",
+                ["description", "contains", filters.name]
+            ];
+            transformedFilters.push(searchConditions);
         }
 
         return ArrayJoin(transformedFilters, 'and');
+    };
+
+    // Función de fallback para búsqueda simple (como HeaderSearchB)
+    const getSimpleSearchFilters = (query) => {
+        return [
+            ['name', 'contains', query],
+            'or',
+            ['summary', 'contains', query],
+            'or',
+            ['description', 'contains', query]
+        ];
+    };
+
+    // Estado para controlar la búsqueda inteligente
+    const [intelligentSearchEnabled, setIntelligentSearchEnabled] = useState(true);
+    const [lastIntelligentSearch, setLastIntelligentSearch] = useState(null);
+
+    // Función para detectar si el query coincide con marcas, categorías o subcategorías
+    const detectIntelligentFilters = (query) => {
+        if (!query || query.length < 2 || !intelligentSearchEnabled) {
+            console.log("🚫 Búsqueda inteligente deshabilitada o query muy corto:", { query, length: query?.length, enabled: intelligentSearchEnabled });
+            return null;
+        }
+        
+        const lowerQuery = query.toLowerCase().trim();
+        console.log("🔍 Buscando filtros inteligentes para:", lowerQuery);
+        console.log("📊 Datos disponibles:", { 
+            categories: categories.length, 
+            brands: brands.length, 
+            subcategories: subcategories.length, 
+            collections: collections.length 
+        });
+        
+        const detectedFilters = {
+            categories: [],
+            brands: [],
+            subcategories: [],
+            collections: []
+        };
+        
+        // Buscar en categorías
+        const matchedCategories = categories.filter(cat => {
+            const match = cat.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(cat.name.toLowerCase());
+            if (match) console.log("✅ Categoría encontrada:", cat.name);
+            return match;
+        });
+        
+        // Buscar en marcas
+        const matchedBrands = brands.filter(brand => {
+            const match = brand.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(brand.name.toLowerCase());
+            if (match) console.log("✅ Marca encontrada:", brand.name, "slug:", brand.slug);
+            return match;
+        });
+        
+        // Buscar en subcategorías
+        const matchedSubcategories = subcategories.filter(subcat => {
+            const match = subcat.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(subcat.name.toLowerCase());
+            if (match) console.log("✅ Subcategoría encontrada:", subcat.name);
+            return match;
+        });
+        
+        // Buscar en colecciones
+        const matchedCollections = collections.filter(collection => {
+            const match = collection.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(collection.name.toLowerCase());
+            if (match) console.log("✅ Colección encontrada:", collection.name);
+            return match;
+        });
+        
+        const result = {
+            categories: matchedCategories,
+            brands: matchedBrands,
+            subcategories: matchedSubcategories,
+            collections: matchedCollections,
+            hasMatches: matchedCategories.length > 0 || matchedBrands.length > 0 || 
+                       matchedSubcategories.length > 0 || matchedCollections.length > 0
+        };
+        
+        console.log("📋 Resultado de detección inteligente:", result);
+        return result;
+    };
+
+    // Función para verificar si los filtros actuales fueron aplicados por búsqueda inteligente
+    const isIntelligentSearchActive = (query) => {
+        const detected = detectIntelligentFilters(query);
+        if (!detected || !detected.hasMatches) return false;
+        
+        // Verificar si algún filtro coincide con los detectados
+        const hasMatchingCategories = detected.categories.some(cat => 
+            selectedFilters.category_id.includes(cat.id)
+        );
+        const hasMatchingBrands = detected.brands.some(brand => 
+            selectedFilters.brand_id.includes(brand.slug)
+        );
+        const hasMatchingSubcategories = detected.subcategories.some(subcat => 
+            selectedFilters.subcategory_id.includes(subcat.id)
+        );
+        const hasMatchingCollections = detected.collections.some(collection => 
+            selectedFilters.collection_id.includes(collection.slug)
+        );
+        
+        return hasMatchingCategories || hasMatchingBrands || hasMatchingSubcategories || hasMatchingCollections;
+    };
+
+    // Función para aplicar filtros inteligentes automáticamente
+    const applyIntelligentFilters = (query) => {
+        const detected = detectIntelligentFilters(query);
+        
+        if (!detected || !detected.hasMatches) return;
+        
+        console.log("🧠 Búsqueda inteligente detectada:", detected);
+        
+        setSelectedFilters(prev => {
+            const newFilters = { ...prev };
+            
+            // Aplicar filtros de categorías detectadas
+            if (detected.categories.length > 0) {
+                const categoryIds = detected.categories.map(cat => cat.id);
+                newFilters.category_id = [...new Set([...newFilters.category_id, ...categoryIds])];
+            }
+            
+            // Aplicar filtros de marcas detectadas
+            if (detected.brands.length > 0) {
+                const brandSlugs = detected.brands.map(brand => brand.slug);
+                newFilters.brand_id = [...new Set([...newFilters.brand_id, ...brandSlugs])];
+            }
+            
+            // Aplicar filtros de subcategorías detectadas
+            if (detected.subcategories.length > 0) {
+                const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                newFilters.subcategory_id = [...new Set([...newFilters.subcategory_id, ...subcategoryIds])];
+            }
+            
+            // Aplicar filtros de colecciones detectadas
+            if (detected.collections.length > 0) {
+                const collectionSlugs = detected.collections.map(collection => collection.slug);
+                newFilters.collection_id = [...new Set([...newFilters.collection_id, ...collectionSlugs])];
+            }
+            
+            return newFilters;
+        });
+    };
+
+    // Función para aplicar búsqueda inteligente automáticamente
+    const handleIntelligentSearch = (query) => {
+        if (!query || query.length < 2) return;
+        
+        // Detectar y aplicar filtros inteligentes solo si está habilitado
+        const detected = detectIntelligentFilters(query);
+        
+        if (detected && detected.hasMatches && intelligentSearchEnabled) {
+            console.log("🧠 Aplicando búsqueda inteligente para:", query);
+            setLastIntelligentSearch(query);
+            
+            setSelectedFilters(prev => {
+                const newFilters = { ...prev, name: query };
+                
+                // Aplicar filtros de categorías detectadas
+                if (detected.categories.length > 0) {
+                    const categoryIds = detected.categories.map(cat => cat.id);
+                    newFilters.category_id = [...new Set([...newFilters.category_id, ...categoryIds])];
+                    console.log("📂 Categorías detectadas:", detected.categories.map(c => c.name));
+                }
+                
+                // Aplicar filtros de marcas detectadas
+                if (detected.brands.length > 0) {
+                    const brandSlugs = detected.brands.map(brand => brand.slug);
+                    newFilters.brand_id = [...new Set([...newFilters.brand_id, ...brandSlugs])];
+                    console.log("🏷️ Marcas detectadas:", detected.brands.map(b => b.name));
+                }
+                
+                // Aplicar filtros de subcategorías detectadas
+                if (detected.subcategories.length > 0) {
+                    const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                    newFilters.subcategory_id = [...new Set([...newFilters.subcategory_id, ...subcategoryIds])];
+                    console.log("📋 Subcategorías detectadas:", detected.subcategories.map(s => s.name));
+                }
+                
+                // Aplicar filtros de colecciones detectadas
+                if (detected.collections.length > 0) {
+                    const collectionSlugs = detected.collections.map(collection => collection.slug);
+                    newFilters.collection_id = [...new Set([...newFilters.collection_id, ...collectionSlugs])];
+                    console.log("🎯 Colecciones detectadas:", detected.collections.map(c => c.name));
+                }
+                
+                return newFilters;
+            });
+        } else {
+            // Si no hay filtros inteligentes, solo aplicar búsqueda de texto
+            setSelectedFilters(prev => ({ ...prev, name: query }));
+            setLastIntelligentSearch(null);
+        }
+    };
+
+    // Función para alternar la búsqueda inteligente
+    const toggleIntelligentSearch = () => {
+        setIntelligentSearchEnabled(!intelligentSearchEnabled);
+        console.log(`🧠 Búsqueda inteligente ${!intelligentSearchEnabled ? 'activada' : 'desactivada'}`);
+    };
+
+    // Función para limpiar filtros aplicados por búsqueda inteligente
+    const clearIntelligentFilters = () => {
+        if (lastIntelligentSearch && selectedFilters.name) {
+            const detected = detectIntelligentFilters(selectedFilters.name);
+            if (detected && detected.hasMatches) {
+                setSelectedFilters(prev => {
+                    const newFilters = { ...prev };
+                    
+                    // Remover categorías detectadas
+                    if (detected.categories.length > 0) {
+                        const categoryIds = detected.categories.map(cat => cat.id);
+                        newFilters.category_id = newFilters.category_id.filter(id => !categoryIds.includes(id));
+                    }
+                    
+                    // Remover marcas detectadas
+                    if (detected.brands.length > 0) {
+                        const brandSlugs = detected.brands.map(brand => brand.slug);
+                        newFilters.brand_id = newFilters.brand_id.filter(slug => !brandSlugs.includes(slug));
+                    }
+                    
+                    // Remover subcategorías detectadas
+                    if (detected.subcategories.length > 0) {
+                        const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                        newFilters.subcategory_id = newFilters.subcategory_id.filter(id => !subcategoryIds.includes(id));
+                    }
+                    
+                    // Remover colecciones detectadas
+                    if (detected.collections.length > 0) {
+                        const collectionSlugs = detected.collections.map(collection => collection.slug);
+                        newFilters.collection_id = newFilters.collection_id.filter(slug => !collectionSlugs.includes(slug));
+                    }
+                    
+                    return newFilters;
+                });
+            }
+        }
+        setLastIntelligentSearch(null);
+    };
+
+    // Función de debug mejorada con búsqueda inteligente
+    const debugCompareWithHeaderSearch = async (query) => {
+        console.log("=== DEBUG COMPARISON ===");
+        console.log("Query:", query);
+        
+        // Detectar filtros inteligentes
+        const intelligentFilters = detectIntelligentFilters(query);
+        console.log("🧠 Filtros inteligentes detectados:", intelligentFilters);
+        
+        // Crear filtros mejorados con detección inteligente
+        const enhancedFilters = { ...selectedFilters, name: query };
+        
+        // Aplicar filtros inteligentes para la comparación
+        if (intelligentFilters && intelligentFilters.hasMatches) {
+            if (intelligentFilters.categories.length > 0) {
+                enhancedFilters.category_id = [...new Set([
+                    ...enhancedFilters.category_id,
+                    ...intelligentFilters.categories.map(cat => cat.id)
+                ])];
+            }
+            
+            if (intelligentFilters.brands.length > 0) {
+                enhancedFilters.brand_id = [...new Set([
+                    ...enhancedFilters.brand_id,
+                    ...intelligentFilters.brands.map(brand => brand.slug)
+                ])];
+            }
+            
+            if (intelligentFilters.subcategories.length > 0) {
+                enhancedFilters.subcategory_id = [...new Set([
+                    ...enhancedFilters.subcategory_id,
+                    ...intelligentFilters.subcategories.map(subcat => subcat.id)
+                ])];
+            }
+            
+            if (intelligentFilters.collections.length > 0) {
+                enhancedFilters.collection_id = [...new Set([
+                    ...enhancedFilters.collection_id,
+                    ...intelligentFilters.collections.map(collection => collection.slug)
+                ])];
+            }
+        }
+        
+        // Filtros de CatalagoFiltros (con mejora inteligente)
+        const catalogFilters = transformFilters(enhancedFilters);
+        console.log("Catalog filters (enhanced):", catalogFilters);
+        
+        // Filtros de HeaderSearchB (básicos)
+        const headerFilters = getSimpleSearchFilters(query);
+        console.log("Header filters (basic):", headerFilters);
+        
+        try {
+            // Test con filtros de HeaderSearchB
+            const headerResponse = await fetch('/api/items/paginate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    take: 8,
+                    skip: 0,
+                    filter: headerFilters,
+                    sort: [{ selector: 'name', desc: false }],
+                    requireTotalCount: false,
+                    with: 'category,brand'
+                })
+            });
+            
+            const headerData = await headerResponse.json();
+            console.log("Header-style response:", headerData);
+            
+            // Test con filtros de CatalagoFiltros (mejorados)
+            const catalogResponse = await itemsRest.paginate({
+                filter: catalogFilters,
+                sort: [{ selector: 'name', desc: false }],
+                skip: 0,
+                take: 8,
+                requireTotalCount: false,
+                with: 'category,brand'
+            });
+            
+            console.log("Catalog-style response (enhanced):", catalogResponse);
+            
+            // Comparación de resultados
+            const headerCount = headerData?.data?.length || 0;
+            const catalogCount = catalogResponse?.data?.length || 0;
+            
+            console.log("📊 Comparación de resultados:");
+            console.log(`- Header (básico): ${headerCount} productos`);
+            console.log(`- Catalog (inteligente): ${catalogCount} productos`);
+            
+            if (catalogCount > headerCount) {
+                console.log("✅ La búsqueda inteligente encontró más productos relevantes!");
+            } else if (headerCount > catalogCount) {
+                console.log("⚠️ La búsqueda básica encontró más productos");
+            } else {
+                console.log("🤷 Ambas búsquedas encontraron la misma cantidad");
+            }
+            
+        } catch (error) {
+            console.error("Debug comparison error:", error);
+        }
+        
+        console.log("=== END DEBUG ===");
+    };
+
+    // Exponer funciones globalmente para testing y uso externo
+    window.debugCatalogSearch = debugCompareWithHeaderSearch;
+    window.handleIntelligentSearch = handleIntelligentSearch;
+    window.toggleIntelligentSearch = toggleIntelligentSearch;
+    window.clearIntelligentFilters = clearIntelligentFilters;
+    window.isIntelligentSearchActive = isIntelligentSearchActive;
+    window.detectIntelligentFilters = detectIntelligentFilters;
+    
+    // Función específica para debuggear JBL
+    window.testJBLSearch = () => {
+        console.log("🧪 Testing JBL search...");
+        console.log("📊 Current state:", {
+            brands: brands.map(b => ({ name: b.name, slug: b.slug })),
+            intelligentSearchEnabled,
+            selectedFilters,
+            brandsCount: brands.length
+        });
+        
+        // Test manual de detección
+        const detected = detectIntelligentFilters("JBL");
+        console.log("🔍 JBL detection result:", detected);
+        
+        if (detected && detected.hasMatches) {
+            console.log("✅ JBL detectado correctamente");
+            handleIntelligentSearch("JBL");
+        } else {
+            console.log("❌ JBL no detectado");
+            console.log("🔍 Buscando manualmente en brands:", brands.filter(b => 
+                b.name.toLowerCase().includes("jbl") || "jbl".includes(b.name.toLowerCase())
+            ));
+            
+            // Mostrar todas las marcas disponibles
+            console.log("🏷️ Todas las marcas disponibles:", brands.map(b => b.name));
+        }
+    };
+    
+    // Función para simular búsqueda desde HeaderSearchB
+    window.simulateHeaderSearch = (query) => {
+        console.log("🎯 Simulando búsqueda desde HeaderSearchB:", query);
+        
+        // Simular lo que haría el HeaderSearchB
+        setSelectedFilters(prev => ({
+            ...prev,
+            name: query
+        }));
+        
+        console.log("✅ Filtro de nombre aplicado, esperando useEffect...");
+    };
+    
+    // Función para forzar la búsqueda inteligente sin importar el estado
+    window.forceIntelligentSearch = (query) => {
+        console.log("🚀 Forzando búsqueda inteligente para:", query);
+        const originalEnabled = intelligentSearchEnabled;
+        setIntelligentSearchEnabled(true);
+        
+        setTimeout(() => {
+            handleIntelligentSearch(query);
+            setIntelligentSearchEnabled(originalEnabled);
+        }, 100);
     };
     // Obtener productos filtrados desde el backend
     const fetchProducts = async (page = 1, isNewFilter = false) => {
@@ -407,6 +823,10 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             const filters = transformFilters(selectedFilters);
             const itemsPerPage = 24; // Valor constante para evitar problemas de estado
             
+            // Debug: Log de los filtros transformados
+            console.log("Selected filters:", selectedFilters);
+            console.log("Transformed filters:", filters);
+            
             // Extraer los IDs de los filtros seleccionados (no slugs)
             const params = {
                 filter: filters,
@@ -418,9 +838,18 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 // Removido los filtros duplicados - solo usar el filtro complejo
             };
             
+            console.log("API params:", params);
+            
             const response = await itemsRest.paginate(params);
             
-            setProducts(response.data);
+            console.log("API response:", response);
+            
+            // Validar la respuesta del backend
+            if (response.status !== 200) {
+                throw new Error(`API returned status ${response.status}`);
+            }
+            
+            setProducts(response.data || []);
             setHasSearched(true); // Marcamos que ya se hizo una búsqueda
             
             // Si no hay productos, mostrar mensaje después de un pequeño delay
@@ -444,14 +873,67 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             });
             
             // Update all filter options from backend summary
-            setBrands(response?.summary.brands || []);
-            setCategories(response?.summary.categories || []);
-            setSubcategories(response?.summary.subcategories || []);
-            setCollections(response?.summary.collections || []);
-            setPriceRanges(response?.summary.priceRanges || []);
-            setTags(response?.summary.tags || []);
+            setBrands(response?.summary?.brands || []);
+            setCategories(response?.summary?.categories || []);
+            setSubcategories(response?.summary?.subcategories || []);
+            setCollections(response?.summary?.collections || []);
+            setPriceRanges(response?.summary?.priceRanges || []);
+            setTags(response?.summary?.tags || []);
         } catch (error) {
             console.error("Error fetching products:", error);
+            
+            // Si hay un error y solo hay filtro de búsqueda, intentar con filtro simple
+            if (selectedFilters.name && 
+                selectedFilters.category_id.length === 0 && 
+                selectedFilters.brand_id.length === 0 && 
+                selectedFilters.subcategory_id.length === 0 && 
+                selectedFilters.collection_id.length === 0 && 
+                selectedFilters.tag_id.length === 0 && 
+                selectedFilters.price.length === 0) {
+                
+                console.log("Attempting fallback with simple search filters");
+                
+                try {
+                    const simpleParams = {
+                        filter: getSimpleSearchFilters(selectedFilters.name),
+                        sort: selectedFilters.sort,
+                        skip: (page - 1) * 24,
+                        take: 24,
+                        requireTotalCount: true,
+                        with: 'category,brand'
+                    };
+                    
+                    const fallbackResponse = await itemsRest.paginate(simpleParams);
+                    
+                    if (fallbackResponse.status === 200) {
+                        setProducts(fallbackResponse.data || []);
+                        setHasSearched(true);
+                        
+                        if (!fallbackResponse.data || fallbackResponse.data.length === 0) {
+                            setTimeout(() => {
+                                setShowNoResults(true);
+                            }, 300);
+                        }
+                        
+                        const totalCount = fallbackResponse.totalCount || 0;
+                        const totalPages = Math.ceil(totalCount / 24);
+                        
+                        setPagination({
+                            currentPage: page,
+                            totalPages: totalPages,
+                            totalItems: totalCount,
+                            itemsPerPage: 24,
+                            from: totalCount > 0 ? (page - 1) * 24 + 1 : 0,
+                            to: Math.min(page * 24, totalCount),
+                        });
+                        
+                        return; // Salir exitosamente con fallback
+                    }
+                } catch (fallbackError) {
+                    console.error("Fallback search also failed:", fallbackError);
+                }
+            }
+            
             // En caso de error, también mostrar el mensaje después de un delay
             setTimeout(() => {
                 setShowNoResults(true);
@@ -475,9 +957,18 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         // Convert slugs from GET parameters to IDs
         convertSlugsToIds();
         
+        // Aplicar búsqueda inteligente si hay un término de búsqueda inicial
+        if (GET.search && intelligentSearchEnabled) {
+            // Pequeño delay para asegurar que las categorías, marcas, etc. estén cargadas
+            setTimeout(() => {
+                console.log("🚀 Inicializando búsqueda inteligente para:", GET.search);
+                handleIntelligentSearch(GET.search);
+            }, 100);
+        }
+        
         // Initial fetch to get products and update summary data (no es filtrado)
         fetchProducts(1, false);
-    }, [filteredData]);
+    }, [filteredData, intelligentSearchEnabled]); // Agregar intelligentSearchEnabled como dependencia
 
     useEffect(() => {
         // Cuando cambian los filtros, volvemos a la primera página SIN hacer scroll
@@ -486,6 +977,64 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
             fetchProducts(1, true); // Es un filtrado
         }
     }, [selectedFilters, hasSearched]);
+
+    // useEffect para detectar cambios en el filtro de nombre y aplicar búsqueda inteligente
+    useEffect(() => {
+        if (selectedFilters.name && intelligentSearchEnabled && brands.length > 0) {
+            console.log("🔍 Detectando cambio en filtro de nombre:", selectedFilters.name);
+            
+            // Verificar si ya tiene filtros inteligentes aplicados
+            const isAlreadyIntelligent = isIntelligentSearchActive(selectedFilters.name);
+            
+            if (!isAlreadyIntelligent) {
+                console.log("🧠 Aplicando búsqueda inteligente automática para:", selectedFilters.name);
+                
+                // Aplicar búsqueda inteligente automáticamente
+                setTimeout(() => {
+                    const detected = detectIntelligentFilters(selectedFilters.name);
+                    if (detected && detected.hasMatches) {
+                        console.log("✅ Aplicando filtros inteligentes detectados");
+                        
+                        setSelectedFilters(prev => {
+                            const newFilters = { ...prev };
+                            
+                            // Aplicar filtros de marcas detectadas
+                            if (detected.brands.length > 0) {
+                                const brandSlugs = detected.brands.map(brand => brand.slug);
+                                newFilters.brand_id = [...new Set([...newFilters.brand_id, ...brandSlugs])];
+                                console.log("🏷️ Marcas aplicadas:", detected.brands.map(b => b.name));
+                            }
+                            
+                            // Aplicar filtros de categorías detectadas
+                            if (detected.categories.length > 0) {
+                                const categoryIds = detected.categories.map(cat => cat.id);
+                                newFilters.category_id = [...new Set([...newFilters.category_id, ...categoryIds])];
+                                console.log("📂 Categorías aplicadas:", detected.categories.map(c => c.name));
+                            }
+                            
+                            // Aplicar filtros de subcategorías detectadas
+                            if (detected.subcategories.length > 0) {
+                                const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                                newFilters.subcategory_id = [...new Set([...newFilters.subcategory_id, ...subcategoryIds])];
+                                console.log("📋 Subcategorías aplicadas:", detected.subcategories.map(s => s.name));
+                            }
+                            
+                            // Aplicar filtros de colecciones detectadas
+                            if (detected.collections.length > 0) {
+                                const collectionSlugs = detected.collections.map(collection => collection.slug);
+                                newFilters.collection_id = [...new Set([...newFilters.collection_id, ...collectionSlugs])];
+                                console.log("🎯 Colecciones aplicadas:", detected.collections.map(c => c.name));
+                            }
+                            
+                            return newFilters;
+                        });
+                        
+                        setLastIntelligentSearch(selectedFilters.name);
+                    }
+                }, 100);
+            }
+        }
+    }, [selectedFilters.name, intelligentSearchEnabled, brands, categories, subcategories, collections]);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= pagination.totalPages && page !== pagination.currentPage) {
@@ -694,6 +1243,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                         <h2 className="text-2xl lg:text-[32px] md:text-4xl font-bold customtext-primary  lg:mb-2">
                             {data?.title}
                         </h2>
+                        
+                      
                       
                     </motion.div>
                     
@@ -1554,7 +2105,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                     </motion.div>
 
                                     {/* Grid de skeleton cards */}
-                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-6  w-full">
                                         {Array.from({ length: 12 }, (_, index) => (
                                             <div key={index} className="h-[400px] lg:h-[460px] xl:h-[400px] 2xl:h-[430px]">
                                                 <SkeletonCard delay={index * 0.08} />
