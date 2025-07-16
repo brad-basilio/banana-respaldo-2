@@ -53,6 +53,7 @@ const LoadingFallback = () => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [showFallback, setShowFallback] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
+    const [progress, setProgress] = useState(10);
     
     useEffect(() => {
         // Detectar mobile
@@ -63,33 +64,62 @@ const LoadingFallback = () => {
         checkMobile();
         window.addEventListener('resize', checkMobile);
         
+        // Simular progreso de carga más realista
+        const progressInterval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 95) return prev;
+                // Progreso más lento al final
+                const increment = prev < 50 ? Math.random() * 15 + 5 : Math.random() * 5 + 1;
+                return Math.min(prev + increment, 95);
+            });
+        }, 200);
+        
         // Timeout diferenciado para mobile vs desktop
         const timeout = setTimeout(() => {
-            setShowFallback(false);
-        }, isMobile ? 1500 : 2500); // Mobile: 1.5s, Desktop: 2.5s
+            setProgress(100);
+            setTimeout(() => setShowFallback(false), 300);
+        }, isMobile ? 1500 : 2500);
         
         return () => {
             clearTimeout(timeout);
+            clearInterval(progressInterval);
             window.removeEventListener('resize', checkMobile);
         };
     }, [isMobile]);
     
-    // Fallback rápido para mobile
-    if (isMobile && !showFallback) {
-        return (
-            <div className="fixed inset-0 flex flex-col justify-center items-center bg-white z-50">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <p className="mt-2 text-sm text-neutral-dark">Cargando...</p>
-            </div>
-        );
-    }
-    
-    // Fallback completo para desktop o tiempo inicial
+    // Si ya no mostrar fallback, hacer transición suave manteniendo la barra de progreso
     if (!showFallback) {
         return (
             <div className="fixed inset-0 flex flex-col justify-center items-center bg-white/95 backdrop-blur-sm z-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <p className="mt-4 text-neutral-dark">Cargando...</p>
+                <div className="animate-bounce">
+                    <img
+                        src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`}
+                        alt={Global.APP_NAME}
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/assets/img/logo-bk.svg";
+                        }}
+                        className={`${
+                            isMobile ? 'w-24 sm:w-32' : 'w-48 lg:w-64'
+                        } transition-all duration-300 opacity-50`}
+                        loading="eager"
+                        decoding="async"
+                    />
+                </div>
+                
+                {/* Mantener barra de progreso pero más sutil */}
+                <div className={`mt-4 bg-gray-200 rounded-full h-1 ${
+                    isMobile ? 'w-24' : 'w-48'
+                }`}>
+                    <div 
+                        className="bg-primary h-1 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(progress + 5, 100)}%` }}
+                    ></div>
+                </div>
+                
+                <p className={`mt-2 text-neutral-dark/70 ${
+                    isMobile ? 'text-xs' : 'text-sm'
+                }`}>Finalizando...</p>
             </div>
         );
     }
@@ -128,12 +158,26 @@ const LoadingFallback = () => {
                 }`}></div>
             )}
             
-            {/* Indicador de progreso optimizado para mobile */}
+            {/* Indicador de progreso mejorado */}
             {isMobile && (
-                <div className="mt-4 w-32 bg-gray-200 rounded-full h-1">
+                <div className="mt-4 w-32 bg-gray-200 rounded-full h-1.5">
                     <div 
-                        className="bg-primary h-1 rounded-full transition-all duration-300"
-                        style={{ width: isLoaded ? '100%' : '30%' }}
+                        className="bg-primary h-1.5 rounded-full transition-all duration-500 ease-out"
+                        style={{ 
+                            width: `${Math.max(progress, 10)}%`
+                        }}
+                    ></div>
+                </div>
+            )}
+            
+            {/* Barra de progreso para desktop también */}
+            {!isMobile && (
+                <div className="mt-6 w-48 bg-gray-200 rounded-full h-2">
+                    <div 
+                        className="bg-primary h-2 rounded-full transition-all duration-500 ease-out"
+                        style={{ 
+                            width: `${Math.max(progress, 10)}%`
+                        }}
                     ></div>
                 </div>
             )}
