@@ -1,5 +1,6 @@
 import { useDrop } from "react-dnd";
 import { Upload } from "lucide-react";
+import { toast } from "sonner";
 import ImageElement from "./ImageElement";
 import TextElement from "./TextElement";
 
@@ -15,39 +16,104 @@ export default function EditableCell({
     workspaceSize = { width: 800, height: 600 }, // Tamaño del workspace completo
     cellSize = "auto", // Tamaño específico de esta celda si se necesita
     cellStyle = "", // Estilo dinámico del layout
+    projectData = null, // Datos del proyecto para upload
 }) {
+    // Función para subir imagen al servidor
+    const uploadImageToServer = async (file) => {
+        if (!projectData?.id) {
+            toast.error('Error: No se puede cargar la imagen sin un proyecto activo');
+            return null;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('projectId', projectData.id);
+
+        try {
+            const response = await fetch('/api/canvas/editor/upload-image', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                return result.url;
+            } else {
+                toast.error(result.message || 'Error al subir la imagen');
+                return null;
+            }
+        } catch (error) {
+            console.error('Error subiendo la imagen:', error);
+            toast.error('Error de red al subir la imagen');
+            return null;
+        }
+    };
+
     const [{ isOver }, drop] = useDrop(() => ({
-        accept: ["IMAGE_FILE", "TEXT_ELEMENT", "IMAGE_ELEMENT"],
-        drop: (item) => {
+        accept: ["IMAGE_FILE", "TEXT_ELEMENT", "IMAGE_ELEMENT", "PROJECT_IMAGE"],
+        drop: async (item) => {
             if (item.files) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    if (e.target?.result) {
-                        const newElement = {
-                            id: `img-${Date.now()}`,
-                            type: "image",
-                            content: e.target.result,
-                            position: { x: 0.05, y: 0.05 }, // Posición en porcentajes
-                            filters: {
-                                brightness: 100,
-                                contrast: 100,
-                                saturation: 100,
-                                tint: 0,
-                                hue: 0,
-                                blur: 0,
-                                scale: 1,
-                                rotate: 0,
-                                opacity: 100,
-                                blendMode: "normal",
-                            },
-                            mask: "none",
-                        };
-                        onAddElement(newElement, id);
-                        console.log('[EditableCell] onAddElement', { cellId: id, elementId: newElement.id });
-                        onSelectElement(newElement.id, id);
-                    }
+                const file = item.files[0];
+                const imageUrl = await uploadImageToServer(file);
+                
+                if (imageUrl) {
+                    const newElement = {
+                        id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        type: "image",
+                        content: imageUrl,
+                        position: { x: 0.05, y: 0.05 }, // Posición en porcentajes
+                        size: { width: 0.3, height: 0.3 }, // Tamaño relativo
+                        filters: {
+                            brightness: 100,
+                            contrast: 100,
+                            saturation: 100,
+                            tint: 0,
+                            hue: 0,
+                            blur: 0,
+                            scale: 1,
+                            rotate: 0,
+                            opacity: 100,
+                            blendMode: "normal",
+                        },
+                        mask: "none",
+                        zIndex: elements.length + 1, // Z-index automático
+                    };
+                    onAddElement(newElement, id);
+                    console.log('[EditableCell] onAddElement', { cellId: id, elementId: newElement.id });
+                    onSelectElement(newElement.id, id);
+                    toast.success('Imagen subida correctamente');
+                }
+            } else if (item.type === "PROJECT_IMAGE") {
+                // Manejar drag & drop desde la galería de imágenes del proyecto
+                const newElement = {
+                    id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    type: "image",
+                    content: item.imageUrl,
+                    position: { x: 0.05, y: 0.05 }, // Posición en porcentajes
+                    size: { width: 0.3, height: 0.3 }, // Tamaño relativo
+                    filters: {
+                        brightness: 100,
+                        contrast: 100,
+                        saturation: 100,
+                        tint: 0,
+                        hue: 0,
+                        blur: 0,
+                        scale: 1,
+                        rotate: 0,
+                        opacity: 100,
+                        blendMode: "normal",
+                    },
+                    mask: "none",
+                    zIndex: elements.length + 1, // Z-index automático
                 };
-                reader.readAsDataURL(item.files[0]);
+                onAddElement(newElement, id);
+                console.log('[EditableCell] onAddElement from gallery', { cellId: id, elementId: newElement.id });
+                onSelectElement(newElement.id, id);
+                toast.success('Imagen añadida desde la galería');
             }
         },
         collect: (monitor) => ({
@@ -59,16 +125,21 @@ export default function EditableCell({
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "image/*";
-        input.onchange = (e) => {
-            if (e.target.files && e.target.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    if (e.target?.result) {
+        input.multiple = true; // Permitir múltiples archivos
+        input.onchange = async (e) => {
+            if (e.target.files) {
+                const files = Array.from(e.target.files);
+                
+                for (const file of files) {
+                    const imageUrl = await uploadImageToServer(file);
+                    
+                    if (imageUrl) {
                         const newElement = {
-                            id: `img-${Date.now()}`,
+                            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                             type: "image",
-                            content: e.target.result,
+                            content: imageUrl,
                             position: { x: 0.05, y: 0.05 }, // Posición en porcentajes
+                            size: { width: 0.3, height: 0.3 }, // Tamaño relativo
                             filters: {
                                 brightness: 100,
                                 contrast: 100,
@@ -82,13 +153,14 @@ export default function EditableCell({
                                 blendMode: "normal",
                             },
                             mask: "none",
+                            zIndex: elements.length + 1, // Z-index automático
                         };
                         onAddElement(newElement, id);
                         console.log('[EditableCell] onAddElement', { cellId: id, elementId: newElement.id });
                         onSelectElement(newElement.id, id);
+                        toast.success('Imagen subida correctamente');
                     }
-                };
-                reader.readAsDataURL(e.target.files[0]);
+                }
             }
         };
         input.click();

@@ -35,6 +35,31 @@ import {
     CheckCircleIcon,
     Save,
     Zap,
+    User,
+    Settings,
+    HelpCircle,
+    LogOut,
+    MoreHorizontal,
+    Layers,
+    Crop,
+    Palette,
+    Search,
+    Download,
+    Share,
+    Grid,
+    Maximize,
+    Minimize,
+    MousePointer,
+    Shapes,
+    Sticker,
+    FileText,
+    Layout,
+    Command,
+    Filter,
+    Folder,
+    Star,
+    Move,
+    RotateCcw,
 } from "lucide-react";
 import { saveAs } from "file-saver";
 
@@ -98,6 +123,66 @@ const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
             <div className={`${type === 'cover' ? 'text-purple-300' : type === 'final' ? 'text-green-300' : 'text-gray-300'}`}>
                 <PlaceholderIcon />
             </div>
+        </div>
+    );
+});
+
+// Componente para mostrar imágenes del proyecto con drag & drop
+const ProjectImageGallery = React.memo(({ images, onImageSelect }) => {
+    const ImageItem = ({ image }) => {
+        const [{ isDragging }, drag] = useDrag(() => ({
+            type: 'PROJECT_IMAGE',
+            item: { type: 'PROJECT_IMAGE', imageUrl: image.url },
+            collect: (monitor) => ({
+                isDragging: !!monitor.isDragging(),
+            }),
+        }));
+
+        return (
+            <div
+                ref={drag}
+                className={`relative group cursor-pointer bg-gray-50 rounded-lg overflow-hidden border-2 border-transparent hover:border-[#af5cb8] transition-all duration-200 ${
+                    isDragging ? 'opacity-50 scale-95' : ''
+                }`}
+                onClick={() => onImageSelect(image.url)}
+            >
+                <div className="aspect-square">
+                    <img
+                        src={image.url}
+                        alt={image.filename || 'Project image'}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                    />
+                </div>
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div className="bg-white rounded-full p-2 shadow-md">
+                            <Plus className="h-4 w-4 text-[#af5cb8]" />
+                        </div>
+                    </div>
+                </div>
+                <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    Arrastra o haz clic
+                </div>
+            </div>
+        );
+    };
+
+    if (images.length === 0) {
+        return (
+            <div className="text-center py-8">
+                <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-sm text-gray-600 mb-2">No hay imágenes en este proyecto</p>
+                <p className="text-xs text-gray-500">Sube una imagen para empezar</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-2 gap-3">
+            {images.map((image, index) => (
+                <ImageItem key={`${image.id}-${index}`} image={image} />
+            ))}
         </div>
     );
 });
@@ -273,6 +358,7 @@ export default function EditorLibro() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [pageThumbnails, setPageThumbnails] = useState({});
     const [isPDFGenerating, setIsPDFGenerating] = useState(false);
+    const [projectImages, setProjectImages] = useState([]); // Nueva: imágenes del proyecto
     
     // Referencias y timeouts para manejo de miniaturas
     const thumbnailTimeout = useRef();
@@ -1266,6 +1352,8 @@ export default function EditorLibro() {
             if (result.success) {
                 addImageElement(result.url);
                 toast.success('Imagen subida correctamente');
+                // Recargar la galería de imágenes después de subir
+                loadProjectImages();
             } else {
                 toast.error(result.message || 'Error al subir la imagen');
             }
@@ -1277,48 +1365,102 @@ export default function EditorLibro() {
 
     // Función para añadir un elemento de imagen al lienzo
     const addImageElement = (imageUrl) => {
+        const targetCell = selectedCell || pages[currentPage]?.cells[0]?.id;
+        if (!targetCell) return;
+
         const newElement = {
-            id: `image-${Date.now()}`,
+            id: `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: 'image',
             content: imageUrl,
-            position: { x: 10, y: 10 },
-            size: { width: 50, height: 50 },
-            filters: {},
-            mask: 'none',
-            zIndex: pages[currentPage].cells[0].elements.length + 1,
-        };
-
-        const newPages = [...pages];
-        const currentCell = newPages[currentPage].cells.find(cell => cell.id === selectedCell) || newPages[currentPage].cells[0];
-        currentCell.elements.push(newElement);
-
-        updatePages(newPages);
-    };
-
-    // Función para añadir un elemento de texto
-    const addTextElement = () => {
-        const newElement = {
-            id: `text-${Date.now()}`,
-            type: 'text',
-            content: 'Doble clic para editar',
-            position: { x: 10, y: 10 },
-            size: { width: 50, height: 10 },
-            style: {
-                fontSize: '16px',
-                fontFamily: 'Arial',
-                color: '#000000',
-                textAlign: 'left',
+            position: { x: 0.1, y: 0.1 },
+            size: { width: 0.3, height: 0.3 },
+            filters: {
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                tint: 0,
+                hue: 0,
+                blur: 0,
+                scale: 1,
+                rotate: 0,
+                opacity: 100,
+                blendMode: "normal",
             },
-            zIndex: pages[currentPage].cells[0].elements.length + 1,
+            mask: 'none',
+            zIndex: (pages[currentPage].cells.find(cell => cell.id === targetCell)?.elements?.length || 0) + 1,
         };
 
-        const newPages = [...pages];
-        const currentCell = newPages[currentPage].cells.find(cell => cell.id === selectedCell) || newPages[currentPage].cells[0];
-        currentCell.elements.push(newElement);
-
-        updatePages(newPages);
-        toast.success('Texto añadido');
+        addElementToCell(targetCell, newElement);
+        toast.success('Imagen añadida correctamente');
+        
+        // Recargar imágenes del proyecto después de subir una nueva
+        loadProjectImages();
     };
+
+    // Función para cargar las imágenes del proyecto
+    const loadProjectImages = useCallback(async () => {
+        if (!projectData?.id) return;
+
+        try {
+            const response = await fetch(`/api/canvas/projects/${projectData.id}/images`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                setProjectImages(result.images || []);
+            } else {
+                console.error('Error cargando imágenes:', result.message);
+            }
+        } catch (error) {
+            console.error('Error cargando imágenes del proyecto:', error);
+        }
+    }, [projectData?.id]);
+
+    // Cargar imágenes cuando se carga el proyecto
+    useEffect(() => {
+        if (projectData?.id) {
+            loadProjectImages();
+        }
+    }, [projectData?.id, loadProjectImages]);
+
+    // Función para añadir imagen desde la galería
+    const addImageFromGallery = (imageUrl) => {
+        const targetCell = selectedCell || pages[currentPage]?.cells[0]?.id;
+        if (!targetCell) return;
+
+        const newElement = {
+            id: `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'image',
+            content: imageUrl,
+            position: { x: 0.1, y: 0.1 },
+            size: { width: 0.3, height: 0.3 },
+            filters: {
+                brightness: 100,
+                contrast: 100,
+                saturation: 100,
+                tint: 0,
+                hue: 0,
+                blur: 0,
+                scale: 1,
+                rotate: 0,
+                opacity: 100,
+                blendMode: "normal",
+            },
+            mask: 'none',
+            zIndex: (pages[currentPage].cells.find(cell => cell.id === targetCell)?.elements?.length || 0) + 1,
+        };
+
+        addElementToCell(targetCell, newElement);
+        toast.success('Imagen añadida desde la galería');
+    };
+
+  
 
     // �️ FUNCIÓN PARA PROCESAR Y GUARDAR IMÁGENES EN EL SERVIDOR
     const processAndSaveImages = useCallback(async (pages, projectId) => {
@@ -2804,6 +2946,52 @@ export default function EditorLibro() {
         setCurrentPage(newPageIndex);
     };
 
+    // Añadir una nueva página de contenido
+    const addNewPage = () => {
+        const contentPages = pages.filter(p => p.type === "content");
+        const newPageNumber = contentPages.length > 0 ? Math.max(...contentPages.map(p => p.pageNumber)) + 1 : 2;
+        
+        const newPageId = `page-content-${Date.now()}`;
+        const newPage = {
+            id: newPageId,
+            type: 'content',
+            pageNumber: newPageNumber,
+            backgroundColor: presetData?.background_color || '#ffffff',
+            backgroundImage: itemData?.content_image ? `/storage/images/item/${itemData.content_image}` : null,
+            layout: 'double',
+            cells: [
+                {
+                    id: `cell-${Date.now()}-1`,
+                    position: { x: 0.05, y: 0.05 },
+                    size: { width: 0.4, height: 0.9 },
+                    elements: []
+                },
+                {
+                    id: `cell-${Date.now()}-2`,
+                    position: { x: 0.55, y: 0.05 },
+                    size: { width: 0.4, height: 0.9 },
+                    elements: []
+                }
+            ]
+        };
+        
+        // Insertar antes de la página final
+        const updatedPages = [...pages];
+        const finalPageIndex = updatedPages.findIndex(p => p.type === "final");
+        
+        if (finalPageIndex > -1) {
+            updatedPages.splice(finalPageIndex, 0, newPage);
+        } else {
+            updatedPages.push(newPage);
+        }
+        
+        updatePages(updatedPages);
+        
+        // Navegar a la nueva página
+        const newPageIndex = updatedPages.findIndex(p => p.id === newPage.id);
+        setCurrentPage(newPageIndex);
+    };
+
     // Añadir un elemento a una celda
     const addElementToCell = (cellId, element) => {
         console.log('➕ [DEBUG] addElementToCell llamado:', { cellId, elementId: element.id, type: element.type });
@@ -2886,6 +3074,34 @@ export default function EditorLibro() {
         }
     };
 
+    // Mover un elemento hacia arriba o abajo en el z-index
+    const moveElementInCell = (cellId, elementId, direction) => {
+        console.log('🎯 [DEBUG] Moviendo elemento, thumbnail debería regenerarse');
+        const updatedPages = [...pages];
+        const cellIndex = updatedPages[currentPage].cells.findIndex(
+            (cell) => cell.id === cellId
+        );
+
+        if (cellIndex !== -1) {
+            const elements = updatedPages[currentPage].cells[cellIndex].elements;
+            const elementIndex = elements.findIndex((el) => el.id === elementId);
+            
+            if (elementIndex !== -1) {
+                const newIndex = direction === 'up' ? elementIndex + 1 : elementIndex - 1;
+                
+                // Verificar límites
+                if (newIndex >= 0 && newIndex < elements.length) {
+                    // Intercambiar elementos
+                    const temp = elements[elementIndex];
+                    elements[elementIndex] = elements[newIndex];
+                    elements[newIndex] = temp;
+                    
+                    updatePages(updatedPages);
+                }
+            }
+        }
+    };
+
     // Deshacer
     const undo = () => {
         if (historyIndex > 0) {
@@ -2912,15 +3128,40 @@ export default function EditorLibro() {
     };
 
     // Añadir texto desde el botón
-    const handleAddText = () => {
+    const handleAddText = (textType = 'body') => {
         const newId = `text-${Date.now()}`;
-        const newElement = {
-            id: newId,
-            type: "text",
-            content: "Haz clic para editar",
-            position: { x: 0.05, y: 0.05 }, // Posición en porcentajes para responsividad
-            size: { width: 0.4, height: 0.15 }, // Tamaño en porcentajes para consistencia (40% y 15% de la celda)
-            style: {
+        
+        // Definir estilos específicos para cada tipo de texto
+        const textStyles = {
+            heading: {
+                fontSize: "32px",
+                fontFamily: "Arial",
+                color: "#000000",
+                fontWeight: "bold",
+                fontStyle: "normal",
+                textDecoration: "none",
+                textAlign: "left",
+                backgroundColor: "transparent",
+                padding: "12px",
+                borderRadius: "0px",
+                border: "none",
+                opacity: 1,
+            },
+            subheading: {
+                fontSize: "24px",
+                fontFamily: "Arial",
+                color: "#333333",
+                fontWeight: "600",
+                fontStyle: "normal",
+                textDecoration: "none",
+                textAlign: "left",
+                backgroundColor: "transparent",
+                padding: "10px",
+                borderRadius: "0px",
+                border: "none",
+                opacity: 1,
+            },
+            body: {
                 fontSize: "16px",
                 fontFamily: "Arial",
                 color: "#000000",
@@ -2934,6 +3175,28 @@ export default function EditorLibro() {
                 border: "none",
                 opacity: 1,
             }
+        };
+
+        // Definir contenido y tamaño según el tipo
+        const textContent = {
+            heading: "Título Principal",
+            subheading: "Subtítulo",
+            body: "Haz clic para editar"
+        };
+
+        const textSizes = {
+            heading: { width: 0.8, height: 0.2 },
+            subheading: { width: 0.6, height: 0.15 },
+            body: { width: 0.4, height: 0.15 }
+        };
+
+        const newElement = {
+            id: newId,
+            type: "text",
+            content: textContent[textType],
+            position: { x: 0.05, y: 0.05 }, // Posición en porcentajes para responsividad
+            size: textSizes[textType], // Tamaño específico según el tipo
+            style: textStyles[textType]
         }
 
         if (selectedCell) {
@@ -3816,7 +4079,7 @@ export default function EditorLibro() {
                     </div>
                 </div>
             ) : (
-                <div className="h-screen w-screen overflow-hidden bg-gray-50 font-paragraph">
+                <div className="h-screen w-screen overflow-hidden bg-[#141b34] font-sans">
                     {/* Book Preview Modal */}
                     <BookPreviewModal
                         isOpen={isBookPreviewOpen}
@@ -3837,105 +4100,52 @@ export default function EditorLibro() {
                         itemData={itemData}
                     />
 
-                    {/* Header - Top Bar */}
-                    <header className="fixed top-0 left-0 right-0 h-16 border-b bg-primary shadow-sm flex items-center px-4 z-10">
-                        <div className="container mx-auto flex items-center justify-between">
-                            {/* Logo and brand */}
-                            <div className="flex items-center gap-3">
-                                <img
-                                    src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`}
-                                    alt={Global.APP_NAME}
-                                    className="h-7 object-contain object-center invert brightness-0"
+                    {/* ✅ Navigation Bar (Header) */}
+                    <header className="fixed top-0 left-0 right-0 h-16 bg-white shadow-lg flex items-center px-6 z-20 border-b border-gray-200">
+                        <div className="w-full flex items-center justify-between">
+                            {/* Left section */}
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => window.history.back()}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-[#040404]"
+                                >
+                                    <ChevronLeft className="h-5 w-5" />
+                                    <span className="font-medium">Volver</span>
+                                </button>
+
+                                <div className="h-6 w-px bg-gray-300"></div>
+
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={undo}
+                                        disabled={historyIndex <= 0}
+                                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <Undo2 className="h-4 w-4 text-[#040404]" />
+                                    </button>
+                                    <button
+                                        onClick={redo}
+                                        disabled={historyIndex >= history.length - 1}
+                                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <Redo2 className="h-4 w-4 text-[#040404]" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Center section */}
+                            <div className="flex-1 max-w-md mx-8">
+                                <input
+                                    type="text"
+                                    value={projectData?.name || "Álbum Sin Título"}
+                                    onChange={(e) => setProjectData({...projectData, name: e.target.value})}
+                                    className="w-full text-center text-lg font-bold text-[#040404] bg-transparent border-0 focus:outline-none focus:ring-2 focus:ring-[#af5cb8] focus:bg-white rounded-lg px-4 py-2 transition-all"
+                                    placeholder="Nombre del diseño"
                                 />
-                                <div className="h-6 w-px bg-white/20"></div>
-                                <h1 className="text-lg font-bold text-white truncate hidden sm:block">
-                                    {projectData?.name || "Álbum Sin Título"}
-                                </h1>
                             </div>
 
-                            {/* Page information */}
-                            <div className="flex items-center gap-3">
-                                <div className="bg-white/10 rounded-full px-4 py-1.5 flex items-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-secondary animate-pulse"></span>
-                                    <p className="text-sm text-white font-medium">
-                                        {getCurrentPageTitle()}
-                                    </p>
-                                </div>
-
-                                <div className="text-xs text-white/70 hidden sm:block">
-                                    {pages.length > 0 && `${pages.length} páginas total`}
-                                </div>
-
-                                {isCurrentPageEditable() ? (
-                                    <span className="bg-white/10 text-white/80 px-2 py-2 rounded-md text-xs font-medium flex items-center gap-1">
-                                        <Pencil className="h-3 w-3" />
-
-                                    </span>
-                                ) : (
-                                    <span className="bg-white/10 text-white/80 px-2 py-2 rounded-md text-xs font-medium flex items-center gap-1">
-                                        <Lock className="h-3 w-3" />
-
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Action buttons */}
-                            <div className="flex gap-3 items-center">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    tooltip={isPDFGenerating ? "Generando PDF..." : "Exportar a PDF"}
-                                    onClick={handleExportPDF}
-                                    disabled={isPDFGenerating}
-                                    className={`text-white hover:bg-white/10 ${isPDFGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    icon={isPDFGenerating ? (
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    ) : (
-                                        <Book className="h-4 w-4" />
-                                    )}
-                                >
-                                    {isPDFGenerating ? 'Generando...' : 'PDF'}
-                                </Button>
-                                
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    tooltip="PDF Rápido con Thumbnails"
-                                    onClick={handleExportPDFFromBackendThumbnails}
-                                    disabled={isPDFGenerating}
-                                    className={`text-white hover:bg-white/10 ${isPDFGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    icon={isPDFGenerating ? (
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    ) : (
-                                        <Zap className="h-4 w-4" />
-                                    )}
-                                >
-                                    {isPDFGenerating ? 'Generando...' : 'PDF Rápido'}
-                                </Button>
-                                
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    tooltip="Debug Thumbnails"
-                                    onClick={debugThumbnails}
-                                    className="text-white hover:bg-white/10"
-                                    icon={<ImageIcon className="h-4 w-4" />}
-                                >
-                                    Debug
-                                </Button>
-                                {/* Botón de Guardado Manual */}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    tooltip="Guardar Progreso Manualmente"
-                                    onClick={saveProgressManually}
-                                    className="text-white hover:bg-white/10"
-                                    icon={<Save className="h-4 w-4" />}
-                                >
-                                    Guardar
-                                </Button>
-                                
-                                {/* Enhanced Auto-Save indicator - Ahora con guardado manual */}
+                            {/* Right section */}
+                            <div className="flex items-center gap-4">
                                 <SaveIndicator
                                     saveStatus={autoSave.saveStatus}
                                     lastSaved={autoSave.lastSaved}
@@ -3945,216 +4155,907 @@ export default function EditorLibro() {
                                     saveError={autoSave.saveError}
                                     onManualSave={saveProgressManually}
                                 />
-
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => setIsBookPreviewOpen(true)}
-                                    icon={<Book className="h-4 w-4" />}
-                                >
-                                    Vista de Álbum
-                                </Button>
-                                {/*  <Button
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={addAlbumToCart}
-                                    icon={<Plus className="h-4 w-4" />}
-                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                    Agregar al Carrito
-                                </Button> */}
                                 
+                                <button
+                                    onClick={handleExportPDF}
+                                    disabled={isPDFGenerating}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                                        isPDFGenerating 
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                            : 'bg-[#af5cb8] text-white hover:bg-[#5f2e61] shadow-md hover:shadow-lg'
+                                    }`}
+                                >
+                                    {isPDFGenerating ? (
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
+                                    ) : (
+                                        <Save className="h-4 w-4" />
+                                    )}
+                                    {isPDFGenerating ? 'Guardando...' : 'Guardar'}
+                                </button>
+
+                                <div className="relative">
+                                    <button className="h-8 w-8 rounded-full bg-[#af5cb8] flex items-center justify-center text-white font-medium">
+                                        <User className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </header>
 
-                    <div className="flex w-full h-full pt-16">
-                        {/* Left sidebar */}
-                        <aside className="w-64 bg-white border-r flex flex-col">
-                            {/* Tab navigation */}
-                            <div className="p-3 border-b">
-                                <div className="flex space-x-1 bg-gray-100 p-1 rounded-md">
-                                    <button
-                                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition ${activeTab === "elements"
-                                            ? "bg-white shadow-sm text-purple-700"
-                                            : "customtext-neutral-dark hover:bg-white/50"
-                                            }`}
-                                        onClick={() => setActiveTab("elements")}
-                                    >
-                                        Elementos
-                                    </button>
-                                    <button
-                                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition ${activeTab === "filters"
-                                            ? "bg-white shadow-sm text-purple-700"
-                                            : "customtext-neutral-dark hover:bg-white/50"
-                                            }`}
-                                        onClick={() => setActiveTab("filters")}
-                                    >
-                                        Filtros
-                                    </button>
-                                </div>
+            
+                    {/* Main Layout */}
+                    <div className={`flex h-full ${selectedElement ? 'pt-[60px]' : 'pt-16'}`}>
+                        {/* ✅ Left Sidebar - Vertical Canva Style */}
+                        <div className="flex">
+                            {/* Icon Navigation */}
+                            <div className="w-20 bg-[#f7edfa] border-r border-gray-200 flex flex-col items-center py-6 space-y-2">
+                                <button
+                                    onClick={() => setActiveTab('templates')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${
+                                        activeTab === 'templates' 
+                                            ? 'bg-[#af5cb8] text-white shadow-md' 
+                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                    }`}
+                                >
+                                    <Layout className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Templates</span>
+                                </button>
+                                
+                                
+                                
+                              
+                                
+                                <button
+                                    onClick={() => setActiveTab('images')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${
+                                        activeTab === 'images' 
+                                            ? 'bg-[#af5cb8] text-white shadow-md' 
+                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                    }`}
+                                >
+                                    <ImageIcon className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Images</span>
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveTab('text')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${
+                                        activeTab === 'text' 
+                                            ? 'bg-[#af5cb8] text-white shadow-md' 
+                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                    }`}
+                                >
+                                    <Type className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Text</span>
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveTab('shapes')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${
+                                        activeTab === 'shapes' 
+                                            ? 'bg-[#af5cb8] text-white shadow-md' 
+                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                    }`}
+                                >
+                                    <Shapes className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Shapes</span>
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveTab('stickers')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${
+                                        activeTab === 'stickers' 
+                                            ? 'bg-[#af5cb8] text-white shadow-md' 
+                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                    }`}
+                                >
+                                    <Sticker className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Stickers</span>
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveTab('pages')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${
+                                        activeTab === 'pages' 
+                                            ? 'bg-[#af5cb8] text-white shadow-md' 
+                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                    }`}
+                                >
+                                    <Book className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Pages</span>
+                                </button>
+                                
+                                <button
+                                    onClick={() => setActiveTab('panel')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${
+                                        activeTab === 'panel' 
+                                            ? 'bg-[#af5cb8] text-white shadow-md' 
+                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                    }`}
+                                >
+                                    <Layers className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Panel</span>
+                                </button>
+                                
+                               
                             </div>
 
-                            {/* Sidebar content */}
-                            <div className="flex-1 overflow-y-auto p-3 custom-scroll">
-                                {activeTab === "elements" && (
-                                    <div className="space-y-4">
+                            {/* Content Panel */}
+                            <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+                                {/* Panel Header */}
+                                <div className="p-4 border-b border-gray-200">
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="font-medium text-xs uppercase customtext-neutral-dark mb-2">
-                                                Layouts
-                                            </h3>
+                                            <h2 className="text-lg font-semibold text-[#040404] capitalize">
+                                                {activeTab === 'templates' && 'Templates'}
+                                                {activeTab === 'images' && 'Images'}
+                                                {activeTab === 'text' && 'Text'}
+                                                {activeTab === 'shapes' && 'Shapes'}
+                                                {activeTab === 'stickers' && 'Stickers'}
+                                                {activeTab === 'pages' && 'Pages'}
+                                                {activeTab === 'panel' && 'Layers Panel'}
+                                            </h2>
+                                            <p className="text-sm text-gray-600">
+                                                {activeTab === 'templates' && 'Choose a template to get started'}
+                                                {activeTab === 'images' && 'Search for images'}
+                                                {activeTab === 'text' && 'Add and edit text'}
+                                                {activeTab === 'shapes' && 'Add shapes and graphics'}
+                                                {activeTab === 'stickers' && 'Add fun stickers'}
+                                                {activeTab === 'pages' && 'Manage your pages'}
+                                                {activeTab === 'panel' && 'Organize layers and z-index'}
+                                            </p>
+                                        </div>
+                                        <button className="p-1 hover:bg-gray-100 rounded">
+                                            <MoreHorizontal className="h-4 w-4 text-gray-500" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                               
+
+                                {/* Panel Content */}
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    {activeTab === 'templates' && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Layout className="h-5 w-5 text-[#af5cb8]" />
+                                                <h3 className="font-semibold text-[#040404]">Page Layouts</h3>
+                                            </div>
                                             <LayoutSelector
                                                 currentLayoutId={pages[currentPage]?.layout}
                                                 onLayoutChange={changeLayout}
                                             />
                                         </div>
+                                    )}
 
-                                        {/*       <div>
-                                            <h3 className="font-medium text-xs uppercase customtext-neutral-dark mb-2">
-                                                Herramientas rápidas
-                                            </h3>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        const input = document.createElement("input");
-                                                        input.type = "file";
-                                                        input.accept = "image/*";
-                                                        input.onchange = (e) => {
-                                                            if (e.target.files && e.target.files[0]) {
-                                                                const newId = `img-${Date.now()}`;
-                                                                const newElement = {
-                                                                    id: newId,
-                                                                    type: "image",
-                                                                    content: "",
-                                                                    position: { x: 10, y: 10 },
-                                                                    filters: {
-                                                                        brightness: 100,
-                                                                        contrast: 100,
-                                                                        saturation: 100,
-                                                                        tint: 0,
-                                                                        hue: 0,
-                                                                        blur: 0,
-                                                                        scale: 1,
-                                                                        rotate: 0,
-                                                                        opacity: 100,
-                                                                        blendMode: "normal",
-                                                                    },
-                                                                    mask: "none",
-                                                                };
+                               
 
-                                                                const reader = new FileReader();
-                                                                reader.onload = (e) => {
-                                                                    if (e.target?.result) {
-                                                                        newElement.content = e.target.result;
-                                                                        if (selectedCell) {
-                                                                            addElementToCell(selectedCell, newElement);
-                                                                        } else {
-                                                                            addElementToCell(pages[currentPage].cells[0].id, newElement);
-                                                                        }
-                                                                    }
-                                                                };
-                                                                reader.readAsDataURL(e.target.files[0]);
-                                                            }
-                                                        };
-                                                        input.click();
-                                                    }}
-                                                    className="justify-start"
-                                                    icon={<ImageIcon className="h-4 w-4" />}
-                                                >
-                                                    Imagen
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={handleAddText}
-                                                    className="justify-start"
-                                                    icon={<Type className="h-4 w-4" />}
-                                                >
-                                                    Texto
-                                                </Button>
+                                   
+
+                                    {activeTab === 'images' && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <ImageIcon className="h-5 w-5 text-[#af5cb8]" />
+                                                <h3 className="font-semibold text-[#040404]">Imágenes del Proyecto</h3>
+                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                    {projectImages.length} imagen{projectImages.length !== 1 ? 's' : ''}
+                                                </span>
                                             </div>
-                                        </div> */}
-
-                                        <div>
-                                            <h3 className="font-medium text-xs uppercase customtext-neutral-dark mb-2">
-                                                Capas
-                                            </h3>
-                                            <LayerPanel
-                                                elements={
-                                                    pages[currentPage].cells.find(
-                                                        (cell) => cell.id === selectedCell
-                                                    )?.elements || []
-                                                }
-                                                onReorder={(reorderedElements) => {
-                                                    const updatedPages = [...pages];
-                                                    const cellIndex = updatedPages[currentPage].cells.findIndex(
-                                                        (cell) => cell.id === selectedCell
-                                                    );
-                                                    if (cellIndex !== -1) {
-                                                        updatedPages[currentPage].cells[cellIndex].elements = reorderedElements;
-                                                        updatePages(updatedPages);
-                                                    }
-                                                }}
-                                                onSelect={handleSelectElement}
-                                                selectedElement={selectedElement}
+                                            <ProjectImageGallery 
+                                                images={projectImages} 
+                                                onImageSelect={addImageFromGallery} 
                                             />
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {activeTab === "filters" && (
-                                    <div className="space-y-3 max-h-full">
-                                        {(() => {
-                                            const currentElement = getSelectedElement();
+                                    {activeTab === 'text' && (
+                                        <div className="space-y-6">
+                                            
 
-                                            return currentElement ? (
-                                                <>
-                                                    {/* Element preview */}
-                                                    {currentElement.type === "image" && (
+                                            {/* Text Type Buttons */}
+                                            <div className="space-y-2">
+                                                {/* Heading Button */}
+                                                <button
+                                                    onClick={() => handleAddText('heading')}
+                                                    className="w-full p-3 bg-white border border-gray-200 rounded-lg hover:border-[#af5cb8] hover:bg-gray-50 transition-all duration-200 text-left group"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                       
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-gray-900 text-2xl leading-tight">Título Principal</p>
+                                                            <p className="text-gray-500 text-xs mt-1">32px, Bold</p>
+                                                        </div>
+                                                        <div className="text-gray-400 group-hover:text-[#af5cb8] transition-colors">
+                                                            <Plus className="h-4 w-4" />
+                                                        </div>
+                                                    </div>
+                                                </button>
+
+                                                {/* Subheading Button */}
+                                                <button
+                                                    onClick={() => handleAddText('subheading')}
+                                                    className="w-full p-3 bg-white border border-gray-200 rounded-lg hover:border-[#af5cb8] hover:bg-gray-50 transition-all duration-200 text-left group"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                       
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-gray-800 text-lg leading-tight">Subtítulo</p>
+                                                            <p className="text-gray-500 text-xs mt-1">24px, Semi-bold</p>
+                                                        </div>
+                                                        <div className="text-gray-400 group-hover:text-[#af5cb8] transition-colors">
+                                                            <Plus className="h-4 w-4" />
+                                                        </div>
+                                                    </div>
+                                                </button>
+
+                                                {/* Body Text Button */}
+                                                <button
+                                                    onClick={() => handleAddText('body')}
+                                                    className="w-full p-3 bg-white border border-gray-200 rounded-lg hover:border-[#af5cb8] hover:bg-gray-50 transition-all duration-200 text-left group"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                       
+                                                        <div className="flex-1">
+                                                            <p className="font-normal text-gray-900 text-base leading-tight">Texto Normal</p>
+                                                            <p className="text-gray-500 text-xs mt-1">16px, Normal</p>
+                                                        </div>
+                                                        <div className="text-gray-400 group-hover:text-[#af5cb8] transition-colors">
+                                                            <Plus className="h-4 w-4" />
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            </div>
+
+                                            {/* Text Editing Section */}
+                                            {activeTab === "text" && selectedElement && getSelectedElement()?.type === "text" && (
+                                                <div className="mt-6 p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                                                    <div className="flex items-center gap-3 mb-6">
+                                                        <div className="h-10 w-10 bg-[#af5cb8] rounded-xl flex items-center justify-center">
+                                                            <Pencil className="h-5 w-5 text-white" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="font-bold text-[#040404] text-lg">Editar Texto</h4>
+                                                            <p className="text-gray-600 text-sm">Personaliza el formato y estilo</p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-4">
+                                                        {/* Quick Format Buttons */}
+                                                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                                                            <span className="text-sm font-medium text-gray-700 mr-2">Formato:</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const element = getSelectedElement();
+                                                                    updateElementInCell(selectedCell, selectedElement, {
+                                                                        style: {
+                                                                            ...element.style,
+                                                                            fontWeight: element.style.fontWeight === 'bold' ? 'normal' : 'bold'
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className={`px-3 py-1.5 rounded-md text-sm font-bold transition-colors ${
+                                                                    getSelectedElement()?.style?.fontWeight === 'bold' 
+                                                                        ? 'bg-[#af5cb8] text-white' 
+                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                }`}
+                                                            >
+                                                                B
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const element = getSelectedElement();
+                                                                    updateElementInCell(selectedCell, selectedElement, {
+                                                                        style: {
+                                                                            ...element.style,
+                                                                            fontStyle: element.style.fontStyle === 'italic' ? 'normal' : 'italic'
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className={`px-3 py-1.5 rounded-md text-sm italic transition-colors ${
+                                                                    getSelectedElement()?.style?.fontStyle === 'italic' 
+                                                                        ? 'bg-[#af5cb8] text-white' 
+                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                }`}
+                                                            >
+                                                                I
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const element = getSelectedElement();
+                                                                    updateElementInCell(selectedCell, selectedElement, {
+                                                                        style: {
+                                                                            ...element.style,
+                                                                            textDecoration: element.style.textDecoration === 'underline' ? 'none' : 'underline'
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className={`px-3 py-1.5 rounded-md text-sm underline transition-colors ${
+                                                                    getSelectedElement()?.style?.textDecoration === 'underline' 
+                                                                        ? 'bg-[#af5cb8] text-white' 
+                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                }`}
+                                                            >
+                                                                U
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Font Family */}
                                                         <div className="p-3 bg-gray-50 rounded-lg">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <ImageIcon className="h-4 w-4 text-purple-600" />
-                                                                <span className="text-sm font-medium">Imagen seleccionada</span>
-                                                            </div>
-                                                            <div className="w-full h-16 rounded-md overflow-hidden bg-gray-200">
-                                                                <img
-                                                                    src={currentElement.content}
-                                                                    alt=""
-                                                                    className="w-full h-full object-cover"
-                                                                />
+                                                            <span className="text-sm font-medium text-gray-700 block mb-2">Tipografía:</span>
+                                                            <div className="relative">
+                                                                <select
+                                                                    value={getSelectedElement()?.style?.fontFamily || 'Arial'}
+                                                                    onChange={(e) => {
+                                                                        const element = getSelectedElement();
+                                                                        updateElementInCell(selectedCell, selectedElement, {
+                                                                            style: {
+                                                                                ...element.style,
+                                                                                fontFamily: e.target.value
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#af5cb8] focus:border-transparent appearance-none cursor-pointer hover:border-[#af5cb8] transition-colors"
+                                                                >
+                                                                    <option value="Arial">Arial</option>
+                                                                    <option value="Times New Roman">Times New Roman</option>
+                                                                    <option value="Helvetica">Helvetica</option>
+                                                                    <option value="Georgia">Georgia</option>
+                                                                    <option value="Verdana">Verdana</option>
+                                                                    <option value="Courier New">Courier New</option>
+                                                                    <option value="Impact">Impact</option>
+                                                                    <option value="Comic Sans MS">Comic Sans MS</option>
+                                                                    <option value="Trebuchet MS">Trebuchet MS</option>
+                                                                    <option value="Tahoma">Tahoma</option>
+                                                                    <option value="Palatino">Palatino</option>
+                                                                    <option value="Garamond">Garamond</option>
+                                                                    <option value="Bookman">Bookman</option>
+                                                                    <option value="Avant Garde">Avant Garde</option>
+                                                                    <option value="Calibri">Calibri</option>
+                                                                    <option value="Cambria">Cambria</option>
+                                                                    <option value="Candara">Candara</option>
+                                                                    <option value="Century Gothic">Century Gothic</option>
+                                                                    <option value="Franklin Gothic">Franklin Gothic</option>
+                                                                    <option value="Futura">Futura</option>
+                                                                    <option value="Gill Sans">Gill Sans</option>
+                                                                    <option value="Lucida Grande">Lucida Grande</option>
+                                                                    <option value="Optima">Optima</option>
+                                                                    <option value="Segoe UI">Segoe UI</option>
+                                                                    <option value="Roboto">Roboto</option>
+                                                                    <option value="Open Sans">Open Sans</option>
+                                                                    <option value="Lato">Lato</option>
+                                                                    <option value="Montserrat">Montserrat</option>
+                                                                    <option value="Poppins">Poppins</option>
+                                                                    <option value="Nunito">Nunito</option>
+                                                                    <option value="Inter">Inter</option>
+                                                                </select>
+                                                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    )}
 
-                                                    {/* Masks section for images */}
-                                                    {currentElement.type === "image" && (
-                                                        <div className="border-t pt-3">
-                                                            <h3 className="font-medium text-xs uppercase customtext-neutral-dark mb-2">
-                                                                Máscaras
-                                                            </h3>
-                                                            <MaskSelector
-                                                                selectedMask={currentElement.mask || "none"}
-                                                                onSelect={(maskId) => {
-                                                                    updateElementInCell(
-                                                                        selectedCell,
-                                                                        selectedElement,
-                                                                        { mask: maskId }
-                                                                    );
+                                                        {/* Font Size */}
+                                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                                            <span className="text-sm font-medium text-gray-700 block mb-2">Tamaño:</span>
+                                                            <div className="relative">
+                                                                <select
+                                                                    value={getSelectedElement()?.style?.fontSize || '16px'}
+                                                                    onChange={(e) => {
+                                                                        const element = getSelectedElement();
+                                                                        updateElementInCell(selectedCell, selectedElement, {
+                                                                            style: {
+                                                                                ...element.style,
+                                                                                fontSize: e.target.value
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#af5cb8] focus:border-transparent appearance-none cursor-pointer hover:border-[#af5cb8] transition-colors"
+                                                                >
+                                                                    <option value="8px">8px</option>
+                                                                    <option value="10px">10px</option>
+                                                                    <option value="12px">12px</option>
+                                                                    <option value="14px">14px</option>
+                                                                    <option value="16px">16px</option>
+                                                                    <option value="18px">18px</option>
+                                                                    <option value="20px">20px</option>
+                                                                    <option value="22px">22px</option>
+                                                                    <option value="24px">24px</option>
+                                                                    <option value="28px">28px</option>
+                                                                    <option value="32px">32px</option>
+                                                                    <option value="36px">36px</option>
+                                                                    <option value="40px">40px</option>
+                                                                    <option value="44px">44px</option>
+                                                                    <option value="48px">48px</option>
+                                                                    <option value="56px">56px</option>
+                                                                    <option value="64px">64px</option>
+                                                                    <option value="72px">72px</option>
+                                                                    <option value="80px">80px</option>
+                                                                    <option value="96px">96px</option>
+                                                                </select>
+                                                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Text Color */}
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                                <span className="text-sm font-medium text-gray-700 block mb-2">Color:</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="color"
+                                                                        value={getSelectedElement()?.style?.color || '#000000'}
+                                                                        onChange={(e) => {
+                                                                            const element = getSelectedElement();
+                                                                            updateElementInCell(selectedCell, selectedElement, {
+                                                                                style: {
+                                                                                    ...element.style,
+                                                                                    color: e.target.value
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        className="w-10 h-10 border border-gray-300 rounded-lg cursor-pointer hover:border-[#af5cb8] transition-colors"
+                                                                    />
+                                                                    <span className="text-xs text-gray-600 font-mono">
+                                                                        {getSelectedElement()?.style?.color || '#000000'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Background Color */}
+                                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                                <span className="text-sm font-medium text-gray-700 block mb-2">Fondo:</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="color"
+                                                                        value={getSelectedElement()?.style?.backgroundColor || '#ffffff'}
+                                                                        onChange={(e) => {
+                                                                            const element = getSelectedElement();
+                                                                            updateElementInCell(selectedCell, selectedElement, {
+                                                                                style: {
+                                                                                    ...element.style,
+                                                                                    backgroundColor: e.target.value
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        className="w-10 h-10 border border-gray-300 rounded-lg cursor-pointer hover:border-[#af5cb8] transition-colors"
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const element = getSelectedElement();
+                                                                            updateElementInCell(selectedCell, selectedElement, {
+                                                                                style: {
+                                                                                    ...element.style,
+                                                                                    backgroundColor: 'transparent'
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                                                                    >
+                                                                        🚫
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Text Alignment */}
+                                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                                            <span className="text-sm font-medium text-gray-700 w-20">Alinear:</span>
+                                                            <div className="flex gap-1">
+                                                                {['left', 'center', 'right', 'justify'].map((align) => (
+                                                                    <button
+                                                                        key={align}
+                                                                        onClick={() => {
+                                                                            const element = getSelectedElement();
+                                                                            updateElementInCell(selectedCell, selectedElement, {
+                                                                                style: {
+                                                                                    ...element.style,
+                                                                                    textAlign: align
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                                                                            getSelectedElement()?.style?.textAlign === align 
+                                                                                ? 'bg-[#af5cb8] text-white' 
+                                                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                        }`}
+                                                                    >
+                                                                        {align === 'left' && '⬅'}
+                                                                        {align === 'center' && '⬌'}
+                                                                        {align === 'right' && '➡'}
+                                                                        {align === 'justify' && '⬍'}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Line Height */}
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                                <span className="text-sm font-medium text-gray-700 block mb-2">Espaciado:</span>
+                                                                <div className="relative">
+                                                                    <select
+                                                                        value={getSelectedElement()?.style?.lineHeight || '1.5'}
+                                                                        onChange={(e) => {
+                                                                            const element = getSelectedElement();
+                                                                            updateElementInCell(selectedCell, selectedElement, {
+                                                                                style: {
+                                                                                    ...element.style,
+                                                                                    lineHeight: e.target.value
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#af5cb8] focus:border-transparent appearance-none cursor-pointer hover:border-[#af5cb8] transition-colors"
+                                                                    >
+                                                                        <option value="1">1.0</option>
+                                                                        <option value="1.1">1.1</option>
+                                                                        <option value="1.2">1.2</option>
+                                                                        <option value="1.3">1.3</option>
+                                                                        <option value="1.4">1.4</option>
+                                                                        <option value="1.5">1.5</option>
+                                                                        <option value="1.6">1.6</option>
+                                                                        <option value="1.8">1.8</option>
+                                                                        <option value="2">2.0</option>
+                                                                        <option value="2.2">2.2</option>
+                                                                        <option value="2.5">2.5</option>
+                                                                        <option value="3">3.0</option>
+                                                                    </select>
+                                                                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                                                        <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                        </svg>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Letter Spacing */}
+                                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                                <span className="text-sm font-medium text-gray-700 block mb-2">Letras:</span>
+                                                                <div className="relative">
+                                                                    <select
+                                                                        value={getSelectedElement()?.style?.letterSpacing || 'normal'}
+                                                                        onChange={(e) => {
+                                                                            const element = getSelectedElement();
+                                                                            updateElementInCell(selectedCell, selectedElement, {
+                                                                                style: {
+                                                                                    ...element.style,
+                                                                                    letterSpacing: e.target.value
+                                                                                }
+                                                                            });
+                                                                        }}
+                                                                        className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#af5cb8] focus:border-transparent appearance-none cursor-pointer hover:border-[#af5cb8] transition-colors"
+                                                                    >
+                                                                        <option value="-3px">-3px</option>
+                                                                        <option value="-2px">-2px</option>
+                                                                        <option value="-1px">-1px</option>
+                                                                        <option value="normal">Normal</option>
+                                                                        <option value="0.5px">0.5px</option>
+                                                                        <option value="1px">1px</option>
+                                                                        <option value="1.5px">1.5px</option>
+                                                                        <option value="2px">2px</option>
+                                                                        <option value="3px">3px</option>
+                                                                        <option value="4px">4px</option>
+                                                                        <option value="5px">5px</option>
+                                                                    </select>
+                                                                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                                                        <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                        </svg>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Text Effects */}
+                                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                                            <span className="text-sm font-medium text-gray-700 block mb-2">Efectos:</span>
+                                                            <div className="flex gap-2 flex-wrap">
+                                                               
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const element = getSelectedElement();
+                                                                        updateElementInCell(selectedCell, selectedElement, {
+                                                                            style: {
+                                                                                ...element.style,
+                                                                                textTransform: element.style.textTransform === 'uppercase' ? 'none' : 'uppercase'
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                                                        getSelectedElement()?.style?.textTransform === 'uppercase'
+                                                                            ? 'bg-[#af5cb8] text-white shadow-sm' 
+                                                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-[#af5cb8]'
+                                                                    }`}
+                                                                >
+                                                                    <span className="text-xs font-black">AA</span>
+                                                                    MAYÚS
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const element = getSelectedElement();
+                                                                        updateElementInCell(selectedCell, selectedElement, {
+                                                                            style: {
+                                                                                ...element.style,
+                                                                                textTransform: element.style.textTransform === 'lowercase' ? 'none' : 'lowercase'
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                                                        getSelectedElement()?.style?.textTransform === 'lowercase'
+                                                                            ? 'bg-[#af5cb8] text-white shadow-sm' 
+                                                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-[#af5cb8]'
+                                                                    }`}
+                                                                >
+                                                                    <span className="text-xs font-normal">aa</span>
+                                                                    minús
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Opacity */}
+                                                        <div className="p-3 bg-gray-50 rounded-lg">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="text-sm font-medium text-gray-700">Opacidad:</span>
+                                                                <span className="text-sm font-bold text-[#af5cb8]">
+                                                                    {Math.round((getSelectedElement()?.style?.opacity || 1) * 100)}%
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="0"
+                                                                max="1"
+                                                                step="0.1"
+                                                                value={getSelectedElement()?.style?.opacity || '1'}
+                                                                onChange={(e) => {
+                                                                    const element = getSelectedElement();
+                                                                    updateElementInCell(selectedCell, selectedElement, {
+                                                                        style: {
+                                                                            ...element.style,
+                                                                            opacity: e.target.value
+                                                                        }
+                                                                    });
                                                                 }}
-                                                                availableMasks={imageMasks.map(m => m.id)}
-                                                                selectedImage={currentElement}
+                                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#af5cb8] slider"
+                                                                style={{
+                                                                    background: `linear-gradient(to right, #af5cb8 0%, #af5cb8 ${(getSelectedElement()?.style?.opacity || 1) * 100}%, #e5e7eb ${(getSelectedElement()?.style?.opacity || 1) * 100}%, #e5e7eb 100%)`
+                                                                }}
                                                             />
                                                         </div>
-                                                    )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
-                                                    {/* Filters section */}
-                                                    <div className="border-t pt-3">
-                                                        <h3 className="font-medium text-xs uppercase customtext-neutral-dark mb-2">
-                                                            Filtros y efectos
-                                                        </h3>
-                                                        <div className="">
+                                    {activeTab === 'shapes' && (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {Array.from({ length: 9 }).map((_, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className="aspect-square bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center"
+                                                    >
+                                                        <div className="w-8 h-8 bg-[#af5cb8] rounded-lg"></div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            
+                                        
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'stickers' && (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {Array.from({ length: 6 }).map((_, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className="aspect-square bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center"
+                                                    >
+                                                        <div className="w-8 h-8 bg-[#f6a4b2] rounded-full"></div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            
+                                           
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'pages' && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Book className="h-5 w-5 text-[#af5cb8]" />
+                                                <h3 className="font-semibold text-[#040404]">Pages</h3>
+                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                    {pages.length} total
+                                                </span>
+                                            </div>
+
+                                            {/* Page thumbnails */}
+                                            <div className="space-y-4">
+                                                {/* Cover section */}
+                                                <div>
+                                                    <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mr-1.5"></div>
+                                                        Cover
+                                                    </div>
+                                                    {categorizedPages.cover.map((page, index) => (
+                                                        <div
+                                                            key={page.id}
+                                                            className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
+                                                                ${currentPage === pages.indexOf(page)
+                                                                    ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
+                                                                    : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
+                                                                mb-2`}
+                                                            onClick={() => setCurrentPage(pages.indexOf(page))}
+                                                        >
+                                                            <div className="relative bg-purple-50 overflow-hidden border aspect-[4/3] rounded-lg">
+                                                                <ThumbnailImage
+                                                                    pageId={page.id}
+                                                                    thumbnail={pageThumbnails[page.id]}
+                                                                    altText="Cover"
+                                                                    type="cover"
+                                                                />
+                                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
+                                                                    <span className="text-[10px] text-white font-medium block">
+                                                                        Cover
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Content pages */}
+                                                <div>
+                                                    <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5"></div>
+                                                        Content Pages
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {categorizedPages.content.map((page, index) => (
+                                                            <div
+                                                                key={page.id}
+                                                                className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
+                                                                    ${currentPage === pages.indexOf(page)
+                                                                        ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
+                                                                        : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
+                                                                    mb-1`}
+                                                                onClick={() => setCurrentPage(pages.indexOf(page))}
+                                                            >
+                                                                <div className="relative overflow-hidden border aspect-[4/3] rounded-lg">
+                                                                    <ThumbnailImage
+                                                                        pageId={page.id}
+                                                                        thumbnail={pageThumbnails[page.id]}
+                                                                        altText={`Page ${page.pageNumber}`}
+                                                                        type="content"
+                                                                    />
+                                                                    <div className="absolute top-1 left-1 bg-white/90 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold shadow-sm">
+                                                                        {page.pageNumber}
+                                                                    </div>
+                                                                    <div className="absolute top-1 right-1 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-80 group-hover:opacity-100">
+                                                                        Editable
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Final page */}
+                                                <div>
+                                                    <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></div>
+                                                        Back Cover
+                                                    </div>
+                                                    {categorizedPages.final.map((page, index) => (
+                                                        <div
+                                                            key={page.id}
+                                                            className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
+                                                                ${currentPage === pages.indexOf(page)
+                                                                    ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
+                                                                    : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
+                                                                mb-2`}
+                                                            onClick={() => setCurrentPage(pages.indexOf(page))}
+                                                        >
+                                                            <div className="relative overflow-hidden border mb-1 aspect-[4/3] rounded-lg">
+                                                                <ThumbnailImage
+                                                                    pageId={page.id}
+                                                                    thumbnail={pageThumbnails[page.id]}
+                                                                    altText="Back Cover"
+                                                                    type="final"
+                                                                />
+                                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
+                                                                    <span className="text-[10px] text-white font-medium block">
+                                                                        Back Cover
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'panel' && (
+                                        <div className="space-y-4">
+                                         
+                                            
+                                            <LayerPanel
+                                                pages={pages}
+                                                currentPage={currentPage}
+                                                selectedCell={selectedCell}
+                                                selectedElement={selectedElement}
+                                                onSelectCell={setSelectedCell}
+                                                onSelectElement={setSelectedElement}
+                                                onUpdateElement={(cellId, elementId, updates) => {
+                                                    updateElementInCell(cellId, elementId, updates);
+                                                }}
+                                                onDeleteElement={(cellId, elementId) => {
+                                                    deleteElementFromCell(cellId, elementId);
+                                                }}
+                                                onMoveElement={(cellId, elementId, direction) => {
+                                                    moveElementInCell(cellId, elementId, direction);
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    
+
+                                    {activeTab === "filters" && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Filter className="h-5 w-5 text-[#af5cb8]" />
+                                                <h3 className="font-semibold text-[#040404]">Filters</h3>
+                                            </div>
+                                            
+                                            {(() => {
+                                                const currentElement = getSelectedElement();
+                                                return currentElement ? (
+                                                    <>
+                                                        {currentElement.type === "image" && (
+                                                            <div className="p-3 bg-white rounded-lg border border-gray-200">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <ImageIcon className="h-4 w-4 text-[#af5cb8]" />
+                                                                    <span className="text-sm font-medium">Selected Image</span>
+                                                                </div>
+                                                                <div className="w-full h-16 rounded-md overflow-hidden bg-gray-200">
+                                                                    <img
+                                                                        src={currentElement.content}
+                                                                        alt=""
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {currentElement.type === "image" && (
+                                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                                                <h4 className="font-medium text-[#040404] mb-3">Masks</h4>
+                                                                <MaskSelector
+                                                                    selectedMask={currentElement.mask || "none"}
+                                                                    onSelect={(maskId) => {
+                                                                        updateElementInCell(
+                                                                            selectedCell,
+                                                                            selectedElement,
+                                                                            { mask: maskId }
+                                                                        );
+                                                                    }}
+                                                                    availableMasks={imageMasks.map(m => m.id)}
+                                                                    selectedImage={currentElement}
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                                            <h4 className="font-medium text-[#040404] mb-3">Filters & Effects</h4>
                                                             <FilterControls
                                                                 filters={currentElement.filters || {}}
                                                                 onFilterChange={(newFilters) => {
@@ -4167,276 +5068,32 @@ export default function EditorLibro() {
                                                                 selectedElement={currentElement}
                                                             />
                                                         </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-center py-8 px-4 bg-white rounded-lg border border-gray-200">
+                                                        <div className="bg-gray-100 p-4 rounded-lg mb-3 inline-block">
+                                                            <ImageIcon className="h-6 w-6 text-gray-400" />
+                                                        </div>
+                                                        <h4 className="text-sm font-medium text-[#040404] mb-2">
+                                                            Select an element
+                                                        </h4>
+                                                        <p className="text-xs text-gray-600">
+                                                            Choose an image or text element to apply filters and effects
+                                                        </p>
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <div className="text-center py-8 px-2">
-                                                    <div className="bg-gray-100 p-4 rounded-lg mb-3">
-                                                        <ImageIcon className="h-6 w-6 text-gray-400 mx-auto" />
-                                                    </div>
-                                                    <h3 className="text-sm font-medium customtext-neutral-dark">
-                                                        Selecciona un elemento
-                                                    </h3>
-                                                    <p className="text-xs customtext-neutral-dark mt-1">
-                                                        Para aplicar filtros y efectos, primero selecciona una imagen o texto en el lienzo
-                                                    </p>
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+
+                                  
+                                </div>
                             </div>
-                        </aside>
+                        </div>
 
                         {/* Main canvas area */}
                         <main className="flex-1 flex flex-col h-full">
-                            {/* Enhanced top toolbar - switches between main toolbar and text toolbar */}
-                            <div className="bg-white border-b px-4 py-2 flex items-center justify-between">
-                                {textToolbarVisible ? (
-                                    /* Text editing toolbar */
-                                    <>
-                                        <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setTextToolbarVisible(false)}
-                                                className="h-8 px-2"
-                                                icon={<ChevronLeft className="h-4 w-4" />}
-                                            >
-                                                Volver
-                                            </Button>
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-                                        </div>
-
-                                        <div className="flex-1 flex justify-start">
-                                            <TextToolbar
-                                                element={getSelectedElement()}
-                                                onUpdate={(updates) => {
-                                                    updateElementInCell(
-                                                        textEditingOptions.cellId,
-                                                        textEditingOptions.elementId,
-                                                        updates
-                                                    );
-                                                }}
-                                                onClose={() => setTextToolbarVisible(false)}
-                                            />
-                                        </div>
-
-
-                                    </>
-                                ) : (
-                                    /* Main toolbar */
-                                    <>
-                                        {/* Left side - History controls */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex space-x-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={undo}
-                                                    disabled={historyIndex <= 0}
-                                                    className="h-8 px-2"
-                                                    icon={<Undo2 className="h-4 w-4" />}
-                                                >
-                                                    Deshacer
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={redo}
-                                                    disabled={historyIndex >= history.length - 1}
-                                                    className="h-8 px-2"
-                                                    icon={<Redo2 className="h-4 w-4" />}
-                                                >
-                                                    Rehacer
-                                                </Button>
-                                            </div>
-
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-
-                                            {/* Quick add tools */}
-                                            <div className="flex space-x-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        const input = document.createElement("input");
-                                                        input.type = "file";
-                                                        input.accept = "image/*";
-                                                        input.onchange = (e) => {
-                                                            if (e.target.files && e.target.files[0]) {
-                                                                const newId = `img-${Date.now()}`;
-                                                                const newElement = {
-                                                                    id: newId,
-                                                                    type: "image",
-                                                                    content: "",
-                                                                    position: { x: 0.1, y: 0.1 },
-                                                                    size: { width: 0.3, height: 0.3 },
-                                                                    filters: {
-                                                                        brightness: 100,
-                                                                        contrast: 100,
-                                                                        saturation: 100,
-                                                                        tint: 0,
-                                                                        hue: 0,
-                                                                        blur: 0,
-                                                                        scale: 1,
-                                                                        rotate: 0,
-                                                                        opacity: 100,
-                                                                        blendMode: "normal",
-                                                                    },
-                                                                    mask: "none",
-                                                                };
-
-                                                                const reader = new FileReader();
-                                                                reader.onload = (e) => {
-                                                                    if (e.target?.result) {
-                                                                        newElement.content = e.target.result;
-                                                                        if (selectedCell) {
-                                                                            addElementToCell(selectedCell, newElement);
-                                                                        } else if (pages[currentPage]?.cells[0]) {
-                                                                            addElementToCell(pages[currentPage].cells[0].id, newElement);
-                                                                        }
-                                                                    }
-                                                                };
-                                                                reader.readAsDataURL(e.target.files[0]);
-                                                            }
-                                                        };
-                                                        input.click();
-                                                    }}
-                                                    className="h-8 px-2"
-                                                    icon={<ImageIcon className="h-4 w-4" />}
-                                                >
-                                                    Imagen
-                                                </Button>
-                                                <Button
-                                    variant="ghost"
-                                    tooltip="Añadir Imagen"
-                                    onClick={() => imageInputRef.current && imageInputRef.current.click()}
-                                >
-                                    <ImageIcon className="w-5 h-5" />
-                                </Button>
-
-                                <input
-                                    type="file"
-                                    ref={imageInputRef}
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                    accept="image/*"
-                                />
-
-                                <Button
-                                    variant="ghost"
-                                    tooltip="Añadir Texto"
-                                    onClick={addTextElement}
-                                >
-                                    <Type className="w-5 h-5" />
-                                </Button>
-                                            </div>
-
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-
-                                            {/* Element actions */}
-                                            {selectedElement && (
-                                                <div className="flex space-x-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (selectedElement && selectedCell) {
-                                                                const element = getSelectedElement();
-                                                                if (element) {
-                                                                    const duplicateElement = {
-                                                                        ...element,
-                                                                        id: `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                                                        position: {
-                                                                            x: element.position.x + 0.05,
-                                                                            y: element.position.y + 0.05
-                                                                        }
-                                                                    };
-                                                                    addElementToCell(selectedCell, duplicateElement);
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="h-8 px-2"
-                                                        icon={<Copy className="h-4 w-4" />}
-                                                    >
-                                                        Duplicar
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (selectedElement && selectedCell) {
-                                                                deleteElementFromCell(selectedCell, selectedElement);
-                                                            }
-                                                        }}
-                                                        className="h-8 px-2 text-red-600 hover:text-white"
-                                                        icon={<Trash2 className="h-4 w-4" />}
-                                                    >
-                                                        Eliminar
-                                                    </Button>
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center space-x-2">
-                                                <WorkspaceControls
-                                                    currentSize={workspaceSize}
-                                                    onSizeChange={setWorkspaceSize}
-                                                    presetData={presetData}
-                                                    workspaceDimensions={workspaceDimensions}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Center - Page info 
-                                           <div className="flex items-center space-x-4">
-                                            <div className="text-sm customtext-neutral-dark">
-                                                {pages[currentPage] && (
-                                                    <span>
-                                                        {pages[currentPage].type === "cover" && "Portada"}
-                                                        {pages[currentPage].type === "content" && `Página ${pages[currentPage].pageNumber}`}
-                                                        {pages[currentPage].type === "final" && "Contraportada"}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <Button
-                                                variant={previewMode ? "default" : "ghost"}
-                                                size="sm"
-                                                onClick={togglePreview}
-                                                className="h-8 px-2"
-                                                icon={<Eye className="h-4 w-4" />}
-                                            >
-                                                {previewMode ? "Salir vista previa" : "Vista previa"}
-                                            </Button>
-                                        </div>*/}
-
-
-                                        {/* Right side - Workspace controls 
-                                         <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setIsBookPreviewOpen(true)}
-                                                className="h-8 px-2"
-                                                icon={<Book className="h-4 w-4" />}
-                                            >
-                                                Previsualizar libro
-                                            </Button>
-
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-
-                                            <WorkspaceControls
-                                                currentSize={workspaceSize}
-                                                onSizeChange={setWorkspaceSize}
-                                                presetData={presetData}
-                                                workspaceDimensions={workspaceDimensions}
-                                            />
-                                        </div>*/}
-
-                                    </>
-                                )}
-                            </div>
+                          
 
 
 
@@ -4471,6 +5128,7 @@ export default function EditorLibro() {
                                                                 updateElementInCell(cell.id, elementId, updates, isDuplicate)}
                                                             onDeleteElement={(elementId) => deleteElementFromCell(cell.id, elementId)}
                                                             availableMasks={getCurrentLayout().maskCategories.flatMap((cat) => cat.masks)}
+                                                            projectData={projectData}
                                                         />
                                                     );
                                                 })}
@@ -4586,6 +5244,7 @@ export default function EditorLibro() {
                                                         updateElementInCell(cell.id, elementId, updates, isDuplicate)}
                                                     onDeleteElement={(elementId) => deleteElementFromCell(cell.id, elementId)}
                                                     availableMasks={getCurrentLayout().maskCategories.flatMap((cat) => cat.masks)}
+                                                    projectData={projectData}
                                                 />
                                             ))}
                                         </div>
@@ -4593,198 +5252,6 @@ export default function EditorLibro() {
                                 )}
                             </div>
                         </main>
-
-                        {/* Right sidebar - Page management */}
-                        <aside className="w-52 bg-white border-l flex flex-col h-full">
-                            <div className="p-4 border-b bg-gray-50">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-medium text-sm text-gray-700 flex items-center gap-1.5">
-                                        <Book className="h-4 w-4 text-purple-600" />
-                                        Páginas
-                                    </h3>
-                                    <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full border">
-                                        {pages.length} total
-                                    </span>
-                                </div>
-
-                                {/*      <div className="flex gap-1.5 mt-3">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={duplicateCurrentPage}
-                                        disabled={pages[currentPage]?.type !== "content"}
-                                        title={pages[currentPage]?.type !== "content" ? "Solo se pueden duplicar páginas de contenido" : "Duplicar página"}
-                                        className="h-7 w-7 rounded-md bg-white border shadow-sm hover:bg-gray-50"
-                                    >
-                                        <Copy className="h-3.5 w-3.5 text-gray-600" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={deleteCurrentPage}
-                                        disabled={pages.length <= 3 || pages[currentPage]?.type === "cover" || pages[currentPage]?.type === "final"}
-                                        title={
-                                            pages[currentPage]?.type === "cover" || pages[currentPage]?.type === "final"
-                                                ? "No se puede eliminar la portada o contraportada"
-                                                : pages.length <= 3
-                                                    ? "Debe haber al menos una página de contenido"
-                                                    : "Eliminar página"
-                                        }
-                                        className="h-7 w-7 rounded-md bg-white border shadow-sm hover:bg-gray-50"
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5 text-gray-600" />
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={addPage}
-                                        className="flex items-center h-7 ml-auto rounded-md border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700"
-                                    >
-                                        <Plus className="h-3.5 w-3.5 mr-1" />
-                                        <span className="text-xs">Nueva página</span>
-                                    </Button>
-                                </div> */}
-                            </div>
-
-                            {/* Page thumbnails - scrollable */}
-                            <div className="flex-1 overflow-y-auto p-3 custom-scroll">
-                                {/* Sections for different page types */}
-                                <div className="space-y-4">
-                                    {/* Cover section */}
-                                    <div>
-                                        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mr-1.5"></div>
-                                            Portada
-                                        </div>
-                                        {categorizedPages.cover.map((page, index) => (
-                                            <div
-                                                key={page.id}
-                                                className={`relative group flex flex-col cursor-pointer  transition-all duration-200 transform 
-                            ${currentPage === pages.indexOf(page)
-                                                        ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
-                                                        : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                            mb-2`}
-                                                onClick={() => setCurrentPage(pages.indexOf(page))}
-                                            >
-                                                <div className="relative bg-purple-50  overflow-hidden border aspect-[4/3] ">
-                                                    <ThumbnailImage
-                                                        pageId={page.id}
-                                                        thumbnail={pageThumbnails[page.id]}
-                                                        altText="Portada"
-                                                        type="cover"
-                                                    />
-
-                                                    {/* Overlay with info */}
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
-                                                        <span className="text-[10px] text-white font-medium block">
-                                                            Portada
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Content pages */}
-                                    <div>
-                                        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5"></div>
-                                            Páginas de contenido
-                                        </div>
-                                        <div className="space-y-2">
-                                            {categorizedPages.content.map((page, index) => (
-                                                <div
-                                                    key={page.id}
-                                                    className={`relative group flex flex-col cursor-pointer  transition-all duration-200 transform 
-                                ${currentPage === pages.indexOf(page)
-                                                            ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
-                                                            : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                                mb-1`}
-                                                    onClick={() => setCurrentPage(pages.indexOf(page))}
-                                                >
-                                                    <div className="relative  overflow-hidden border aspect-[4/3]">
-                                                        <ThumbnailImage
-                                                            pageId={page.id}
-                                                            thumbnail={pageThumbnails[page.id]}
-                                                            altText={`Página ${page.pageNumber}`}
-                                                            type="content"
-                                                        />
-
-                                                        {/* Page number badge */}
-                                                        <div className="absolute top-1 left-1 bg-white/90 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold shadow-sm">
-                                                            {page.pageNumber}
-                                                        </div>
-
-                                                        {/* Editable badge */}
-                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-80 group-hover:opacity-100">
-                                                            Editable
-                                                        </div>
-
-                                                        {/* Bottom gradient 
-                                                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-1 pt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="text-[10px] text-white">
-                                                                    Página {page.pageNumber}
-                                                                </span>
-                                                                <div className="flex gap-1">
-                                                                    <button
-                                                                        className="text-white bg-white/20 p-0.5 rounded hover:bg-white/30"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setCurrentPage(pages.indexOf(page));
-                                                                            duplicateCurrentPage();
-                                                                        }}
-                                                                        title="Duplicar página"
-                                                                    >
-                                                                        <Copy className="h-2.5 w-2.5" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>*/}
-
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Final page */}
-                                    <div>
-                                        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></div>
-                                            Contraportada
-                                        </div>
-                                        {categorizedPages.final.map((page, index) => (
-                                            <div
-                                                key={page.id}
-                                                className={`relative group flex flex-col cursor-pointer  transition-all duration-200 transform 
-                            ${currentPage === pages.indexOf(page)
-                                                        ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
-                                                        : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                            mb-2`}
-                                                onClick={() => setCurrentPage(pages.indexOf(page))}
-                                            >
-                                                <div className="relative  overflow-hidden border mb-1 aspect-[4/3]">
-                                                    <ThumbnailImage
-                                                        pageId={page.id}
-                                                        thumbnail={pageThumbnails[page.id]}
-                                                        altText="Contraportada"
-                                                        type="final"
-                                                    />
-
-                                                    {/* Overlay with info */}
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
-                                                        <span className="text-[10px] text-white font-medium block">
-                                                            Contraportada
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </aside>
                     </div>
                 </div>
             )}

@@ -26,18 +26,8 @@ const LayerPanel = ({
     onDeleteElement, 
     onMoveElement 
 }) => {
-    // Validar que pages y currentPage existan
-    if (!pages || !pages[currentPage]) {
-        return (
-            <div className="text-center py-8 text-gray-500">
-                <Layers className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">No page data available</p>
-            </div>
-        );
-    }
-
     const currentPageData = pages[currentPage];
-    const cellsWithElements = currentPageData?.cells?.filter(cell => cell.elements && cell.elements.length > 0) || [];
+    const cellsWithElements = currentPageData?.cells.filter(cell => cell.elements.length > 0) || [];
     
     // Expandir todas las celdas por defecto
     const [expandedCells, setExpandedCells] = useState(() => {
