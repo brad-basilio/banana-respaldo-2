@@ -2551,6 +2551,8 @@ export default function EditorLibro() {
                     elementId,
                     cellId: cellId || selectedCell,
                 });
+                // Abrir automáticamente el sidebar de textos cuando se selecciona un elemento de texto
+                setActiveTab('text');
             } else {
                 setTextToolbarVisible(false);
             }
@@ -4443,8 +4445,8 @@ export default function EditorLibro() {
                                 <button
                                     onClick={() => setActiveTab('pages')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'pages'
-                                            ? 'bg-[#af5cb8] text-white shadow-md'
-                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                        ? 'bg-[#af5cb8] text-white shadow-md'
+                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
                                     <Book className="h-6 w-6" />
@@ -4455,8 +4457,8 @@ export default function EditorLibro() {
                                 <button
                                     onClick={() => setActiveTab('templates')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'templates'
-                                            ? 'bg-[#af5cb8] text-white shadow-md'
-                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                        ? 'bg-[#af5cb8] text-white shadow-md'
+                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
                                     <Layout className="h-6 w-6" />
@@ -4466,8 +4468,8 @@ export default function EditorLibro() {
                                 <button
                                     onClick={() => setActiveTab('panel')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'panel'
-                                            ? 'bg-[#af5cb8] text-white shadow-md'
-                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                        ? 'bg-[#af5cb8] text-white shadow-md'
+                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
                                     <Layers className="h-6 w-6" />
@@ -4479,8 +4481,8 @@ export default function EditorLibro() {
                                 <button
                                     onClick={() => setActiveTab('images')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'images'
-                                            ? 'bg-[#af5cb8] text-white shadow-md'
-                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                        ? 'bg-[#af5cb8] text-white shadow-md'
+                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
                                     <ImageIcon className="h-6 w-6" />
@@ -4490,8 +4492,8 @@ export default function EditorLibro() {
                                 <button
                                     onClick={() => setActiveTab('text')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'text'
-                                            ? 'bg-[#af5cb8] text-white shadow-md'
-                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                        ? 'bg-[#af5cb8] text-white shadow-md'
+                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
                                     <Type className="h-6 w-6" />
@@ -4501,8 +4503,8 @@ export default function EditorLibro() {
                                 <button
                                     onClick={() => setActiveTab('shapes')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'shapes'
-                                            ? 'bg-[#af5cb8] text-white shadow-md'
-                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                        ? 'bg-[#af5cb8] text-white shadow-md'
+                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
                                     <Shapes className="h-6 w-6" />
@@ -4512,8 +4514,8 @@ export default function EditorLibro() {
                                 <button
                                     onClick={() => setActiveTab('stickers')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'stickers'
-                                            ? 'bg-[#af5cb8] text-white shadow-md'
-                                            : 'text-[#040404] hover:bg-white hover:shadow-sm'
+                                        ? 'bg-[#af5cb8] text-white shadow-md'
+                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
                                     <Sticker className="h-6 w-6" />
@@ -4681,8 +4683,8 @@ export default function EditorLibro() {
                                                                     });
                                                                 }}
                                                                 className={`px-3 py-1.5 rounded-md text-sm font-bold transition-colors ${getSelectedElement()?.style?.fontWeight === 'bold'
-                                                                        ? 'bg-[#af5cb8] text-white'
-                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                    ? 'bg-[#af5cb8] text-white'
+                                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
                                                                     }`}
                                                             >
                                                                 B
@@ -4698,8 +4700,8 @@ export default function EditorLibro() {
                                                                     });
                                                                 }}
                                                                 className={`px-3 py-1.5 rounded-md text-sm italic transition-colors ${getSelectedElement()?.style?.fontStyle === 'italic'
-                                                                        ? 'bg-[#af5cb8] text-white'
-                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                    ? 'bg-[#af5cb8] text-white'
+                                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
                                                                     }`}
                                                             >
                                                                 I
@@ -4715,8 +4717,8 @@ export default function EditorLibro() {
                                                                     });
                                                                 }}
                                                                 className={`px-3 py-1.5 rounded-md text-sm underline transition-colors ${getSelectedElement()?.style?.textDecoration === 'underline'
-                                                                        ? 'bg-[#af5cb8] text-white'
-                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                    ? 'bg-[#af5cb8] text-white'
+                                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
                                                                     }`}
                                                             >
                                                                 U
@@ -4904,8 +4906,8 @@ export default function EditorLibro() {
                                                                             });
                                                                         }}
                                                                         className={`px-3 py-1.5 rounded-md text-sm transition-colors ${getSelectedElement()?.style?.textAlign === align
-                                                                                ? 'bg-[#af5cb8] text-white'
-                                                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                                                                            ? 'bg-[#af5cb8] text-white'
+                                                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
                                                                             }`}
                                                                     >
                                                                         {align === 'left' && '⬅'}
@@ -5010,8 +5012,8 @@ export default function EditorLibro() {
                                                                         });
                                                                     }}
                                                                     className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${getSelectedElement()?.style?.textTransform === 'uppercase'
-                                                                            ? 'bg-[#af5cb8] text-white shadow-sm'
-                                                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-[#af5cb8]'
+                                                                        ? 'bg-[#af5cb8] text-white shadow-sm'
+                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-[#af5cb8]'
                                                                         }`}
                                                                 >
                                                                     <span className="text-xs font-black">AA</span>
@@ -5028,8 +5030,8 @@ export default function EditorLibro() {
                                                                         });
                                                                     }}
                                                                     className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${getSelectedElement()?.style?.textTransform === 'lowercase'
-                                                                            ? 'bg-[#af5cb8] text-white shadow-sm'
-                                                                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-[#af5cb8]'
+                                                                        ? 'bg-[#af5cb8] text-white shadow-sm'
+                                                                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-[#af5cb8]'
                                                                         }`}
                                                                 >
                                                                     <span className="text-xs font-normal">aa</span>
@@ -5134,101 +5136,101 @@ export default function EditorLibro() {
                                                             Cover
                                                         </div>
                                                         {categorizedPages.cover.map((page, index) => (
-                                                        <div
-                                                            key={page.id}
-                                                            className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
-                                                                ${currentPage === pages.indexOf(page)
-                                                                    ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
-                                                                    : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                                                                mb-2`}
-                                                            onClick={() => handlePageChange(pages.indexOf(page))}
-                                                        >
-                                                            <div className="relative bg-purple-50 overflow-hidden border aspect-[4/3] rounded-lg">
-                                                                <ThumbnailImage
-                                                                    pageId={page.id}
-                                                                    thumbnail={pageThumbnails[page.id]}
-                                                                    altText="Cover"
-                                                                    type="cover"
-                                                                />
-                                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
-                                                                    <span className="text-[10px] text-white font-medium block">
-                                                                        Cover
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                {/* Content pages */}
-                                                <div>
-                                                    <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5"></div>
-                                                        Content Pages
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        {categorizedPages.content.map((page, index) => (
                                                             <div
                                                                 key={page.id}
                                                                 className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
-                                                                    ${currentPage === pages.indexOf(page)
+                                                                ${currentPage === pages.indexOf(page)
                                                                         ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
                                                                         : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                                                                    mb-1`}
+                                                                mb-2`}
                                                                 onClick={() => handlePageChange(pages.indexOf(page))}
                                                             >
-                                                                <div className="relative overflow-hidden border aspect-[4/3] rounded-lg">
+                                                                <div className="relative bg-purple-50 overflow-hidden border aspect-[4/3] rounded-lg">
                                                                     <ThumbnailImage
                                                                         pageId={page.id}
                                                                         thumbnail={pageThumbnails[page.id]}
-                                                                        altText={`Page ${page.pageNumber}`}
-                                                                        type="content"
+                                                                        altText="Cover"
+                                                                        type="cover"
                                                                     />
-                                                                    <div className="absolute top-1 left-1 bg-white/90 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold shadow-sm">
-                                                                        {page.pageNumber}
+                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
+                                                                        <span className="text-[10px] text-white font-medium block">
+                                                                            Cover
+                                                                        </span>
                                                                     </div>
-                                                                    <div className="absolute top-1 right-1 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-80 group-hover:opacity-100">
-                                                                        Editable
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Content pages */}
+                                                    <div>
+                                                        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5"></div>
+                                                            Content Pages
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {categorizedPages.content.map((page, index) => (
+                                                                <div
+                                                                    key={page.id}
+                                                                    className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
+                                                                    ${currentPage === pages.indexOf(page)
+                                                                            ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
+                                                                            : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
+                                                                    mb-1`}
+                                                                    onClick={() => handlePageChange(pages.indexOf(page))}
+                                                                >
+                                                                    <div className="relative overflow-hidden border aspect-[4/3] rounded-lg">
+                                                                        <ThumbnailImage
+                                                                            pageId={page.id}
+                                                                            thumbnail={pageThumbnails[page.id]}
+                                                                            altText={`Page ${page.pageNumber}`}
+                                                                            type="content"
+                                                                        />
+                                                                        <div className="absolute top-1 left-1 bg-white/90 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold shadow-sm">
+                                                                            {page.pageNumber}
+                                                                        </div>
+                                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-80 group-hover:opacity-100">
+                                                                            Editable
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Final page */}
+                                                    <div>
+                                                        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></div>
+                                                            Back Cover
+                                                        </div>
+                                                        {categorizedPages.final.map((page, index) => (
+                                                            <div
+                                                                key={page.id}
+                                                                className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
+                                                                ${currentPage === pages.indexOf(page)
+                                                                        ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
+                                                                        : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
+                                                                mb-2`}
+                                                                onClick={() => handlePageChange(pages.indexOf(page))}
+                                                            >
+                                                                <div className="relative overflow-hidden border mb-1 aspect-[4/3] rounded-lg">
+                                                                    <ThumbnailImage
+                                                                        pageId={page.id}
+                                                                        thumbnail={pageThumbnails[page.id]}
+                                                                        altText="Back Cover"
+                                                                        type="final"
+                                                                    />
+                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
+                                                                        <span className="text-[10px] text-white font-medium block">
+                                                                            Back Cover
+                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
                                                 </div>
-
-                                                {/* Final page */}
-                                                <div>
-                                                    <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></div>
-                                                        Back Cover
-                                                    </div>
-                                                    {categorizedPages.final.map((page, index) => (
-                                                        <div
-                                                            key={page.id}
-                                                            className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
-                                                                ${currentPage === pages.indexOf(page)
-                                                                    ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
-                                                                    : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                                                                mb-2`}
-                                                            onClick={() => handlePageChange(pages.indexOf(page))}
-                                                        >
-                                                            <div className="relative overflow-hidden border mb-1 aspect-[4/3] rounded-lg">
-                                                                <ThumbnailImage
-                                                                    pageId={page.id}
-                                                                    thumbnail={pageThumbnails[page.id]}
-                                                                    altText="Back Cover"
-                                                                    type="final"
-                                                                />
-                                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
-                                                                    <span className="text-[10px] text-white font-medium block">
-                                                                        Back Cover
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
                                             )}
                                         </div>
                                     )}
@@ -5345,122 +5347,36 @@ export default function EditorLibro() {
                         <main className="flex-1 flex flex-col h-full">
 
                             <div className="bg-white border-b px-4 py-2 flex items-center justify-between">
-                                {textToolbarVisible ? (
-                                    /* Text editing toolbar */
-                                    <>
-                                        <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setTextToolbarVisible(false)}
-                                                className="h-8 px-2"
-                                                icon={<ChevronLeft className="h-4 w-4" />}
-                                            >
-                                                Volver
-                                            </Button>
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-                                        </div>
-
-                                        <div className="flex-1 flex justify-start">
-                                            <TextToolbar
-                                                element={getSelectedElement()}
-                                                onUpdate={(updates) => {
-                                                    updateElementInCell(
-                                                        textEditingOptions.cellId,
-                                                        textEditingOptions.elementId,
-                                                        updates
-                                                    );
-                                                }}
-                                                onClose={() => setTextToolbarVisible(false)}
-                                            />
-                                        </div>
-
-
-                                    </>
-                                ) : (
-                                    /* Main toolbar */
+                               
+                                
                                     <>
                                         {/* Left side - History controls */}
                                         <div className="flex items-center space-x-2">
                                             <div className="flex space-x-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={undo}
-                                                    disabled={historyIndex <= 0}
-                                                    className="h-8 px-2"
-                                                    icon={<Undo2 className="h-4 w-4" />}
+                                                {/* Botones de control de página */}
+
+                                                <button
+                                                    onClick={() => setActiveTab('templates')}
+                                                    className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg shadow-md text-sm font-medium flex items-center gap-1.5 transition-all duration-200 hover:shadow-lg"
                                                 >
-                                                    Deshacer
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={redo}
-                                                    disabled={historyIndex >= history.length - 1}
-                                                    className="h-8 px-2"
-                                                    icon={<Redo2 className="h-4 w-4" />}
+                                                    <Layout className="h-4 w-4" />
+                                                    Diseño de página
+                                                </button>
+                                                <button
+                                                    onClick={() => setActiveTab('panel')}
+                                                    className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg shadow-md text-sm font-medium flex items-center gap-1.5 transition-all duration-200 hover:shadow-lg"
                                                 >
-                                                    Rehacer
-                                                </Button>
+                                                    <Layers className="h-4 w-4" />
+                                                    Superponer objetos
+                                                </button>
+
                                             </div>
 
                                             <div className="h-6 w-px bg-gray-300 mx-2"></div>
 
                                             {/* Quick add tools */}
                                             <div className="flex space-x-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        const input = document.createElement("input");
-                                                        input.type = "file";
-                                                        input.accept = "image/*";
-                                                        input.onchange = (e) => {
-                                                            if (e.target.files && e.target.files[0]) {
-                                                                const newId = `img-${Date.now()}`;
-                                                                const newElement = {
-                                                                    id: newId,
-                                                                    type: "image",
-                                                                    content: "",
-                                                                    position: { x: 0.1, y: 0.1 },
-                                                                    size: { width: 0.3, height: 0.3 },
-                                                                    filters: {
-                                                                        brightness: 100,
-                                                                        contrast: 100,
-                                                                        saturation: 100,
-                                                                        tint: 0,
-                                                                        hue: 0,
-                                                                        blur: 0,
-                                                                        scale: 1,
-                                                                        rotate: 0,
-                                                                        opacity: 100,
-                                                                        blendMode: "normal",
-                                                                    },
-                                                                    mask: "none",
-                                                                };
-
-                                                                const reader = new FileReader();
-                                                                reader.onload = (e) => {
-                                                                    if (e.target?.result) {
-                                                                        newElement.content = e.target.result;
-                                                                        if (selectedCell) {
-                                                                            addElementToCell(selectedCell, newElement);
-                                                                        } else if (pages[currentPage]?.cells[0]) {
-                                                                            addElementToCell(pages[currentPage].cells[0].id, newElement);
-                                                                        }
-                                                                    }
-                                                                };
-                                                                reader.readAsDataURL(e.target.files[0]);
-                                                            }
-                                                        };
-                                                        input.click();
-                                                    }}
-                                                    className="h-8 px-2"
-                                                    icon={<ImageIcon className="h-4 w-4" />}
-                                                >
-                                                    Imagen
-                                                </Button>
+                                              
                                                 <Button
                                                     variant="ghost"
                                                     tooltip="Añadir Imagen"
@@ -5477,123 +5393,26 @@ export default function EditorLibro() {
                                                     accept="image/*"
                                                 />
 
-                                                <Button
-                                                    variant="ghost"
-                                                    tooltip="Añadir Texto"
-                                                    onClick={handleAddText}
-                                                >
-                                                    <Type className="w-5 h-5" />
-                                                </Button>
+                                                
                                             </div>
 
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-
-                                            {/* Element actions */}
-                                            {selectedElement && (
-                                                <div className="flex space-x-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (selectedElement && selectedCell) {
-                                                                const element = getSelectedElement();
-                                                                if (element) {
-                                                                    const duplicateElement = {
-                                                                        ...element,
-                                                                        id: `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                                                        position: {
-                                                                            x: element.position.x + 0.05,
-                                                                            y: element.position.y + 0.05
-                                                                        }
-                                                                    };
-                                                                    addElementToCell(selectedCell, duplicateElement);
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="h-8 px-2"
-                                                        icon={<Copy className="h-4 w-4" />}
-                                                    >
-                                                        Duplicar
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (selectedElement && selectedCell) {
-                                                                deleteElementFromCell(selectedCell, selectedElement);
-                                                            }
-                                                        }}
-                                                        className="h-8 px-2 text-red-600 hover:text-white"
-                                                        icon={<Trash2 className="h-4 w-4" />}
-                                                    >
-                                                        Eliminar
-                                                    </Button>
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center space-x-2">
-                                                <WorkspaceControls
-                                                    currentSize={workspaceSize}
-                                                    onSizeChange={setWorkspaceSize}
-                                                    presetData={presetData}
-                                                    workspaceDimensions={workspaceDimensions}
-                                                />
-                                            </div>
+                       
+                                           
                                         </div>
 
-                                        {/* Center - Page info 
-                                           <div className="flex items-center space-x-4">
-                                            <div className="text-sm customtext-neutral-dark">
-                                                {pages[currentPage] && (
-                                                    <span>
-                                                        {pages[currentPage].type === "cover" && "Portada"}
-                                                        {pages[currentPage].type === "content" && `Página ${pages[currentPage].pageNumber}`}
-                                                        {pages[currentPage].type === "final" && "Contraportada"}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <Button
-                                                variant={previewMode ? "default" : "ghost"}
-                                                size="sm"
-                                                onClick={togglePreview}
-                                                className="h-8 px-2"
-                                                icon={<Eye className="h-4 w-4" />}
-                                            >
-                                                {previewMode ? "Salir vista previa" : "Vista previa"}
-                                            </Button>
-                                        </div>*/}
+                                      
 
 
-                                        {/* Right side - Workspace controls 
-                                         <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setIsBookPreviewOpen(true)}
-                                                className="h-8 px-2"
-                                                icon={<Book className="h-4 w-4" />}
-                                            >
-                                                Previsualizar libro
-                                            </Button>
-
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-
-                                            <WorkspaceControls
-                                                currentSize={workspaceSize}
-                                                onSizeChange={setWorkspaceSize}
-                                                presetData={presetData}
-                                                workspaceDimensions={workspaceDimensions}
-                                            />
-                                        </div>*/}
 
                                     </>
-                                )}
+                               
                             </div>
 
 
                             {/* Canvas workspace - centered */}
-                            <div className="flex-1 flex items-center justify-center p-6 overflow-hidden bg-gray-100">
+                            <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-gray-100">
+
+
                                 {previewMode ? (
                                     <div className="bg-white rounded-lg shadow-lg">
                                         <div
@@ -5644,7 +5463,10 @@ export default function EditorLibro() {
                                             backgroundPosition: 'center',
                                             backgroundRepeat: 'no-repeat'
                                         }}
-                                    >                                        {/* Background layer */}
+                                    >
+
+
+                                        {/* Background layer */}
                                         {(() => {
                                             const page = pages[currentPage];
 
