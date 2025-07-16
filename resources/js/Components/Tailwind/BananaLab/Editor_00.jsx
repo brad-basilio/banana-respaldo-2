@@ -1104,7 +1104,7 @@ export default function EditorLibro({ albumId, itemId, presetId, pages: initialP
 
             // Agregar al carrito (siempre como nuevo item para álbumes personalizados)
             console.log('➕ Agregando producto al carrito...');
-            const newCart = [...currentCart, albumProduct];
+            let newCart = [...currentCart, albumProduct];
             console.log('🛒 Nuevo carrito:', newCart);
             console.log('🛒 Nueva longitud del carrito:', newCart.length);
 
