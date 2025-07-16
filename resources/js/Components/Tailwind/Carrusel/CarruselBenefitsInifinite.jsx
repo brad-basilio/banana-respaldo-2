@@ -5,7 +5,7 @@ import { adjustTextColor } from "../../../Functions/adjustTextColor";
 // Import Swiper styles
 import "swiper/css";
 
-const CarruselBenefitsInifinite = ({ items, data }) => {
+const CarruselBenefitsInifinite = ({ items=[], data }) => {
   const benefitsRef = useRef(null);
 
   useEffect(() => {
@@ -13,7 +13,7 @@ const CarruselBenefitsInifinite = ({ items, data }) => {
   });
 
   return (
-    <div ref={benefitsRef} className={`${data.background ? data.background : 'bg-primary' }  py-4 lg:py-6 overflow-hidden`}>
+    <div ref={benefitsRef} className={`${data?.background ? data?.background : 'bg-primary' }  py-4 lg:py-6 overflow-hidden`}>
       <div className="px-primary 2xl:px-0 2xl:max-w-7xl mx-auto relative">
         <Swiper
           slidesPerView={2}
