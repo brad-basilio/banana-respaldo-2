@@ -41,25 +41,34 @@ class ItemController extends BasicController
         try {
 
             $limite = $request->limit ?? 0;
+            
             // Obtener el producto principal por slug
             $product = Item::with(['category', 'brand', 'images', 'specifications'])
                 ->where('slug', $request->slug)
                 ->firstOrFail();
 
-            if ($limite > 0) {
-                $product->load(['variants' => function ($query) use ($limite) {
-                    $query->limit($limite);
-                }]);
-            }else{
-                $product->load(['variants']);
-            }
-            // Obtener las variantes (productos con el mismo nombre pero diferente ID)
-            // $variants = Item::where('name', $product->name)
-            //     ->where('id', '!=', $product->id)
-            //     ->get(['id', 'slug', 'color', 'texture', 'image', 'final_price']);
+            $product->load(['variants']);
 
-            // Agregar las variantes al producto principal
-            // $product->variants = $variants;
+            $uniqueVariants = $product->variants
+                ->groupBy('color')
+                ->map(function ($group) {
+                    return $group->first(); 
+                })
+                ->values(); 
+
+            $product->setRelation('variants', $uniqueVariants);
+
+
+            // if ($limite > 0) {
+            //     $product->load(['variants' => function ($query) use ($limite) {
+            //         $query->limit($limite);
+            //     }]);
+            // }else{
+            //     $product->load(['variants']);
+            // }
+
+
+
             $response->status = 200;
             $response->message = 'Producto obtenido correctamente';
             $response->data = $product;
@@ -72,6 +81,40 @@ class ItemController extends BasicController
         return response($response->toArray(), $response->status);
     }
 
+
+    public function getSizesItems(Request $request)
+    {
+        $response = new Response();
+
+        try {
+          
+            // Obtener el producto principal por slug
+            $product = Item::with(['category', 'brand', 'images', 'specifications'])
+            ->where('slug', $request->slug)
+            ->firstOrFail();
+
+            // Obtener las variantes (productos con el mismo nombre pero diferente ID)
+            $sizes = Item::where('name', $product->name)
+                ->where('color', $product->color)
+                ->where('visible', true)
+                ->where('status', true)
+                ->whereNotNull('size')
+                ->orderBy('size')
+                ->get();
+
+            // Agregar las variantes al producto principal
+            // $product->sizes = $sizes;
+
+            $response->status = 200;
+            $response->message = 'Tamaños obtenidos correctamente';
+            $response->data = $sizes;
+        } catch (\Throwable $th) {
+            $response->status = 404;
+            $response->message = 'Producto no encontrado';
+        }
+
+        return response($response->toArray(), $response->status);
+    }
 
     public function setReactViewProperties(Request $request)
     {

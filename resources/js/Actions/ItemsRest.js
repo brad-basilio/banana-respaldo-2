@@ -102,6 +102,26 @@ class ItemsRest extends BasicRest {
         }
     };
 
+    getSizes = async (request) => {
+        try {
+            const { status, result } = await Fetch(
+                `/api/${this.path}/sizes-items`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(request),
+                }
+            );
+            if (!status)
+                throw new Error(
+                    result?.message ??
+                        "Ocurrió un error al consultar los productos"
+                );
+            return result.data ?? [];
+        } catch (error) {
+            return [];
+        }
+    };
+
     convertSlugs = async (request) => {
         try {
             const { status, result } = await Fetch(

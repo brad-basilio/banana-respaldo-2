@@ -24,9 +24,8 @@ import "tippy.js/dist/tippy.css";
 import ProductNavigationSwiper from "../Products/ProductNavigationSwiper";
 import em from "../../../Utils/em";
 
-export default function ProductDetailSF({ item, data, setCart, cart, textstatic, contacts}) {
 
-    
+export default function ProductDetailSF({ item, data, setCart, cart, textstatic, contacts}) {
     const itemsRest = new ItemsRest();
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState({
@@ -36,6 +35,9 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
 
 
     const [quantity, setQuantity] = useState(1);
+    const [selectedSize, setSelectedSize] = useState(item?.slug);
+    const [selectedVariant, setSelectedVariant] = useState(item);
+
     const handleChange = (e) => {
         let value = parseInt(e.target.value, 10);
         if (isNaN(value) || value < 1) value = 1;
@@ -74,11 +76,18 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
     //     });
     // };
     const onAddClicked = (product) => {
+
+        const variantToAdd  = sizesItems.find(v => v.slug === selectedSize) || selectedVariant || product;
         const newCart = structuredClone(cart);
-        const index = newCart.findIndex((x) => x.id == product.id);
+        //const index = newCart.findIndex((x) => x.id == product.id);
+        const index = newCart.findIndex((x) => x.id == variantToAdd .id);
         
         if (index == -1) {
-            newCart.push({ ...product, quantity: quantity });
+            //newCart.push({ ...product, quantity: quantity });
+            newCart.push({ 
+                ...variantToAdd , 
+                quantity: quantity,
+            });
         } else {
             newCart[index].quantity++;
         }
@@ -86,7 +95,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
     
         Swal.fire({
             title: "Producto agregado",
-            text: `Se agregó ${product.name} al carrito`,
+            text: `Se agregó ${selectedVariant.name || product.name} al carrito`,
             icon: "success",
             showCancelButton: true,
             confirmButtonText: "Abrir mini carrito",
@@ -106,6 +115,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
     const [associatedItems, setAssociatedItems] = useState([]);
     const [relationsItems, setRelationsItems] = useState([]);
     const [variationsItems, setVariationsItems] = useState([]);
+    const [sizesItems, setSizesItems] = useState([]);
     const inCart = cart?.find((x) => x.id == item?.id);
 
     useEffect(() => {
@@ -114,8 +124,23 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
             obtenerCombo(item);
             handleViewUpdate(item);
             handleVariations(item);
+            handleSizes(item);
+            setSelectedSize(item.slug);
         }
     }, [item]); // Agregar `item` como dependencia
+    
+    const handleSizeChange = (sizeSlug) => {
+        const variant = sizesItems.find(v => v.slug === sizeSlug) || item;
+        setSelectedVariant(variant);
+        setSelectedSize(sizeSlug);
+        window.history.pushState({}, '', `/item/${sizeSlug}`);
+    };
+
+    const calculateDiscount = (price, finalPrice) => {
+        if (!price || price <= finalPrice) return 0;
+        return Math.round(((price - finalPrice) / price) * 100);
+    };
+
     const handleViewUpdate = async (item) => {
         try {
             const request = {
@@ -157,6 +182,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
             // Mostrar un mensaje de error al usuario si es necesario
         }
     };
+
     const productosRelacionados = async (item) => {
         try {
             // Preparar la solicitud
@@ -182,6 +208,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
             // Mostrar un mensaje de error al usuario si es necesario
         }
     };
+
     const handleVariations = async (item) => {
         try {
             // Preparar la solicitud
@@ -207,6 +234,33 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
             // Mostrar un mensaje de error al usuario si es necesario
         }
     };
+
+    const handleSizes = async (item) => {
+        try {
+            // Preparar la solicitud
+            const request = {
+                slug: item?.slug,
+            };
+            
+            // Llamar al backend para verificar el combo
+            const response = await itemsRest.getSizes(request);
+
+            // Verificar si la respuesta es válida
+            if (!response) {
+                return;
+            }
+
+            // Actualizar el estado con los productos asociados
+            const variations = response;
+            
+            setSizesItems(variations);
+            
+        } catch (error) {
+            return;
+            // Mostrar un mensaje de error al usuario si es necesario
+        }
+    };
+
     const total = associatedItems.reduce(
         (sum, product) => sum + parseFloat(product.final_price),
         0
@@ -345,9 +399,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                 <span className="customtext-neutral-dark text-base 2xl:text-lg">
                                     Disponibilidad:{" "}
                                     <span className="customtext-neutral-dark font-bold">
-                                        {item?.stock > 0
-                                            ? "En stock"
-                                            : "Agotado"}
+                                        {selectedVariant?.stock > 0 ? "En stock" : "Agotado"}
                                     </span>
                                 </span>
                             </div>
@@ -357,19 +409,15 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                 <p className="text-base 2xl:text-lg customtext-neutral-dark opacity-70 font-medium">
                                     Precio:{" "}
                                     <span className="line-through">
-                                        S/ {item?.price}
+                                        S/ {selectedVariant?.price}
                                     </span>
                                 </p>
                                 <div className="flex flex-row items-center gap-4 relative">
                                     <span className="text-[40px] font-bold customtext-neutral-dark">
-                                        S/ {item?.final_price}
+                                        S/ {selectedVariant?.final_price}
                                     </span>
                                     <span className="bg-[#F93232] text-white font-bold px-3 py-2 rounded-xl text-base">
-                                        -
-                                        {Number(item?.discount_percent).toFixed(
-                                            1
-                                        )}
-                                        %
+                                        -{calculateDiscount(selectedVariant?.price, selectedVariant?.final_price)}%
                                     </span>
                                 </div>
                             </div>
@@ -380,15 +428,16 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                 </div>
                             )}
 
-                            {/* Selector de variantes */}
-                            <div className="variants-selector flex flex-col gap-3">
+                            {/* Selector de variantes - color */}
+                            <div className="variants-color flex flex-col gap-3">
                                 <h3 className="w-full block opacity-85 customtext-neutral-dark text-base 2xl:text-lg">
                                     Colores
                                 </h3>
 
                                 <div className="flex gap-3 items-center justify-start w-full flex-wrap">
                                     {/* Variante actual (principal) */}
-                                    <Tippy content={item.color}>
+                                    
+                                    {/* <Tippy content={item.color}>
                                         <a
                                             className={`variant-option rounded-full object-fit-cover  ${
                                                 !variationsItems.some(
@@ -407,7 +456,8 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                                 }
                                             />
                                         </a>
-                                    </Tippy>    
+                                    </Tippy>     */}
+                                    
                                     {/* Otras variantes */}
 
                                     {variationsItems.map((variant) => (
@@ -415,7 +465,11 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                         <a
                                             key={variant.slug}
                                             href={`/item/${variant.slug}`}
-                                            className="variant-option  rounded-full object-fit-cover "
+                                            className={`variant-option rounded-full object-fit-cover ${
+                                                variant.color  === item.color 
+                                                  ? "active p-[2px] border-[1.5px] border-neutral-dark"
+                                                  : ""
+                                              }`}
                                         >
                                             <img
                                                 className="color-box rounded-full h-9 w-9 object-fit-cover "
@@ -423,6 +477,44 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                             />
                                         </a>
                                         </Tippy>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Selector de variantes - tallas */}
+                            <div className="variants-color flex flex-col gap-3">
+                                <h3 className="w-full block opacity-85 customtext-neutral-dark text-base 2xl:text-lg">
+                                    Tallas
+                                </h3>
+
+                                <div className="flex gap-3 items-center justify-start w-full flex-wrap">
+                                    
+                                    {/* <a
+                                        className={`variant-option rounded-full object-fit-cover  ${
+                                            !sizesItems.some(
+                                                (v) => v.slug === item.slug
+                                            )
+                                                ? "active p-[2px] border-[1.5px] border-neutral-dark"
+                                                : ""
+                                        }`}
+                                    >
+                                        {item.size}
+                                    </a> */}
+                                      
+                                    {/* Otras variantes */}
+                                    
+                                    {sizesItems.map((variant) => (
+                                        <button
+                                            key={variant.slug}
+                                            onClick={() => handleSizeChange(variant.slug)}
+                                            className={`variant-option rounded-md w-9 h-9 flex flex-col justify-center items-center text-center bg-slate-200 ${
+                                                selectedSize === variant.slug
+                                                  ? "active p-[2px] border-[1.5px] border-neutral-dark"
+                                                  : ""
+                                            }`}
+                                        >
+                                            {variant.size}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
@@ -452,20 +544,19 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                             </div>
 
                             {/* Add to Cart */}
-                            <div className="flex flex-col">
-                                <button
-                                    onClick={() => {
-                                        onAddClicked(item);
-                                        // setModalOpen(!modalOpen);
-                                    }}
-                                    className="w-full font-font-general text-base 2xl:text-lg bg-primary text-white py-3 font-semibold rounded-3xl hover:opacity-90 transition-all duration-300 mt-3"
-                                >
-                                    Agregar al carrito
-                                </button>
-                                {/* <button className="w-full font-font-general text-base 2xl:text-lg customtext-neutral-dark border border-neutral-dark py-3 font-semibold rounded-3xl hover:opacity-90 transition-all duration-300 mt-4">
-                                    Comprar
-                                </button> */}
-                            </div>
+                            <button
+                                onClick={() => {
+                                    onAddClicked(item);
+                                }}
+                                disabled={selectedVariant?.stock <= 0}
+                                className={`w-full font-font-general text-base 2xl:text-lg py-3 font-semibold rounded-3xl transition-all duration-300 mt-3 ${
+                                    selectedVariant?.stock > 0
+                                        ? "bg-primary text-white hover:opacity-90"
+                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                }`}
+                            >
+                                {selectedVariant?.stock > 0 ? "Agregar al carrito" : "Producto agotado"}
+                            </button>
 
                             {/* Specifications */}
                             {item?.specifications?.length > 0 && (

@@ -281,8 +281,8 @@ class BasicController extends Controller
             $slugBase .= '-' . $jpa->color;
         }
 
-        if (Schema::hasColumn($table, 'talla') && !empty($jpa->talla)) {
-            $slugBase .= '-' . $jpa->talla;
+        if (Schema::hasColumn($table, 'size') && !empty($jpa->size)) {
+            $slugBase .= '-' . $jpa->size;
         }
 
         $slug = Str::slug($slugBase);

@@ -43,6 +43,8 @@ class Item extends Model
         'texture',
         'pdf',
         'linkvideo',
+        'size',
+        'grouper'
 
     ];
 
