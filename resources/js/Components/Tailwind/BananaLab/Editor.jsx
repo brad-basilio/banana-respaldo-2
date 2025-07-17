@@ -266,6 +266,27 @@ export default function EditorLibro() {
         isSaving: false
     });
 
+    // Estado para rastrear cambios por página
+    const [pageChanges, setPageChanges] = useState(new Map());
+    
+    // Cola de guardado en segundo plano
+    const [saveQueue, setSaveQueue] = useState([]);
+    const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+
+    // Referencias para acceder a los valores actuales sin dependencias
+    const saveQueueRef = useRef(saveQueue);
+    const pageChangesRef = useRef(pageChanges);
+    const processingTimerRef = useRef(null);
+    
+    // Actualizar refs cuando cambien los valores
+    useEffect(() => {
+        saveQueueRef.current = saveQueue;
+    }, [saveQueue]);
+    
+    useEffect(() => {
+        pageChangesRef.current = pageChanges;
+    }, [pageChanges]);
+
     // Efecto para cargar datos desde la URL
     useEffect(() => {
         const loadProjectData = async () => {
@@ -2041,6 +2062,19 @@ export default function EditorLibro() {
                 const storageKey = `editor_progress_project_${projectData.id}`;
                 localStorage.removeItem(storageKey);
 
+                // Limpiar cambios de todas las páginas que se guardaron exitosamente
+                setPageChanges(prev => {
+                    const newMap = new Map(prev);
+                    // Si guardamos todas las páginas (force = true), limpiar todos los cambios
+                    if (force) {
+                        newMap.clear();
+                    } else {
+                        // Limpiar solo la página actual
+                        newMap.delete(currentPage);
+                    }
+                    return newMap;
+                });
+
                 // 🖼️ Generar thumbnails localmente después de guardar (para UI)
                 if (pages && pages.length > 0) {
                     generateLocalThumbnails().catch(error => {
@@ -2059,7 +2093,7 @@ export default function EditorLibro() {
             console.error('❌ [AUTO-SAVE] Error en auto-save con procesamiento de imágenes:', error);
             return false;
         }
-    }, [pages, currentPage, workspaceDimensions, workspaceSize, selectedElement, selectedCell, history, historyIndex, projectData?.id, itemData?.name, itemData?.id, presetData?.id, pageThumbnails, processAndSaveImages, generateLocalThumbnails]);
+    }, [pages, currentPage, workspaceDimensions, workspaceSize, selectedElement, selectedCell, history, historyIndex, projectData?.id, itemData?.name, itemData?.id, presetData?.id, pageThumbnails, processAndSaveImages, generateLocalThumbnails, setPageChanges]);
 
     // 💾 Auto-save de respaldo cada 5 minutos (solo como respaldo)
     useEffect(() => {
@@ -2179,15 +2213,227 @@ export default function EditorLibro() {
         }
     }, [autoSaveToDatabase, pages, projectData?.id, workspaceDimensions, presetData, generateLocalThumbnails]);
 
-    // Función para cambiar de página (sin guardado automático)
-    const handlePageChange = useCallback((newPageIndex) => {
-        if (newPageIndex === currentPage) return; // No hacer nada si es la misma página
+    // Función simplificada para guardado desde la cola (con menos dependencias)
+    const saveFromQueue = useCallback(async (pagesToSave) => {
+        console.log('💾 [QUEUE-SAVE] Iniciando guardado desde cola...');
+        console.log('🔍 [QUEUE-SAVE] Datos disponibles:', {
+            projectId: projectData?.id,
+            pagesCount: pagesToSave?.length,
+            currentPage,
+            hasDimensions: !!workspaceDimensions,
+            hasThumbnails: !!pageThumbnails
+        });
+
+        if (!projectData?.id) {
+            console.error('❌ [QUEUE-SAVE] No hay project ID');
+            return false;
+        }
+
+        if (!pagesToSave || pagesToSave.length === 0) {
+            console.error('❌ [QUEUE-SAVE] No hay páginas para guardar');
+            return false;
+        }
+
+        try {
+            // Preparar datos básicos para el guardado
+            const designData = {
+                pages: pagesToSave,
+                currentPage: currentPage,
+                workspaceDimensions: workspaceDimensions,
+                timestamp: new Date().toISOString(),
+                version: '2.0'
+            };
+
+            const requestData = {
+                design_data: designData,
+                thumbnails: pageThumbnails
+            };
+
+            console.log('📤 [QUEUE-SAVE] Enviando petición al servidor...');
+
+            const response = await fetch(`/api/canvas/projects/${projectData.id}/save-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                credentials: 'include',
+                body: JSON.stringify(requestData)
+            });
+
+            console.log('📥 [QUEUE-SAVE] Respuesta del servidor:', response.status, response.statusText);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ [QUEUE-SAVE] Guardado exitoso desde cola:', result);
+                return true;
+            } else {
+                const errorText = await response.text();
+                console.error('❌ [QUEUE-SAVE] Error en respuesta del servidor:', response.status, errorText);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ [QUEUE-SAVE] Error guardando desde cola:', error);
+            return false;
+        }
+    }, [projectData?.id, currentPage, workspaceDimensions, pageThumbnails]);
+
+    // Función para procesar la cola de guardado en segundo plano (versión corregida)
+    const processSaveQueue = useCallback(async () => {
+        console.log('🔍 [SAVE-QUEUE] Verificando condiciones de procesamiento...', {
+            isProcessingQueue,
+            saveQueueLength: saveQueue.length
+        });
+
+        if (isProcessingQueue) {
+            console.log('⚠️ [SAVE-QUEUE] Ya se está procesando, saltando...');
+            return;
+        }
+
+        if (saveQueue.length === 0) {
+            console.log('⚠️ [SAVE-QUEUE] Cola vacía, no hay nada que procesar');
+            return;
+        }
+
+        console.log('🚀 [SAVE-QUEUE] Iniciando procesamiento de cola...');
+        setIsProcessingQueue(true);
+        
+        try {
+            // Capturar la cola actual ANTES de limpiarla
+            const currentQueue = saveQueue.slice();
+            console.log('� [SAVE-QUEUE] Cola capturada para procesamiento:', currentQueue.length, 'elementos');
+            
+            // Ahora sí limpiar la cola
+            setSaveQueue([]);
+            console.log('🧹 [SAVE-QUEUE] Cola limpiada');
+            
+            for (const saveTask of currentQueue) {
+                console.log('💾 [SAVE-QUEUE] Guardando página:', saveTask.pageIndex);
+                
+                const success = await saveFromQueue(saveTask.pages);
+                
+                if (success) {
+                    // Marcar la página como guardada
+                    setPageChanges(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(saveTask.pageIndex);
+                        return newMap;
+                    });
+                    console.log('✅ [SAVE-QUEUE] Página guardada exitosamente:', saveTask.pageIndex);
+                } else {
+                    console.error('❌ [SAVE-QUEUE] Error guardando página:', saveTask.pageIndex);
+                    // En caso de error, re-agregar a la cola para reintentar
+                    setSaveQueue(prev => [...prev, saveTask]);
+                }
+            }
+            
+            console.log('✅ [SAVE-QUEUE] Cola de guardado procesada completamente');
+        } catch (error) {
+            console.error('❌ [SAVE-QUEUE] Error procesando cola:', error);
+        } finally {
+            setIsProcessingQueue(false);
+            console.log('🔓 [SAVE-QUEUE] Procesamiento finalizado, isProcessingQueue = false');
+        }
+    }, [isProcessingQueue, saveQueue, saveFromQueue]);
+
+    // Sistema simplificado de procesamiento automático
+    useEffect(() => {
+        // Solo procesar si hay elementos en la cola y no se está procesando
+        console.log('🔄 [SAVE-QUEUE] useEffect trigger:', {
+            saveQueueLength: saveQueue.length,
+            isProcessingQueue,
+            shouldProcess: saveQueue.length > 0 && !isProcessingQueue
+        });
+
+        if (saveQueue.length > 0 && !isProcessingQueue) {
+            console.log('⏰ [SAVE-QUEUE] Cola detectada, procesando inmediatamente...');
+            
+            // Pequeño delay para evitar condiciones de carrera
+            setTimeout(() => {
+                processSaveQueue();
+            }, 100);
+        }
+    }, [saveQueue.length, isProcessingQueue, processSaveQueue]);
+
+    // Debug: Efecto para monitorear cambios en la cola
+    useEffect(() => {
+        console.log('📊 [SAVE-QUEUE] Estado de cola actualizado:', {
+            longitud: saveQueue.length,
+            elementos: saveQueue.map(item => `página ${item.pageIndex}`),
+            procesando: isProcessingQueue
+        });
+    }, [saveQueue, isProcessingQueue]);
+
+    // Función para agregar una página a la cola de guardado
+    const addToSaveQueue = useCallback((pageIndex, pagesData) => {
+        console.log('🔍 [SAVE-QUEUE] Intentando agregar página a cola:', pageIndex);
+        
+        // Usar función de estado para verificar cambios sin dependencias
+        setPageChanges(currentPageChanges => {
+            console.log('🔍 [SAVE-QUEUE] Cambios actuales:', Array.from(currentPageChanges.keys()));
+            
+            if (!currentPageChanges.has(pageIndex)) {
+                console.log('⚠️ [SAVE-QUEUE] No hay cambios para la página:', pageIndex, '- No se agregará a cola');
+                return currentPageChanges; // Solo guardar si hay cambios
+            }
+
+            console.log('✅ [SAVE-QUEUE] Página tiene cambios, agregando a cola:', pageIndex);
+            
+            setSaveQueue(prev => {
+                console.log('🔍 [SAVE-QUEUE] Cola actual antes de agregar:', prev.length, 'elementos');
+                
+                // Evitar duplicados
+                const existingIndex = prev.findIndex(item => item.pageIndex === pageIndex);
+                if (existingIndex !== -1) {
+                    // Actualizar el elemento existente
+                    const newQueue = [...prev];
+                    newQueue[existingIndex] = { pageIndex, pages: pagesData, timestamp: Date.now() };
+                    console.log('🔄 [SAVE-QUEUE] Actualizando elemento existente en cola');
+                    return newQueue;
+                } else {
+                    // Agregar nuevo elemento
+                    const newQueue = [...prev, { pageIndex, pages: pagesData, timestamp: Date.now() }];
+                    console.log('➕ [SAVE-QUEUE] Agregando nuevo elemento a cola. Nueva longitud:', newQueue.length);
+                    return newQueue;
+                }
+            });
+            
+            console.log('📤 [SAVE-QUEUE] Página agregada a cola:', pageIndex);
+            return currentPageChanges; // Retornar sin cambios
+        });
+    }, []);
+
+    // Función para cambiar de página con guardado automático
+    const handlePageChange = useCallback(async (newPageIndex) => {
+        console.log('🔄 [PAGE-CHANGE] Iniciando cambio de página de', currentPage, 'a', newPageIndex);
+        
+        if (newPageIndex === currentPage) {
+            console.log('⚠️ [PAGE-CHANGE] Misma página, no se hace nada');
+            return; // No hacer nada si es la misma página
+        }
+
+        // Verificar si la página actual tiene cambios sin guardar usando función de estado
+        setPageChanges(currentPageChanges => {
+            console.log('🔍 [PAGE-CHANGE] Verificando cambios en página actual:', currentPage);
+            console.log('🔍 [PAGE-CHANGE] Páginas con cambios:', Array.from(currentPageChanges.keys()));
+            
+            if (currentPageChanges.has(currentPage)) {
+                console.log('💾 [PAGE-CHANGE] ✅ Página actual tiene cambios, guardando antes del cambio:', currentPage);
+                
+                // Agregar la página actual a la cola de guardado
+                addToSaveQueue(currentPage, pages);
+            } else {
+                console.log('ℹ️ [PAGE-CHANGE] No hay cambios en la página actual:', currentPage);
+            }
+            return currentPageChanges; // Retornar sin cambios
+        });
 
         // Cambiar directamente a la nueva página
         setCurrentPage(newPageIndex);
-        console.log('📄 [PAGE-CHANGE] Página cambiada a:', newPageIndex);
+        console.log('📄 [PAGE-CHANGE] ✅ Página cambiada a:', newPageIndex);
 
-    }, [currentPage]);
+    }, [currentPage, pages, addToSaveQueue]);
 
     // Función para obtener el storage key único basado en el proyecto
     const getStorageKey = () => {
@@ -2578,6 +2824,15 @@ export default function EditorLibro() {
     // Actualizar el estado de las páginas y guardar en localStorage (optimizado)
     const updatePages = useCallback((newPages) => {
         setPages(newPages);
+        
+        // Marcar la página actual como modificada
+        setPageChanges(prev => {
+            const newMap = new Map(prev);
+            newMap.set(currentPage, Date.now());
+            console.log('📝 [PAGE-CHANGES] Página marcada como modificada:', currentPage);
+            return newMap;
+        });
+        
         // Actualizar el historial
         const newHistory = [
             ...history.slice(0, historyIndex + 1),
@@ -2634,7 +2889,7 @@ export default function EditorLibro() {
                 return updated;
             });
         }
-    }, [history, historyIndex, getStorageKey, currentPage]);
+    }, [history, historyIndex, getStorageKey, currentPage, setPageChanges]);
 
     // Guardar currentPage en localStorage cuando cambie (con manejo de errores)
     useEffect(() => {
@@ -3691,7 +3946,40 @@ export default function EditorLibro() {
         }, 2000);
 
         return () => clearTimeout(backgroundTimeoutId);
-    }, [pages, pageThumbnails, isLoading]);    // --- Función para agregar álbum al carrito CON BACKEND PDF ---
+    }, [pages, pageThumbnails, isLoading]);
+
+    // Efecto para manejar beforeunload y limpieza
+    useEffect(() => {
+        // Función para manejar beforeunload (antes de cerrar la ventana)
+        const handleBeforeUnload = (event) => {
+            // Usar refs para acceder a los valores actuales sin dependencias
+            const currentSaveQueue = saveQueueRef.current;
+            const currentPageChanges = pageChangesRef.current;
+            
+            if (currentSaveQueue.length > 0 || currentPageChanges.size > 0) {
+                // Mostrar mensaje de advertencia
+                event.preventDefault();
+                event.returnValue = 'Hay cambios sin guardar. ¿Estás seguro de que quieres salir?';
+                return event.returnValue;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []); // Sin dependencias para evitar el bucle
+
+    // Efecto de limpieza separado que solo se ejecuta al desmontar
+    useEffect(() => {
+        return () => {
+            // Solo limpiar al desmontar, sin setState que cause bucles
+            console.log('🧹 [CLEANUP] Componente desmontado');
+        };
+    }, []);
+
+    // --- Función para agregar álbum al carrito CON BACKEND PDF ---
     const addAlbumToCart = async () => {
 
         try {
@@ -4391,15 +4679,69 @@ export default function EditorLibro() {
 
                             {/* Right section */}
                             <div className="flex items-center gap-4">
+                                {/* Cola de guardado indicator */}
+                                {(saveQueue.length > 0 || isProcessingQueue) && (
+                                    <div className="flex items-center gap-2 text-xs text-gray-600 bg-blue-50 px-3 py-1.5 rounded-lg">
+                                        {isProcessingQueue ? (
+                                            <>
+                                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                                                <span>Guardando...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="h-2 w-2 bg-blue-600 rounded-full" />
+                                                <span>Cola: {saveQueue.length}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                                
                                 <SaveIndicator
                                     saveStatus={autoSave.saveStatus}
                                     lastSaved={autoSave.lastSaved}
                                     lastAutoSaved={autoSave.lastAutoSaved}
-                                    hasUnsavedChanges={autoSaveState.hasUnsavedChanges}
+                                    hasUnsavedChanges={autoSaveState.hasUnsavedChanges || pageChanges.has(currentPage)}
                                     isOnline={autoSave.isOnline}
                                     saveError={autoSave.saveError}
                                     onManualSave={saveProgressManually}
+                                    saveQueueSize={saveQueue.length}
+                                    isProcessingQueue={isProcessingQueue}
+                                    pageChangesCount={pageChanges.size}
                                 />
+
+                                {/* Debug: Botón para procesar cola manualmente */}
+                                {saveQueue.length > 0 && (
+                                    <button
+                                        onClick={() => {
+                                            console.log('🔧 [DEBUG] Procesando cola manualmente');
+                                            processSaveQueue();
+                                        }}
+                                        className="flex items-center gap-2 text-xs text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors"
+                                    >
+                                        <Save className="h-3 w-3" />
+                                        Procesar Cola
+                                    </button>
+                                )}
+
+                                {/* Debug: Info de estado */}
+                                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                    P{currentPage}: {pageChanges.has(currentPage) ? '🔴' : '🟢'}
+                                </div>
+
+                                {/* Debug: Botón para marcar página como modificada */}
+                                <button
+                                    onClick={() => {
+                                        console.log('🔧 [DEBUG] Marcando página actual como modificada');
+                                        setPageChanges(prev => {
+                                            const newMap = new Map(prev);
+                                            newMap.set(currentPage, Date.now());
+                                            return newMap;
+                                        });
+                                    }}
+                                    className="text-xs text-white bg-green-500 hover:bg-green-600 px-2 py-1 rounded"
+                                >
+                                    Marcar Modificada
+                                </button>
 
                                 <Button
                                     variant="secondary"
@@ -5152,6 +5494,12 @@ export default function EditorLibro() {
                                                                         altText="Cover"
                                                                         type="cover"
                                                                     />
+                                                                    {/* Indicador de cambios sin guardar */}
+                                                                    {pageChanges.has(pages.indexOf(page)) && (
+                                                                        <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
+                                                                            •
+                                                                        </div>
+                                                                    )}
                                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
                                                                         <span className="text-[10px] text-white font-medium block">
                                                                             Cover
@@ -5189,9 +5537,16 @@ export default function EditorLibro() {
                                                                         <div className="absolute top-1 left-1 bg-white/90 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold shadow-sm">
                                                                             {page.pageNumber}
                                                                         </div>
-                                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-80 group-hover:opacity-100">
-                                                                            Editable
-                                                                        </div>
+                                                                        {/* Indicador de cambios sin guardar */}
+                                                                        {pageChanges.has(pages.indexOf(page)) ? (
+                                                                            <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
+                                                                                Sin guardar
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="absolute top-1 right-1 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-full opacity-80 group-hover:opacity-100">
+                                                                                Editable
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -5221,6 +5576,12 @@ export default function EditorLibro() {
                                                                         altText="Back Cover"
                                                                         type="final"
                                                                     />
+                                                                    {/* Indicador de cambios sin guardar */}
+                                                                    {pageChanges.has(pages.indexOf(page)) && (
+                                                                        <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
+                                                                            •
+                                                                        </div>
+                                                                    )}
                                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
                                                                         <span className="text-[10px] text-white font-medium block">
                                                                             Back Cover
