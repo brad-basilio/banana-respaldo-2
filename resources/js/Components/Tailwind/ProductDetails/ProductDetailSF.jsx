@@ -481,43 +481,44 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                 </div>
                             </div>
 
-                            {/* Selector de variantes - tallas */}
-                            <div className="variants-color flex flex-col gap-3">
-                                <h3 className="w-full block opacity-85 customtext-neutral-dark text-base 2xl:text-lg">
-                                    Tallas
-                                </h3>
+                            {sizesItems.length > 0 && (
+                                <div className="variants-color flex flex-col gap-3">
+                                    <h3 className="w-full block opacity-85 customtext-neutral-dark text-base 2xl:text-lg">
+                                        Tallas
+                                    </h3>
 
-                                <div className="flex gap-3 items-center justify-start w-full flex-wrap">
-                                    
-                                    {/* <a
-                                        className={`variant-option rounded-full object-fit-cover  ${
-                                            !sizesItems.some(
-                                                (v) => v.slug === item.slug
-                                            )
-                                                ? "active p-[2px] border-[1.5px] border-neutral-dark"
-                                                : ""
-                                        }`}
-                                    >
-                                        {item.size}
-                                    </a> */}
-                                      
-                                    {/* Otras variantes */}
-                                    
-                                    {sizesItems.map((variant) => (
-                                        <button
-                                            key={variant.slug}
-                                            onClick={() => handleSizeChange(variant.slug)}
-                                            className={`variant-option rounded-md w-9 h-9 flex flex-col justify-center items-center text-center bg-slate-200 ${
-                                                selectedSize === variant.slug
-                                                  ? "active p-[2px] border-[1.5px] border-neutral-dark"
-                                                  : ""
+                                    <div className="flex gap-3 items-center justify-start w-full flex-wrap">
+                                        
+                                        {/* <a
+                                            className={`variant-option rounded-full object-fit-cover  ${
+                                                !sizesItems.some(
+                                                    (v) => v.slug === item.slug
+                                                )
+                                                    ? "active p-[2px] border-[1.5px] border-neutral-dark"
+                                                    : ""
                                             }`}
                                         >
-                                            {variant.size}
-                                        </button>
-                                    ))}
+                                            {item.size}
+                                        </a> */}
+                                        
+                                        {/* Otras variantes */}
+                                        
+                                        {sizesItems.map((variant) => (
+                                            <button
+                                                key={variant.slug}
+                                                onClick={() => handleSizeChange(variant.slug)}
+                                                className={`variant-option rounded-md w-9 h-9 flex flex-col justify-center items-center text-center bg-slate-200 ${
+                                                    selectedSize === variant.slug
+                                                    ? "active p-[2px] border-[1.5px] border-neutral-dark"
+                                                    : ""
+                                                }`}
+                                            >
+                                                {variant.size}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Quantity */}
                             <div className="flex flex-col mt-8">
