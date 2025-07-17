@@ -428,58 +428,59 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                 </div>
                             )}
 
-                            {/* Selector de variantes - color */}
-                            <div className="variants-color flex flex-col gap-3">
-                                <h3 className="w-full block opacity-85 customtext-neutral-dark text-base 2xl:text-lg">
-                                    Colores
-                                </h3>
+                            {variationsItems.length > 0 && (
+                                <div className="variants-color flex flex-col gap-3">
+                                    <h3 className="w-full block opacity-85 customtext-neutral-dark text-base 2xl:text-lg">
+                                        Colores
+                                    </h3>
 
-                                <div className="flex gap-3 items-center justify-start w-full flex-wrap">
-                                    {/* Variante actual (principal) */}
-                                    
-                                    {/* <Tippy content={item.color}>
-                                        <a
-                                            className={`variant-option rounded-full object-fit-cover  ${
-                                                !variationsItems.some(
-                                                    (v) => v.slug === item.slug
-                                                )
+                                    <div className="flex gap-3 items-center justify-start w-full flex-wrap">
+                                        {/* Variante actual (principal) */}
+                                        
+                                        {/* <Tippy content={item.color}>
+                                            <a
+                                                className={`variant-option rounded-full object-fit-cover  ${
+                                                    !variationsItems.some(
+                                                        (v) => v.slug === item.slug
+                                                    )
+                                                        ? "active p-[2px] border-[1.5px] border-neutral-dark"
+                                                        : ""
+                                                }`}
+                                            >
+                                                <img
+                                                    className="color-box rounded-full h-9 w-9 object-fit-cover "
+                                                    src={`/storage/images/item/${item.texture || item.image}`}
+                                                    onError={(e) =>
+                                                        (e.target.src =
+                                                            "/api/cover/thumbnail/null")
+                                                    }
+                                                />
+                                            </a>
+                                        </Tippy>     */}
+                                        
+                                        {/* Otras variantes */}
+
+                                        {variationsItems.map((variant) => (
+                                            <Tippy content={variant.color}>
+                                            <a
+                                                key={variant.slug}
+                                                href={`/item/${variant.slug}`}
+                                                className={`variant-option rounded-full object-fit-cover ${
+                                                    variant.color  === item.color 
                                                     ? "active p-[2px] border-[1.5px] border-neutral-dark"
                                                     : ""
-                                            }`}
-                                        >
-                                            <img
-                                                className="color-box rounded-full h-9 w-9 object-fit-cover "
-                                                src={`/storage/images/item/${item.texture || item.image}`}
-                                                onError={(e) =>
-                                                    (e.target.src =
-                                                        "/api/cover/thumbnail/null")
-                                                }
-                                            />
-                                        </a>
-                                    </Tippy>     */}
-                                    
-                                    {/* Otras variantes */}
-
-                                    {variationsItems.map((variant) => (
-                                        <Tippy content={variant.color}>
-                                        <a
-                                            key={variant.slug}
-                                            href={`/item/${variant.slug}`}
-                                            className={`variant-option rounded-full object-fit-cover ${
-                                                variant.color  === item.color 
-                                                  ? "active p-[2px] border-[1.5px] border-neutral-dark"
-                                                  : ""
-                                              }`}
-                                        >
-                                            <img
-                                                className="color-box rounded-full h-9 w-9 object-fit-cover "
-                                                src={`/storage/images/item/${variant.texture || variant.image}`}
-                                            />
-                                        </a>
-                                        </Tippy>
-                                    ))}
+                                                }`}
+                                            >
+                                                <img
+                                                    className="color-box rounded-full h-9 w-9 object-fit-cover "
+                                                    src={`/storage/images/item/${variant.texture || variant.image}`}
+                                                />
+                                            </a>
+                                            </Tippy>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {sizesItems.length > 0 && (
                                 <div className="variants-color flex flex-col gap-3">
