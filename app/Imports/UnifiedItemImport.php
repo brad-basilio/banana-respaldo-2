@@ -66,6 +66,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             'descuento' => ['descuento', 'discount', 'precio_descuento'],
             'stock' => ['stock', 'cantidad', 'inventory'],
             'color' => ['color', 'colour'],
+            'talla' => ['size', 'talla', 'size_talla'],
             'agrupador' => ['agrupador'],
             'especificaciones_principales' => [
                 'especificaciones_principales_separadas_por_comas',
