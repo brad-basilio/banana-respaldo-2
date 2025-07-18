@@ -164,6 +164,7 @@ Route::post('/items/update-items', [ItemController::class, 'updateViews']);
 Route::post('/items/relations-items', [ItemController::class, 'relationsItems']);
 Route::post('/items/variations-items', [ItemController::class, 'variationsItems'])->withoutMiddleware('throttle');
 Route::post('/items/sizes-items', [ItemController::class, 'getSizesItems'])->withoutMiddleware('throttle');
+Route::post('/items/colors-items', [ItemController::class, 'getColorsItems'])->withoutMiddleware('throttle');
 Route::post('/items/searchProducts', [ItemController::class, 'searchProduct']);
 Route::get('/items/tags', [ItemController::class, 'getTags']);
 

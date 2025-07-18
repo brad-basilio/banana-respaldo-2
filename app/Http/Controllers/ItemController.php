@@ -81,6 +81,44 @@ class ItemController extends BasicController
         return response($response->toArray(), $response->status);
     }
 
+    public function getColorsItems(Request $request)
+    {
+        $response = new Response();
+
+        try {
+            $limite = $request->limit ?? 0;
+            
+            // Obtener el producto principal por slug
+            $product = Item::with(['category', 'brand', 'images', 'specifications'])
+                ->where('slug', $request->slug)
+                ->firstOrFail();
+
+            // Obtener todas las variantes incluyendo el producto actual
+            $allVariants = Item::where('name', $product->name)
+                ->select(['id', 'slug', 'name', 'color', 'texture', 'image', 'final_price'])
+                ->get();
+
+            // Agrupar por color y quedarse con la primera de cada grupo
+            $uniqueVariants = $allVariants
+                ->groupBy('color')
+                ->map(function ($group) {
+                    return $group->first(); 
+                })
+                ->values(); 
+
+            $product->setRelation('variants', $uniqueVariants);
+
+            $response->status = 200;
+            $response->message = 'Producto obtenido correctamente';
+            $response->data = $product;
+        } catch (\Throwable $th) {
+            dd($th->getMessage());
+            $response->status = 404;
+            $response->message = 'Producto no encontrado';
+        }
+
+        return response($response->toArray(), $response->status);
+    }
 
     public function getSizesItems(Request $request)
     {

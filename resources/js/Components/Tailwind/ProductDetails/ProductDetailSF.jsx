@@ -33,7 +33,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
         type: "main",
     });
 
-
+  
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState(item?.slug);
     const [selectedVariant, setSelectedVariant] = useState(item);
@@ -117,7 +117,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
     const [variationsItems, setVariationsItems] = useState([]);
     const [sizesItems, setSizesItems] = useState([]);
     const inCart = cart?.find((x) => x.id == item?.id);
-
+    
     useEffect(() => {
         if (item?.id) {
             productosRelacionados(item);
@@ -217,7 +217,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
             };
             
             // Llamar al backend para verificar el combo
-            const response = await itemsRest.getVariations(request);
+            const response = await itemsRest.getColors(request);
 
             // Verificar si la respuesta es válida
             if (!response) {
@@ -508,7 +508,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                             <button
                                                 key={variant.slug}
                                                 onClick={() => handleSizeChange(variant.slug)}
-                                                className={`variant-option rounded-md w-auto h-9 flex flex-col justify-center items-center text-center bg-slate-200 ${
+                                                className={`variant-option rounded-md min-w-9 px-[2px] w-auto h-9 flex flex-col justify-center items-center text-center bg-slate-200 ${
                                                     selectedSize === variant.slug
                                                     ? "active p-[2px] border-[1.5px] border-neutral-dark"
                                                     : ""
