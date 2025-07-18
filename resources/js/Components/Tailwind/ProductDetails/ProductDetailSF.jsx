@@ -508,7 +508,7 @@ export default function ProductDetailSF({ item, data, setCart, cart, textstatic,
                                             <button
                                                 key={variant.slug}
                                                 onClick={() => handleSizeChange(variant.slug)}
-                                                className={`variant-option rounded-md w-9 h-9 flex flex-col justify-center items-center text-center bg-slate-200 ${
+                                                className={`variant-option rounded-md w-auto h-9 flex flex-col justify-center items-center text-center bg-slate-200 ${
                                                     selectedSize === variant.slug
                                                     ? "active p-[2px] border-[1.5px] border-neutral-dark"
                                                     : ""
