@@ -247,7 +247,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             }
 
             if ($this->hasField($row, 'talla')) {
-                $itemData['talla'] = $this->getFieldValue($row, 'talla');
+                $itemData['size'] = $this->getFieldValue($row, 'talla');
             }
 
             $item = Item::create($itemData);
