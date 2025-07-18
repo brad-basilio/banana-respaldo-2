@@ -256,7 +256,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 $this->saveSpecificationsIfExists($item, $row);
                 
                 // 9️⃣ Guardar imágenes de galería
-                $this->saveGalleryImages($item, $row, 'agrupador');
+                $this->saveGalleryImages($item, $row, 'sku');
             } else {
                 throw new Exception("No se pudo crear el producto con SKU: {$sku}");
             }
