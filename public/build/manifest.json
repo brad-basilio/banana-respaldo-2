@@ -715,9 +715,12 @@
       "_typeof-QjJsDpFa.js"
     ]
   },
-  "_dom-to-image-more.min-BAoslaO8.js": {
-    "file": "assets/dom-to-image-more.min-BAoslaO8.js",
-    "name": "dom-to-image-more.min"
+  "_dom-to-image-more.min-Cey65QPP.js": {
+    "file": "assets/dom-to-image-more.min-Cey65QPP.js",
+    "name": "dom-to-image-more.min",
+    "imports": [
+      "_createLucideIcon-Cy5Ya80P.js"
+    ]
   },
   "_door-closed-Z4GbcMb-.js": {
     "file": "assets/door-closed-Z4GbcMb-.js",
@@ -3942,7 +3945,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-CmJI2LhB.js",
+    "file": "assets/BananaLab-B_fg6ac4.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4001,7 +4004,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-CVlIGK9p.js",
+    "file": "assets/Editor-C73svW8J.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4029,11 +4032,12 @@
       "_clock-BTrEpQej.js",
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
-      "_dom-to-image-more.min-BAoslaO8.js",
+      "_dom-to-image-more.min-Cey65QPP.js",
       "_chevron-left-B2s3ZsB7.js",
       "_user-BvYmyGTY.js",
-      "_plus-Bot15Khs.js",
       "_filter-Ci9tsc_e.js",
+      "_plus-Bot15Khs.js",
+      "_copy-6OEekgvq.js",
       "_circle-check-big-D6DM3vPb.js",
       "_useDrag-BaORhKlM.js",
       "_index-yBjzXJbu.js",
@@ -4042,7 +4046,6 @@
       "_palette-DV_Vpyg9.js",
       "_settings-BSPs3Zt8.js",
       "_chevron-up-D78jyEhP.js",
-      "_copy-6OEekgvq.js",
       "resources/js/Components/Tailwind/BananaLab/components/Elements/TextElement.jsx",
       "_upload-qgEr5bIl.js",
       "_typeof-QjJsDpFa.js",
@@ -9266,7 +9269,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-MhQu7hOX.js",
+    "file": "assets/Editor-Djtp09a7.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9317,10 +9320,10 @@
       "_clock-BTrEpQej.js",
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
-      "_dom-to-image-more.min-BAoslaO8.js",
+      "_dom-to-image-more.min-Cey65QPP.js",
       "_user-BvYmyGTY.js",
-      "_plus-Bot15Khs.js",
       "_filter-Ci9tsc_e.js",
+      "_plus-Bot15Khs.js",
       "_circle-check-big-D6DM3vPb.js"
     ]
   },
@@ -9476,7 +9479,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-3MxdTgMi.js",
+    "file": "assets/System-Cs_wDNM0.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

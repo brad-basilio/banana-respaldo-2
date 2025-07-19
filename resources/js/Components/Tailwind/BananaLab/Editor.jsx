@@ -109,20 +109,34 @@ import SaveIndicator from "./components/UI/SaveIndicator";
 import ProgressRecoveryModal from "./components/UI/ProgressRecoveryModal";
 import domtoimage from 'dom-to-image-more';
 
-// Componente optimizado para miniaturas que evita re-renderizados innecesarios
+// 🚀 OPTIMIZACIÓN: Componente ThumbnailImage mejorado con lazy loading y cache
 const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
-    if (thumbnail) {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
+
+    if (thumbnail && !imageError) {
         return (
-            <img
-                src={thumbnail}
-                alt={altText}
-                className="w-full h-full object-contain"
-                loading="lazy"
-                style={{
-                    transition: 'opacity 0.2s ease-in-out',
-                    imageRendering: 'optimizeQuality'
-                }}
-            />
+            <div className="relative w-full h-full">
+                {!imageLoaded && (
+                    <div className="absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center">
+                        <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                    </div>
+                )}
+                <img
+                    src={thumbnail}
+                    alt={altText}
+                    className={`w-full h-full object-contain transition-opacity duration-200 ${
+                        imageLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    onLoad={() => setImageLoaded(true)}
+                    onError={() => setImageError(true)}
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                        imageRendering: 'optimizeQuality'
+                    }}
+                />
+            </div>
         );
     }
 
@@ -137,10 +151,19 @@ const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
         );
 
     return (
-        <div className="w-full h-full flex items-center justify-center">
-
+        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <div className="text-center text-gray-400">
+                <PlaceholderIcon className="w-8 h-8 mx-auto mb-1" />
+                <span className="text-xs">Generando...</span>
+            </div>
         </div>
     );
+}, (prevProps, nextProps) => {
+    // 🚀 OPTIMIZACIÓN: Comparación personalizada para evitar re-renders innecesarios
+    return prevProps.pageId === nextProps.pageId && 
+           prevProps.thumbnail === nextProps.thumbnail &&
+           prevProps.altText === nextProps.altText &&
+           prevProps.type === nextProps.type;
 });
 
 // Componente para mostrar imágenes del proyecto con drag & drop
@@ -148,6 +171,7 @@ const ProjectImageGallery = React.memo(({ images, onImageSelect, isLoading }) =>
     const ImageItem = React.memo(({ image }) => {
         const [imageLoaded, setImageLoaded] = useState(false);
         const [imageError, setImageError] = useState(false);
+        const [dragStarted, setDragStarted] = useState(false);
 
         const [{ isDragging }, drag] = useDrag(() => ({
             type: 'PROJECT_IMAGE',
@@ -155,18 +179,42 @@ const ProjectImageGallery = React.memo(({ images, onImageSelect, isLoading }) =>
             collect: (monitor) => ({
                 isDragging: !!monitor.isDragging(),
             }),
+            end: () => {
+                // Reset drag state after a short delay
+                setTimeout(() => setDragStarted(false), 100);
+            }
         }));
 
         // Usar miniatura si está disponible, sino usar imagen original
         const displayImage = image.thumbnail_url || image.url;
         const fullImage = image.url;
 
+        // 🚀 Handler para detectar inicio de drag vs click
+        const handleMouseDown = (e) => {
+            setDragStarted(true);
+            // Reset after a longer delay to ensure drag detection
+            setTimeout(() => setDragStarted(false), 500);
+        };
+
+        const handleClick = (e) => {
+            // Prevent click if drag was initiated recently or if currently dragging
+            if (dragStarted || isDragging) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            
+            // Solo ejecutar si es un click genuino (no parte de drag)
+            onImageSelect(fullImage);
+        };
+
         return (
             <div
                 ref={drag}
                 className={`relative group cursor-pointer bg-gray-50 rounded-lg overflow-hidden border-2 border-transparent hover:border-[#af5cb8] transition-all duration-200 ${isDragging ? 'opacity-50 scale-95' : ''
                     }`}
-                onClick={() => onImageSelect(fullImage)} // Siempre usar imagen original para añadir
+                onMouseDown={handleMouseDown}
+                onClick={handleClick}
             >
                 <div className="aspect-square relative">
                     {!imageLoaded && !imageError && (
@@ -367,7 +415,11 @@ export default function EditorLibro() {
     const [projectImages, setProjectImages] = useState([]); // Nueva: imágenes del proyecto
     const [projectImagesLoading, setProjectImagesLoading] = useState(false);
     const [imageCache, setImageCache] = useState(new Map()); // Cache para evitar re-renders
+    const [imageBlobCache, setImageBlobCache] = useState(() => new Map()); // 🚀 Cache de blobs optimizado
     const loadingTimeoutRef = useRef(null); // Para throttling
+    
+    // 🚀 Estado para control de inicialización de progreso
+    const [hasInitializedProgress, setHasInitializedProgress] = useState(false);
 
     // Referencias y timeouts para manejo de miniaturas
     const thumbnailTimeout = useRef();
@@ -412,28 +464,132 @@ export default function EditorLibro() {
         }
     }, [projectData?.id]);
 
-    // 🖼️ Función para generar thumbnails locales usando la función importada
-    const generateLocalThumbnails = useCallback(async () => {
-        if (!pages?.length || !workspaceDimensions || !presetData) return;
+    // 🖼️ Función para generar thumbnails locales usando la función importada (OPTIMIZADA)
+    const generateLocalThumbnails = useCallback(
+        debounce(async () => {
+            if (!pages?.length || !workspaceDimensions || !presetData) return;
 
-        try {
-            const thumbnailsObject = await generateAccurateThumbnails({
-                pages,
-                workspaceDimensions,
-                presetData
-            });
-
-            if (thumbnailsObject && Object.keys(thumbnailsObject).length > 0) {
-                setPageThumbnails(prev => ({
-                    ...prev,
-                    ...thumbnailsObject
-                }));
-                console.log('✅ Thumbnails locales generados:', Object.keys(thumbnailsObject).length);
+            // 🚀 OPTIMIZACIÓN: Evitar regeneración si ya están generando
+            if (thumbnailGenerating.current) {
+                console.log('⏳ Thumbnails ya se están generando, saltando...');
+                return;
             }
-        } catch (error) {
-            console.warn('⚠️ Error generando thumbnails locales:', error);
+
+            thumbnailGenerating.current = true;
+
+            try {
+                // 🚀 OPTIMIZACIÓN: Generar solo thumbnails que no existen
+                const missingThumbnails = pages.filter(page => !pageThumbnails[page.id]);
+                
+                if (missingThumbnails.length === 0) {
+                    console.log('✅ Todos los thumbnails ya existen');
+                    return;
+                }
+
+                console.log(`📸 Generando ${missingThumbnails.length} thumbnails faltantes...`);
+
+                const thumbnailsObject = await generateAccurateThumbnails({
+                    pages: missingThumbnails, // Solo páginas que necesitan thumbnails
+                    workspaceDimensions,
+                    presetData
+                });
+
+                if (thumbnailsObject && Object.keys(thumbnailsObject).length > 0) {
+                    setPageThumbnails(prev => ({
+                        ...prev,
+                        ...thumbnailsObject
+                    }));
+                    console.log('✅ Thumbnails locales generados:', Object.keys(thumbnailsObject).length);
+                }
+            } catch (error) {
+                console.warn('⚠️ Error generando thumbnails locales:', error);
+            } finally {
+                thumbnailGenerating.current = false;
+            }
+        }, 500), // 500ms debounce para evitar regeneración excesiva
+        [pages, workspaceDimensions, presetData, pageThumbnails]
+    );
+
+    // 🚀 OPTIMIZACIÓN: Ref para controlar generación de thumbnails
+    const thumbnailGenerating = useRef(false);
+    
+    // 🚀 OPTIMIZACIÓN: Pre-cache de imágenes en background
+    const preloadImageCache = useCallback((imageUrl) => {
+        if (imageBlobCache.has && imageBlobCache.has(imageUrl)) return;
+        
+        // Crear versión optimizada de la imagen en background
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            // Solo comprimir si la imagen es muy grande
+            const shouldCompress = img.width > 1200 || img.height > 1200;
+            
+            if (shouldCompress) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Calcular nuevo tamaño manteniendo aspect ratio
+                const maxSize = 1200;
+                const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+                const newWidth = img.width * ratio;
+                const newHeight = img.height * ratio;
+                
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                
+                // Usar filtro para mejor calidad
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, newWidth, newHeight);
+                
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        setImageBlobCache(prev => {
+                            const newCache = new Map(prev);
+                            newCache.set(imageUrl, url);
+                            
+                            // Limpiar cache si es muy grande
+                            if (newCache.size > 15) {
+                                const firstKey = newCache.keys().next().value;
+                                const firstUrl = newCache.get(firstKey);
+                                URL.revokeObjectURL(firstUrl);
+                                newCache.delete(firstKey);
+                            }
+                            
+                            return newCache;
+                        });
+                    }
+                }, 'image/webp', 0.85);
+            }
+        };
+        img.onerror = () => {
+            console.warn('❌ Error pre-cargando imagen:', imageUrl);
+        };
+        img.src = imageUrl;
+    }, []); // Remove imageBlobCache dependency
+
+    // 🚀 OPTIMIZACIÓN: Precargar imágenes del proyecto en background
+    useEffect(() => {
+        if (projectImages.length > 0) {
+            // Precargar solo las primeras 10 imágenes para no sobrecargar
+            const imagesToPreload = projectImages.slice(0, 10);
+            imagesToPreload.forEach((image, index) => {
+                setTimeout(() => {
+                    preloadImageCache(image.url);
+                }, index * 100); // Stagger la carga
+            });
         }
-    }, [pages, workspaceDimensions, presetData]);
+    }, [projectImages, preloadImageCache]);
+
+    // 🚀 OPTIMIZACIÓN: Limpiar cache de blobs al desmontar
+    useEffect(() => {
+        return () => {
+            if (imageBlobCache && imageBlobCache.forEach) {
+                imageBlobCache.forEach(url => URL.revokeObjectURL(url));
+            }
+        };
+    }, []); // Empty dependency array - cleanup only on unmount
 
     // 🖼️ Función para cargar thumbnails con nueva estructura después de generarlos
     const loadThumbnailsWithNewStructure = useCallback(async () => {
@@ -605,11 +761,45 @@ export default function EditorLibro() {
                     };
                 });
 
-                setPages(updatedPages);
+                // 🚀 PROTECCIÓN: Solo actualizar si no hay páginas ya cargadas o si es la carga inicial
+                setPages(prevPages => {
+                    // Si ya hay páginas con contenido, no sobrescribir
+                    if (prevPages.length > 0) {
+                        console.log('⚠️ Páginas ya existentes, preservando cambios del usuario');
+                        // Mergear solo los backgrounds sin perder elementos del usuario
+                        return prevPages.map((existingPage, index) => {
+                            const newPageData = updatedPages[index];
+                            if (newPageData) {
+                                return {
+                                    ...existingPage,
+                                    // Solo actualizar backgrounds si no se han modificado
+                                    backgroundImage: existingPage.backgroundImage || newPageData.backgroundImage,
+                                    backgroundColor: existingPage.backgroundColor || newPageData.backgroundColor
+                                };
+                            }
+                            return existingPage;
+                        });
+                    }
+                    
+                    // Primera carga: usar las páginas de la DB
+                    console.log('📄 Carga inicial de páginas desde la base de datos');
+                    return updatedPages;
+                });
 
-                // Inicializar historial con las páginas actualizadas
-                setHistory([JSON.stringify(updatedPages)]);
-                setHistoryIndex(0);
+                // Solo inicializar historial si está vacío
+                setHistory(prevHistory => {
+                    if (prevHistory.length <= 1) {
+                        return [JSON.stringify(updatedPages)];
+                    }
+                    return prevHistory;
+                });
+                
+                setHistoryIndex(prevIndex => {
+                    if (prevIndex === 0 && history.length <= 1) {
+                        return 0;
+                    }
+                    return prevIndex;
+                });
 
                 // 🖼️ Cargar thumbnails guardados después de inicializar páginas
                 setTimeout(() => {
@@ -1670,62 +1860,6 @@ export default function EditorLibro() {
     // Estado para el input de carga de imágenes
     const imageInputRef = useRef(null);
 
-    // Función para manejar la carga de imágenes
-    const handleImageUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file || !projectData?.id) return;
-
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('projectId', projectData.id);
-
-        try {
-            const response = await fetch('/api/canvas/editor/upload-image', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: formData,
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                // Añadir la imagen inmediatamente al estado local para evitar el delay
-                const newImage = {
-                    id: Date.now(),
-                    filename: file.name,
-                    url: result.url,
-                    thumbnail_url: result.thumbnail_url,
-                    has_thumbnail: result.has_thumbnail,
-                    size: file.size,
-                    last_modified: Date.now() / 1000,
-                    created_at: new Date().toISOString()
-                };
-                setProjectImages(prev => [newImage, ...prev]);
-
-                addImageElement(result.url);
-
-                // Mostrar mensaje personalizado según si se generó miniatura
-                if (result.has_thumbnail) {
-                    toast.success('Imagen subida y optimizada correctamente');
-                } else {
-                    toast.success('Imagen subida correctamente');
-                }
-
-                // Recargar la galería en segundo plano para sincronizar con el servidor
-                loadingTimeoutRef.current = setTimeout(() => {
-                    loadProjectImages(true); // Forzar refresh para sincronizar
-                }, 1000); // Mayor delay para evitar conflictos
-            } else {
-                toast.error(result.message || 'Error al subir la imagen');
-            }
-        } catch (error) {
-            console.error('Error subiendo la imagen:', error);
-            toast.error('Error de red al subir la imagen');
-        }
-    };
-
     // Función para añadir un elemento de imagen al lienzo
     const addImageElement = (imageUrl) => {
         const targetCell = selectedCell || pages[currentPage]?.cells[0]?.id;
@@ -1759,57 +1893,207 @@ export default function EditorLibro() {
         // NO recargar imágenes del proyecto aquí para evitar re-renders innecesarios
     };
 
-    // Función para cargar las imágenes del proyecto con throttling
-    const loadProjectImages = useCallback(async (forceRefresh = false) => {
-        if (!projectData?.id) return;
+    // Función para cargar las imágenes del proyecto con throttling (ULTRA OPTIMIZADA)
+    const loadProjectImages = useCallback(
+        debounce(async (forceRefresh = false) => {
+            if (!projectData?.id) return;
 
-        // Throttling: si ya hay una carga en progreso, cancelar la anterior
-        if (loadingTimeoutRef.current) {
-            clearTimeout(loadingTimeoutRef.current);
-        }
+            // 🚀 OPTIMIZACIÓN: Verificar cache primero
+            const cachedImages = imageCache.get(projectData.id);
+            if (!forceRefresh && cachedImages && cachedImages.length > 0) {
+                console.log('🔄 Usando imágenes desde cache');
+                if (projectImages.length === 0) {
+                    setProjectImages(cachedImages);
+                }
+                return;
+            }
 
-        // Si tenemos imágenes en cache y no es una recarga forzada, no hacer nada
-        if (!forceRefresh && imageCache.has(projectData.id) && projectImages.length > 0) {
-            return;
-        }
+            // 🚀 OPTIMIZACIÓN: Evitar múltiples cargas simultáneas
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+            }
 
-        // Evitar múltiples cargas simultáneas
-        if (projectImagesLoading && !forceRefresh) {
-            return;
-        }
+            if (projectImagesLoading && !forceRefresh) {
+                console.log('⏳ Carga de imágenes ya en progreso');
+                return;
+            }
 
-        setProjectImagesLoading(true);
+            setProjectImagesLoading(true);
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+                const response = await fetch(`/api/canvas/projects/${projectData.id}/images`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                    },
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const images = result.images || [];
+                    
+                    // 🚀 OPTIMIZACIÓN: Solo actualizar si hay cambios reales
+                    const currentImagesStr = JSON.stringify(projectImages);
+                    const newImagesStr = JSON.stringify(images);
+                    
+                    if (currentImagesStr !== newImagesStr) {
+                        setProjectImages(images);
+                        
+                        // 🚀 OPTIMIZACIÓN: Actualizar cache de forma eficiente
+                        setImageCache(prevCache => {
+                            const newCache = new Map(prevCache);
+                            newCache.set(projectData.id, images);
+                            
+                            // Limpiar cache viejo si hay más de 5 proyectos
+                            if (newCache.size > 5) {
+                                const oldestKey = newCache.keys().next().value;
+                                newCache.delete(oldestKey);
+                            }
+                            
+                            return newCache;
+                        });
+                    }
+                } else {
+                    console.error('Error cargando imágenes:', result.message);
+                    toast.error('Error cargando galería de imágenes');
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.warn('⚠️ Carga de imágenes cancelada por timeout');
+                } else {
+                    console.error('Error cargando imágenes del proyecto:', error);
+                    toast.error('Error de conexión al cargar imágenes');
+                }
+            } finally {
+                setProjectImagesLoading(false);
+            }
+        }, 200), // 200ms debounce para evitar spam
+        [projectData?.id, imageCache, projectImages, projectImagesLoading]
+    );
+
+    // Función para manejar la carga de imágenes (OPTIMIZADA)
+    const handleImageUpload = useCallback(async (event) => {
+        const file = event.target.files[0];
+        if (!file || !projectData?.id) return;
+
+        // 🚀 OPTIMIZACIÓN: Mostrar feedback inmediato
+        const loadingToast = toast.loading('Subiendo imagen...', {
+            description: 'Procesando imagen, esto puede tomar unos segundos'
+        });
+
+        // 🚀 OPTIMIZACIÓN: Crear imagen local optimizada inmediatamente
+        const imageUrl = URL.createObjectURL(file);
+        const tempImage = {
+            id: `temp-${Date.now()}`,
+            filename: file.name,
+            url: imageUrl,
+            thumbnail_url: imageUrl,
+            has_thumbnail: false,
+            size: file.size,
+            last_modified: Date.now() / 1000,
+            created_at: new Date().toISOString(),
+            isTemporary: true
+        };
+
+        // 🚀 OPTIMIZACIÓN: Añadir imagen temporalmente al estado para feedback inmediato
+        setProjectImages(prev => [tempImage, ...prev]);
+        
+        // 🚀 OPTIMIZACIÓN: Añadir al canvas inmediatamente para mejor UX
+        addImageElement(imageUrl);
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('projectId', projectData.id);
 
         try {
-            const response = await fetch(`/api/canvas/projects/${projectData.id}/images`, {
-                method: 'GET',
+            const response = await fetch('/api/canvas/editor/upload-image', {
+                method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Content-Type': 'application/json',
                 },
+                body: formData,
             });
 
             const result = await response.json();
 
             if (result.success) {
-                const images = result.images || [];
-                setProjectImages(images);
+                // 🚀 OPTIMIZACIÓN: Reemplazar imagen temporal con la real
+                const finalImage = {
+                    id: result.id || Date.now(),
+                    filename: file.name,
+                    url: result.url,
+                    thumbnail_url: result.thumbnail_url || result.url,
+                    has_thumbnail: result.has_thumbnail || false,
+                    size: file.size,
+                    last_modified: Date.now() / 1000,
+                    created_at: new Date().toISOString()
+                };
 
-                // Guardar en cache
-                setImageCache(prevCache => {
-                    const newCache = new Map(prevCache);
-                    newCache.set(projectData.id, images);
-                    return newCache;
-                });
+                setProjectImages(prev => [
+                    finalImage,
+                    ...prev.filter(img => img.id !== tempImage.id)
+                ]);
+
+                // 🚀 OPTIMIZACIÓN: Actualizar el elemento en el canvas con la URL final
+                setTimeout(() => {
+                    setPages(prevPages => {
+                        const updatedPages = [...prevPages];
+                        const currentPageData = updatedPages[currentPage];
+                        
+                        // Buscar y actualizar el elemento con la imagen temporal
+                        currentPageData.cells.forEach(cell => {
+                            cell.elements.forEach(element => {
+                                if (element.type === 'image' && element.content === imageUrl) {
+                                    element.content = result.url;
+                                }
+                            });
+                        });
+                        
+                        return updatedPages;
+                    });
+                }, 100);
+
+                toast.dismiss(loadingToast);
+                toast.success(result.has_thumbnail ? 
+                    'Imagen subida y optimizada correctamente' : 
+                    'Imagen subida correctamente'
+                );
+
+                // 🚀 OPTIMIZACIÓN: Refresh de galería en background sin bloquear UI
+                setTimeout(() => {
+                    loadProjectImages(true);
+                }, 2000);
             } else {
-                console.error('Error cargando imágenes:', result.message);
+                // 🚀 OPTIMIZACIÓN: Limpiar imagen temporal en caso de error
+                setProjectImages(prev => prev.filter(img => img.id !== tempImage.id));
+                URL.revokeObjectURL(imageUrl);
+                
+                toast.dismiss(loadingToast);
+                toast.error(result.message || 'Error al subir la imagen');
             }
         } catch (error) {
-            console.error('Error cargando imágenes del proyecto:', error);
-        } finally {
-            setProjectImagesLoading(false);
+            console.error('Error subiendo la imagen:', error);
+            
+            // 🚀 OPTIMIZACIÓN: Limpiar imagen temporal en caso de error
+            setProjectImages(prev => prev.filter(img => img.id !== tempImage.id));
+            URL.revokeObjectURL(imageUrl);
+            
+            toast.dismiss(loadingToast);
+            toast.error('Error de red al subir la imagen');
         }
-    }, [projectData?.id, imageCache, projectImages.length, projectImagesLoading]);
+    }, [projectData?.id, currentPage, addImageElement, loadProjectImages]);
 
     // Cargar imágenes cuando se carga el proyecto (con debounce)
     useEffect(() => {
@@ -1842,10 +2126,72 @@ export default function EditorLibro() {
         };
     }, []);
 
+    // 🚀 Añadir elemento sin seleccionarlo automáticamente (para galería de imágenes)
+    const addElementToCellWithoutSelection = (cellId, element) => {
+        console.log('🖼️ [ADD-IMAGE] Agregando imagen sin selección automática');
+        
+        // 🚀 PROTECCIÓN: Asegurar que tenemos páginas válidas
+        if (!pages || pages.length === 0 || !pages[currentPage]) {
+            console.error('❌ [ADD-IMAGE] No hay páginas válidas para agregar imagen');
+            return;
+        }
+        
+        // 🚀 PROTECCIÓN: Crear una copia profunda para evitar mutaciones
+        const updatedPages = JSON.parse(JSON.stringify(pages));
+        
+        // Encontrar y actualizar solo la celda correcta
+        let cellFound = false;
+        for (let i = 0; i < updatedPages[currentPage].cells.length; i++) {
+            if (updatedPages[currentPage].cells[i].id === cellId) {
+                updatedPages[currentPage].cells[i].elements.push(element);
+                cellFound = true;
+                console.log('✅ [ADD-IMAGE] Imagen agregada a la celda:', cellId);
+                break;
+            }
+        }
+        
+        if (!cellFound) {
+            console.error('❌ [ADD-IMAGE] Celda no encontrada:', cellId);
+            return;
+        }
+        
+        // 🚀 PROTECCIÓN: Usar setTimeout para evitar conflictos de estado
+        setTimeout(() => {
+            updatePages(updatedPages);
+            console.log('✅ [ADD-IMAGE] Estado actualizado sin selección automática');
+        }, 0);
+    };
+
     // Función para añadir imagen desde la galería
-    const addImageFromGallery = (imageUrl) => {
+    const addImageFromGallery = useCallback((imageUrl) => {
+        console.log('🖼️ [ADD-FROM-GALLERY] Iniciando proceso de agregar imagen:', imageUrl);
+        
+        // 🚀 PROTECCIÓN CRÍTICA: Bloquear temporalmente el sistema de recuperación
+        const originalProgress = hasInitializedProgress;
+        setHasInitializedProgress(true);
+        
+        // 🚀 PROTECCIÓN: No cambiar de tab si ya estamos en 'images'
+        const wasInImagesTab = activeTab === 'images';
+        
         const targetCell = selectedCell || pages[currentPage]?.cells[0]?.id;
-        if (!targetCell) return;
+        if (!targetCell) {
+            console.error('❌ [ADD-FROM-GALLERY] No hay celda disponible');
+            toast.error('No hay celda disponible para agregar la imagen');
+            setHasInitializedProgress(originalProgress); // Restaurar estado
+            return;
+        }
+
+        // 🚀 PROTECCIÓN: Validar que la imagen URL es válida
+        if (!imageUrl || typeof imageUrl !== 'string') {
+            console.error('❌ [ADD-FROM-GALLERY] URL de imagen inválida');
+            toast.error('URL de imagen no válida');
+            setHasInitializedProgress(originalProgress); // Restaurar estado
+            return;
+        }
+
+        // 🚀 PROTECCIÓN: Crear una copia profunda de las páginas actuales ANTES de modificar
+        const currentPagesSnapshot = JSON.parse(JSON.stringify(pages));
+        console.log('📸 [ADD-FROM-GALLERY] Snapshot del estado actual capturado');
 
         const newElement = {
             id: `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -1866,12 +2212,32 @@ export default function EditorLibro() {
                 blendMode: "normal",
             },
             mask: 'none',
-            zIndex: (pages[currentPage].cells.find(cell => cell.id === targetCell)?.elements?.length || 0) + 1,
+            zIndex: (currentPagesSnapshot[currentPage].cells.find(cell => cell.id === targetCell)?.elements?.length || 0) + 1,
         };
 
-        addElementToCell(targetCell, newElement);
-        toast.success('Imagen añadida desde la galería');
-    };
+        console.log('📝 [ADD-FROM-GALLERY] Elemento creado:', newElement);
+
+        // 🚀 PROTECCIÓN: Usar setTimeout múltiples para evitar conflictos de estado
+        setTimeout(() => {
+            // Primer paso: Agregar elemento sin seleccionarlo
+            addElementToCellWithoutSelection(targetCell, newElement);
+            
+            setTimeout(() => {
+                // Segundo paso: Restaurar tab si es necesario
+                if (wasInImagesTab) {
+                    setActiveTab('images');
+                    console.log('🔄 [ADD-FROM-GALLERY] Tab restaurado a images');
+                }
+                
+                setTimeout(() => {
+                    // Tercer paso: Restaurar protección y mostrar éxito
+                    setHasInitializedProgress(originalProgress);
+                    toast.success('✅ Imagen añadida desde la galería');
+                    console.log('✅ [ADD-FROM-GALLERY] Proceso completado exitosamente');
+                }, 50);
+            }, 50);
+        }, 50);
+    }, [activeTab, selectedCell, pages, currentPage, hasInitializedProgress, addElementToCellWithoutSelection]);
 
 
 
@@ -2093,7 +2459,7 @@ export default function EditorLibro() {
             console.error('❌ [AUTO-SAVE] Error en auto-save con procesamiento de imágenes:', error);
             return false;
         }
-    }, [pages, currentPage, workspaceDimensions, workspaceSize, selectedElement, selectedCell, history, historyIndex, projectData?.id, itemData?.name, itemData?.id, presetData?.id, pageThumbnails, processAndSaveImages, generateLocalThumbnails, setPageChanges]);
+    }, [pages, currentPage, workspaceDimensions, workspaceSize, selectedElement, selectedCell, history, historyIndex, projectData?.id, itemData?.name, itemData?.id, presetData?.id, pageThumbnails, processAndSaveImages, generateLocalThumbnails]);
 
     // 💾 Auto-save de respaldo cada 5 minutos (solo como respaldo)
     useEffect(() => {
@@ -2371,7 +2737,8 @@ export default function EditorLibro() {
         
         // Usar función de estado para verificar cambios sin dependencias
         setPageChanges(currentPageChanges => {
-            console.log('🔍 [SAVE-QUEUE] Cambios actuales:', Array.from(currentPageChanges.keys()));
+            const changedPages = Array.from(currentPageChanges.keys());
+            console.log('🔍 [SAVE-QUEUE] Cambios actuales:', changedPages.join(', ') || 'ninguno');
             
             if (!currentPageChanges.has(pageIndex)) {
                 console.log('⚠️ [SAVE-QUEUE] No hay cambios para la página:', pageIndex, '- No se agregará a cola');
@@ -2416,7 +2783,8 @@ export default function EditorLibro() {
         // Verificar si la página actual tiene cambios sin guardar usando función de estado
         setPageChanges(currentPageChanges => {
             console.log('🔍 [PAGE-CHANGE] Verificando cambios en página actual:', currentPage);
-            console.log('🔍 [PAGE-CHANGE] Páginas con cambios:', Array.from(currentPageChanges.keys()));
+            const changedPages = Array.from(currentPageChanges.keys());
+            console.log('🔍 [PAGE-CHANGE] Páginas con cambios:', changedPages.join(', ') || 'ninguna');
             
             if (currentPageChanges.has(currentPage)) {
                 console.log('💾 [PAGE-CHANGE] ✅ Página actual tiene cambios, guardando antes del cambio:', currentPage);
@@ -2443,6 +2811,18 @@ export default function EditorLibro() {
     // Función para verificar y cargar progreso guardado al inicializar
     const checkAndLoadSavedProgress = useCallback(async () => {
         if (!projectData?.id) return;
+
+        // 🚀 PROTECCIÓN: No ejecutar si ya hay elementos en el workspace
+        const hasWorkspaceContent = pages.some(page => 
+            page.cells?.some(cell => 
+                cell.elements?.length > 0
+            )
+        );
+        
+        if (hasWorkspaceContent) {
+            console.log('⚠️ [RECOVERY] Ya hay contenido en el workspace, saltando recuperación automática');
+            return;
+        }
 
         try {
             // 1. Verificar localStorage primero
@@ -2478,18 +2858,28 @@ export default function EditorLibro() {
                 progressToUse = serverProgress;
             }
 
-            // Si hay progreso guardado, mostrar modal de recuperación
+            // 🚀 PROTECCIÓN ADICIONAL: Solo mostrar modal si el progreso es significativamente más reciente
             if (progressToUse &&
                 (progressToUse.pages?.length > 0 || progressToUse.design_data?.pages?.length > 0)) {
 
-                setSavedProgress(progressToUse);
-                setShowProgressRecovery(true);
+                // Verificar si el progreso es realmente más nuevo que el workspace actual
+                const progressTime = new Date(progressToUse.savedAt || progressToUse.saved_at).getTime();
+                const now = Date.now();
+                const timeDiff = now - progressTime;
+                
+                // Solo mostrar si el progreso es de los últimos 30 minutos
+                if (timeDiff < 30 * 60 * 1000) {
+                    setSavedProgress(progressToUse);
+                    setShowProgressRecovery(true);
+                } else {
+                    console.log('📅 [RECOVERY] Progreso muy antiguo, ignorando automáticamente');
+                }
             }
 
         } catch (error) {
             console.error('❌ [RECOVERY] Error verificando progreso guardado:', error);
         }
-    }, [projectData?.id, autoSave]);
+    }, [projectData?.id, autoSave, pages]);
 
     // Cargar progreso guardado
     const handleLoadProgress = useCallback(async (progress) => {
@@ -2556,13 +2946,15 @@ export default function EditorLibro() {
 
     // Verificar progreso guardado cuando se cargan los datos del proyecto
     useEffect(() => {
-        if (projectData?.id && !isLoading && pages.length === 0) {
+        // 🚀 PROTECCIÓN: Solo ejecutar UNA VEZ al inicio, no cada vez que cambian las páginas
+        if (projectData?.id && !isLoading && pages.length === 0 && !hasInitializedProgress) {
+            setHasInitializedProgress(true);
             // Añadir un pequeño delay para asegurar que el componente esté completamente montado
             setTimeout(() => {
                 checkAndLoadSavedProgress();
             }, 500);
         }
-    }, [projectData?.id, isLoading, pages.length, checkAndLoadSavedProgress]);
+    }, [projectData?.id, isLoading, pages.length, checkAndLoadSavedProgress, hasInitializedProgress]);
 
     // Cargar thumbnails existentes cuando las páginas se cargan
     useEffect(() => {
@@ -2791,6 +3183,10 @@ export default function EditorLibro() {
 
             if (element?.type === "image") {
                 setSelectedImage(element);
+                // 🚀 Solo abrir filtros si NO estamos ya en la galería de imágenes
+                if (activeTab !== 'images') {
+                    setActiveTab('filters');
+                }
             } else if (element?.type === "text") {
                 setTextToolbarVisible(true);
                 setTextEditingOptions({
@@ -2821,75 +3217,112 @@ export default function EditorLibro() {
         );
     };
 
-    // Actualizar el estado de las páginas y guardar en localStorage (optimizado)
+    // 🚀 OPTIMIZACIÓN: Función debounced para localStorage
+    const debouncedSaveToLocalStorage = useCallback(
+        debounce((pages) => {
+            try {
+                const storageKey = getStorageKey();
+                const dataToSave = {
+                    pages,
+                    currentPage,
+                    savedAt: Date.now(),
+                };
+
+                const dataString = JSON.stringify(dataToSave);
+                const dataSizeKB = Math.round(dataString.length / 1024);
+
+                if (dataSizeKB < 2048) {
+                    localStorage.setItem(storageKey, dataString);
+                } else {
+                    console.warn(`⚠️ Datos demasiado grandes para localStorage (${dataSizeKB} KB)`);
+                    localStorage.removeItem(storageKey);
+                }
+            } catch (error) {
+                console.error('❌ Error guardando en localStorage:', error);
+                if (error.name === 'QuotaExceededError') {
+                    try {
+                        localStorage.removeItem(getStorageKey());
+                    } catch (cleanError) {
+                        console.error('Error limpiando localStorage:', cleanError);
+                    }
+                }
+            }
+        }, 300), // 300ms debounce para evitar spam
+        [currentPage, getStorageKey]
+    );
+
+    // Actualizar el estado de las páginas y guardar en localStorage (ULTRA OPTIMIZADO)
     const updatePages = useCallback((newPages) => {
-        setPages(newPages);
-        
-        // Marcar la página actual como modificada
-        setPageChanges(prev => {
-            const newMap = new Map(prev);
-            newMap.set(currentPage, Date.now());
-            console.log('📝 [PAGE-CHANGES] Página marcada como modificada:', currentPage);
-            return newMap;
+        // 🚀 OPTIMIZACIÓN: Evitar actualizaciones innecesarias si las páginas son idénticas
+        setPages(prevPages => {
+            // 🚀 OPTIMIZACIÓN: Comparación rápida por referencia primero
+            if (prevPages === newPages) {
+                return prevPages;
+            }
+            
+            // 🚀 OPTIMIZACIÓN: Comparación por contenido solo si es necesario
+            const prevPagesStr = JSON.stringify(prevPages);
+            const newPagesStr = JSON.stringify(newPages);
+            
+            if (prevPagesStr === newPagesStr) {
+                console.log('🔄 [UPDATE-PAGES] Sin cambios, evitando actualización');
+                return prevPages;
+            }
+            
+            console.log('📝 [UPDATE-PAGES] Aplicando cambios...');
+            
+            // 🚀 OPTIMIZACIÓN: Usar requestAnimationFrame para operaciones no críticas
+            requestAnimationFrame(() => {
+                // Marcar la página actual como modificada
+                setPageChanges(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(currentPage, Date.now());
+                    return newMap;
+                });
+                
+                // 🚀 OPTIMIZACIÓN: Invalidar thumbnail solo si hay cambios visuales reales
+                if (newPages[currentPage]) {
+                    const currentPageId = newPages[currentPage].id;
+                    setPageThumbnails(prev => {
+                        if (prev[currentPageId]) {
+                            const updated = { ...prev };
+                            delete updated[currentPageId];
+                            return updated;
+                        }
+                        return prev;
+                    });
+                }
+            });
+            
+            // 🚀 OPTIMIZACIÓN: Diferir operaciones de historial y localStorage
+            setTimeout(() => {
+                // Actualizar el historial de forma más eficiente
+                setHistory(prevHistory => {
+                    const newHistory = [
+                        ...prevHistory.slice(0, historyIndex + 1),
+                        newPagesStr,
+                    ];
+                    
+                    // 🚀 OPTIMIZACIÓN: Limitar historial para evitar uso excesivo de memoria
+                    if (newHistory.length > 50) {
+                        return newHistory.slice(-50);
+                    }
+                    
+                    return newHistory;
+                });
+                
+                setHistoryIndex(prevIndex => {
+                    const newIndex = prevIndex + 1;
+                    return newIndex > 50 ? 49 : newIndex;
+                });
+            }, 0);
+            
+            return newPages;
         });
         
-        // Actualizar el historial
-        const newHistory = [
-            ...history.slice(0, historyIndex + 1),
-            JSON.stringify(newPages),
-        ];
-        setHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
-        // Guardar en localStorage con manejo de errores y optimización
-        try {
-            const storageKey = getStorageKey();
-            const dataToSave = {
-                pages: newPages,
-                currentPage,
-                savedAt: Date.now(),
-                // NO guardar thumbnails en localStorage para evitar QuotaExceededError
-            };
-
-            const dataString = JSON.stringify(dataToSave);
-            const dataSizeKB = Math.round(dataString.length / 1024);
-
-            // Solo guardar si es menor a 2MB para evitar errores
-            if (dataSizeKB < 2048) {
-                localStorage.setItem(storageKey, dataString);
-            } else {
-                console.warn(`⚠️ Datos demasiado grandes para localStorage (${dataSizeKB} KB), saltando guardado local`);
-                // Limpiar localStorage si está muy lleno
-                try {
-                    localStorage.removeItem(storageKey);
-                } catch (cleanError) {
-                    console.error('Error limpiando localStorage:', cleanError);
-                }
-            }
-        } catch (error) {
-            console.error('❌ Error guardando en localStorage:', error);
-            // Si hay error de cuota, intentar limpiar storage
-            if (error.name === 'QuotaExceededError') {
-                try {
-                    const storageKey = getStorageKey();
-                    localStorage.removeItem(storageKey);
-                } catch (cleanError) {
-                    console.error('Error limpiando localStorage:', cleanError);
-                }
-            }
-        }
-
-        // Invalidar el thumbnail de la página actual siempre que se modifique
-        if (newPages[currentPage]) {
-            const currentPageId = newPages[currentPage].id;
-
-            // Eliminar el thumbnail existente para forzar regeneración
-            setPageThumbnails(prev => {
-                const updated = { ...prev };
-                delete updated[currentPageId];
-                return updated;
-            });
-        }
-    }, [history, historyIndex, getStorageKey, currentPage, setPageChanges]);
+        // 🚀 OPTIMIZACIÓN: Guardar en localStorage con debounce agresivo
+        debouncedSaveToLocalStorage(newPages);
+    }, [currentPage, historyIndex, debouncedSaveToLocalStorage]);
 
     // Guardar currentPage en localStorage cuando cambie (con manejo de errores)
     useEffect(() => {
@@ -3566,50 +3999,101 @@ export default function EditorLibro() {
         updatePages(updatedPages);
         setSelectedElement(element.id);
         setSelectedCell(cellId);
-
     };
 
-    // Actualizar un elemento en una celda
-    const updateElementInCell = (
+    // 🚀 OPTIMIZACIÓN: Función debounced para updatePages en cambios no críticos
+    const debouncedUpdatePages = useCallback(
+        debounce(() => {
+            setPageChanges(prev => {
+                const newMap = new Map(prev);
+                newMap.set(currentPage, Date.now());
+                return newMap;
+            });
+        }, 100),
+        [currentPage]
+    );
+
+    // Actualizar un elemento en una celda (OPTIMIZADA para redimensionamiento fluido)
+    const updateElementInCell = useCallback((
         cellId,
         elementId,
         updates,
         isDuplicate = false
     ) => {
-        const updatedPages = [...pages];
-        const cellIndex = updatedPages[currentPage].cells.findIndex(
-            (cell) => cell.id === cellId
-        );
+        // 🚀 OPTIMIZACIÓN: Usar función de callback para evitar re-renders innecesarios
+        setPages(prevPages => {
+            const updatedPages = [...prevPages];
+            const cellIndex = updatedPages[currentPage].cells.findIndex(
+                (cell) => cell.id === cellId
+            );
 
-        if (cellIndex !== -1) {
+            if (cellIndex === -1) return prevPages; // Celda no encontrada
+
             if (isDuplicate) {
                 // Añadir como nuevo elemento
+                const sourceElement = updatedPages[currentPage].cells[cellIndex].elements.find(
+                    (el) => el.id === elementId
+                );
+                
+                if (!sourceElement) return prevPages;
+                
                 updatedPages[currentPage].cells[cellIndex].elements.push({
-                    ...updatedPages[currentPage].cells[cellIndex].elements.find(
-                        (el) => el.id === elementId
-                    ),
+                    ...sourceElement,
                     ...updates,
                 });
             } else {
-                // Actualizar elemento existente
-                const elementIndex = updatedPages[currentPage].cells[
-                    cellIndex
-                ].elements.findIndex((el) => el.id === elementId);
+                // 🚀 OPTIMIZACIÓN: Actualizar elemento existente de forma más eficiente
+                const elementIndex = updatedPages[currentPage].cells[cellIndex].elements.findIndex(
+                    (el) => el.id === elementId
+                );
 
-                if (elementIndex !== -1) {
-                    updatedPages[currentPage].cells[cellIndex].elements[
-                        elementIndex
-                    ] = {
-                        ...updatedPages[currentPage].cells[cellIndex].elements[
-                        elementIndex
-                        ],
-                        ...updates,
-                    };
+                if (elementIndex === -1) return prevPages; // Elemento no encontrado
+
+                const currentElement = updatedPages[currentPage].cells[cellIndex].elements[elementIndex];
+                
+                // 🚀 OPTIMIZACIÓN: Solo actualizar si hay cambios reales
+                const hasChanges = Object.keys(updates).some(key => {
+                    const currentValue = currentElement[key];
+                    const newValue = updates[key];
+                    
+                    // Comparación profunda para objetos anidados (como style, position, size)
+                    if (typeof newValue === 'object' && typeof currentValue === 'object') {
+                        return JSON.stringify(currentValue) !== JSON.stringify(newValue);
+                    }
+                    
+                    return currentValue !== newValue;
+                });
+
+                if (!hasChanges) {
+                    return prevPages; // No hay cambios reales
                 }
+
+                updatedPages[currentPage].cells[cellIndex].elements[elementIndex] = {
+                    ...currentElement,
+                    ...updates,
+                };
             }
-            updatePages(updatedPages);
+            
+            return updatedPages;
+        });
+        
+        // 🚀 OPTIMIZACIÓN: Usar requestAnimationFrame para updatePages en operaciones de drag/resize
+        if (updates.position || updates.size) {
+            // Para operaciones de redimensionamiento/movimiento, usar RAF para mejor fluidez
+            requestAnimationFrame(() => {
+                // Marcar página como modificada de forma eficiente
+                setPageChanges(prev => {
+                    if (prev.has(currentPage)) return prev;
+                    const newMap = new Map(prev);
+                    newMap.set(currentPage, Date.now());
+                    return newMap;
+                });
+            });
+        } else {
+            // Para otros cambios, usar el sistema normal
+            debouncedUpdatePages();
         }
-    };
+    }, [currentPage, debouncedUpdatePages]);
 
     // Eliminar un elemento de una celda
     const deleteElementFromCell = (cellId, elementId) => {
@@ -4700,13 +5184,13 @@ export default function EditorLibro() {
                                     saveStatus={autoSave.saveStatus}
                                     lastSaved={autoSave.lastSaved}
                                     lastAutoSaved={autoSave.lastAutoSaved}
-                                    hasUnsavedChanges={autoSaveState.hasUnsavedChanges || pageChanges.has(currentPage)}
+                                    hasUnsavedChanges={autoSaveState.hasUnsavedChanges || Boolean(pageChanges instanceof Map && pageChanges.has(currentPage))}
                                     isOnline={autoSave.isOnline}
                                     saveError={autoSave.saveError}
                                     onManualSave={saveProgressManually}
                                     saveQueueSize={saveQueue.length}
                                     isProcessingQueue={isProcessingQueue}
-                                    pageChangesCount={pageChanges.size}
+                                    pageChangesCount={pageChanges instanceof Map ? pageChanges.size : 0}
                                 />
 
                                 {/* Debug: Botón para procesar cola manualmente */}
@@ -4725,7 +5209,7 @@ export default function EditorLibro() {
 
                                 {/* Debug: Info de estado */}
                                 <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                    P{currentPage}: {pageChanges.has(currentPage) ? '🔴' : '🟢'}
+                                    P{currentPage}: {(pageChanges instanceof Map && pageChanges.has(currentPage)) ? '🔴' : '🟢'}
                                 </div>
 
                                 {/* Debug: Botón para marcar página como modificada */}
@@ -4820,7 +5304,7 @@ export default function EditorLibro() {
 
 
 
-                                <button
+                             {/*   <button
                                     onClick={() => setActiveTab('images')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'images'
                                         ? 'bg-[#af5cb8] text-white shadow-md'
@@ -4829,7 +5313,7 @@ export default function EditorLibro() {
                                 >
                                     <ImageIcon className="h-6 w-6" />
                                     <span className="text-xs font-medium">Imagenes</span>
-                                </button>
+                                </button> */}
 
                                 <button
                                     onClick={() => setActiveTab('text')}
@@ -4842,31 +5326,18 @@ export default function EditorLibro() {
                                     <span className="text-xs font-medium">Textos</span>
                                 </button>
 
+                             
+
                                 <button
-                                    onClick={() => setActiveTab('shapes')}
-                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'shapes'
+                                    onClick={() => setActiveTab('filters')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'filters'
                                         ? 'bg-[#af5cb8] text-white shadow-md'
                                         : 'text-[#040404] hover:bg-white hover:shadow-sm'
                                         }`}
                                 >
-                                    <Shapes className="h-6 w-6" />
-                                    <span className="text-xs font-medium">Formas</span>
+                                    <Filter className="h-6 w-6" />
+                                    <span className="text-xs font-medium">Filtros</span>
                                 </button>
-
-                                <button
-                                    onClick={() => setActiveTab('stickers')}
-                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'stickers'
-                                        ? 'bg-[#af5cb8] text-white shadow-md'
-                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
-                                        }`}
-                                >
-                                    <Sticker className="h-6 w-6" />
-                                    <span className="text-xs font-medium">Stickers</span>
-                                </button>
-
-
-
-
 
                             </div>
 
@@ -4884,6 +5355,7 @@ export default function EditorLibro() {
                                                 {activeTab === 'stickers' && 'Stickers'}
                                                 {activeTab === 'pages' && 'Pages'}
                                                 {activeTab === 'panel' && 'Layers Panel'}
+                                                {activeTab === 'filters' && 'Filtros'}
                                             </h2>
                                             <p className="text-sm text-gray-600">
                                                 {activeTab === 'templates' && 'Choose a template to get started'}
@@ -4893,6 +5365,7 @@ export default function EditorLibro() {
                                                 {activeTab === 'stickers' && 'Add fun stickers'}
                                                 {activeTab === 'pages' && 'Manage your pages'}
                                                 {activeTab === 'panel' && 'Organize layers and z-index'}
+                                                {activeTab === 'filters' && 'Aplicar efectos y filtros a elementos'}
                                             </p>
                                         </div>
                                         <button className="p-1 hover:bg-gray-100 rounded">
@@ -5417,40 +5890,7 @@ export default function EditorLibro() {
                                         </div>
                                     )}
 
-                                    {activeTab === 'shapes' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-3 gap-3">
-                                                {Array.from({ length: 9 }).map((_, index) => (
-                                                    <button
-                                                        key={index}
-                                                        className="aspect-square bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center"
-                                                    >
-                                                        <div className="w-8 h-8 bg-[#af5cb8] rounded-lg"></div>
-                                                    </button>
-                                                ))}
-                                            </div>
-
-
-                                        </div>
-                                    )}
-
-                                    {activeTab === 'stickers' && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {Array.from({ length: 6 }).map((_, index) => (
-                                                    <button
-                                                        key={index}
-                                                        className="aspect-square bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center"
-                                                    >
-                                                        <div className="w-8 h-8 bg-[#f6a4b2] rounded-full"></div>
-                                                    </button>
-                                                ))}
-                                            </div>
-
-
-                                        </div>
-                                    )}
-
+                                
                                     {activeTab === 'pages' && (
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-4">
@@ -5495,7 +5935,7 @@ export default function EditorLibro() {
                                                                         type="cover"
                                                                     />
                                                                     {/* Indicador de cambios sin guardar */}
-                                                                    {pageChanges.has(pages.indexOf(page)) && (
+                                                                    {(pageChanges instanceof Map && pageChanges.has && pageChanges.has(pages.indexOf(page))) && (
                                                                         <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
                                                                             •
                                                                         </div>
@@ -5538,7 +5978,7 @@ export default function EditorLibro() {
                                                                             {page.pageNumber}
                                                                         </div>
                                                                         {/* Indicador de cambios sin guardar */}
-                                                                        {pageChanges.has(pages.indexOf(page)) ? (
+                                                                        {(pageChanges instanceof Map && pageChanges.has && pageChanges.has(pages.indexOf(page))) ? (
                                                                             <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
                                                                                 Sin guardar
                                                                             </div>
@@ -5577,7 +6017,7 @@ export default function EditorLibro() {
                                                                         type="final"
                                                                     />
                                                                     {/* Indicador de cambios sin guardar */}
-                                                                    {pageChanges.has(pages.indexOf(page)) && (
+                                                                    {(pageChanges instanceof Map && pageChanges.has && pageChanges.has(pages.indexOf(page))) && (
                                                                         <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
                                                                             •
                                                                         </div>
@@ -5756,6 +6196,49 @@ export default function EditorLibro() {
 
                                                 
                                             </div>
+
+                                              {selectedElement && (
+                                                <div className="flex space-x-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            if (selectedElement && selectedCell) {
+                                                                const element = getSelectedElement();
+                                                                if (element) {
+                                                                    const duplicateElement = {
+                                                                        ...element,
+                                                                        id: `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                                                        position: {
+                                                                            x: element.position.x + 0.05,
+                                                                            y: element.position.y + 0.05
+                                                                        }
+                                                                    };
+                                                                    addElementToCell(selectedCell, duplicateElement);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="h-8 px-2"
+                                                        icon={<Copy className="h-4 w-4" />}
+                                                    >
+                                                        Duplicar
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            if (selectedElement && selectedCell) {
+                                                                deleteElementFromCell(selectedCell, selectedElement);
+                                                            }
+                                                        }}
+                                                        className="h-8 px-2 text-red-600 hover:text-white"
+                                                        icon={<Trash2 className="h-4 w-4" />}
+                                                    >
+                                                        Eliminar
+                                                    </Button>
+                                                </div>
+                                            )}
+
 
                        
                                            
