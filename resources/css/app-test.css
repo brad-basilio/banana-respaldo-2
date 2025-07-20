@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.text-shadow {
+    text-shadow: 0px 0px 32px rgba(0, 0, 0, 0.5);
+}
+
+.hamburguesa {
+  @apply w-10 h-10 rounded-lg cursor-pointer;
+}
+
+.menu:checked ~ label p:nth-child(2) {
+  @apply hidden;
+}
+
+.menu:checked ~ label p:nth-child(1) {
+  @apply -rotate-45 translate-y-[3px];
+}
+
+.menu:checked ~ label p:nth-child(3) {
+  @apply rotate-45 -translate-y-[5px];
+}
+
+.filepond--label-action{
+  @apply w-full h-full cursor-pointer;
+}
+
+#formVoucher{
+  @apply  cursor-pointer ;
+}
+
+.filepond--list-scroller{
+  margin-top: 20px!important;
+}
+
+.filepond--list-scroller{
+  @apply  !z-50;
+}
+
+#main-header {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+}
+
+.swiper-pagination-slider .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  border-radius: 100px;
+  background-color: #0082CA !important;     
+}
+
+.swiper-pagination-slider .swiper-pagination-bullet:not(.swiper-pagination-bullet-active) {
+  background-color: #ffffff!important;
+  opacity: 1;
+}
+
+/* Máscaras personalizadas */
+.mask-heart {
+  clip-path: path('M10,6 Q10,0 15,0 T20,6 Q20,10 10,16 Q0,10 0,6 Q0,0 5,0 T10,6');
+}
+
+.mask-star {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.mask-hexagon {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
+.mask-triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.mask-diamond {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.mask-polaroid {
+  clip-path: inset(5% 5% 15% 5% round 2%);
+}
+
+.mask-vintage {
+  clip-path: inset(5% round 5% 5% 10% 5%);
+}
+
+.mask-wave {
+  clip-path: path('M0,10 C20,8 50,15 80,10 C110,5 140,15 160,10 L160,0 L0,0 Z');
+}
+
+.mask-diagonal {
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
+}
+
+.mask-frame {
+  clip-path: inset(10% round 10%);
+}
+
+.mask-leaf {
+  clip-path: path('M10,0 Q12,5 10,10 Q5,12 0,10 Q-2,5 0,0 Q5,-2 10,0');
+}
+
+.mask-cloud {
+  clip-path: path('M10,5 Q15,0 20,5 Q25,3 30,5 Q35,7 30,10 Q25,12 20,10 Q15,15 10,10 Q5,12 0,10 Q-5,7 0,5 Q5,3 10,5');
+}
+
+.mask-flower {
+  clip-path: path('M10,0 Q12,5 10,10 Q5,12 0,10 Q-2,5 0,0 Q5,-2 10,0 M5,3 Q7,5 5,7 Q3,5 5,3 M15,3 Q17,5 15,7 Q13,5 15,3');
+}
+
+.mask-ornate {
+  clip-path: path('M0,5 Q5,0 10,5 Q15,0 20,5 Q25,0 30,5 Q35,0 40,5 Q40,10 35,10 Q30,15 25,10 Q20,15 15,10 Q10,15 5,10 Q0,10 0,5');
+}
+
+.mask-blob1 {
+  clip-path: path('M10,0 C15,0 20,5 20,10 C20,15 15,20 10,20 C5,20 0,15 0,10 C0,5 5,0 10,0 Z');
+}
+
+.mask-blob2 {
+  clip-path: path('M10,0 C15,5 20,10 15,15 C10,20 5,15 0,10 C5,5 5,5 10,0 Z');
+}
+
+.mask-blob3 {
+  clip-path: path('M10,0 C15,0 20,5 15,10 C20,15 15,20 10,15 C5,20 0,15 5,10 C0,5 5,0 10,0 Z');
+}

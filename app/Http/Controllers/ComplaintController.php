@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Complaint;
 use App\Models\General;
+use App\Helpers\NotificationHelper;
+use App\Notifications\ClaimNotification;
+use App\Notifications\AdminClaimNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use SoDe\Extend\Crypto;
 
 class ComplaintController extends BasicController
@@ -14,6 +18,23 @@ class ComplaintController extends BasicController
     public $model = Complaint::class;
     public $reactView = 'Complaint';
     public $reactRootView = 'public';
+    private function verifyCustomCaptcha($token)
+    {
+        // Si el token tiene el formato de nuestro captcha personalizado
+        if (preg_match('/^captcha_\d+_[a-z0-9]+$/', $token)) {
+            $parts = explode('_', $token);
+            if (count($parts) === 3) {
+                $timestamp = intval($parts[1]);
+                $currentTime = time() * 1000;
+                $maxAge = 10 * 60 * 1000; // 10 minutos
+                
+                // Verificar que no sea muy antiguo
+                return ($currentTime - $timestamp) <= $maxAge;
+            }
+        }
+        return false;
+    }
+
     private function verifyRecaptcha($recaptchaToken)
     {
         $secretKey = env('RECAPTCHA_SECRET_KEY');
@@ -57,11 +78,15 @@ class ComplaintController extends BasicController
                     'message' => 'Por favor aceptar los términos y condiciones'
                 ], 400);
             }
-            // Verificar reCAPTCHA
-            if (!$this->verifyRecaptcha($request->recaptcha_token)) {
+            
+            // Verificar captcha (personalizado o reCAPTCHA)
+            $token = $request->recaptcha_token;
+            $isValidCaptcha = $this->verifyCustomCaptcha($token) || $this->verifyRecaptcha($token);
+            
+            if (!$isValidCaptcha) {
                 return response()->json([
                     'type' => 'error',
-                    'message' => 'reCAPTCHA no válido'
+                    'message' => 'Verificación de seguridad no válida'
                 ], 400);
             }
 
@@ -87,8 +112,35 @@ class ComplaintController extends BasicController
                 'recaptcha_token' => $request->recaptcha_token,
             ]);
 
-            // Notificar al cliente con respaldo del reclamo
-            $complaint->notify(new \App\Notifications\ClaimNotification($complaint));
+            try {
+                Log::info('ComplaintController - Iniciando envío de notificaciones', [
+                    'complaint_id' => $complaint->id,
+                    'email' => $complaint->correo_electronico,
+                    'name' => $complaint->nombre,
+                    'type' => $complaint->tipo_reclamo
+                ]);
+
+                // Enviar notificación al cliente y al administrador usando NotificationHelper
+                NotificationHelper::sendToClientAndAdmin($complaint, new ClaimNotification($complaint), new AdminClaimNotification($complaint));
+                
+                Log::info('ComplaintController - Notificaciones de reclamo enviadas exitosamente', [
+                    'complaint_id' => $complaint->id
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('ComplaintController - Error enviando notificaciones de reclamo', [
+                    'error' => $e->getMessage(),
+                    'complaint_id' => $complaint->id ?? 'unknown',
+                    'trace' => $e->getTraceAsString(),
+                    'email_settings' => [
+                        'mail_host' => config('mail.mailers.smtp.host'),
+                        'mail_port' => config('mail.mailers.smtp.port'),
+                        'mail_encryption' => config('mail.mailers.smtp.encryption'),
+                        'mail_from' => config('mail.from.address'),
+                    ]
+                ]);
+                // No lanzamos la excepción para no interrumpir el flujo del guardado
+            }
             //dump(DB::getQueryLog());
             // dump($complaint);
 

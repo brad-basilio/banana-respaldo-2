@@ -1,1 +1,0 @@
-import"./AboutSimple-Cf8x2fCZ.js";import"./index-BH53Isel.js";import{W as t}from"./WebDetailsRest-7-5P45Vu.js";import"./index-yBjzXJbu.js";import"./main-6DCdASTx.js";import"./___vite-browser-external_commonjs-proxy-0zb4Agf2.js";import"./BasicRest-DXMDQ7uA.js";import"./index-BZYhE2TF.js";import"./index-rimy3MAc.js";import"./index-fNjTmf9T.js";new t;

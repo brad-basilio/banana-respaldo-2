@@ -10,7 +10,9 @@ export function getLuminance(color) {
             parseInt(hex.slice(4, 6), 16),
         ];
     } else {
-        throw new Error("Formato de color no soportado");
+        // return black
+        rgb = [0, 0, 0];
+        // throw new Error("Formato de color no soportado");
     }
 
     // Si hay canal alfa, mezclar con blanco

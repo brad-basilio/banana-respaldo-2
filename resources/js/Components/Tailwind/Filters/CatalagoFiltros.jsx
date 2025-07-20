@@ -18,7 +18,10 @@ import {
     Layers,
     Grid3X3,
     Sliders,
-    Trash
+    Trash,
+    List,
+    ListFilter,
+    Hash
 } from "lucide-react";
 import ItemsRest from "../../../Actions/ItemsRest";
 import ArrayJoin from "../../../Utils/ArrayJoin";
@@ -107,7 +110,7 @@ const SkeletonCard = ({ delay = 0 }) => {
                 ease: "easeOut"
             }}
         >
-            <div className="px-4 h-full">
+            <div className="px-2 h-full">
                 <div className="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full">
                     {/* Contenedor principal con altura fija similar a las tarjetas reales */}
                     <div className="flex flex-col h-[400px] lg:h-[460px] xl:h-[400px] 2xl:h-[430px]">
@@ -197,6 +200,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const [categories, setCategories] = useState([]);
     const [collections, setCollections] = useState([]);
     const [priceRanges, setPriceRanges] = useState([]);
+    const [tags, setTags] = useState([]);
     const [activeSection, setActiveSection] = useState(null);
 
     // Rangos de precios estáticos
@@ -211,31 +215,92 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         { min: 5000, max: 999999, label: "Desde s/ 5.000" }
     ];
 
-    const [sections, setSections] = useState({
-        marca: true,
-        precio: true,
-        categoria: true,
-        subcategoria: true,
-        colores: false,
-        coleccion: true,
+    const [sections, setSections] = useState(() => {
+        // Por defecto, todos los filtros cerrados en desktop
+        if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+            return {
+                marca: false,
+                precio: false,
+                categoria: false,
+                subcategoria: false,
+                colores: false,
+                coleccion: false,
+            };
+        }
+        // En mobile/tablet puedes mantener el comportamiento anterior
+        return {
+            marca: false,
+            precio: false,
+            categoria: false,
+            subcategoria: false,
+            colores: false,
+            coleccion: false,
+        };
     });
 
     const [selectedFilters, setSelectedFilters] = useState({
-        collection_id: GET.collection ? GET.collection.split(',') : [],
-        category_id: GET.category ? GET.category.split(',') : [],
-        brand_id: GET.brand ? GET.brand.split(',') : [],
-        subcategory_id: GET.subcategory ? GET.subcategory.split(',') : [],
+        collection_id: [],
+        category_id: [],
+        brand_id: [],
+        subcategory_id:  [],
+        tag_id: GET.tag ? GET.tag.split(',') : [], // Agregar soporte para tags
         price: [],
         name: GET.search || null,
-        sort_by: "created_at",
-        order: "desc",
+        sort: [
+            {
+                selector: "final_price",
+                desc: true,
+            },
+        ],
     });
+
+    // Función para convertir slugs a IDs
+    const convertSlugsToIds = async () => {
+        try {
+            const params = {};
+            
+            if (GET.category) {
+                params.category_slugs = GET.category;
+            }
+            {/*if (GET.brand) {
+                params.brand_slugs = GET.brand;
+            } */}
+        if (GET.subcategory) {
+                params.subcategory_slugs = GET.subcategory;
+            }
+            if (GET.collection) {
+                params.collection_slugs = GET.collection;
+            }
+            
+            // Solo hacer la petición si hay slugs que convertir
+            if (Object.keys(params).length > 0) {
+                const response = await itemsRest.convertSlugs(params);
+                            console.log("Estamos fuera de estatus 200")
+                if (response.status === 200) {
+                    console.log("Estamos dentro de estatus 200")
+                    console.log("Response data:", response.data);
+                    setSelectedFilters(prev => ({
+                        ...prev,
+                        category_id: Array.isArray(response.data.category_ids) ? response.data.category_ids : (response.data.category_ids ? [response.data.category_ids] : []),
+                        brand_id: GET.brand || [],
+                        subcategory_id: Array.isArray(response.data.subcategory_ids) ? response.data.subcategory_ids : (response.data.subcategory_ids ? [response.data.subcategory_ids] : []),
+                        collection_id: Array.isArray(response.data.collection_ids) ? response.data.collection_ids : (response.data.collection_ids ? [response.data.collection_ids] : []),
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error converting slugs to IDs:', error);
+        }
+    };
 
     // Track the order in which filters are activated
     const [filterSequence, setFilterSequence] = useState([]);
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isFiltering, setIsFiltering] = useState(false); // Nuevo estado para filtros
+    const [hasSearched, setHasSearched] = useState(false); // Para saber si ya se hizo una búsqueda
+    const [showNoResults, setShowNoResults] = useState(false); // Para controlar cuándo mostrar "sin resultados"
     const [pagination, setPagination] = useState({
         currentPage: 1,
         totalPages: 1,
@@ -249,17 +314,17 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         const transformedFilters = [];
 
         if (filters.collection_id.length > 0) {
-            const collectionConditions = filters.collection_id.map((id) => [
-                "collection.slug",
+            const collectionConditions = filters.collection_id.map((slug) => [
+                "collection.id", // Cambiar a ID en lugar de slug
                 "=",
-                id,
+                collections.find(c => c.slug === slug)?.id || slug,
             ]);
             transformedFilters.push(ArrayJoin(collectionConditions, 'or'));
         }
 
         if (filters.category_id.length > 0) {
             const categoryConditions = filters.category_id.map((id) => [
-                "category.slug",
+                "category.id",
                 "=",
                 id,
             ]);
@@ -268,7 +333,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
         if (filters.subcategory_id.length > 0) {
             const subcategoryConditions = filters.subcategory_id.map((id) => [
-                "subcategory.slug",
+                "subcategory.id",
                 "=",
                 id,
             ]);
@@ -276,12 +341,36 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
 
         if (filters.brand_id.length > 0) {
-            const brandConditions = filters.brand_id.map((id) => [
-                "brand.slug",
+            const brandConditions = filters.brand_id.map((slug) => {
+                // Buscar la marca en el array para obtener su ID
+                const brand = brands.find(b => b.slug === slug);
+                
+                if (brand) {
+                    // Si encontramos la marca, usar su ID
+                    return [
+                        "brand.slug",
+                        "=",
+                        brand.slug,
+                    ];
+                } else {
+                    // Si no la encontramos, usar slug
+                    return [
+                        "brand.slug",
+                        "=",
+                        slug,
+                    ];
+                }
+            });
+            transformedFilters.push(ArrayJoin(brandConditions, 'or'));
+        }
+
+        if (filters.tag_id && filters.tag_id.length > 0) {
+            const tagConditions = filters.tag_id.map((tagId) => [
+                "item_tag.tag_id",
                 "=",
-                id,
+                tagId,
             ]);
-            transformedFilters.push([...brandConditions]);
+            transformedFilters.push(ArrayJoin(tagConditions, 'or'));
         }
 
         if (filters.price && filters.price.length > 0) {
@@ -297,136 +386,666 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         }
 
         if (filters.name) {
-            transformedFilters.push(["name", "contains", filters.name]);
+            // Buscar en múltiples campos como HeaderSearchB
+            const searchConditions = [
+                ["name", "contains", filters.name],
+                "or",
+                ["summary", "contains", filters.name],
+                "or",
+                ["description", "contains", filters.name]
+            ];
+            transformedFilters.push(searchConditions);
         }
 
         return ArrayJoin(transformedFilters, 'and');
     };
-    // Obtener productos filtrados desde el backend
-    const fetchProducts = async (page = 1, shouldScroll = false) => {
-        setLoading(true);
-        // Si estamos cambiando los filtros (no solo la página), desplazar hacia arriba
-        if (shouldScroll) {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+
+    // Función de fallback para búsqueda simple (como HeaderSearchB)
+    const getSimpleSearchFilters = (query) => {
+        return [
+            ['name', 'contains', query],
+            'or',
+            ['summary', 'contains', query],
+            'or',
+            ['description', 'contains', query]
+        ];
+    };
+
+    // Estado para controlar la búsqueda inteligente
+    const [intelligentSearchEnabled, setIntelligentSearchEnabled] = useState(true);
+    const [lastIntelligentSearch, setLastIntelligentSearch] = useState(null);
+
+    // Función para detectar si el query coincide con marcas, categorías o subcategorías
+    const detectIntelligentFilters = (query) => {
+        if (!query || query.length < 2 || !intelligentSearchEnabled) {
+            console.log("🚫 Búsqueda inteligente deshabilitada o query muy corto:", { query, length: query?.length, enabled: intelligentSearchEnabled });
+            return null;
         }
+        
+        const lowerQuery = query.toLowerCase().trim();
+        console.log("🔍 Buscando filtros inteligentes para:", lowerQuery);
+        console.log("📊 Datos disponibles:", { 
+            categories: categories.length, 
+            brands: brands.length, 
+            subcategories: subcategories.length, 
+            collections: collections.length 
+        });
+        
+        const detectedFilters = {
+            categories: [],
+            brands: [],
+            subcategories: [],
+            collections: []
+        };
+        
+        // Buscar en categorías
+        const matchedCategories = categories.filter(cat => {
+            const match = cat.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(cat.name.toLowerCase());
+            if (match) console.log("✅ Categoría encontrada:", cat.name);
+            return match;
+        });
+        
+        // Buscar en marcas
+        const matchedBrands = brands.filter(brand => {
+            const match = brand.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(brand.name.toLowerCase());
+            if (match) console.log("✅ Marca encontrada:", brand.name, "slug:", brand.slug);
+            return match;
+        });
+        
+        // Buscar en subcategorías
+        const matchedSubcategories = subcategories.filter(subcat => {
+            const match = subcat.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(subcat.name.toLowerCase());
+            if (match) console.log("✅ Subcategoría encontrada:", subcat.name);
+            return match;
+        });
+        
+        // Buscar en colecciones
+        const matchedCollections = collections.filter(collection => {
+            const match = collection.name.toLowerCase().includes(lowerQuery) ||
+                         lowerQuery.includes(collection.name.toLowerCase());
+            if (match) console.log("✅ Colección encontrada:", collection.name);
+            return match;
+        });
+        
+        const result = {
+            categories: matchedCategories,
+            brands: matchedBrands,
+            subcategories: matchedSubcategories,
+            collections: matchedCollections,
+            hasMatches: matchedCategories.length > 0 || matchedBrands.length > 0 || 
+                       matchedSubcategories.length > 0 || matchedCollections.length > 0
+        };
+        
+        console.log("📋 Resultado de detección inteligente:", result);
+        return result;
+    };
+
+    // Función para verificar si los filtros actuales fueron aplicados por búsqueda inteligente
+    const isIntelligentSearchActive = (query) => {
+        const detected = detectIntelligentFilters(query);
+        if (!detected || !detected.hasMatches) return false;
+        
+        // Verificar si algún filtro coincide con los detectados
+        const hasMatchingCategories = detected.categories.some(cat => 
+            selectedFilters.category_id.includes(cat.id)
+        );
+        const hasMatchingBrands = detected.brands.some(brand => 
+            selectedFilters.brand_id.includes(brand.slug)
+        );
+        const hasMatchingSubcategories = detected.subcategories.some(subcat => 
+            selectedFilters.subcategory_id.includes(subcat.id)
+        );
+        const hasMatchingCollections = detected.collections.some(collection => 
+            selectedFilters.collection_id.includes(collection.slug)
+        );
+        
+        return hasMatchingCategories || hasMatchingBrands || hasMatchingSubcategories || hasMatchingCollections;
+    };
+
+    // Función para aplicar filtros inteligentes automáticamente
+    const applyIntelligentFilters = (query) => {
+        const detected = detectIntelligentFilters(query);
+        
+        if (!detected || !detected.hasMatches) return;
+        
+        console.log("🧠 Búsqueda inteligente detectada:", detected);
+        
+        setSelectedFilters(prev => {
+            const newFilters = { ...prev };
+            
+            // Aplicar filtros de categorías detectadas
+            if (detected.categories.length > 0) {
+                const categoryIds = detected.categories.map(cat => cat.id);
+                newFilters.category_id = [...new Set([...newFilters.category_id, ...categoryIds])];
+            }
+            
+            // Aplicar filtros de marcas detectadas
+            if (detected.brands.length > 0) {
+                const brandSlugs = detected.brands.map(brand => brand.slug);
+                newFilters.brand_id = [...new Set([...newFilters.brand_id, ...brandSlugs])];
+            }
+            
+            // Aplicar filtros de subcategorías detectadas
+            if (detected.subcategories.length > 0) {
+                const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                newFilters.subcategory_id = [...new Set([...newFilters.subcategory_id, ...subcategoryIds])];
+            }
+            
+            // Aplicar filtros de colecciones detectadas
+            if (detected.collections.length > 0) {
+                const collectionSlugs = detected.collections.map(collection => collection.slug);
+                newFilters.collection_id = [...new Set([...newFilters.collection_id, ...collectionSlugs])];
+            }
+            
+            return newFilters;
+        });
+    };
+
+    // Función para aplicar búsqueda inteligente automáticamente
+    const handleIntelligentSearch = (query) => {
+        if (!query || query.length < 2) return;
+        
+        // Detectar y aplicar filtros inteligentes solo si está habilitado
+        const detected = detectIntelligentFilters(query);
+        
+        if (detected && detected.hasMatches && intelligentSearchEnabled) {
+            console.log("🧠 Aplicando búsqueda inteligente para:", query);
+            setLastIntelligentSearch(query);
+            
+            setSelectedFilters(prev => {
+                const newFilters = { ...prev, name: query };
+                
+                // Aplicar filtros de categorías detectadas
+                if (detected.categories.length > 0) {
+                    const categoryIds = detected.categories.map(cat => cat.id);
+                    newFilters.category_id = [...new Set([...newFilters.category_id, ...categoryIds])];
+                    console.log("📂 Categorías detectadas:", detected.categories.map(c => c.name));
+                }
+                
+                // Aplicar filtros de marcas detectadas
+                if (detected.brands.length > 0) {
+                    const brandSlugs = detected.brands.map(brand => brand.slug);
+                    newFilters.brand_id = [...new Set([...newFilters.brand_id, ...brandSlugs])];
+                    console.log("🏷️ Marcas detectadas:", detected.brands.map(b => b.name));
+                }
+                
+                // Aplicar filtros de subcategorías detectadas
+                if (detected.subcategories.length > 0) {
+                    const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                    newFilters.subcategory_id = [...new Set([...newFilters.subcategory_id, ...subcategoryIds])];
+                    console.log("📋 Subcategorías detectadas:", detected.subcategories.map(s => s.name));
+                }
+                
+                // Aplicar filtros de colecciones detectadas
+                if (detected.collections.length > 0) {
+                    const collectionSlugs = detected.collections.map(collection => collection.slug);
+                    newFilters.collection_id = [...new Set([...newFilters.collection_id, ...collectionSlugs])];
+                    console.log("🎯 Colecciones detectadas:", detected.collections.map(c => c.name));
+                }
+                
+                return newFilters;
+            });
+        } else {
+            // Si no hay filtros inteligentes, solo aplicar búsqueda de texto
+            setSelectedFilters(prev => ({ ...prev, name: query }));
+            setLastIntelligentSearch(null);
+        }
+    };
+
+    // Función para alternar la búsqueda inteligente
+    const toggleIntelligentSearch = () => {
+        setIntelligentSearchEnabled(!intelligentSearchEnabled);
+        console.log(`🧠 Búsqueda inteligente ${!intelligentSearchEnabled ? 'activada' : 'desactivada'}`);
+    };
+
+    // Función para limpiar filtros aplicados por búsqueda inteligente
+    const clearIntelligentFilters = () => {
+        if (lastIntelligentSearch && selectedFilters.name) {
+            const detected = detectIntelligentFilters(selectedFilters.name);
+            if (detected && detected.hasMatches) {
+                setSelectedFilters(prev => {
+                    const newFilters = { ...prev };
+                    
+                    // Remover categorías detectadas
+                    if (detected.categories.length > 0) {
+                        const categoryIds = detected.categories.map(cat => cat.id);
+                        newFilters.category_id = newFilters.category_id.filter(id => !categoryIds.includes(id));
+                    }
+                    
+                    // Remover marcas detectadas
+                    if (detected.brands.length > 0) {
+                        const brandSlugs = detected.brands.map(brand => brand.slug);
+                        newFilters.brand_id = newFilters.brand_id.filter(slug => !brandSlugs.includes(slug));
+                    }
+                    
+                    // Remover subcategorías detectadas
+                    if (detected.subcategories.length > 0) {
+                        const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                        newFilters.subcategory_id = newFilters.subcategory_id.filter(id => !subcategoryIds.includes(id));
+                    }
+                    
+                    // Remover colecciones detectadas
+                    if (detected.collections.length > 0) {
+                        const collectionSlugs = detected.collections.map(collection => collection.slug);
+                        newFilters.collection_id = newFilters.collection_id.filter(slug => !collectionSlugs.includes(slug));
+                    }
+                    
+                    return newFilters;
+                });
+            }
+        }
+        setLastIntelligentSearch(null);
+    };
+
+    // Función de debug mejorada con búsqueda inteligente
+    const debugCompareWithHeaderSearch = async (query) => {
+        console.log("=== DEBUG COMPARISON ===");
+        console.log("Query:", query);
+        
+        // Detectar filtros inteligentes
+        const intelligentFilters = detectIntelligentFilters(query);
+        console.log("🧠 Filtros inteligentes detectados:", intelligentFilters);
+        
+        // Crear filtros mejorados con detección inteligente
+        const enhancedFilters = { ...selectedFilters, name: query };
+        
+        // Aplicar filtros inteligentes para la comparación
+        if (intelligentFilters && intelligentFilters.hasMatches) {
+            if (intelligentFilters.categories.length > 0) {
+                enhancedFilters.category_id = [...new Set([
+                    ...enhancedFilters.category_id,
+                    ...intelligentFilters.categories.map(cat => cat.id)
+                ])];
+            }
+            
+            if (intelligentFilters.brands.length > 0) {
+                enhancedFilters.brand_id = [...new Set([
+                    ...enhancedFilters.brand_id,
+                    ...intelligentFilters.brands.map(brand => brand.slug)
+                ])];
+            }
+            
+            if (intelligentFilters.subcategories.length > 0) {
+                enhancedFilters.subcategory_id = [...new Set([
+                    ...enhancedFilters.subcategory_id,
+                    ...intelligentFilters.subcategories.map(subcat => subcat.id)
+                ])];
+            }
+            
+            if (intelligentFilters.collections.length > 0) {
+                enhancedFilters.collection_id = [...new Set([
+                    ...enhancedFilters.collection_id,
+                    ...intelligentFilters.collections.map(collection => collection.slug)
+                ])];
+            }
+        }
+        
+        // Filtros de CatalagoFiltros (con mejora inteligente)
+        const catalogFilters = transformFilters(enhancedFilters);
+        console.log("Catalog filters (enhanced):", catalogFilters);
+        
+        // Filtros de HeaderSearchB (básicos)
+        const headerFilters = getSimpleSearchFilters(query);
+        console.log("Header filters (basic):", headerFilters);
+        
+        try {
+            // Test con filtros de HeaderSearchB
+            const headerResponse = await fetch('/api/items/paginate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    take: 8,
+                    skip: 0,
+                    filter: headerFilters,
+                    sort: [{ selector: 'name', desc: false }],
+                    requireTotalCount: false,
+                    with: 'category,brand'
+                })
+            });
+            
+            const headerData = await headerResponse.json();
+            console.log("Header-style response:", headerData);
+            
+            // Test con filtros de CatalagoFiltros (mejorados)
+            const catalogResponse = await itemsRest.paginate({
+                filter: catalogFilters,
+                sort: [{ selector: 'name', desc: false }],
+                skip: 0,
+                take: 8,
+                requireTotalCount: false,
+                with: 'category,brand'
+            });
+            
+            console.log("Catalog-style response (enhanced):", catalogResponse);
+            
+            // Comparación de resultados
+            const headerCount = headerData?.data?.length || 0;
+            const catalogCount = catalogResponse?.data?.length || 0;
+            
+            console.log("📊 Comparación de resultados:");
+            console.log(`- Header (básico): ${headerCount} productos`);
+            console.log(`- Catalog (inteligente): ${catalogCount} productos`);
+            
+            if (catalogCount > headerCount) {
+                console.log("✅ La búsqueda inteligente encontró más productos relevantes!");
+            } else if (headerCount > catalogCount) {
+                console.log("⚠️ La búsqueda básica encontró más productos");
+            } else {
+                console.log("🤷 Ambas búsquedas encontraron la misma cantidad");
+            }
+            
+        } catch (error) {
+            console.error("Debug comparison error:", error);
+        }
+        
+        console.log("=== END DEBUG ===");
+    };
+
+    // Exponer funciones globalmente para testing y uso externo
+    window.debugCatalogSearch = debugCompareWithHeaderSearch;
+    window.handleIntelligentSearch = handleIntelligentSearch;
+    window.toggleIntelligentSearch = toggleIntelligentSearch;
+    window.clearIntelligentFilters = clearIntelligentFilters;
+    window.isIntelligentSearchActive = isIntelligentSearchActive;
+    window.detectIntelligentFilters = detectIntelligentFilters;
+    
+    // Función específica para debuggear JBL
+    window.testJBLSearch = () => {
+        console.log("🧪 Testing JBL search...");
+        console.log("📊 Current state:", {
+            brands: brands.map(b => ({ name: b.name, slug: b.slug })),
+            intelligentSearchEnabled,
+            selectedFilters,
+            brandsCount: brands.length
+        });
+        
+        // Test manual de detección
+        const detected = detectIntelligentFilters("JBL");
+        console.log("🔍 JBL detection result:", detected);
+        
+        if (detected && detected.hasMatches) {
+            console.log("✅ JBL detectado correctamente");
+            handleIntelligentSearch("JBL");
+        } else {
+            console.log("❌ JBL no detectado");
+            console.log("🔍 Buscando manualmente en brands:", brands.filter(b => 
+                b.name.toLowerCase().includes("jbl") || "jbl".includes(b.name.toLowerCase())
+            ));
+            
+            // Mostrar todas las marcas disponibles
+            console.log("🏷️ Todas las marcas disponibles:", brands.map(b => b.name));
+        }
+    };
+    
+    // Función para simular búsqueda desde HeaderSearchB
+    window.simulateHeaderSearch = (query) => {
+        console.log("🎯 Simulando búsqueda desde HeaderSearchB:", query);
+        
+        // Simular lo que haría el HeaderSearchB
+        setSelectedFilters(prev => ({
+            ...prev,
+            name: query
+        }));
+        
+        console.log("✅ Filtro de nombre aplicado, esperando useEffect...");
+    };
+    
+    // Función para forzar la búsqueda inteligente sin importar el estado
+    window.forceIntelligentSearch = (query) => {
+        console.log("🚀 Forzando búsqueda inteligente para:", query);
+        const originalEnabled = intelligentSearchEnabled;
+        setIntelligentSearchEnabled(true);
+        
+        setTimeout(() => {
+            handleIntelligentSearch(query);
+            setIntelligentSearchEnabled(originalEnabled);
+        }, 100);
+    };
+    // Obtener productos filtrados desde el backend
+    const fetchProducts = async (page = 1, isNewFilter = false) => {
+        // Resetear el estado de "sin resultados" al comenzar una nueva búsqueda
+        setShowNoResults(false);
+        
+        // Diferentes estados para carga inicial vs filtrado
+        if (isNewFilter) {
+            setIsFiltering(true);
+        } else {
+            setLoading(true);
+        }
+        
         try {
             const filters = transformFilters(selectedFilters);
+            const itemsPerPage = 24; // Valor constante para evitar problemas de estado
+            
+            // Debug: Log de los filtros transformados
+            console.log("Selected filters:", selectedFilters);
+            console.log("Transformed filters:", filters);
+            
             // Extraer los IDs de los filtros seleccionados (no slugs)
             const params = {
                 filter: filters,
                 sort: selectedFilters.sort,
-                skip: (page - 1) * pagination.itemsPerPage,
-                take: pagination.itemsPerPage,
+                skip: (page - 1) * itemsPerPage,
+                take: itemsPerPage,
                 requireTotalCount: true,
                 filterSequence: filterSequence,
-                // Enviar los IDs de marcas/categorías/colecciones seleccionadas
-                brand_id: brands
-                    .filter(b => selectedFilters.brand_id.includes(b.slug))
-                    .map(b => b.id),
-                category_id: categories
-                    .filter(c => selectedFilters.category_id.includes(c.slug))
-                    .map(c => c.id),
-                collection_id: collections
-                    ? collections.filter(col => selectedFilters.collection_id.includes(col.slug)).map(col => col.id)
-                    : [],
+                // Removido los filtros duplicados - solo usar el filtro complejo
             };
+            
+            console.log("API params:", params);
+            
             const response = await itemsRest.paginate(params);
-            setProducts(response.data);
+            
+            console.log("API response:", response);
+            
+            // Validar la respuesta del backend
+            if (response.status !== 200) {
+                throw new Error(`API returned status ${response.status}`);
+            }
+            
+            setProducts(response.data || []);
+            setHasSearched(true); // Marcamos que ya se hizo una búsqueda
+            
+            // Si no hay productos, mostrar mensaje después de un pequeño delay
+            if (!response.data || response.data.length === 0) {
+                setTimeout(() => {
+                    setShowNoResults(true);
+                }, 300); // Delay de 300ms para evitar parpadeo
+            }
+            
+            // Actualizar paginación con los datos correctos del backend
+            const totalCount = response.totalCount || 0;
+            const totalPages = Math.ceil(totalCount / itemsPerPage);
+            
             setPagination({
                 currentPage: page,
-                totalPages: Math.ceil(
-                    response.totalCount / pagination.itemsPerPage
-                ),
-                totalItems: response.totalCount,
-                itemsPerPage: pagination.itemsPerPage,
-                from: (page - 1) * pagination.itemsPerPage + 1,
-                to: Math.min(
-                    page * pagination.itemsPerPage,
-                    response.totalCount
-                ),
+                totalPages: totalPages,
+                totalItems: totalCount,
+                itemsPerPage: itemsPerPage,
+                from: totalCount > 0 ? (page - 1) * itemsPerPage + 1 : 0,
+                to: Math.min(page * itemsPerPage, totalCount),
             });
+            
             // Update all filter options from backend summary
-            console.log('🔍 DEBUG - Response summary:', response?.summary);
-            console.log('🔍 DEBUG - Subcategories raw:', response?.summary.subcategories);
-            
-            setBrands(response?.summary.brands || []);
-            setCategories(response?.summary.categories || []);
-            setSubcategories(response?.summary.subcategories || []);
-            setCollections(response?.summary.collections || []);
-            setPriceRanges(response?.summary.priceRanges || []);
-            
-            console.log('✅ DEBUG - Subcategories state set:', response?.summary.subcategories || []);
+            setBrands(response?.summary?.brands || []);
+            setCategories(response?.summary?.categories || []);
+            setSubcategories(response?.summary?.subcategories || []);
+            setCollections(response?.summary?.collections || []);
+            setPriceRanges(response?.summary?.priceRanges || []);
+            setTags(response?.summary?.tags || []);
         } catch (error) {
-            console.log("Error fetching products:", error);
+            console.error("Error fetching products:", error);
+            
+            // Si hay un error y solo hay filtro de búsqueda, intentar con filtro simple
+            if (selectedFilters.name && 
+                selectedFilters.category_id.length === 0 && 
+                selectedFilters.brand_id.length === 0 && 
+                selectedFilters.subcategory_id.length === 0 && 
+                selectedFilters.collection_id.length === 0 && 
+                selectedFilters.tag_id.length === 0 && 
+                selectedFilters.price.length === 0) {
+                
+                console.log("Attempting fallback with simple search filters");
+                
+                try {
+                    const simpleParams = {
+                        filter: getSimpleSearchFilters(selectedFilters.name),
+                        sort: selectedFilters.sort,
+                        skip: (page - 1) * 24,
+                        take: 24,
+                        requireTotalCount: true,
+                        with: 'category,brand'
+                    };
+                    
+                    const fallbackResponse = await itemsRest.paginate(simpleParams);
+                    
+                    if (fallbackResponse.status === 200) {
+                        setProducts(fallbackResponse.data || []);
+                        setHasSearched(true);
+                        
+                        if (!fallbackResponse.data || fallbackResponse.data.length === 0) {
+                            setTimeout(() => {
+                                setShowNoResults(true);
+                            }, 300);
+                        }
+                        
+                        const totalCount = fallbackResponse.totalCount || 0;
+                        const totalPages = Math.ceil(totalCount / 24);
+                        
+                        setPagination({
+                            currentPage: page,
+                            totalPages: totalPages,
+                            totalItems: totalCount,
+                            itemsPerPage: 24,
+                            from: totalCount > 0 ? (page - 1) * 24 + 1 : 0,
+                            to: Math.min(page * 24, totalCount),
+                        });
+                        
+                        return; // Salir exitosamente con fallback
+                    }
+                } catch (fallbackError) {
+                    console.error("Fallback search also failed:", fallbackError);
+                }
+            }
+            
+            // En caso de error, también mostrar el mensaje después de un delay
+            setTimeout(() => {
+                setShowNoResults(true);
+            }, 300);
         } finally {
             setLoading(false);
+            setIsFiltering(false);
         }
     };
 
     useEffect(() => {
         // Initialize state from filteredData prop
-        console.log('🚀 DEBUG - filteredData prop:', filteredData);
-        
-        // Debug the complete filteredData object structure
-        console.log('🔍 FULL DEBUG - Complete filteredData object:');
-        console.log('Keys:', Object.keys(filteredData || {}));
-        Object.keys(filteredData || {}).forEach(key => {
-            console.log(`${key}:`, filteredData[key]);
-            if (Array.isArray(filteredData[key])) {
-                console.log(`${key} length:`, filteredData[key].length);
-                if (filteredData[key].length > 0) {
-                    console.log(`First ${key}:`, filteredData[key][0]);
-                }
-            }
-        });
-        
         if (filteredData) {
-            console.log('📊 DEBUG - Available data keys:', Object.keys(filteredData));
-            
             // Set initial data from SystemController
-            if (filteredData.categories) {
-                console.log('📂 DEBUG - Setting categories:', filteredData.categories);
-                setCategories(filteredData.categories || []);
-            }
-            
-            if (filteredData.brands) {
-                console.log('🏷️ DEBUG - Setting brands:', filteredData.brands);
-                setBrands(filteredData.brands || []);
-            }
-            
-            if (filteredData.subcategories) {
-                console.log('📋 DEBUG - Setting subcategories from filteredData:', filteredData.subcategories);
-                setSubcategories(filteredData.subcategories || []);
-            }
-            
-            if (filteredData.priceRanges) {
-                console.log('💰 DEBUG - Setting price ranges:', filteredData.priceRanges);
-                setPriceRanges(filteredData.priceRanges || []);
-            }
+            setCategories(filteredData.categories || []);
+            setBrands(filteredData.brands || []);
+            setSubcategories(filteredData.subcategories || []);
+            setPriceRanges(filteredData.priceRanges || []);
         }
         
-        // Initial fetch to get products and update summary data
+        // Convert slugs from GET parameters to IDs
+        convertSlugsToIds();
+        
+        // Aplicar búsqueda inteligente si hay un término de búsqueda inicial
+        if (GET.search && intelligentSearchEnabled) {
+            // Pequeño delay para asegurar que las categorías, marcas, etc. estén cargadas
+            setTimeout(() => {
+                console.log("🚀 Inicializando búsqueda inteligente para:", GET.search);
+                handleIntelligentSearch(GET.search);
+            }, 100);
+        }
+        
+        // Initial fetch to get products and update summary data (no es filtrado)
         fetchProducts(1, false);
-    }, [filteredData]);
+    }, [filteredData, intelligentSearchEnabled]); // Agregar intelligentSearchEnabled como dependencia
 
     useEffect(() => {
-        // Cuando cambian los filtros, volvemos a la primera página y desplazamos hacia arriba
-        fetchProducts(1, true);
-    }, [selectedFilters]);
+        // Cuando cambian los filtros, volvemos a la primera página SIN hacer scroll
+        // Solo si ya se hizo la búsqueda inicial
+        if (hasSearched) {
+            fetchProducts(1, true); // Es un filtrado
+        }
+    }, [selectedFilters, hasSearched]);
+
+    // useEffect para detectar cambios en el filtro de nombre y aplicar búsqueda inteligente
+    useEffect(() => {
+        if (selectedFilters.name && intelligentSearchEnabled && brands.length > 0) {
+            console.log("🔍 Detectando cambio en filtro de nombre:", selectedFilters.name);
+            
+            // Verificar si ya tiene filtros inteligentes aplicados
+            const isAlreadyIntelligent = isIntelligentSearchActive(selectedFilters.name);
+            
+            if (!isAlreadyIntelligent) {
+                console.log("🧠 Aplicando búsqueda inteligente automática para:", selectedFilters.name);
+                
+                // Aplicar búsqueda inteligente automáticamente
+                setTimeout(() => {
+                    const detected = detectIntelligentFilters(selectedFilters.name);
+                    if (detected && detected.hasMatches) {
+                        console.log("✅ Aplicando filtros inteligentes detectados");
+                        
+                        setSelectedFilters(prev => {
+                            const newFilters = { ...prev };
+                            
+                            // Aplicar filtros de marcas detectadas
+                            if (detected.brands.length > 0) {
+                                const brandSlugs = detected.brands.map(brand => brand.slug);
+                                newFilters.brand_id = [...new Set([...newFilters.brand_id, ...brandSlugs])];
+                                console.log("🏷️ Marcas aplicadas:", detected.brands.map(b => b.name));
+                            }
+                            
+                            // Aplicar filtros de categorías detectadas
+                            if (detected.categories.length > 0) {
+                                const categoryIds = detected.categories.map(cat => cat.id);
+                                newFilters.category_id = [...new Set([...newFilters.category_id, ...categoryIds])];
+                                console.log("📂 Categorías aplicadas:", detected.categories.map(c => c.name));
+                            }
+                            
+                            // Aplicar filtros de subcategorías detectadas
+                            if (detected.subcategories.length > 0) {
+                                const subcategoryIds = detected.subcategories.map(subcat => subcat.id);
+                                newFilters.subcategory_id = [...new Set([...newFilters.subcategory_id, ...subcategoryIds])];
+                                console.log("📋 Subcategorías aplicadas:", detected.subcategories.map(s => s.name));
+                            }
+                            
+                            // Aplicar filtros de colecciones detectadas
+                            if (detected.collections.length > 0) {
+                                const collectionSlugs = detected.collections.map(collection => collection.slug);
+                                newFilters.collection_id = [...new Set([...newFilters.collection_id, ...collectionSlugs])];
+                                console.log("🎯 Colecciones aplicadas:", detected.collections.map(c => c.name));
+                            }
+                            
+                            return newFilters;
+                        });
+                        
+                        setLastIntelligentSearch(selectedFilters.name);
+                    }
+                }, 100);
+            }
+        }
+    }, [selectedFilters.name, intelligentSearchEnabled, brands, categories, subcategories, collections]);
 
     const handlePageChange = (page) => {
-        if (page >= 1 && page <= pagination.totalPages) {
-            // Primero, desplazar hacia arriba suavemente
+        if (page >= 1 && page <= pagination.totalPages && page !== pagination.currentPage) {
+            // Solo para la paginación: desplazar hacia arriba suavemente
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
 
-            // Luego, obtener productos de la nueva página
-            fetchProducts(page);
+            // Luego, obtener productos de la nueva página (no es filtrado)
+            fetchProducts(page, false);
         }
     };
 
@@ -454,19 +1073,37 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
         });
     };
     // Opciones de ordenación
-    const sortOptions = [
-        { value: "created_at:desc", label: "Más reciente" },
-        { value: "created_at:asc", label: "Mas antiguo" },
-        { value: "final_price:asc", label: "Precio: Menor a Mayor" },
-        { value: "final_price:desc", label: "Precio: Mayor a Menor" },
-        { value: "name:asc", label: "Nombre: A-Z" },
-        { value: "name:desc", label: "Nombre: Z-A" },
-    ];
+   const sortOptions = [
+    { value: "created_at:desc", label: "Más reciente" },
+    { value: "created_at:asc", label: "Mas antiguo" },
+    { value: "final_price:asc", label: "Precio: Menor a Mayor" },
+    { value: "final_price:desc", label: "Precio: Mayor a Menor" },
+    { value: "name:asc", label: "Nombre: A-Z" },
+    { value: "name:desc", label: "Nombre: Z-A" },
+    { value: "most_sold:desc", label: "Más vendidos" },
+    { value: "views:desc", label: "Más visitados" },
+   // { value: "discount_percent:desc", label: "Mayores descuentos" },
+    { value: "best_discount:desc", label: "Mejores ofertas" },
+   // { value: "offering:desc", label: "En oferta" },
+ //   { value: "is_new:desc", label: "Nuevos productos" },
+   // { value: "featured:desc", label: "Destacados" },
+   
+   //{ value: "recommended:desc", label: "Recomendados por expertos" },
+];
 
 
     //}, [items]);
     // Manejar cambios en los filtros y mantener filterSequence
     const handleFilterChange = (type, value) => {
+        // Soporte para filtros especiales tipo booleano
+        const specialFields = ['is_new', 'offering', 'recommended', 'featured'];
+        if (specialFields.includes(type)) {
+            setSelectedFilters((prev) => ({
+                ...prev,
+                [type]: prev[type] ? !prev[type] : true,
+            }));
+            return;
+        }
         setSelectedFilters((prev) => {
             if (type === "price") {
                 // Manejar múltiples rangos de precio
@@ -474,7 +1111,6 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 const isAlreadySelected = currentPrices.some(
                     (range) => range.min === value.min && range.max === value.max
                 );
-                
                 let newPrices;
                 if (isAlreadySelected) {
                     // Deseleccionar el rango
@@ -485,13 +1121,11 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                     // Agregar el nuevo rango
                     newPrices = [...currentPrices, value];
                 }
-                
                 return {
                     ...prev,
                     price: newPrices,
                 };
             }
-
             // Asegúrate de que prev[type] sea un array antes de usar .includes()
             const currentValues = Array.isArray(prev[type]) ? prev[type] : [];
             let newValues;
@@ -502,7 +1136,6 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                 // Seleccionar
                 newValues = [...currentValues, value];
             }
-
             return { ...prev, [type]: newValues };
         });
 
@@ -547,9 +1180,23 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     const filteredCategories = categories.filter((category) =>
         category.name.toLowerCase().includes(searchCategory.toLowerCase())
     );
-    const filteredSubcategories = subcategories.filter((subcategory) =>
-        subcategory.name.toLowerCase().includes(searchSubcategory.toLowerCase())
-    );
+    const filteredSubcategories = subcategories.filter((subcategory) => {
+        // Si hay categorías seleccionadas en los filtros, solo mostrar subcategorías de esas categorías
+        let categoryIds;
+        console.log("selectedFilters.category_id", selectedFilters.category_id);
+        if (selectedFilters.category_id && selectedFilters.category_id.length > 0) {
+            // Hay categorías seleccionadas, solo mostrar subcategorías de esas categorías
+            categoryIds = categories
+                .filter(cat => selectedFilters.category_id.includes(cat.id))
+                .map(cat => cat.id);
+        } else {
+            // No hay categorías seleccionadas, mostrar subcategorías de todas las categorías disponibles
+            categoryIds = categories.map(cat => cat.id);
+        }
+        
+        return categoryIds.includes(subcategory.category_id) &&
+            subcategory.name.toLowerCase().includes(searchSubcategory.toLowerCase());
+    });
     
  
 
@@ -580,37 +1227,44 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
     }, [filtersOpen]);
 
     return (
-        <section className="py-12 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
+        <section className="py-4 lg:py-12 bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
             <div className="mx-auto px-primary 2xl:px-0 2xl:max-w-7xl">
                 {/* Header mejorado con estadísticas y acciones rápidas */}
                 <motion.div 
-                    className="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-8 pb-6 border-b-2 border-gradient-to-r from-blue-200 via-indigo-200 to-purple-200"
+                    className="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-6 lg:mb-8 lg:pb-6 lg:border-b-2 border-gradient-to-r from-blue-200 via-indigo-200 to-purple-200"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
                     <motion.div 
-                        className="md:w-6/12 mb-4 md:mb-0"
+                        className="md:w-6/12 mb-0 md:mb-0"
                         whileHover={{ scale: 1.02 }}
                     >
-                        <h2 className="text-[32px] md:text-4xl font-bold customtext-primary  mb-2">
+                        <h2 className="text-2xl lg:text-[32px] md:text-4xl font-bold customtext-primary  lg:mb-2">
                             {data?.title}
                         </h2>
+                        
+                      
                       
                     </motion.div>
                     
-                    <div className="flex flex-col w-full items-start md:items-cenrter justify-end gap-4 md:flex-row md:w-5/12">
+                    <div className="hidden md:flex flex-col w-full items-start md:items-center justify-end gap-4 md:flex-row md:w-5/12">
                         {/* Estadísticas mejoradas */}
                       
                         
-                        {/* Selector de ordenación mejorado */}
+                        {/* Selector de ordenación mejorado - Solo Desktop */}
                         <motion.div 
-                            className="w-full md:w-6/12  relative"
+                            className="w-full md:w-6/12 relative"
                          
                         >
                             <SelectForm
                                 options={sortOptions}
                                 placeholder="Ordenar por"
+                                value={
+                                    selectedFilters.sort?.[0]?.selector && selectedFilters.sort?.[0]?.desc !== undefined
+                                        ? `${selectedFilters.sort[0].selector}:${selectedFilters.sort[0].desc ? "desc" : "asc"}`
+                                        : "final_price:desc"
+                                }
                                 onChange={(value) => {
                                     const [selector, order] = value.split(":");
                                     const sort = [
@@ -626,53 +1280,84 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 }}
                                 labelKey="label"
                                 valueKey="value"
+                                className="customtext-neutral-dark border-primary rounded-lg"
+                                generalIcon={<ListFilter className="w-5 h-5 mr-2 customtext-primary" />}
                             />
                         </motion.div>
                     </div>
                 </motion.div>
 
                 <div className="relative flex flex-col lg:flex-row gap-6">
-                    {/* Botón de filtros para móvil ultra mejorado */}
-                    <motion.div className="w-full lg:hidden mb-6">
-                        <Tooltip text="Abrir panel de filtros avanzados" position="bottom">
-                            <motion.button
-                                className="w-full flex items-center z-0 gap-2 py-2 px-4 bg-primary text-white rounded-2xl shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 overflow-hidden relative"
-                                onClick={() => setFiltersOpen(true)}
-                                whileHover={{ scale: 1.02, y: -3 }}
-                                whileTap={{ scale: 0.98 }}
-                                {...filterAnimations.container}
-                            >
-                                {/* Fondo animado */}
-                                <motion.div
-                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                                    animate={{ x: ['-100%', '100%'] }}
-                                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                                />
-                                
-                                <div className="flex items-center gap-4 relative z-10">
+                    {/* Fila para móvil: Filtros + Ordenación */}
+                    <div className="w-full flex lg:hidden lg:mb-6  items-stretch gap-3">
+                        {/* Botón de filtros para móvil */}
+                        <motion.div className="flex-1 max-w-max">
+                            <Tooltip text="Abrir panel de filtros avanzados" position="bottom">
+                                <motion.button
+                                    className="w-full h-12 flex items-center justify-center gap-2 px-4 bg-primary text-white rounded-2xl shadow-xl shadow-blue-500/25 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 overflow-hidden relative"
+                                    onClick={() => setFiltersOpen(true)}
+                                    whileHover={{ scale: 1.02, y: -3 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    {...filterAnimations.container}
+                                >
+                                    {/* Fondo animado */}
                                     <motion.div
-                                        className="p-3 bg-white/20 rounded-xl backdrop-blur-sm"
-                                        animate={{ 
-                                            rotate: [0, 10, 0],
-                                            scale: [1, 1.1, 1]
-                                        }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    >
-                                        <Sliders className="h-4 w-4" />
-                                    </motion.div>
-                                    <div className="text-left">
-                                        <h2 className="text-xl font-bold flex items-center gap-2">
-                                            Filtros
-                                           
-                                        </h2>
-                                       
+                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                                        animate={{ x: ['-100%', '100%'] }}
+                                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                    />
+                                    
+                                    <div className="flex items-center gap-2 relative z-10">
+                                        <motion.div
+                                            className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm"
+                                            animate={{ 
+                                                rotate: [0, 10, 0],
+                                                scale: [1, 1.1, 1]
+                                            }}
+                                            transition={{ duration: 2, repeat: Infinity }}
+                                        >
+                                            <Sliders className="h-4 w-4" />
+                                        </motion.div>
+                                        <span className="text-sm font-bold">Filtros</span>
                                     </div>
-                                </div>
-                                
-                               
-                            </motion.button>
-                        </Tooltip>
-                    </motion.div>
+                                </motion.button>
+                            </Tooltip>
+                        </motion.div>
+
+                        {/* Selector de ordenación para móvil */}
+                        <motion.div 
+                            className="flex-1"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            <SelectForm
+                                options={sortOptions}
+                                placeholder="Ordenar"
+                                value={
+                                    selectedFilters.sort?.[0]?.selector && selectedFilters.sort?.[0]?.desc !== undefined
+                                        ? `${selectedFilters.sort[0].selector}:${selectedFilters.sort[0].desc ? "desc" : "asc"}`
+                                        : "final_price:desc"
+                                }
+                                onChange={(value) => {
+                                    const [selector, order] = value.split(":");
+                                    const sort = [
+                                        {
+                                            selector: selector,
+                                            desc: order === "desc",
+                                        },
+                                    ];
+                                    setSelectedFilters((prev) => ({
+                                        ...prev,
+                                        sort,
+                                    }));
+                                }}
+                                labelKey="label"
+                                valueKey="value"
+                                className="!w-full customtext-neutral-dark border-primary rounded-2xl text-sm h-12"
+                            />
+                        </motion.div>
+                    </div>
 
                     {/* Panel de filtros mejorado */}
                     <motion.div 
@@ -907,8 +1592,8 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                     <input
                                                                         type="checkbox"
                                                                         className={modernFilterStyles.checkbox}
-                                                                        onChange={() => handleFilterChange("category_id", category.slug)}
-                                                                        checked={selectedFilters.category_id?.includes(category.slug)}
+                                                                        onChange={() => handleFilterChange("category_id", category.id)}
+                                                                        checked={selectedFilters.category_id?.includes(category.id)}
                                                                     />
                                                                     <span className="text-sm line-clamp-1 customtext-neutral-dark  transition-colors duration-200">
                                                                         {category.name}
@@ -1039,13 +1724,13 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                    
                                                                         type="checkbox"
                                                                         className={modernFilterStyles.checkbox}
-                                                                        onChange={() => handleFilterChange("subcategory_id", subcategory.slug)}
-                                                                        checked={selectedFilters.subcategory_id?.includes(subcategory.slug)}
+                                                                        onChange={() => handleFilterChange("subcategory_id", subcategory.id)}
+                                                                        checked={selectedFilters.subcategory_id?.includes(subcategory.id)}
                                                                     />
                                                                     <span className="text-sm line-clamp-1 font-medium customtext-neutral-dark transition-colors duration-200">
                                                                         {subcategory.name}
                                                                     </span>
-                                                                    {selectedFilters.subcategory_id?.includes(subcategory.slug) && (
+                                                                    {selectedFilters.subcategory_id?.includes(subcategory.id) && (
                                                                         <motion.div
                                                                             className="ml-auto"
                                                                             initial={{ scale: 0 }}
@@ -1173,6 +1858,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                         {(selectedFilters.brand_id?.length > 0 || 
                                           selectedFilters.category_id?.length > 0 || 
                                           selectedFilters.subcategory_id?.length > 0 || 
+                                          selectedFilters.tag_id?.length > 0 ||
                                           (selectedFilters.price && selectedFilters.price.length > 0)) && (
                                             <motion.div
                                                 className="mb-4"
@@ -1210,7 +1896,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                     
                                                     {/* Chips de categorías con AnimatedBadge */}
                                                     {selectedFilters.category_id?.map((categorySlug) => {
-                                                        const category = categories.find(c => c.slug === categorySlug);
+                                                        const category = categories.find(c => c.id === categorySlug);
                                                         return category ? (
                                                             <AnimatedBadge
                                                                 key={categorySlug}
@@ -1232,7 +1918,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
                                                     {/* Chips de subcategorías con AnimatedBadge */}
                                                     {selectedFilters.subcategory_id?.map((subcategorySlug) => {
-                                                        const subcategory = subcategories.find(sub => sub.slug === subcategorySlug);
+                                                        const subcategory = subcategories.find(sub => sub.id === subcategorySlug);
                                                         return subcategory ? (
                                                             <AnimatedBadge
                                                                 key={subcategorySlug}
@@ -1240,6 +1926,27 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                             >
                                                                 <Grid3X3 className="h-3 w-3" />
                                                                 <span>{subcategory.name}</span>
+                                                                <motion.div
+                                                                    className="ml-1 rounded-full p-0.5 transition-colors duration-200"
+                                                                    whileHover={{ scale: 1.2 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </motion.div>
+                                                            </AnimatedBadge>
+                                                        ) : null;
+                                                    })}
+
+                                                    {/* Chips de tags con AnimatedBadge */}
+                                                    {selectedFilters.tag_id?.map((tagId) => {
+                                                        const tag = tags.find(t => t.id === tagId);
+                                                        return tag ? (
+                                                            <AnimatedBadge
+                                                                key={tagId}
+                                                                onClick={() => handleFilterChange("tag_id", tagId)}
+                                                            >
+                                                                <Hash className="h-3 w-3" />
+                                                                <span>{tag.name}</span>
                                                                 <motion.div
                                                                     className="ml-1 rounded-full p-0.5 transition-colors duration-200"
                                                                     whileHover={{ scale: 1.2 }}
@@ -1297,6 +2004,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 category_id: [],
                                                 brand_id: [],
                                                 subcategory_id: [],
+                                                tag_id: [],
                                                 price: [],
                                                 name: null,
                                                 sort_by: "created_at",
@@ -1325,10 +2033,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                     className="flex-1 bg-primary text-white py-3 px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
                                     onClick={() => {
                                         setFiltersOpen(false);
-                                        window.scrollTo({
-                                            top: 0,
-                                            behavior: 'smooth'
-                                        });
+                                        // Removido el scroll automático - solo cerrar el panel
                                     }}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -1363,7 +2068,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
 
                         {/* Grid de productos con animaciones mejoradas */}
                         <AnimatePresence mode="wait">
-                            {loading ? (
+                            {(loading && !hasSearched) || isFiltering ? (
                                 <motion.div 
                                     className="w-full"
                                     key="loading"
@@ -1391,12 +2096,16 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                         >
                                             <Sparkles className="h-8 w-8 customtext-primary" />
                                         </motion.div>
-                                        <h3 className="text-xl font-bold customtext-neutral-dark mb-2">Cargando productos increíbles</h3>
-                                        <p className="customtext-neutral-dark">Preparando la mejor selección para ti...</p>
+                                        <h3 className="text-xl font-bold customtext-neutral-dark mb-2">
+                                            {isFiltering ? "Aplicando filtros..." : "Cargando productos increíbles"}
+                                        </h3>
+                                        <p className="customtext-neutral-dark">
+                                            {isFiltering ? "Encontrando los mejores resultados para ti..." : "Preparando la mejor selección para ti..."}
+                                        </p>
                                     </motion.div>
 
                                     {/* Grid de skeleton cards */}
-                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-y-6  w-full">
                                         {Array.from({ length: 12 }, (_, index) => (
                                             <div key={index} className="h-[400px] lg:h-[460px] xl:h-[400px] 2xl:h-[430px]">
                                                 <SkeletonCard delay={index * 0.08} />
@@ -1406,12 +2115,32 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 </motion.div>
                             ) : (
                                 <motion.div 
-                                    className="flex items-center flex-wrap gap-y-8 transition-all duration-300 ease-in-out"
+                                    className="flex items-center flex-wrap gap-y-8 transition-all duration-300 ease-in-out relative"
                                     key="products"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                 >
+                                    {/* Overlay de loading cuando se están aplicando filtros */}
+                                    {isFiltering && (
+                                        <motion.div
+                                            className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                        >
+                                            <div className="flex flex-col items-center gap-3">
+                                                <motion.div
+                                                    animate={{ rotate: 360 }}
+                                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                >
+                                                    <Sparkles className="h-8 w-8 customtext-primary" />
+                                                </motion.div>
+                                                <p className="text-sm font-semibold customtext-primary">Aplicando filtros...</p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                    
                                     {Array.isArray(products) && products.length > 0 ? (
                                         products.map((product, index) => (
                                             <motion.div
@@ -1439,7 +2168,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 />
                                             </motion.div>
                                         ))
-                                    ) : (
+                                    ) : hasSearched && !loading && !isFiltering && showNoResults ? (
                                         <motion.div
                                             className="w-full flex items-center justify-center py-16"
                                             initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -1464,6 +2193,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                                 category_id: [],
                                                                 brand_id: [],
                                                                 subcategory_id: [],
+                                                                tag_id: [],
                                                                 price: [],
                                                                 name: null,
                                                                 sort_by: "created_at",
@@ -1482,11 +2212,12 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                                 </motion.div>
                                             </div>
                                         </motion.div>
-                                    )}
+                                    ) : null}
                                 </motion.div>
                             )}
                         </AnimatePresence>
                         {/* Paginación mejorada */}
+                        {Array.isArray(products) && products.length > 0 && (
                         <motion.div
                             className="flex flex-col md:flex-row justify-between items-center mb-4 w-full mt-12 gap-4 p-6 bg-gradient-to-r from-white via-gray-50/50 to-blue-50/50 rounded-2xl border border-gray-200/60 backdrop-blur-sm"
                             initial={{ opacity: 0, y: 20 }}
@@ -1566,6 +2297,7 @@ const CatalagoFiltros = ({ items, data, filteredData, cart, setCart }) => {
                                 </div>
                             </motion.div>
                         </motion.div>
+                        )}
                     </motion.div>
                 </div>
             </div>

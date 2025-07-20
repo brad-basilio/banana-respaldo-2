@@ -44,6 +44,7 @@ class Sale extends Model
         'amount',
         'delivery',
         'delivery_type',
+        'store_id',
         'status_id',
         'coupon_id',
         'coupon_code',
@@ -56,17 +57,20 @@ class Sale extends Model
         'businessName',
         'payment_method',
         'payment_proof',
-        'coupon_id',
-        'coupon_discount',
         'applied_promotions',
         'promotion_discount',
         'total_amount',
+        'bundle_discount',
+        'renewal_discount',
+        'zip_code',
     ];
 
     protected $casts = [
         'applied_promotions' => 'array',
         'promotion_discount' => 'decimal:2',
         'coupon_discount' => 'decimal:2',
+        'bundle_discount' => 'decimal:2',
+        'renewal_discount' => 'decimal:2',
         'amount' => 'decimal:2',
         'delivery' => 'decimal:2',
     ];
@@ -78,7 +82,23 @@ class Sale extends Model
 
     public function status()
     {
-        return $this->belongsTo(SaleStatus::class);
+        return $this->belongsTo(SaleStatus::class, 'status_id');
+    }
+
+    public function tracking()
+    {
+        return $this->hasManyThrough(SaleStatus::class, SaleStatusTrace::class, 'sale_id', 'id', 'id', 'status_id')
+            ->select([
+                'sale_statuses.id',
+                'sale_statuses.name',
+                'sale_statuses.description',
+                'sale_statuses.color',
+                'sale_statuses.icon',
+                'sale_status_traces.created_at',
+                'users.id as user_id',
+                'users.name as user_name',
+                'users.lastname as user_lastname',
+            ])->join('users', 'users.id', 'sale_status_traces.user_id');
     }
 
     public function user()
@@ -89,6 +109,11 @@ class Sale extends Model
     public function coupon()
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function scopeWithUser($query)

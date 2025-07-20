@@ -10,11 +10,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+<<<<<<< HEAD:storage/framework/views/5d712d982ce564affb0c3c228ed461b8.php
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', '')); ?></title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v=<?php echo e(uniqid()); ?>" type="image/png">
   
+=======
+    <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', 'xcleretor')); ?></title>
+
+    <link rel="shortcut icon" href="/assets/resources/icon.png?v=<?php echo e(uniqid()); ?>" type="image/png">
+    <meta name="description" content="xcleretor">
+>>>>>>> builder/main:storage/framework/views/2c6e759d36b95a19f3b4a50bc104db05.php
     <?php if(isset($data['description'])): ?>
         <meta name="description" content="<?php echo e($data['description']); ?>">
     <?php endif; ?>
@@ -22,7 +29,7 @@
         <meta name="keywords" content="<?php echo e(implode(', ', $data['keywords'])); ?>">
     <?php endif; ?>
 
-    <meta name="author" content="Powered by Manuel Gamboa">
+    <meta name="author" content="Powered by Mundo Web">
 
     <!-- Carga diferida de select2 CSS -->
     <link rel="preload" href="/lte/assets/libs/select2/css/select2.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -129,6 +136,14 @@
     <?php endif; ?>
     <?php $__currentLoopData = $data['colors']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $color): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <style>
+            .stroke-<?php echo e($color->name); ?> {
+                stroke: <?php echo e($color->description); ?>;
+            }
+
+            .background-<?php echo e($color->name); ?> {
+                background-color: <?php echo e($color->description); ?>;
+            }
+
             .bg-<?php echo e($color->name); ?> {
                 background-color: <?php echo e($color->description); ?>;
             }
@@ -177,6 +192,7 @@
             }
         </style>
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
     <style>
         .font-emoji {
             font-family: "Noto Color Emoji", sans-serif;
@@ -187,7 +203,7 @@
             transform: translateY(-50%);
         }
     </style>
-
+    
 </head>
 
 <body class="font-general">
@@ -200,8 +216,13 @@
 
     <?php if (!isset($__inertiaSsrDispatched)) { $__inertiaSsrDispatched = true; $__inertiaSsrResponse = app(\Inertia\Ssr\Gateway::class)->dispatch($page); }  if ($__inertiaSsrResponse) { echo $__inertiaSsrResponse->body; } else { ?><div id="app" data-page="<?php echo e(json_encode($page)); ?>"></div><?php } ?>
 
+    
+
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
+
+    <!-- Culqi Checkout v4 -->
+    <script src="https://checkout.culqi.com/js/v4"></script>
 
     <script src="/lte/assets/libs/select2/js/select2.full.min.js" defer></script>    <!-- App js -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.js" defer></script>
@@ -247,6 +268,8 @@
                     lazyImageObserver.observe(lazyImage);
                 });
             }
+
+            // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
 

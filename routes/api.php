@@ -26,16 +26,17 @@ use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesCont
 
 use App\Http\Controllers\Admin\DeliveryPriceController as AdminDeliveryPriceController;
 use App\Http\Controllers\Admin\TypesDeliveryController as AdminTypesDeliveryController;
+use App\Http\Controllers\Admin\StoreController as AdminStoreController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SaleController as AdminSaleController;
+use App\Http\Controllers\Admin\SaleExportController as AdminSaleExportController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Customer\SaleController as CustomerSaleController;
 use App\Http\Controllers\Customer\AlbumController as CustomerAlbumController;
 use App\Http\Controllers\Customer\CanvasProjectController as CustomerCanvasProjectController;
 
 use App\Http\Controllers\Admin\SubCategoryController as AdminSubCategoryController;
-use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\SystemColorController as AdminSystemColorController;
 use App\Http\Controllers\Admin\SystemController as AdminSystemController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
@@ -50,6 +51,7 @@ use App\Http\Controllers\Admin\NotificationVariableController;
 use App\Http\Controllers\Api\NotificationVariablesController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+<<<<<<< HEAD
 use App\Http\Controllers\Admin\CanvasPresetController as AdminCanvasPresetController;
 use App\Http\Controllers\CanvasController;
 use App\Http\Controllers\CanvasProjectController;
@@ -58,6 +60,10 @@ use App\Http\Controllers\Api\Canvas\ProjectSaveController;
 use App\Http\Controllers\Api\SimplePDFController;
 use App\Http\Controllers\PDFGeneratorController;
 use App\Http\Controllers\CartPDFController;
+=======
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\SaleStatusController as AdminSaleStatusController;
+>>>>>>> builder/main
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
@@ -66,6 +72,7 @@ use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\CoverController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeliveryPriceController;
+use App\Http\Controllers\TypeDeliveryController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ItemImportController;
 use App\Http\Controllers\MessageController;
@@ -91,6 +98,14 @@ use App\Http\Controllers\UnifiedImportController;
 */
 
 Route::get('/ubigeo/search', [DeliveryPriceController::class, 'search'])->name('ubigeo.search');
+
+// Type Delivery routes
+Route::get('/type-delivery/{slug}', [TypeDeliveryController::class, 'getBySlug']);
+
+// Rutas públicas para tiendas (checkout)
+Route::get('/stores', [AdminStoreController::class, 'getActiveStores']);
+Route::get('/stores/by-ubigeo/{ubigeo}', [AdminStoreController::class, 'getByUbigeo']);
+
 Route::post('/scrap', [ScrapController::class, 'scrap']);
 Route::post('/scrap-shopsimon', [ScrapController::class, 'scrapShopSimon']);
 
@@ -143,9 +158,11 @@ Route::get('/strengths/media/{uuid}', [AdminStrengthController::class, 'media'])
 Route::get('/certifications/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/partners/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/ads/media/{uuid}', [AdminAdController::class, 'media'])->withoutMiddleware('throttle');
+Route::get('/stores/media/{uuid}', [AdminStoreController::class, 'media']);
 
 Route::post('/posts/paginate', [PostController::class, 'paginate']);
 Route::post('/items/paginate', [ItemController::class, 'paginate']);
+Route::post('/items/convert-slugs', [ItemController::class, 'convertSlugsToIds']);
 
 Route::post('/messages', [MessageController::class, 'save']);
 Route::post('/subscriptions', [SubscriptionController::class, 'save']);
@@ -170,8 +187,11 @@ Route::post('/items/verify-stock', [ItemController::class, 'verifyStock']);
 Route::post('/items/combo-items', [ItemController::class, 'verifyCombo']);
 Route::post('/items/update-items', [ItemController::class, 'updateViews']);
 Route::post('/items/relations-items', [ItemController::class, 'relationsItems']);
-Route::post('/items/variations-items', [ItemController::class, 'variationsItems']);
+Route::post('/items/variations-items', [ItemController::class, 'variationsItems'])->withoutMiddleware('throttle');
+Route::post('/items/sizes-items', [ItemController::class, 'getSizesItems'])->withoutMiddleware('throttle');
+Route::post('/items/colors-items', [ItemController::class, 'getColorsItems'])->withoutMiddleware('throttle');
 Route::post('/items/searchProducts', [ItemController::class, 'searchProduct']);
+Route::get('/items/tags', [ItemController::class, 'getTags']);
 
 Route::post('/pago', [PaymentController::class, 'charge']);
 Route::get('/pago/{sale_id}', [PaymentController::class, 'getPaymentStatus']);
@@ -196,6 +216,7 @@ Route::post('/coupons/is-first', [CouponController::class, 'isFirst']);
 Route::post('/orders', [MercadoPagoController::class, 'getOrder']);
 
 Route::post('/sales', [SaleController::class, 'save']);
+Route::get('/sales/track/{code}', [SaleController::class, 'track']);
 
 Route::get('/person/{dni}', [PersonController::class, 'find']);
 
@@ -218,6 +239,7 @@ Route::middleware('auth')->group(function () {
   Route::post('/profile', [AdminProfileController::class, 'saveProfile']);
   Route::patch('/profile', [AdminProfileController::class, 'save']);
 
+<<<<<<< HEAD
   // Rutas para proyectos de cliente
   Route::prefix('customer')->group(function () {
     Route::get('/projects', [App\Http\Controllers\Customer\ProjectController::class, 'index']);
@@ -246,6 +268,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/cart/process-pdfs', [CartPDFController::class, 'processCartPDFs']);
     Route::post('/cart/check-pdf-status', [CartPDFController::class, 'checkCartPDFStatus']);
   });
+=======
+  // Ruta de exportación sin middleware de permisos
+  Route::get('/admin/sales/export-data', [AdminSaleExportController::class, 'exportData']);
+>>>>>>> builder/main
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminHomeController::class, 'dashboard']);
@@ -262,7 +288,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/gallery', [AdminGalleryController::class, 'save']);
 
     Route::post('/items', [AdminItemController::class, 'save']);
-    Route::post('/items/paginate', [AdminItemController::class, 'paginate']);
+    Route::post('/items/paginate', [AdminItemController::class, 'paginate'])->withoutMiddleware('throttle');
     Route::patch('/items/status', [AdminItemController::class, 'status']);
     Route::patch('/items/{field}', [AdminItemController::class, 'boolean']);
     Route::delete('/items/{id}', [AdminItemController::class, 'delete']);
@@ -402,8 +428,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/types_delivery/{field}', [AdminTypesDeliveryController::class, 'boolean']);
     Route::delete('/types_delivery/{id}', [AdminTypesDeliveryController::class, 'delete']);
 
+    Route::post('/stores', [AdminStoreController::class, 'save']);
+    Route::post('/stores/paginate', [AdminStoreController::class, 'paginate']);
+    Route::patch('/stores/status', [AdminStoreController::class, 'status']);
+    Route::patch('/stores/{field}', [AdminStoreController::class, 'boolean']);
+    Route::delete('/stores/{id}', [AdminStoreController::class, 'delete']);
+    Route::get('/stores/{id}', [AdminStoreController::class, 'show']);
+
     Route::post('/tags', [AdminTagController::class, 'save']);
     Route::post('/tags/paginate', [AdminTagController::class, 'paginate']);
+    Route::post('/tags/update-promotional-status', [AdminTagController::class, 'updatePromotionalStatus']);
     Route::patch('/tags/status', [AdminTagController::class, 'status']);
     Route::patch('/tags/{field}', [AdminTagController::class, 'boolean']);
     Route::delete('/tags/{id}', [AdminTagController::class, 'delete']);
@@ -437,6 +471,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/socials/status', [AdminSocialController::class, 'status']);
     Route::patch('/socials/{field}', [AdminSocialController::class, 'boolean']);
     Route::delete('/socials/{id}', [AdminSocialController::class, 'delete']);
+
+    Route::post('/statuses', [AdminSaleStatusController::class, 'save']);
+    Route::post('/statuses/paginate', [AdminSaleStatusController::class, 'paginate']);
+    Route::patch('/statuses/status', [AdminSaleStatusController::class, 'status']);
+    Route::patch('/statuses/{field}', [AdminSaleStatusController::class, 'boolean']);
+    Route::delete('/statuses/{id}', [AdminSaleStatusController::class, 'delete']);
 
     Route::middleware(['can:Root'])->group(function () {
       Route::post('/system', [AdminSystemController::class, 'save']);

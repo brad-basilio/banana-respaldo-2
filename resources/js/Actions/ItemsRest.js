@@ -82,6 +82,7 @@ class ItemsRest extends BasicRest {
             return [];
         }
     };
+
     getVariations = async (request) => {
         try {
             const { status, result } = await Fetch(
@@ -99,6 +100,66 @@ class ItemsRest extends BasicRest {
             return result.data ?? [];
         } catch (error) {
             return [];
+        }
+    };
+
+    getColors = async (request) => {
+        try {
+            const { status, result } = await Fetch(
+                `/api/${this.path}/colors-items`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(request),
+                }
+            );
+            if (!status)
+                throw new Error(
+                    result?.message ??
+                        "Ocurrió un error al consultar los productos"
+                );
+            return result.data ?? [];
+        } catch (error) {
+            return [];
+        }
+    };
+
+    getSizes = async (request) => {
+        try {
+            const { status, result } = await Fetch(
+                `/api/${this.path}/sizes-items`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(request),
+                }
+            );
+            if (!status)
+                throw new Error(
+                    result?.message ??
+                        "Ocurrió un error al consultar los productos"
+                );
+            return result.data ?? [];
+        } catch (error) {
+            return [];
+        }
+    };
+
+    convertSlugs = async (request) => {
+        try {
+            const { status, result } = await Fetch(
+                `/api/${this.path}/convert-slugs`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(request),
+                }
+            );
+            if (!status)
+                throw new Error(
+                    result?.message ??
+                        "Ocurrió un error al convertir los slugs"
+                );
+            return result;
+        } catch (error) {
+            return { status: 400, data: {} };
         }
     };
 }

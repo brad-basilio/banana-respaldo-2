@@ -99,7 +99,7 @@ export default function BlogHeader({
     console.log("BlogHeader - posts actualizados:", posts);
   }, [posts]);
   return (
-    <main className="bg-white !font-font-general">
+    <main className="bg-white font-title">
       {/* Hero Section */}
       <section
         className={`px-primary ${isFilter ? "pt-8" : "py-8"
@@ -119,7 +119,7 @@ export default function BlogHeader({
           </h1>
           {
             data?.description &&
-            <p className="customtext-neutral-dark opacity-80 text-base 2xl:text-xl">
+            <p className="customtext-neutral-dark opacity-80 text-base 2xl:text-xl font-title">
             { data?.description}
             </p>
           }

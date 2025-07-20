@@ -56,6 +56,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         return [
             'collection' => ['collection', 'colleccion', 'coleccion'],
             'categoria' => ['categoria', 'category'],
+            'summary' => ['summary', 'resumen', 'descripcion_corta'],
             'subcategoria' => ['subcategoria', 'subcategory', 'sub_categoria'],
             'marca' => ['marca', 'brand'],
             'sku' => ['sku', 'codigo', 'code'],
@@ -65,6 +66,8 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             'descuento' => ['descuento', 'discount', 'precio_descuento'],
             'stock' => ['stock', 'cantidad', 'inventory'],
             'color' => ['color', 'colour'],
+            'talla' => ['size', 'talla', 'size_talla'],
+            'agrupador' => ['agrupador'],
             'especificaciones_principales' => [
                 'especificaciones_principales_separadas_por_comas',
                 'especificaciones_principales',
@@ -79,6 +82,11 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 'especificaciones_tecnicas_separado_por_slash_para_filas_y_dos_puntos_para_columnas',
                 'especificaciones_tecnicas',
                 'specs_tecnicas'
+            ],
+            'especificaciones_iconos' => [
+                'especificaciones_iconos_separado_por_comas',
+                'especificaciones_iconos',
+                'specs_iconos'
             ]
         ];
     }
@@ -96,7 +104,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         Item::truncate();
         SubCategory::truncate();
         Collection::truncate();
-        Category::truncate();
+        // Category::truncate();
         Brand::truncate();
         
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -204,7 +212,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             }
 
             // 5️⃣ Generar slug único para el producto
-            $slug = $this->generateUniqueSlug($nombreProducto, $this->getFieldValue($row, 'color'));
+            $slug = $this->generateUniqueSlug($nombreProducto, $this->getFieldValue($row, 'color'), $this->getFieldValue($row, 'talla'));
 
             // 6️⃣ Preparar datos del precio
             $precio = $this->getNumericValue($row, 'precio');
@@ -215,9 +223,11 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
             // 7️⃣ Crear el producto
             $itemData = [
                 'sku' => $sku,
+                'grouper' => $this->getFieldValue($row, 'agrupador', ''),
                 'name' => $nombreProducto,
                 'description' => $this->getFieldValue($row, 'descripcion', ''),
-                'price' => $precio,
+                'summary' => $this->getFieldValue($row, 'summary', ''),
+                'price' => $precio ?? 0,
                 'discount' => $descuento,
                 'final_price' => $finalPrice,
                 'discount_percent' => $discountPercent,
@@ -225,14 +235,19 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 'subcategory_id' => $subCategory ? $subCategory->id : null,
                 'collection_id' => $collection ? $collection->id : null,
                 'brand_id' => $brand ? $brand->id : null,
-                'image' => $this->getMainImage($sku),
+                'image' => $this->getMainImage($row, 'sku'),
                 'slug' => $slug,
                 'stock' => $this->getNumericValue($row, 'stock', 10),
+                'pdf' => $this->getPdfFile($sku),
             ];
 
             // Agregar campos opcionales si existen
             if ($this->hasField($row, 'color')) {
                 $itemData['color'] = $this->getFieldValue($row, 'color');
+            }
+
+            if ($this->hasField($row, 'talla')) {
+                $itemData['size'] = $this->getFieldValue($row, 'talla');
             }
 
             $item = Item::create($itemData);
@@ -242,7 +257,7 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
                 $this->saveSpecificationsIfExists($item, $row);
                 
                 // 9️⃣ Guardar imágenes de galería
-                $this->saveGalleryImages($item, $sku);
+                $this->saveGalleryImages($item, $row, 'sku');
             } else {
                 throw new Exception("No se pudo crear el producto con SKU: {$sku}");
             }
@@ -314,9 +329,9 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
     /**
      * Generar slug único para el producto
      */
-    private function generateUniqueSlug(string $nombre, ?string $color = null): string
+    private function generateUniqueSlug(string $nombre, ?string $color = null, ?string $talla = null): string
     {
-        $baseSlug = Str::slug($nombre . ($color ? '-' . $color : ''));
+        $baseSlug = Str::slug($nombre . ($color ? '-' . $color : '') . '-' . ($talla ? '-' . $talla : ''));
         $slug = $baseSlug;
         
         $counter = 1;
@@ -349,6 +364,12 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         if ($this->hasField($row, 'especificaciones_tecnicas')) {
             $specs = $this->getFieldValue($row, 'especificaciones_tecnicas');
             $this->saveSpecificationsTecnicas($item, $specs, 'tecnica');
+        }
+
+        // Especificaciones con iconos
+        if ($this->hasField($row, 'especificaciones_iconos')) {
+            $specs = $this->getFieldValue($row, 'especificaciones_iconos');
+            $this->saveSpecificationsIcon($item, $specs, 'icono');
         }
     }
 
@@ -429,63 +450,307 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
         }
     }
 
+
+    private function saveSpecificationsIcon(Item $item, ?string $specs, string $type): void
+    {
+        if (empty($specs) || !is_string($specs)) {
+            return;
+        }
+
+        $specsArray = explode(',', $specs);
+        foreach ($specsArray as $spec) {
+            $spec = trim($spec);
+            if (empty($spec)) {
+                continue;
+            }
+            
+            if ($type === 'icono') {
+                ItemSpecification::create([
+                    'item_id' => $item->id,
+                    'type' => $type,
+                    'title' => '',
+                    'description' => $spec,
+                ]);
+            } else {
+                $parts = explode(':', $spec, 2);
+                if (count($parts) == 2) {
+                    $title = trim($parts[0]);
+                    $description = trim($parts[1]);
+                    ItemSpecification::create([
+                        'item_id' => $item->id,
+                        'type' => $type,
+                        'title' => $title,
+                        'description' => $description,
+                    ]);
+                }
+            }
+        }
+    }
+
     /**
      * Obtener imagen principal del producto
      */
-    private function getMainImage(string $sku): ?string
-    {
-        $extensions = ['png', 'jpg', 'jpeg', 'webp'];
-        
-        // Buscar imagen principal (sku.ext)
-        foreach ($extensions as $ext) {
-            $path = "images/item/{$sku}.{$ext}";
-            if (Storage::exists($path)) {
-                return "{$sku}.{$ext}";
-            }
-        }
 
-        // Buscar imagen con índice (sku_1.ext)
-        foreach ($extensions as $ext) {
-            $path = "images/item/{$sku}_1.{$ext}";
-            if (Storage::exists($path)) {
-                return "{$sku}_1.{$ext}";
-            }
+    private function getMainImage(array $row, string $format): ?string
+    {
+        if ($format === 'agrupador') {
+            $codigoagrupador = $this->getFieldValue($row, 'agrupador');
+            $color = $this->getFieldValue($row, 'color');
+            $images = $this->getColorNumberImages($codigoagrupador, $color);
+        } else {
+            $sku = $this->getFieldValue($row, 'sku');
+            $images = $this->getSkuBasedImages($sku);
         }
         
-        return null;
+        return $images[0] ?? null;
     }
+
+    // private function getMainImage(string $sku): ?string
+    // {
+    //     $extensions = ['png', 'jpg', 'jpeg', 'webp'];
+        
+    //     // Buscar imagen principal (sku.ext)
+    //     foreach ($extensions as $ext) {
+    //         $path = "images/item/{$sku}.{$ext}";
+    //         if (Storage::exists($path)) {
+    //             return "{$sku}.{$ext}";
+    //         }
+    //     }
+
+    //     // Buscar imagen con índice (sku_1.ext)
+    //     foreach ($extensions as $ext) {
+    //         $path = "images/item/{$sku}_1.{$ext}";
+    //         if (Storage::exists($path)) {
+    //             return "{$sku}_1.{$ext}";
+    //         }
+    //     }
+        
+    //     return null;
+    // }
+
+    
 
     /**
      * Guardar imágenes de galería
      */
-    private function saveGalleryImages(Item $item, string $sku): void
+    private function saveGalleryImages(Item $item, array $row, string $format): void
     {
-        $extensions = ['png', 'jpg', 'jpeg', 'webp'];
-        $index = 2; // Empezar desde _2 ya que _1 puede ser la imagen principal
+        if ($format === 'agrupador') {
+            $codigoagrupador = $this->getFieldValue($row, 'agrupador');
+            $color = $this->getFieldValue($row, 'color');
+            
+            if (!$codigoagrupador || !$color) {
+                $item->update(['visible' => false]);
+                return;
+            }
+            
+            $this->saveColorNumberImages($item, $codigoagrupador, $color);
+        } else {
+            $sku = $this->getFieldValue($row, 'sku');
+            $this->saveSkuBasedImages($item, $sku);
+        }
+    }
 
+    // Método para formato codigoagrupador_color_numero
+    private function saveColorNumberImages(Item $item, string $codigoagrupador, string $color): void
+    {
+        $images = $this->getColorNumberImages($codigoagrupador, $color);
+        
+        if (empty($images)) {
+            $item->update(['visible' => false]);
+            return;
+        }
+
+        $item->update(['image' => $images[0]]);
+
+        if (count($images) > 1) {
+            foreach (array_slice($images, 1) as $image) {
+                ItemImage::create([
+                    'item_id' => $item->id,
+                    'url' => $image,
+                ]);
+            }
+        }
+    }
+
+    
+    private function saveSkuBasedImages(Item $item, string $sku): void
+    {
+        $images = $this->getSkuBasedImages($sku);
+        
+        if (empty($images)) {
+            $item->update(['visible' => false]);
+            return;
+        }
+
+        $item->update(['image' => $images[0]]);
+
+        if (count($images) > 1) {
+            foreach (array_slice($images, 1) as $image) {
+                ItemImage::create([
+                    'item_id' => $item->id,
+                    'url' => $image,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Obtener imágenes basadas en el formato codigoagrupador_color_numero
+     */
+    private function getColorNumberImages(string $codigoagrupador, string $color): array
+    {
+        $images = [];
+        $basePath = "images/item/";
+        $extensions = ['jpg', 'jpeg', 'png', 'webp'];
+        
+        // Imagen principal: codigoagrupador_color.ext
+        $mainImageName = "{$codigoagrupador}_{$color}";
+        foreach ($extensions as $ext) {
+            if (Storage::exists("{$basePath}{$mainImageName}.{$ext}")) {
+                $images[] = "{$mainImageName}.{$ext}";
+                break;
+            }
+        }
+
+        // Imágenes de galería: codigoagrupador_color_1.ext, etc.
+        $i = 1;
         while (true) {
             $found = false;
+            $galleryImageName = "{$codigoagrupador}_{$color}_{$i}";
             
             foreach ($extensions as $ext) {
-                $filename = "{$sku}_{$index}.{$ext}";
-                $path = "images/item/{$filename}";
-                
-                if (Storage::exists($path)) {
-                    ItemImage::create([
-                        'item_id' => $item->id,
-                        'url' => $filename,
-                    ]);
+                if (Storage::exists("{$basePath}{$galleryImageName}.{$ext}")) {
+                    $images[] = "{$galleryImageName}.{$ext}";
                     $found = true;
                     break;
                 }
             }
+            
+            if (!$found) break;
+            $i++;
+        }
 
-            if (!$found) {
+        return $images;
+    }
+
+    /**
+     * Obtener imágenes basadas en SKU
+     */
+    private function getSkuBasedImages(string $sku): array
+    {
+        $images = [];
+        $basePath = "images/item/";
+        $extensions = ['jpg', 'jpeg', 'png', 'webp'];
+        
+        // Imagen principal: sku.ext
+        foreach ($extensions as $ext) {
+            if (Storage::exists("{$basePath}{$sku}.{$ext}")) {
+                $images[] = "{$sku}.{$ext}";
                 break;
             }
-            $index++;
         }
+
+        // Imágenes de galería: sku_1.ext, etc.
+        $i = 1;
+        while (true) {
+            $found = false;
+            $galleryImageName = "{$sku}_{$i}";
+            
+            foreach ($extensions as $ext) {
+                if (Storage::exists("{$basePath}{$galleryImageName}.{$ext}")) {
+                    $images[] = "{$galleryImageName}.{$ext}";
+                    $found = true;
+                    break;
+                }
+            }
+            
+            if (!$found) break;
+            $i++;
+        }
+
+        return $images;
     }
+    
+
+    // private function saveGalleryImages(Item $item, string $sku): void
+    // {
+    //     $extensions = ['png', 'jpg', 'jpeg', 'webp'];
+        
+    //     // Primero verificar si existe la imagen principal (sku.extension)
+    //     $hasMainImage = false;
+    //     foreach ($extensions as $ext) {
+    //         if (Storage::exists("images/item/{$sku}.{$ext}")) {
+    //             $hasMainImage = true;
+    //             break;
+    //         }
+    //     }
+        
+    //     // Determinar el índice inicial
+    //     $startIndex = $hasMainImage ? 1 : 2;
+    //     $index = $startIndex;
+        
+    //     while (true) {
+    //         $found = false;
+            
+    //         // Probar ambos formatos: _01 y _1
+    //         $formats = [
+    //             sprintf("_%02d", $index), // Formato _01, _02, etc.
+    //             "_".$index                // Formato _1, _2, etc.
+    //         ];
+            
+    //         foreach ($formats as $suffix) {
+    //             foreach ($extensions as $ext) {
+    //                 $filename = "{$sku}{$suffix}.{$ext}";
+    //                 $path = "images/item/{$filename}";
+                    
+    //                 if (Storage::exists($path)) {
+    //                     ItemImage::create([
+    //                         'item_id' => $item->id,
+    //                         'url' => $filename,
+    //                     ]);
+    //                     $found = true;
+    //                     break 2; // Salir de ambos foreachs
+    //                 }
+    //             }
+    //         }
+
+    //         if (!$found) {
+    //             break;
+    //         }
+    //         $index++;
+    //     }
+    // }
+    
+
+    // private function saveGalleryImages(Item $item, string $sku): void
+    // {
+    //     $extensions = ['png', 'jpg', 'jpeg', 'webp'];
+    //     $index = 2; // Empezar desde _2 ya que _1 puede ser la imagen principal
+
+    //     while (true) {
+    //         $found = false;
+            
+    //         foreach ($extensions as $ext) {
+    //             $filename = "{$sku}_{$index}.{$ext}";
+    //             $path = "images/item/{$filename}";
+                
+    //             if (Storage::exists($path)) {
+    //                 ItemImage::create([
+    //                     'item_id' => $item->id,
+    //                     'url' => $filename,
+    //                 ]);
+    //                 $found = true;
+    //                 break;
+    //             }
+    //         }
+
+    //         if (!$found) {
+    //             break;
+    //         }
+    //         $index++;
+    //     }
+    // }
 
     /**
      * Verificar si una fila está vacía
@@ -552,5 +817,19 @@ class UnifiedItemImport implements ToModel, WithHeadingRow, SkipsOnError, SkipsO
     public function getFieldMappings(): array
     {
         return $this->fieldMappings;
+    }
+
+    /**
+     * Obtener archivo PDF del producto basado en el SKU
+     */
+    private function getPdfFile(string $sku): ?string
+    {
+        $path = "images/item/{$sku}.pdf";
+        
+        if (Storage::exists($path)) {
+            return "{$sku}.pdf";
+        }
+        
+        return null;
     }
 }

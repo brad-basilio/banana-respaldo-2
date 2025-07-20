@@ -54,6 +54,7 @@ const Items = ({ categories, brands, collections }) => {
     //const textureRef = useRef();
     const descriptionRef = useRef();
     const skuRef = useRef();
+    const pdfRef = useRef();
     // Nuevos campos
     const canvasPresetRef = useRef();
     const pagesRef = useRef();
@@ -61,6 +62,7 @@ const Items = ({ categories, brands, collections }) => {
     const contentImageRef = useRef();
     const backCoverImageRef = useRef();
     const stockRef = useRef();
+    const linkvideoRef = useRef();
 
    // const featuresRef = useRef([]);
     const specificationsRef = useRef([]);
@@ -68,6 +70,7 @@ const Items = ({ categories, brands, collections }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedCollection, setSelectedCollection] = useState(null);
+    const [currentPdf, setCurrentPdf] = useState("");
     /*ADD NEW LINES GALLERY */
 
     const [gallery, setGallery] = useState([]);
@@ -140,11 +143,11 @@ const Items = ({ categories, brands, collections }) => {
     }, [itemData]);
 
     const onModalOpen = (data) => {
-        console.log('data total',data);
+      
         setItemData(data || null); // Guardamos los datos en el estado
         if (data?.id) setIsEditing(true);
         else setIsEditing(false);
-
+        setCurrentPdf(data?.pdf ? `/storage/images/item/${data.pdf}` : "");
         idRef.current.value = data?.id || "";
         $(categoryRef.current)
             .val(data?.category_id || null)
@@ -164,6 +167,7 @@ const Items = ({ categories, brands, collections }) => {
         skuRef.current.value = data?.sku || "";
         //colorRef.current.value = data?.color || "";
         summaryRef.current.value = data?.summary || "";
+        linkvideoRef.current.value = data?.linkvideo || "";
         priceRef.current.value = data?.price || 0;
         discountRef.current.value = data?.discount || 0;
 
@@ -265,6 +269,7 @@ const Items = ({ categories, brands, collections }) => {
             pages: pagesRef.current.value,
             features: cleanFeatures,
             specifications: cleanSpecs,
+            linkvideo:linkvideoRef.current.value,
         };
 
 

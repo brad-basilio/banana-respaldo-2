@@ -12,7 +12,7 @@ class SaleController extends BasicController
 {
     public $model = Sale::class;
     public $reactView = 'Admin/Sales';
-    public $with4get = ['status', 'details'];
+    public $with4get = ['status', 'details', 'store'];
 
     public function setReactViewProperties(Request $request)
     {
@@ -23,18 +23,15 @@ class SaleController extends BasicController
 
     public function setPaginationInstance(Request $request, string $model)
     {
-        return $model::with('status');
+        return $model::with(['status', 'store']);
     }
 
     public function afterSave(Request $request, object $jpa, ?bool $isNew)
     {
         $saleJpa = Sale::with($this->with4get)->find($jpa->id);
-
-        // Notificar al cliente sobre el cambio de estado
-        if ($saleJpa && $saleJpa->email && $saleJpa->status) {
+        if ($request->notify_client) {
             $saleJpa->notify(new OrderStatusChangedNotification($saleJpa));
         }
-
         return $saleJpa;
     }
 }

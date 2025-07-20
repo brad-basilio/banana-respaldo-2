@@ -9,10 +9,10 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                "font-general": ["Roboto", "serif"], //"Lato" "serif" usado para Sala Fabulosa
+                "font-general": ["Lato", "serif"], //"Lato" "serif" usado para Sala Fabulosa
                 "font-primary": ["Rajdhani", "sans-serif"], // usado para Stech Peru
                 "font-secondary": ["Open Sans", "serif"],
-                "roboto": ["Roboto", "sans-serif"], // usado para Xcleretor
+                "playfair": ["Playfair", "serif"],
             },
            
             margin: {

@@ -10,11 +10,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+<<<<<<< HEAD
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $data['name'] ?? 'Página' }} | {{ env('APP_NAME', '') }}</title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v={{ uniqid() }}" type="image/png">
   
+=======
+    <title>{{ $data['name'] ?? 'Página' }} | {{ env('APP_NAME', 'xcleretor') }}</title>
+
+    <link rel="shortcut icon" href="/assets/resources/icon.png?v={{ uniqid() }}" type="image/png">
+    <meta name="description" content="xcleretor">
+>>>>>>> builder/main
     @isset($data['description'])
         <meta name="description" content="{{ $data['description'] }}">
     @endisset
@@ -22,7 +29,7 @@
         <meta name="keywords" content="{{ implode(', ', $data['keywords']) }}">
     @endisset
 
-    <meta name="author" content="Powered by Manuel Gamboa">
+    <meta name="author" content="Powered by Mundo Web">
 
     <!-- Carga diferida de select2 CSS -->
     <link rel="preload" href="/lte/assets/libs/select2/css/select2.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -128,6 +135,14 @@
     @endif
     @foreach ($data['colors'] as $color)
         <style>
+            .stroke-{{ $color->name }} {
+                stroke: {{ $color->description }};
+            }
+
+            .background-{{ $color->name }} {
+                background-color: {{ $color->description }};
+            }
+
             .bg-{{ $color->name }} {
                 background-color: {{ $color->description }};
             }
@@ -176,6 +191,7 @@
             }
         </style>
     @endforeach
+
     <style>
         .font-emoji {
             font-family: "Noto Color Emoji", sans-serif;
@@ -186,7 +202,7 @@
             transform: translateY(-50%);
         }
     </style>
-
+    
 </head>
 
 <body class="font-general">
@@ -198,8 +214,25 @@
 
     @inertia
 
+    {{-- <div id="page-loader" class="fixed inset-0 flex flex-col justify-center items-center bg-white/90 backdrop-blur-sm z-50">
+
+        <div class="animate-bounce">
+            <img
+
+                src='/assets/resources/logo.png?v={{uniqid()}}'
+                alt={Global.APP_NAME}
+                onError="(e) => { e.target.onerror = null; e.target.src = '/assets/img/logo-bk.svg';}"
+
+                class=" w-64 lg:w-96 transition-all duration-300 transform hover:scale-105"
+            />
+        </div>
+    </div> --}}
+
     <!-- Vendor js -->
     <script src="/lte/assets/js/vendor.min.js" defer></script>
+
+    <!-- Culqi Checkout v4 -->
+    <script src="https://checkout.culqi.com/js/v4"></script>
 
     <script src="/lte/assets/libs/select2/js/select2.full.min.js" defer></script>    <!-- App js -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.4.1/dist/flowbite.min.js" defer></script>
@@ -245,6 +278,8 @@
                     lazyImageObserver.observe(lazyImage);
                 });
             }
+
+            // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
 

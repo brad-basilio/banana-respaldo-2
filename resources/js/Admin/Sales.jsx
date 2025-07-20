@@ -13,26 +13,48 @@ import Number2Currency from "../Utils/Number2Currency";
 import Modal from "../Components/Adminto/Modal";
 import Tippy from "@tippyjs/react";
 import SaleStatusesRest from "../Actions/Admin/SaleStatusesRest";
+import SaleExportRest from "../Actions/Admin/SaleExportRest";
+import * as XLSX from 'xlsx';
+import SelectFormGroup from "../Components/Adminto/form/SelectFormGroup";
+import { renderToString } from "react-dom/server";
 
 const salesRest = new SalesRest();
 const saleStatusesRest = new SaleStatusesRest();
+const saleExportRest = new SaleExportRest();
 
 const Sales = ({ statuses = [] }) => {
     const gridRef = useRef();
+    const notifyClientRef = useRef()
     const modalRef = useRef();
 
     const [saleLoaded, setSaleLoaded] = useState(null);
     const [saleStatuses, setSaleStatuses] = useState([]);
     const [projectPDFs, setProjectPDFs] = useState({}); // Para cargar PDFs de proyectos
 
-    const onStatusChange = async (e) => {
+    const onStatusChange = async (e, sale) => {
+        console.log({sale, saleLoaded})
+        const status = statuses.find((s) => s.id == e.target.value)
+        if (status.reversible == 0) {
+            const { isConfirmed } = await Swal.fire({
+                title: "Cambiar estado",
+                text: `¿Estas seguro de cambiar el estado a ${status.name}?\nEsta acción no se puede revertir`,
+                icon: "warning",
+                showCancelButton: true,
+            })
+            if (!isConfirmed) return;
+        }
+
+        setStatusLoading(true)
         const result = await salesRest.save({
-            id: saleLoaded.id,
-            status_id: e.target.value,
+            id: sale.id,
+            status_id: status.id,
+            notify_client: notifyClientRef.current.checked
         });
-        console.log("onStatusChange", result);
+        setStatusLoading(false)
         if (!result) return;
-        setSaleLoaded(result);
+        const newSale = await salesRest.get(sale.id);
+        setSaleLoaded(newSale.data);
+        setSaleStatuses(newSale.data.tracking.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
         $(gridRef.current).dxDataGrid("instance").refresh();
     };
 
@@ -52,114 +74,11 @@ const Sales = ({ statuses = [] }) => {
     };
 
     const onModalOpen = async (saleId) => {
+        notifyClientRef.current.checked = true
         const newSale = await salesRest.get(saleId);
+        console.log("Sale data loaded:", newSale.data); // Debug: ver todos los datos que llegan
         setSaleLoaded(newSale.data);
-        
-        // Cargar PDFs de proyectos si existen
-        if (newSale.data?.details) {
-            const projectIds = newSale.data.details
-                .filter(detail => detail.colors) // colors contiene el project_id
-                .map(detail => detail.colors);
-            
-            if (projectIds.length > 0) {
-                await loadProjectPDFs(projectIds);
-            }
-        }
-        
         $(modalRef.current).modal("show");
-    };
-
-    // Función para cargar información de PDFs de proyectos
-    const loadProjectPDFs = async (projectIds) => {
-        try {
-            const pdfData = {};
-            
-            for (const projectId of projectIds) {
-                try {
-                    const response = await fetch(`/api/admin/projects/${projectId}/info`, {
-                        credentials: 'include',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log(`Proyecto ${projectId} info:`, result);
-                        if (result.success) {
-                            pdfData[projectId] = result.data;
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error cargando info del proyecto ${projectId}:`, error);
-                }
-            }
-            
-            setProjectPDFs(pdfData);
-        } catch (error) {
-            console.error('Error cargando PDFs de proyectos:', error);
-        }
-    };
-
-    // Función para descargar PDF
-    const downloadProjectPDF = async (projectId) => {
-        try {
-            console.log(`🔽 Iniciando descarga de PDF para proyecto: ${projectId}`);
-            
-            const response = await fetch(`/api/admin/projects/${projectId}/pdf`, {
-                credentials: 'include',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                }
-            });
-            
-            console.log(`📡 Respuesta del servidor:`, {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok,
-                headers: Object.fromEntries(response.headers.entries())
-            });
-            
-            if (response.ok) {
-                const blob = await response.blob();
-                console.log(`📄 Blob recibido:`, {
-                    size: blob.size,
-                    type: blob.type
-                });
-                
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `proyecto_${projectId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                console.log(`✅ Descarga iniciada exitosamente`);
-            } else {
-                const errorText = await response.text();
-                console.error(`❌ Error en respuesta del servidor:`, {
-                    status: response.status,
-                    statusText: response.statusText,
-                    errorText: errorText
-                });
-                
-                Swal.fire({
-                    title: "Error",
-                    text: `No se pudo descargar el PDF del proyecto (${response.status}: ${response.statusText})`,
-                    icon: "error"
-                });
-            }
-        } catch (error) {
-            console.error('❌ Error descargando PDF:', error);
-            Swal.fire({
-                title: "Error",
-                text: `Error al descargar el PDF: ${error.message}`,
-                icon: "error"
-            });
-        }
     };
 
     useEffect(() => {
@@ -169,6 +88,15 @@ const Sales = ({ statuses = [] }) => {
         //   else setSaleStatuses([])
         // })
     }, [saleLoaded]);
+
+    const statusTemplate = (e) => {
+        const data = $(e.element).data('status')
+        if (!e.id) return
+        return $(renderToString(<span title={data.description}>
+            <i className={`${data?.icon || 'mdi mdi-circle'} me-1`}></i>
+            {e.text}
+        </span>))
+    }
 
     const totalAmount =
         Number(saleLoaded?.amount) +
@@ -180,13 +108,25 @@ const Sales = ({ statuses = [] }) => {
         ;
 
     return (
-        <>  
-           
+        <>
+
             <Table
                 gridRef={gridRef}
                 title="Pedidos"
                 rest={salesRest}
                 toolBar={(container) => {
+                    container.unshift({
+                        widget: "dxButton",
+                        location: "after",
+                        options: {
+                            icon: "exportxlsx",
+                            text: "Exportar para Facturación",
+                            hint: "Exportar datos completos para facturador",
+                            onClick: showExportModal,
+                            type: "normal",
+                            stylingMode: "outlined"
+                        },
+                    });
                     container.unshift({
                         widget: "dxButton",
                         location: "after",
@@ -244,16 +184,13 @@ const Sales = ({ statuses = [] }) => {
                         sortOrder: "desc",
                         cellTemplate: (container, { data }) => {
                             // container.text(moment(data.created_at).fromNow())
-                            container.text(
-                                moment(data.created_at).format("LLL")
-                            );
+                            container.text(moment(data.created_at).subtract(5, 'hours').format("LLL"));
                         },
                     },
                     {
                         dataField: "status.name",
                         caption: "Estado",
                         cellTemplate: (container, { data }) => {
-                            console.log(data);
                             ReactAppend(
                                 container,
                                 <span
@@ -286,10 +223,10 @@ const Sales = ({ statuses = [] }) => {
                             container.text(
                                 `S/. ${Number2Currency(
                                     amount +
-                                        delivery -
-                                        bundle_discount -
-                                        renewal_discount -
-                                        coupon_discount
+                                    delivery -
+                                    bundle_discount -
+                                    renewal_discount -
+                                    coupon_discount
                                 )}`
                             );
                         },
@@ -363,11 +300,66 @@ const Sales = ({ statuses = [] }) => {
                                             <th>Teléfono:</th>
                                             <td>{saleLoaded?.phone}</td>
                                         </tr>
-                                        
-                                        {saleLoaded?.delivery_type &&
-                                        //== "express"  (
+                                        {(saleLoaded?.document_type || saleLoaded?.documentType) && (
                                             <tr>
-                                                <th>Dirección:</th>
+                                                <th>Tipo de documento:</th>
+                                                <td>{saleLoaded?.document_type || saleLoaded?.documentType}</td>
+                                            </tr>
+                                        )}
+                                        {saleLoaded?.document && (
+                                            <tr>
+                                                <th>Número de documento:</th>
+                                                <td>{saleLoaded?.document}</td>
+                                            </tr>
+                                        )}
+                                        
+                                        {saleLoaded?.delivery_type && (
+                                            <tr>
+                                                <th>Tipo de entrega:</th>
+                                                <td>
+                                                    <span className="badge bg-info">
+                                                        {saleLoaded?.delivery_type === 'store_pickup' ? 'Retiro en Tienda' : 
+                                                         saleLoaded?.delivery_type === 'free' ? 'Envío Gratis' : 
+                                                         saleLoaded?.delivery_type === 'express' ? 'Envío Express' : 
+                                                         saleLoaded?.delivery_type === 'standard' ? 'Envío Estándar' :
+                                                         saleLoaded?.delivery_type === 'agency' ? 'Entrega en Agencia' : 
+                                                         saleLoaded?.delivery_type}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {saleLoaded?.delivery_type === 'store_pickup' && saleLoaded?.store && (
+                                            <tr>
+                                                <th>Tienda para retiro:</th>
+                                                <td>
+                                                    <strong>{saleLoaded?.store?.name}</strong>
+                                                    <small className="text-muted d-block">
+                                                        {saleLoaded?.store?.address}
+                                                        {saleLoaded?.store?.district && (
+                                                            <>, {saleLoaded?.store?.district}</>
+                                                        )}
+                                                        {saleLoaded?.store?.province && (
+                                                            <>, {saleLoaded?.store?.province}</>
+                                                        )}
+                                                    </small>
+                                                    {saleLoaded?.store?.phone && (
+                                                        <small className="text-info d-block">
+                                                            📞 {saleLoaded?.store?.phone}
+                                                        </small>
+                                                    )}
+                                                    {saleLoaded?.store?.schedule && (
+                                                        <small className="text-success d-block">
+                                                            🕒 {saleLoaded?.store?.schedule}
+                                                        </small>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {saleLoaded?.delivery_type && saleLoaded?.delivery_type !== 'store_pickup' && (
+                                            <tr>
+                                                <th>Dirección de entrega:</th>
                                                 <td>
                                                     {saleLoaded?.address}{" "}
                                                     {saleLoaded?.number}
@@ -387,8 +379,7 @@ const Sales = ({ statuses = [] }) => {
                                                     </small>
                                                 </td>
                                             </tr>
-                                        // )
-                                        }
+                                        )}
 
                                         {saleLoaded?.reference && (
                                             <tr>
@@ -423,7 +414,7 @@ const Sales = ({ statuses = [] }) => {
                                         {saleLoaded?.invoiceType && (
                                             <tr>
                                                 <th>{saleLoaded?.invoiceType}:</th>
-                                                <td>{saleLoaded?.documentType} - {saleLoaded?.document} <br></br> {saleLoaded?.document && ( saleLoaded?.businessName )}</td>
+                                                <td>{saleLoaded?.documentType} - {saleLoaded?.document} <br></br> {saleLoaded?.document && (saleLoaded?.businessName)}</td>
                                             </tr>
                                         )}
 
@@ -493,8 +484,8 @@ const Sales = ({ statuses = [] }) => {
                                                                     src={`/storage/images/item/${detail.image}`}
                                                                     alt={detail.name}
                                                                     style={{
-                                                                        height: '5rem',       
-                                                                        width: '5rem',       
+                                                                        height: '5rem',
+                                                                        width: '5rem',
                                                                         objectFit: 'scale-down',
                                                                     }}
                                                                 />
@@ -594,58 +585,13 @@ const Sales = ({ statuses = [] }) => {
                                         {Number2Currency(saleLoaded?.delivery)}
                                     </span>
                                 </div>
-                                
-                                {/* Mostrar descuentos solo como información debajo de Envío */}
-                                {saleLoaded?.bundle_discount > 0 && (
-                                    <div className="d-flex justify-content-between text-success">
-                                        <span>Descuento por paquete:</span>
-                                        <span>
-                                            -S/ {Number2Currency(saleLoaded?.bundle_discount)}
-                                        </span>
-                                    </div>
-                                )}
-                                {saleLoaded?.renewal_discount > 0 && (
-                                    <div className="d-flex justify-content-between text-success">
-                                        <span>Descuento por renovación:</span>
-                                        <span>
-                                            -S/ {Number2Currency(saleLoaded?.renewal_discount)}
-                                        </span>
-                                    </div>
-                                )}
-                                {saleLoaded?.coupon_discount > 0 && (
-                                    <div className="d-flex justify-content-between text-success">
-                                        <span>
-                                            Descuento con cupón
-                                            {saleLoaded?.coupon_code && (
-                                                <small className="text-muted d-block">
-                                                    Código: {saleLoaded?.coupon_code}
-                                                </small>
-                                            )}
-                                        </span>
-                                        <span>
-                                            -S/ {Number2Currency(saleLoaded?.coupon_discount)}
-                                        </span>
-                                    </div>
-                                )}
-                                {saleLoaded?.promotion_discount > 0 && (
-                                    <div className="d-flex justify-content-between text-info">
-                                        <span>
-                                            {console.log(saleLoaded?.promotion_discount)    }
-                                            Descuentos por promociones
-                                            {saleLoaded?.applied_promotions && (
-                                                <small className="text-muted d-block">
-                                                    {JSON.parse(saleLoaded.applied_promotions).map((promo, index) => (
-                                                        <div key={index}>
-                                                            • {promo.name}: {promo.description}
-                                                        </div>
-                                                    ))}
-                                                </small>
-                                            )}
-                                        </span>
-                                        <span>
-                                            -S/ {Number2Currency(saleLoaded?.promotion_discount)}
-                                        </span>
-                                    </div>
+                                {saleLoaded?.coupon_discount > 0 && (<div className="d-flex justify-content-between">
+                                    <b>Descuento por cupon:</b>
+                                    <span>
+                                        - S/{" "}
+                                        {Number2Currency(saleLoaded?.coupon_discount)}
+                                    </span>
+                                </div>
                                 )}
                                 <hr className="my-2" />
                                 <div className="d-flex justify-content-between">
@@ -665,8 +611,32 @@ const Sales = ({ statuses = [] }) => {
                             <div className="card-header p-2">
                                 <h5 className="card-title mb-0">Estado</h5>
                             </div>
-                            <div className="card-body p-2">
-                                <div className="">
+                            <div className="card-body p-2 position-relative" id="statusSelectContainer">
+                                {statusLoading && (
+                                    <div className="position-absolute d-flex align-items-center justify-content-center" style={{
+                                        top: 0, left: 0, right: 0, bottom: 0,
+                                        zIndex: 1,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.125)',
+                                        backdropFilter: 'blur(2px)',
+                                        cursor: 'not-allowed'
+                                    }}>
+                                        <div className="spinner-border spinner-border-sm" role="status">
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <div>
+                                <SelectFormGroup label='Estado actual' dropdownParent='#statusSelectContainer' minimumResultsForSearch={-1} templateResult={statusTemplate} templateSelection={statusTemplate} onChange={(e) => onStatusChange(e, saleLoaded)} value={saleLoaded?.status_id} changeWith={[saleLoaded]} disabled={statusLoading || saleLoaded?.status?.reversible == 0}>
+                                    {statuses.map((status, index) => {
+                                        return (
+                                            <option key={index} value={status.id} data-status={JSON.stringify(status)}>
+                                                {status.name}
+                                            </option>
+                                        );
+                                    })}
+                                </SelectFormGroup>
+                                </div>
+                                {/* <div className="mb-2">
                                     <label
                                         htmlFor="statusSelect"
                                         className="form-label"
@@ -678,7 +648,7 @@ const Sales = ({ statuses = [] }) => {
                                         id="statusSelect"
                                         value={saleLoaded?.status_id}
                                         onChange={onStatusChange}
-                                        //  disabled={!saleLoaded?.status?.reversible}
+                                        disabled={saleLoaded?.status?.reversible == 0}
                                     >
                                         {statuses.map((status, index) => {
                                             return (
@@ -688,11 +658,31 @@ const Sales = ({ statuses = [] }) => {
                                             );
                                         })}
                                     </select>
+                                </div> */}
+                                <div className="form-check" style={{
+                                    cursor: saleLoaded?.status?.reversible == 0 ? 'not-allowed' : 'pointer'
+                                }}>
+                                    <input
+                                        ref={notifyClientRef}
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="notifyClient"
+                                        defaultChecked
+                                        disabled={saleLoaded?.status?.reversible == 0}
+                                        style={{
+                                            cursor: saleLoaded?.status?.reversible == 0 ? 'not-allowed' : 'pointer'
+                                        }}
+                                    />
+                                    <label className="form-check-label" htmlFor="notifyClient" style={{
+                                        cursor: saleLoaded?.status?.reversible == 0 ? 'not-allowed' : 'pointer'
+                                    }}>
+                                        Notificar al cliente
+                                    </label>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="card" hidden>
+                        <div className="card">
                             <div className="card-header p-2">
                                 <h5 className="card-title mb-0">
                                     Cambios de Estado
@@ -703,21 +693,21 @@ const Sales = ({ statuses = [] }) => {
                                     return (
                                         <article
                                             key={index}
-                                            class="border py-1 px-2 ms-3"
+                                            className="border py-1 px-2 ms-3"
                                             style={{
                                                 position: "relative",
                                                 borderRadius:
                                                     "16px 4px 4px 16px",
-                                                backgroundColor: ss.status.color
-                                                    ? `${ss.status.color}2e`
+                                                backgroundColor: ss.color
+                                                    ? `${ss.color}2e`
                                                     : "#3333332e",
                                             }}
                                         >
                                             <i
-                                                className="mdi mdi-circle left-2"
+                                                className={`${ss.icon || 'mdi mdi-circle'} left-2`}
                                                 style={{
                                                     color:
-                                                        ss.status.color ||
+                                                        ss.color ||
                                                         "#333",
                                                     position: "absolute",
                                                     left: "-25px",
@@ -729,15 +719,15 @@ const Sales = ({ statuses = [] }) => {
                                             <b
                                                 style={{
                                                     color:
-                                                        ss.status.color ||
+                                                        ss.color ||
                                                         "#333",
                                                 }}
                                             >
-                                                {ss?.status?.name}
+                                                {ss?.name}
                                             </b>
                                             <small className="d-block text-truncate">
-                                                {ss?.user?.name}{" "}
-                                                {ss?.user?.lastname}
+                                                {ss?.user_name}{" "}
+                                                {ss?.user_lastname}
                                             </small>
                                             <small className="d-block text-muted">
                                                 {moment(ss.created_at).format(

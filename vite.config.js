@@ -18,12 +18,10 @@ export default defineConfig({
             ],
             refresh: true,
         }),
-        react(),
+        react({
+            jsxRuntime: 'automatic',
+        }),
     ],
-    // resolve: name => {
-    //     const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
-    //     return pages[`./Pages/${name}.jsx`]
-    // },
     resolve: {
         alias: {
             '@Adminto': path.resolve(__dirname, 'resources/js/Components/Adminto'),
@@ -45,5 +43,5 @@ export default defineConfig({
     },
     optimizeDeps: {
         include: ['sonner']
-      }
+    }
 });

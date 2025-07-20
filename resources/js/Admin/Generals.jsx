@@ -277,6 +277,11 @@ const Generals = ({ generals }) => {
           description: formData.supportPhone,
         },
         {
+          correlative: "corporative_email",
+          name: "Correo corporativo",
+          description: formData.corporativeEmail,
+        },
+        {
           correlative: "support_email",
           name: "Correo de soporte",
           description: formData.supportEmail,

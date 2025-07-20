@@ -720,8 +720,8 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                                                     className={`w-10 h-10 p-2 inline-flex items-center justify-center rounded-full transition-all duration-300 
                                            
                                             ${page === pagination.currentPage
-                                                                            ? "bg-primary text-white"
-                                                                            : "bg-transparent hover:text-white hover:bg-primary"
+                                                                            ? "bg-accent text-white"
+                                                                            : "bg-transparent hover:text-white hover:bg-accent"
                                                                         }`}
                                                                     onClick={() =>
                                                                         handlePageChange(
@@ -824,8 +824,8 @@ const FilterSalaFabulosa = ({ items, data, filteredData, cart, setCart }) => {
                                                                 <button
                                                                     className={`w-10 h-10 p-2 inline-flex items-center justify-center rounded-full transition-all duration-300 
                                             ${page === pagination.currentPage
-                                                                            ? "bg-primary text-white"
-                                                                            : "bg-transparent hover:text-white hover:bg-primary"
+                                                                            ? "bg-accent text-white"
+                                                                            : "bg-transparent hover:text-white hover:bg-accent"
                                                                         }`}
                                                                     onClick={() =>
                                                                         handlePageChange(

@@ -150,18 +150,20 @@ export default function ShippingStepSF({
         setErrors(prev => ({ ...prev, ubigeo: "" }));
         const { data } = selected;
 
+        console.log("data", data);
+
         setFormData(prev => ({
             ...prev,
             department: data.departamento,
             province: data.provincia,
             district: data.distrito,
-            ubigeo: data.reniec,
+            ubigeo: data.reniec || data.inei,
         }));
 
         setLoading(true);
         try {
             const response = await DeliveryPricesRest.getShippingCost({
-                ubigeo: data.reniec,
+                ubigeo: data.reniec || data.inei,
             });
 
             const options = [];
@@ -388,7 +390,7 @@ export default function ShippingStepSF({
             Notify.add({
                 icon: "/assets/img/icon.svg",
                 title: "Seleccione envío",
-                body: "Debe elegir un método de envío",
+                body: "Debe elegir una zona de envío valido",
                 type: "danger",
             });
             return;
@@ -959,7 +961,7 @@ export default function ShippingStepSF({
                                             name="phone_prefix"
                                             value={formData.phone_prefix}
                                             styles={customStyles}
-                                            classNamePrefix="select"
+                                            classnameprefix="select"
                                         >
                                             <option value="">Selecciona un país</option>
                                             {

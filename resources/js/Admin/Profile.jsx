@@ -31,6 +31,11 @@ const Profile = (props) => {
         newSession.lastname = request.lastname;
         newSession.birthdate = request.birthdate;
         setSession(newSession);
+        
+        // Recargar la página para reflejar los cambios en todos los componentes
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000); // Esperar 1 segundo para que se vea la notificación de éxito
     };
 
     const onProfileChange = async (e) => {
@@ -55,7 +60,7 @@ const Profile = (props) => {
                 await File.fromURL(`data:${type};base64,${full}`)
             );
 
-            const res = await fetch("/api/admin/profile", {
+            const res = await fetch("/api/profile", {
                 method: "POST",
                 headers: {
                     "X-Xsrf-Token": decodeURIComponent(
@@ -69,7 +74,7 @@ const Profile = (props) => {
                 throw new Error(data?.message ?? "Ocurrio un error inesperado");
 
             const newSession = structuredClone(session);
-            newSession.relative_id = data.data.relative_id;
+            newSession.uuid = data.data.uuid; // Usar uuid en lugar de relative_id
             setSession(newSession);
 
             Notify.add({
@@ -78,6 +83,11 @@ const Profile = (props) => {
                 body: "La imagen de perfil se actualizo correctamente",
                 type: "success",
             });
+            
+            // Recargar la página para reflejar los cambios en todos los componentes
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500); // Esperar 1.5 segundos para que se vea la notificación de éxito
         } catch (error) {
             Notify.add({
                 icon: "/assets/img/icon.svg",
@@ -118,7 +128,7 @@ const Profile = (props) => {
                                 />
                                 <img
                                     className="avatar-xl rounded-circle"
-                                    src={`/api/admin/profile/${session.relative_id}`}
+                                    src={`/api/profile/${session.uuid}`}
                                     alt={`Perfil de ${session.name} ${session.lastname}`}
                                     style={{
                                         objectFit: "cover",

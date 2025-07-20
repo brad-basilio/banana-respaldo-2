@@ -32,7 +32,7 @@ const TopBarSocials = ({ items, data }) => {
       ref={sectionRef}
       className={`${data?.background_color ? data?.background_color : "bg-primary"} text-white font-paragraph font-bold transition-all duration-300 w-full z-50 ${data?.border_color ? `border-t-2 ${data?.border_color}`:""}`}
     >
-      <div className="px-primary  mx-auto py-3 flex flex-wrap justify-center md:justify-between items-center gap-2 2xl:max-w-7xl 2xl:px-0">
+      <div className="px-primary  mx-auto py-1.5 flex flex-wrap justify-center md:justify-between items-center gap-2 2xl:max-w-7xl 2xl:px-0">
         <p className="hidden md:block text-xs">{data.isCopyright ? 
        ` Copyright © ${new Date().getFullYear()} ${Global.APP_NAME}. Reservados todos los derechos.`
         : General.get('cintillo')}</p>
