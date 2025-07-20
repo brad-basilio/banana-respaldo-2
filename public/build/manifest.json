@@ -154,8 +154,8 @@
     "file": "assets/DxButton-DV0H-ZcL.js",
     "name": "DxButton"
   },
-  "_EditableCell-Cu-5czkC.js": {
-    "file": "assets/EditableCell-Cu-5czkC.js",
+  "_EditableCell-B3uFPs_m.js": {
+    "file": "assets/EditableCell-B3uFPs_m.js",
     "name": "EditableCell",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js",
@@ -3945,7 +3945,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-B_fg6ac4.js",
+    "file": "assets/BananaLab-oADgaUkN.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4004,7 +4004,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-C73svW8J.js",
+    "file": "assets/Editor-CGAr8Cp_.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4012,7 +4012,7 @@
       "_preload-helper-BfFHrpNk.js",
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_EditableCell-Cu-5czkC.js",
+      "_EditableCell-B3uFPs_m.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
       "_layers-6oegOx-p.js",
       "_chevron-down-DS-mdh9v.js",
@@ -4371,6 +4371,17 @@
       "_index-yBjzXJbu.js",
       "_index-rimy3MAc.js",
       "_index-fNjTmf9T.js"
+    ]
+  },
+  "resources/js/Components/Tailwind/BananaLab/components/Elements/FilterControls.jsx": {
+    "file": "assets/FilterControls-oxJQO2ms.js",
+    "name": "FilterControls",
+    "src": "resources/js/Components/Tailwind/BananaLab/components/Elements/FilterControls.jsx",
+    "isEntry": true,
+    "imports": [
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
+      "_index-yBjzXJbu.js"
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/components/Elements/ImageElement.jsx": {
@@ -9269,7 +9280,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-Djtp09a7.js",
+    "file": "assets/Editor-BgpUBm38.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9282,7 +9293,7 @@
       "_index-Dq7h7Pqt.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "_preload-helper-BfFHrpNk.js",
-      "_EditableCell-Cu-5czkC.js",
+      "_EditableCell-B3uFPs_m.js",
       "_createLucideIcon-Cy5Ya80P.js",
       "_useDrag-BaORhKlM.js",
       "_index-BSWw-p5k.js",
@@ -9479,7 +9490,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-Cs_wDNM0.js",
+    "file": "assets/System-C5XgTCse.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

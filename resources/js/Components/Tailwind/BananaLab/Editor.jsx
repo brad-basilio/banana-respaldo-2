@@ -2988,34 +2988,7 @@ export default function EditorLibro() {
                     id: "cell-cover-1",
                     elements: [
                         // Título del álbum
-                        {
-                            id: "cover-title",
-                            type: "text",
-                            content: item.name || "Mi Álbum Personalizado",
-                            position: { x: 10, y: 20 },
-                            size: { width: 80, height: 15 },
-                            style: {
-                                fontSize: "28px",
-                                fontFamily: "Arial",
-                                color: "#000000",
-                                fontWeight: "bold",
-                                textAlign: "center",
-                                backgroundColor: "transparent",
-                                padding: "8px"
-                            },
-                            zIndex: 2
-                        },
-                        // Imagen del item si existe
-                        ...(item.image ? [{
-                            id: "cover-image",
-                            type: "image",
-                            content: `/storage/images/item/${item.image}`,
-                            position: { x: 25, y: 40 },
-                            size: { width: 50, height: 40 },
-                            filters: {},
-                            mask: "none",
-                            zIndex: 1
-                        }] : [])
+                      
                     ]
                 }]
             };
@@ -3060,10 +3033,10 @@ export default function EditorLibro() {
                     id: "cell-final-1",
                     elements: [
                         // Texto de cierre
-                        /*{
+                        {
                             id: "final-text",
                             type: "text",
-                            content: "Fin del Álbum",
+                            content: " ",
                             position: { x: 30, y: 45 },
                             size: { width: 40, height: 10 },
                             style: {
@@ -3074,7 +3047,7 @@ export default function EditorLibro() {
                                 textAlign: "center"
                             },
                             zIndex: 1
-                        }*/
+                        }
                     ]
                 }]
             };

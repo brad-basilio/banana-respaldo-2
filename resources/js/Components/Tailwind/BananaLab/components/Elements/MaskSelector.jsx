@@ -51,15 +51,58 @@ export const MaskSelector = ({
                                 : "border-gray-200"
                         }`}
                     >
-                        <div className="aspect-square bg-white flex items-center justify-center p-1">
+                        <div className="aspect-square bg-white flex items-center justify-center p-1 relative overflow-hidden">
                             {selectedImage?.content ? (
-                                <img
-                                    src={selectedImage.content}
-                                    alt={mask.name}
-                                    className={`w-full h-full object-cover ${mask.class}`}
-                                />
+                                <div style={{
+                                    width: '100%', 
+                                    height: '100%', 
+                                    overflow: 'hidden',
+                                    clipPath: mask.id === 'circle' ? 'circle(50%)' : 
+                                              mask.id === 'rounded' ? 'inset(0 round 8%)' : 
+                                              mask.id === 'rounded-sm' ? 'inset(0 round 8%)' : 
+                                              mask.id === 'rounded-lg' ? 'inset(0 round 16%)' : 
+                                              mask.id === 'rounded-rect' ? 'inset(0 round 12%)' : 
+                                              mask.id === 'star' ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' : 
+                                              mask.id === 'hexagon' ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' : 
+                                              mask.id === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' : 
+                                              mask.id === 'diamond' ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' : 
+                                              mask.id === 'polaroid' ? 'inset(5% 5% 15% 5% round 2%)' : 
+                                              mask.id === 'vintage' ? 'inset(5% round 5% 5% 10% 5%)' : 
+                                              mask.id === 'diagonal' ? 'polygon(0 0, 100% 0, 100% 80%, 0 100%)' : 
+                                              mask.id === 'frame' ? 'inset(10% round 10%)' : 
+                                              mask.id === 'blob1' ? 'path("M10,0 C15,0 20,5 20,10 C20,15 15,20 10,20 C5,20 0,15 0,10 C0,5 5,0 10,0 Z")' : 
+                                              mask.id === 'blob2' ? 'path("M10,0 C15,5 20,10 15,15 C10,20 5,15 0,10 C5,5 5,5 10,0 Z")' : 
+                                              mask.id === 'blob3' ? 'path("M10,0 C15,0 20,5 15,10 C20,15 15,20 10,15 C5,20 0,15 5,10 C0,5 5,0 10,0 Z")' : 'none'
+                                }}>
+                                    <img
+                                        src={selectedImage.content}
+                                        alt={mask.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
                             ) : (
-                                <div className={`w-full h-full bg-gray-200 ${mask.class}`} />
+                                <div style={{
+                                    width: '100%', 
+                                    height: '100%', 
+                                    overflow: 'hidden',
+                                    background: '#d1d5db', /* gray-300 */
+                                    clipPath: mask.id === 'circle' ? 'circle(50%)' : 
+                                              mask.id === 'rounded' ? 'inset(0 round 8%)' : 
+                                              mask.id === 'rounded-sm' ? 'inset(0 round 8%)' : 
+                                              mask.id === 'rounded-lg' ? 'inset(0 round 16%)' : 
+                                              mask.id === 'rounded-rect' ? 'inset(0 round 12%)' : 
+                                              mask.id === 'star' ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' : 
+                                              mask.id === 'hexagon' ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' : 
+                                              mask.id === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' : 
+                                              mask.id === 'diamond' ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' : 
+                                              mask.id === 'polaroid' ? 'inset(5% 5% 15% 5% round 2%)' : 
+                                              mask.id === 'vintage' ? 'inset(5% round 5% 5% 10% 5%)' : 
+                                              mask.id === 'diagonal' ? 'polygon(0 0, 100% 0, 100% 80%, 0 100%)' : 
+                                              mask.id === 'frame' ? 'inset(10% round 10%)' : 
+                                              mask.id === 'blob1' ? 'path("M10,0 C15,0 20,5 20,10 C20,15 15,20 10,20 C5,20 0,15 0,10 C0,5 5,0 10,0 Z")' : 
+                                              mask.id === 'blob2' ? 'path("M10,0 C15,5 20,10 15,15 C10,20 5,15 0,10 C5,5 5,5 10,0 Z")' : 
+                                              mask.id === 'blob3' ? 'path("M10,0 C15,0 20,5 15,10 C20,15 15,20 10,15 C5,20 0,15 5,10 C0,5 5,0 10,0 Z")' : 'none'
+                                }} />
                             )}
                         </div>
                         <p className="text-center text-[10px] text-gray-700 p-1 truncate">

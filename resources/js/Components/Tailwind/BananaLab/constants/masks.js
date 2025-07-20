@@ -100,13 +100,7 @@ export const imageMasks = [
         category: "Creativas",
         //icon: () => <div className="w-4 h-4 bg-current rounded-full" />,
     },
-    {
-        id: "rounded-sm",
-        name: "Redondeado pequeño",
-        class: "mask-rounded-sm",
-        category: "Básicas",
-        //icon: () => <Square className="h-4 w-4 rounded-sm" />,
-    },
+   
     {
         id: "rounded-lg",
         name: "Redondeado grande",
@@ -115,20 +109,6 @@ export const imageMasks = [
         //icon: () => <Square className="h-4 w-4 rounded-lg" />,
     },
 
-    {
-        id: "speech",
-        name: "Globo de texto",
-        class: "mask-speech",
-        category: "Formas",
-        //icon: () => <div className="w-4 h-4 bg-current clip-speech" />,
-    },
-    {
-        id: "burst",
-        name: "Estallido",
-        class: "mask-burst",
-        category: "Formas",
-        //icon: () => <Zap className="h-4 w-4" />,
-    },
     {
         id: "rounded-rect",
         name: "Rectángulo redondeado",

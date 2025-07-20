@@ -479,7 +479,7 @@ export default function ImageElement({
         <div
             ref={ref}
             data-element-type="image"
-            className={`absolute ${mask.class} ${
+            className={`absolute ${
                 isSelected ? "ring-2 ring-blue-500 ring-opacity-75" : ""
             } ${isDragging ? "opacity-50" : "opacity-100"}`}            style={{
                 left: `${currentPosition.x}px`,
@@ -502,7 +502,27 @@ export default function ImageElement({
             onDoubleClick={handleDoubleClick}
         >
             {/* Contenedor de la imagen */}
-            <div className="w-full h-full overflow-hidden relative bg-transparent image-element">
+            <div 
+                className={`w-full h-full overflow-hidden relative bg-transparent image-element`} 
+                style={{
+                    clipPath: element.mask === 'circle' ? 'circle(50%)' : 
+                             element.mask === 'rounded' ? 'inset(0 round 8%)' : 
+                             element.mask === 'rounded-sm' ? 'inset(0 round 8%)' : 
+                             element.mask === 'rounded-lg' ? 'inset(0 round 16%)' : 
+                             element.mask === 'rounded-rect' ? 'inset(0 round 12%)' : 
+                             element.mask === 'star' ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' : 
+                             element.mask === 'hexagon' ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' : 
+                             element.mask === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' : 
+                             element.mask === 'diamond' ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' : 
+                             element.mask === 'polaroid' ? 'inset(5% 5% 15% 5% round 2%)' : 
+                             element.mask === 'vintage' ? 'inset(5% round 5% 5% 10% 5%)' : 
+                             element.mask === 'diagonal' ? 'polygon(0 0, 100% 0, 100% 80%, 0 100%)' : 
+                             element.mask === 'frame' ? 'inset(10% round 10%)' : 
+                             element.mask === 'blob1' ? 'path("M10,0 C15,0 20,5 20,10 C20,15 15,20 10,20 C5,20 0,15 0,10 C0,5 5,0 10,0 Z")' : 
+                             element.mask === 'blob2' ? 'path("M10,0 C15,5 20,10 15,15 C10,20 5,15 0,10 C5,5 5,5 10,0 Z")' : 
+                             element.mask === 'blob3' ? 'path("M10,0 C15,0 20,5 15,10 C20,15 15,20 10,15 C5,20 0,15 5,10 C0,5 5,0 10,0 Z")' : 'none'
+                }}
+            >
                 <img
                     ref={imageRef}
                     src={element.content}
