@@ -102,6 +102,7 @@ import WorkspaceControls from "./components/Elements/WorkspaceControls";
 import BookPreviewModal from "./components/Editor/BookPreview";
 import Global from "../../../Utils/Global";
 import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
+import { generateFastThumbnails, generateHybridThumbnails, clearThumbnailCaches, generateSingleThumbnail } from "./utils/fastThumbnailGenerator";
 import { useSaveProject } from "./utils/useSaveProject";
 import { useAutoSave } from "./utils/useAutoSave";
 import { saveThumbnailsAsFiles } from "./utils/saveSystem";
@@ -416,7 +417,23 @@ export default function EditorLibro() {
     const [projectImagesLoading, setProjectImagesLoading] = useState(false);
     const [imageCache, setImageCache] = useState(new Map()); // Cache para evitar re-renders
     const [imageBlobCache, setImageBlobCache] = useState(() => new Map()); // 🚀 Cache de blobs optimizado
-    const loadingTimeoutRef = useRef(null); // Para throttling
+    const [thumbnailProgress, setThumbnailProgress] = useState(null); // ⚡ Estado de progreso de thumbnails
+
+    // ✅ MONITOREO: Sistema de filtros corregido
+    useEffect(() => {
+        console.log('✅ [FILTERS] Tab actual:', activeTab);
+    }, [activeTab]);
+
+    // 🛡️ Función controlada para cambiar activeTab con logging
+    const setActiveTabControlled = useCallback((newTab, reason = 'manual') => {
+        console.log(`🔄 [ACTIVE_TAB] Cambiando de "${activeTab}" a "${newTab}" - Razón: ${reason}`);
+        if (newTab === 'filters' && reason !== 'manual') {
+            console.warn('🚨 [ACTIVE_TAB] Cambio automático a filters bloqueado!');
+            return;
+        }
+        setActiveTab(newTab);
+    }, [activeTab]);
+    console.log('🎉 [FILTERS FIX] Editor cargado - Fix del problema de filtros ACTIVADO');
     
     // 🚀 Estado para control de inicialización de progreso
     const [hasInitializedProgress, setHasInitializedProgress] = useState(false);
@@ -464,10 +481,55 @@ export default function EditorLibro() {
         }
     }, [projectData?.id]);
 
+    // ⚡ NUEVA FUNCIÓN: Generar thumbnail solo de la página actual
+    const generateCurrentPageThumbnail = useCallback(async () => {
+        if (!pages[currentPage] || !workspaceDimensions) return;
+        
+        const page = pages[currentPage];
+        
+        // Si ya existe el thumbnail, no generar
+        if (pageThumbnails[page.id]) {
+            console.log(`✅ Thumbnail ya existe para página: ${page.id}`);
+            return;
+        }
+
+        if (thumbnailGenerating.current) {
+            console.log('⏳ Ya se está generando un thumbnail...');
+            return;
+        }
+
+        thumbnailGenerating.current = true;
+
+        try {
+            console.log(`📸 Generando thumbnail para página actual: ${page.id}`);
+
+            const thumbnailData = await generateSingleThumbnail({
+                page,
+                workspaceDimensions,
+                onProgress: (progress) => {
+                    setThumbnailProgress(progress);
+                }
+            });
+
+            if (thumbnailData) {
+                setPageThumbnails(prev => ({
+                    ...prev,
+                    [page.id]: thumbnailData
+                }));
+                console.log(`✅ Thumbnail generado para página: ${page.id}`);
+            }
+        } catch (error) {
+            console.warn('⚠️ Error generando thumbnail de página actual:', error);
+        } finally {
+            thumbnailGenerating.current = false;
+            setThumbnailProgress(null);
+        }
+    }, [pages, currentPage, workspaceDimensions, pageThumbnails]);
+
     // 🖼️ Función para generar thumbnails locales usando la función importada (OPTIMIZADA)
     const generateLocalThumbnails = useCallback(
         debounce(async () => {
-            if (!pages?.length || !workspaceDimensions || !presetData) return;
+            if (!pages?.length || !workspaceDimensions) return;
 
             // 🚀 OPTIMIZACIÓN: Evitar regeneración si ya están generando
             if (thumbnailGenerating.current) {
@@ -486,12 +548,15 @@ export default function EditorLibro() {
                     return;
                 }
 
-                console.log(`📸 Generando ${missingThumbnails.length} thumbnails faltantes...`);
+                console.log(`📸 Generando ${missingThumbnails.length} thumbnails rápidos...`);
 
-                const thumbnailsObject = await generateAccurateThumbnails({
-                    pages: missingThumbnails, // Solo páginas que necesitan thumbnails
+                // ⚡ NUEVA OPTIMIZACIÓN: Usar generador rápido con progreso
+                const thumbnailsObject = await generateFastThumbnails({
+                    pages: missingThumbnails,
                     workspaceDimensions,
-                    presetData
+                    onProgress: (progress) => {
+                        setThumbnailProgress(progress);
+                    }
                 });
 
                 if (thumbnailsObject && Object.keys(thumbnailsObject).length > 0) {
@@ -499,19 +564,60 @@ export default function EditorLibro() {
                         ...prev,
                         ...thumbnailsObject
                     }));
-                    console.log('✅ Thumbnails locales generados:', Object.keys(thumbnailsObject).length);
+                    console.log('✅ Thumbnails rápidos generados:', Object.keys(thumbnailsObject).length);
                 }
             } catch (error) {
-                console.warn('⚠️ Error generando thumbnails locales:', error);
+                console.warn('⚠️ Error generando thumbnails rápidos:', error);
             } finally {
                 thumbnailGenerating.current = false;
+                setThumbnailProgress(null);
             }
-        }, 500), // 500ms debounce para evitar regeneración excesiva
-        [pages, workspaceDimensions, presetData, pageThumbnails]
+        }, 300), // Reducido el debounce para mayor responsividad
+        [pages, workspaceDimensions, pageThumbnails]
     );
 
     // 🚀 OPTIMIZACIÓN: Ref para controlar generación de thumbnails
     const thumbnailGenerating = useRef(false);
+
+    // ⚡ NUEVA FUNCIÓN: Generar thumbnails con prioridades
+    const generatePriorityThumbnails = useCallback(async (priorityPageIds = []) => {
+        if (thumbnailGenerating.current) return;
+        
+        try {
+            thumbnailGenerating.current = true;
+            
+            // Si hay páginas específicas con prioridad, generarlas primero
+            if (priorityPageIds.length > 0) {
+                const priorityPages = pages.filter(p => priorityPageIds.includes(p.id));
+                if (priorityPages.length > 0) {
+                    console.log(`🎯 Generando ${priorityPages.length} thumbnails prioritarios...`);
+                    
+                    const priorityThumbnails = await generateFastThumbnails({
+                        pages: priorityPages,
+                        workspaceDimensions
+                    });
+                    
+                    if (priorityThumbnails && Object.keys(priorityThumbnails).length > 0) {
+                        setPageThumbnails(prev => ({
+                            ...prev,
+                            ...priorityThumbnails
+                        }));
+                    }
+                }
+            }
+            
+            // Luego generar el resto de forma silenciosa
+            // DESHABILITADO: Solo generar por página individual
+            // setTimeout(() => {
+            //     generateLocalThumbnails();
+            // }, 100);
+            
+        } catch (error) {
+            console.warn('⚠️ Error en generación prioritaria:', error);
+        } finally {
+            thumbnailGenerating.current = false;
+        }
+    }, [pages, workspaceDimensions, generateLocalThumbnails]);
     
     // 🚀 OPTIMIZACIÓN: Pre-cache de imágenes en background
     const preloadImageCache = useCallback((imageUrl) => {
@@ -591,6 +697,13 @@ export default function EditorLibro() {
         };
     }, []); // Empty dependency array - cleanup only on unmount
 
+    // 🚀 OPTIMIZACIÓN: Limpiar caches de thumbnails rápidos al desmontar
+    useEffect(() => {
+        return () => {
+            clearThumbnailCaches();
+        };
+    }, []);
+
     // 🖼️ Función para cargar thumbnails con nueva estructura después de generarlos
     const loadThumbnailsWithNewStructure = useCallback(async () => {
         if (!projectData?.id || !pages?.length) return;
@@ -618,17 +731,17 @@ export default function EditorLibro() {
                     }));
                     console.log('✅ Thumbnails existentes cargados:', Object.keys(existingThumbnails).length);
                 } else {
-                    console.log('📸 No hay thumbnails existentes, generando nuevos...');
-                    // Si no hay thumbnails existentes, generar nuevos
-                    await generateLocalThumbnails();
+                    console.log('📸 No hay thumbnails existentes, generando para página actual...');
+                    // Solo generar thumbnail de la página actual
+                    setTimeout(() => generateCurrentPageThumbnail(), 200);
                 }
             }
         } catch (error) {
             console.warn('⚠️ Error cargando thumbnails existentes:', error);
-            // Fallback: generar thumbnails localmente
-            await generateLocalThumbnails();
+            // Fallback: generar thumbnail solo de la página actual
+            setTimeout(() => generateCurrentPageThumbnail(), 200);
         }
-    }, [projectData?.id, pages, generateLocalThumbnails]);
+    }, [projectData?.id, pages, generateCurrentPageThumbnail]);
 
     // 🖼️ Función para generar y guardar thumbnails en la base de datos
     const generateAndSavePageThumbnails = useCallback(async () => {
@@ -1414,26 +1527,42 @@ export default function EditorLibro() {
         }
     }, [captureCurrentWorkspace, currentPage, pages]);
 
-    // Debounced thumbnail generation optimizado para evitar capturas excesivas
+    // ⚡ Regeneración de thumbnail optimizada para cambios en página actual
     const scheduleThumbnailGeneration = useCallback(() => {
         clearTimeout(thumbnailTimeout.current);
         thumbnailTimeout.current = setTimeout(() => {
-            // Solo generar si la página actual no tiene miniatura
-            if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
-                generateCurrentThumbnail();
+            // Regenerar thumbnail de la página actual cuando hay cambios
+            if (pages[currentPage]) {
+                // Limpiar thumbnail existente para forzar regeneración
+                setPageThumbnails(prev => {
+                    const updated = { ...prev };
+                    delete updated[pages[currentPage].id];
+                    return updated;
+                });
+                
+                // Generar nuevo thumbnail después de un pequeño delay
+                setTimeout(() => {
+                    generateCurrentPageThumbnail();
+                }, 200);
             }
-        }, 1200); // Increased debounce time significantly to reduce flicker
-    }, [generateCurrentThumbnail, pages, currentPage, pageThumbnails]);
+        }, 1000); // 1 segundo para evitar regeneración excesiva durante edición
+    }, [pages, currentPage, generateCurrentPageThumbnail]);
 
-    // Función para generar miniatura inmediata optimizada
+    // ⚡ Función para regenerar thumbnail de página actual inmediatamente
     const generateImmediateThumbnail = useCallback(() => {
-        // Solo generar si realmente es necesario
-        if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
+        if (pages[currentPage]) {
+            // Limpiar thumbnail existente para forzar regeneración
+            setPageThumbnails(prev => {
+                const updated = { ...prev };
+                delete updated[pages[currentPage].id];
+                return updated;
+            });
+            
             setTimeout(() => {
-                generateCurrentThumbnail();
-            }, 300); // Longer delay to ensure DOM stability
+                generateCurrentPageThumbnail();
+            }, 300);
         }
-    }, [generateCurrentThumbnail, pages, currentPage, pageThumbnails]);
+    }, [pages, currentPage, generateCurrentPageThumbnail]);
 
     // Función para generar thumbnail de alta calidad para una página específica
     const generateHighQualityThumbnail = useCallback(async (pageIndex = currentPage, size = { width: 800, height: 600 }) => {
@@ -1684,17 +1813,17 @@ export default function EditorLibro() {
         return () => window.removeEventListener('resize', handleResize);
     }, [presetData, workspaceSize]);
 
-    // useEffect simplificado para cambio de página
+    // ⚡ useEffect optimizado para generar thumbnail de página actual
     useEffect(() => {
         if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
-            // Solo generar si realmente no existe la miniatura
+            // Generar thumbnail solo de la página actual con delay para estabilidad
             const timeoutId = setTimeout(() => {
-                generateImmediateThumbnail();
-            }, 400);
+                generateCurrentPageThumbnail();
+            }, 500); // Delay para asegurar que el DOM se haya actualizado
 
             return () => clearTimeout(timeoutId);
         }
-    }, [currentPage]);
+    }, [currentPage, pages, pageThumbnails, generateCurrentPageThumbnail]);
 
     // useEffect para verificar imagen de fondo (solo cuando cambia la página o la imagen)
     useEffect(() => {
@@ -2441,11 +2570,13 @@ export default function EditorLibro() {
                     return newMap;
                 });
 
-                // 🖼️ Generar thumbnails localmente después de guardar (para UI)
+                // 🖼️ Regenerar thumbnail de la página actual después de guardar
                 if (pages && pages.length > 0) {
-                    generateLocalThumbnails().catch(error => {
-                        console.warn('⚠️ Error generando thumbnails locales:', error);
-                    });
+                    setTimeout(() => {
+                        generateCurrentPageThumbnail().catch(error => {
+                            console.warn('⚠️ Error regenerando thumbnail de página actual:', error);
+                        });
+                    }, 300);
                 }
 
                 return true;
@@ -2555,9 +2686,9 @@ export default function EditorLibro() {
         }
 
         try {
-            // 🖼️ PASO 1: Generar thumbnails de alta calidad localmente
-            console.log('📸 [SAVE] Generando thumbnails localmente...');
-            await generateLocalThumbnails();
+            // 🖼️ PASO 1: Asegurar que la página actual tenga thumbnail
+            console.log('📸 [SAVE] Generando thumbnail de página actual...');
+            await generateCurrentPageThumbnail();
 
             // �️ PASO 2: Cargar thumbnails con nueva estructura
             await loadThumbnailsWithNewStructure();
@@ -3156,9 +3287,15 @@ export default function EditorLibro() {
 
             if (element?.type === "image") {
                 setSelectedImage(element);
-                // 🚀 Solo abrir filtros si NO estamos ya en la galería de imágenes
-                if (activeTab !== 'images') {
-                    setActiveTab('filters');
+                // ✅ COMPLETAMENTE BLOQUEADO - NUNCA cambiar automáticamente a filtros
+                // ✅ Solo establecer la imagen seleccionada para que esté disponible cuando vaya a filtros
+                console.log('🖼️ Imagen seleccionada:', element.id, '- Tab actual mantenido:', activeTab);
+                
+                // 🛡️ ASEGURAR que NO se cambie a filtros automáticamente
+                if (activeTab === 'filters') {
+                    console.log('✅ Usuario ya está en filtros, manteniendo');
+                } else {
+                    console.log('✅ Imagen seleccionada, pero manteniendo tab actual:', activeTab);
                 }
             } else if (element?.type === "text") {
                 setTextToolbarVisible(true);
@@ -3166,8 +3303,10 @@ export default function EditorLibro() {
                     elementId,
                     cellId: cellId || selectedCell,
                 });
-                // Abrir automáticamente el sidebar de textos cuando se selecciona un elemento de texto
-                setActiveTab('text');
+                // Solo cambiar a text si no estamos ya en una sección específica
+                if (activeTab !== 'filters' && activeTab !== 'images') {
+                    setActiveTab('text');
+                }
             } else {
                 setTextToolbarVisible(false);
             }
@@ -5866,13 +6005,52 @@ export default function EditorLibro() {
                                 
                                     {activeTab === 'pages' && (
                                         <div className="space-y-4">
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <Book className="h-5 w-5 text-[#af5cb8]" />
-                                                <h3 className="font-semibold text-[#040404]">Pages</h3>
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                    {pages.length} total
-                                                </span>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Book className="h-5 w-5 text-[#af5cb8]" />
+                                                    <h3 className="font-semibold text-[#040404]">Pages</h3>
+                                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                        {pages.length} total
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        // Limpiar todos los thumbnails y regenerar en lotes pequeños
+                                                        setPageThumbnails({});
+                                                        clearThumbnailCaches();
+                                                        // Regenerar página actual primero
+                                                        setTimeout(() => generateCurrentPageThumbnail(), 100);
+                                                    }}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                                                    title="Regenerar todos los thumbnails"
+                                                >
+                                                    🔄 Regenerar
+                                                </button>
                                             </div>
+
+                                            {/* ⚡ Indicador de progreso de thumbnail individual */}
+                                            {thumbnailProgress && (
+                                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                                        <span className="text-sm font-medium text-blue-800">
+                                                            Generando thumbnail...
+                                                        </span>
+                                                        <span className="text-xs text-blue-600">
+                                                            {thumbnailProgress.percentage}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-blue-200 rounded-full h-2">
+                                                        <div 
+                                                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                                            style={{ width: `${thumbnailProgress.percentage}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <p className="text-xs text-blue-700 mt-1">
+                                                        {thumbnailProgress.message || `Página: ${thumbnailProgress.pageId || 'actual'}`}
+                                                    </p>
+                                                </div>
+                                            )}
 
                                             {/* Mostrar estado de carga si las páginas aún no se han cargado */}
                                             {pages.length === 0 ? (
@@ -6044,7 +6222,7 @@ export default function EditorLibro() {
 
                                             {(() => {
                                                 const currentElement = getSelectedElement();
-                                                return currentElement ? (
+                                                return currentElement && currentElement.type === "image" ? (
                                                     <>
                                                         {currentElement.type === "image" && (
                                                             <div className="p-3 bg-white rounded-lg border border-gray-200">
@@ -6101,10 +6279,13 @@ export default function EditorLibro() {
                                                             <ImageIcon className="h-6 w-6 text-gray-400" />
                                                         </div>
                                                         <h4 className="text-sm font-medium text-[#040404] mb-2">
-                                                            Select an element
+                                                            Select an image to apply filters
                                                         </h4>
                                                         <p className="text-xs text-gray-600">
-                                                            Choose an image or text element to apply filters and effects
+                                                            {getSelectedElement() ? 
+                                                                'Filters are only available for image elements' : 
+                                                                'Click on an image element in your canvas to access filters and effects'
+                                                            }
                                                         </p>
                                                     </div>
                                                 );
