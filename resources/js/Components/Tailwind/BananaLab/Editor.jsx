@@ -2,6 +2,180 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import html2canvas from 'html2canvas'; // Para captura de alta calidad
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
+
+// Estilos personalizados para Driver.js con tema BananaLab
+const driverStyles = `
+    .driver-popover-banana {
+        background: linear-gradient(135deg, #ffffff 0%, #faf7fb 100%);
+        border: 2px solid #af5cb8;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(175, 92, 184, 0.15);
+        max-width: 420px !important;
+        min-width: 380px !important;
+        padding: 20px !important;
+    }
+    
+    .driver-popover-banana .driver-popover-title {
+        color: #af5cb8;
+        font-weight: 700;
+        font-size: 20px !important;
+        margin-bottom: 12px !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        line-height: 1.3 !important;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+    
+    .driver-popover-banana .driver-popover-description {
+        color: #4a5568;
+        font-size: 16px !important;
+        line-height: 1.6 !important;
+        margin-bottom: 20px !important;
+        word-wrap: break-word;
+        white-space: normal;
+        text-align: left;
+    }
+    
+    .driver-popover-banana .driver-popover-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-top: 20px !important;
+        flex-wrap: wrap;
+    }
+    
+    .driver-popover-banana .driver-popover-progress-text {
+        color: #af5cb8;
+        font-size: 13px !important;
+        font-weight: 600;
+        background: rgba(175, 92, 184, 0.1);
+        padding: 6px 10px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+    
+    .driver-popover-banana .driver-popover-next-btn,
+    .driver-popover-banana .driver-popover-prev-btn {
+        background: linear-gradient(135deg, #af5cb8 0%, #9333ea 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px !important;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 15px !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(175, 92, 184, 0.3);
+        white-space: nowrap;
+        min-width: 120px;
+    }
+    
+    .driver-popover-banana .driver-popover-next-btn:hover,
+    .driver-popover-banana .driver-popover-prev-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(175, 92, 184, 0.4);
+    }
+    
+    .driver-popover-banana .driver-popover-prev-btn {
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+    }
+    
+    .driver-popover-banana .driver-popover-prev-btn:hover {
+        box-shadow: 0 6px 16px rgba(107, 114, 128, 0.4);
+    }
+    
+    .driver-popover-banana .driver-popover-close-btn {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 600;
+    }
+    
+    .driver-popover-banana .driver-popover-close-btn:hover {
+        background: rgba(239, 68, 68, 0.2);
+        transform: scale(1.05);
+    }
+    
+    .driver-overlay {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    
+    .driver-highlighted-element {
+        border-radius: 12px !important;
+        box-shadow: 0 0 0 6px rgba(175, 92, 184, 0.8) !important, 
+                    0 0 30px rgba(175, 92, 184, 0.6) !important,
+                    0 0 60px rgba(175, 92, 184, 0.4) !important;
+        position: relative !important;
+        z-index: 9999 !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    .driver-highlighted-element::before {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 12px;
+        padding: 2px;
+        background: linear-gradient(45deg, #af5cb8, #9333ea, #af5cb8);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        -webkit-mask-composite: xor;
+        animation: borderGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes borderGlow {
+        0% { opacity: 0.6; }
+        100% { opacity: 1; }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+        .driver-popover-banana {
+            max-width: 95vw !important;
+            min-width: 300px !important;
+            margin: 10px !important;
+        }
+        
+        .driver-popover-banana .driver-popover-title {
+            font-size: 18px !important;
+        }
+        
+        .driver-popover-banana .driver-popover-description {
+            font-size: 14px !important;
+        }
+        
+        .driver-popover-banana .driver-popover-footer {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .driver-popover-banana .driver-popover-next-btn,
+        .driver-popover-banana .driver-popover-prev-btn {
+            width: 100%;
+            min-width: auto;
+        }
+    }
+`;
+
+// Inyectar estilos en el head
+if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = driverStyles;
+    document.head.appendChild(styleSheet);
+}
 
 // Función debounce utility
 function debounce(func, wait) {
@@ -126,9 +300,8 @@ const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
                 <img
                     src={thumbnail}
                     alt={altText}
-                    className={`w-full h-full object-contain transition-opacity duration-200 ${
-                        imageLoaded ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className={`w-full h-full object-contain transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+                        }`}
                     onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
                     loading="lazy"
@@ -161,10 +334,10 @@ const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
     );
 }, (prevProps, nextProps) => {
     // 🚀 OPTIMIZACIÓN: Comparación personalizada para evitar re-renders innecesarios
-    return prevProps.pageId === nextProps.pageId && 
-           prevProps.thumbnail === nextProps.thumbnail &&
-           prevProps.altText === nextProps.altText &&
-           prevProps.type === nextProps.type;
+    return prevProps.pageId === nextProps.pageId &&
+        prevProps.thumbnail === nextProps.thumbnail &&
+        prevProps.altText === nextProps.altText &&
+        prevProps.type === nextProps.type;
 });
 
 // Componente para mostrar imágenes del proyecto con drag & drop
@@ -204,7 +377,7 @@ const ProjectImageGallery = React.memo(({ images, onImageSelect, isLoading }) =>
                 e.stopPropagation();
                 return false;
             }
-            
+
             // Solo ejecutar si es un click genuino (no parte de drag)
             onImageSelect(fullImage);
         };
@@ -317,7 +490,7 @@ export default function EditorLibro() {
 
     // Estado para rastrear cambios por página
     const [pageChanges, setPageChanges] = useState(new Map());
-    
+
     // Cola de guardado en segundo plano
     const [saveQueue, setSaveQueue] = useState([]);
     const [isProcessingQueue, setIsProcessingQueue] = useState(false);
@@ -328,12 +501,12 @@ export default function EditorLibro() {
     const processingTimerRef = useRef(null);
     const loadingTimeoutRef = useRef(null); // 🚀 Timeout para loading states
     const thumbnailLoadTimeoutRef = useRef(null); // 🛡️ Timeout para debounce de carga de thumbnails
-    
+
     // Actualizar refs cuando cambien los valores
     useEffect(() => {
         saveQueueRef.current = saveQueue;
     }, [saveQueue]);
-    
+
     useEffect(() => {
         pageChangesRef.current = pageChanges;
     }, [pageChanges]);
@@ -437,7 +610,7 @@ export default function EditorLibro() {
         setActiveTab(newTab);
     }, [activeTab]);
     console.log('🎉 [FILTERS FIX] Editor cargado - Fix del problema de filtros ACTIVADO');
-    
+
     // 🚀 Estado para control de inicialización de progreso
     const [hasInitializedProgress, setHasInitializedProgress] = useState(false);
 
@@ -446,6 +619,144 @@ export default function EditorLibro() {
 
     // Estado para las dimensiones calculadas
     const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
+
+    // ✨ Configuración de Driver.js para la guía
+    const driverObj = useMemo(() => {
+        return driver({
+            showProgress: true,
+            animate: true,
+            smoothScroll: true,
+            allowClose: true,
+            steps: [
+                {
+                    element: '#editor-workspace',
+                    popover: {
+                        title: '¡Bienvenido al Editor de BananaLab! 🍌',
+                        description: 'Este es tu lienzo de trabajo donde crearás diseños increíbles. Aquí puedes ver y editar la página actual de tu proyecto.',
+                        side: "left",
+                        align: 'start'
+                    }
+                },
+                {
+                    popover: {
+                        title: '🎯 Navegación Principal',
+                        description: 'En la barra lateral izquierda encontrarás todas las herramientas organizadas por categorías. Cada ícono te lleva a una sección específica.',
+                        side: "right",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '[data-tab="pages"]',
+                    popover: {
+                        title: '📄 Sección Páginas',
+                        description: 'Gestiona todas las páginas de tu proyecto: portada, páginas de contenido y contraportada. Haz clic en cualquier página para editarla.',
+                        side: "right",
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tab="templates"]',
+                    popover: {
+                        title: '🎨 Sección Diseños',
+                        description: 'Elige entre diferentes layouts y plantillas para organizar el contenido de tu página. Cada diseño tiene una distribución única.',
+                        side: "right",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '[data-tab="panel"]',
+                    popover: {
+                        title: '📚 Sección Capas',
+                        description: 'Organiza y controla la superposición de elementos. Cambia el orden de las capas, oculta elementos o ajusta su posición.',
+                        side: "right",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '[data-tab="text"]',
+                    popover: {
+                        title: '✍️ Sección Textos',
+                        description: 'Agrega y personaliza textos: títulos, subtítulos y párrafos. Cambia fuentes, colores, tamaños y efectos de texto.',
+                        side: "right",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '[data-tab="filters"]',
+                    popover: {
+                        title: '🎭 Sección Filtros',
+                        description: 'Aplica efectos visuales a tus imágenes: brillo, contraste, saturación, máscaras y más filtros profesionales.',
+                        side: "right",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#quick-actions-bar',
+                    popover: {
+                        title: '⚡ Acciones Rápidas',
+                        description: 'Herramientas de acceso rápido: cambiar diseño de página, gestionar capas, agregar imágenes y duplicar elementos.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#toolbar-actions',
+                    popover: {
+                        title: '💾 Controles de Proyecto',
+                        description: 'Deshacer/rehacer cambios, guardar progreso automáticamente y acceder a la vista previa de tu álbum.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#preview-button',
+                    popover: {
+                        title: '👁️ Vista de Álbum',
+                        description: 'Visualiza tu proyecto completo como un álbum real. Perfecto para revisar el resultado final antes de completar.',
+                        side: "bottom",
+                        align: 'center'
+                    }
+                },
+                {
+                    popover: {
+                        title: '🎉 ¡Listo para crear!',
+                        description: 'Ya conoces todas las herramientas principales. Comienza seleccionando una página y agregando elementos. ¡Diviértete creando!',
+                        side: "center",
+                        align: 'center'
+                    }
+                }
+            ],
+            nextBtnText: 'Siguiente →',
+            prevBtnText: '← Anterior',
+            doneBtnText: '¡Empezar a crear! 🚀',
+            closeBtnText: '✕',
+            progressText: 'Paso {{current}} de {{total}}',
+            overlayColor: 'rgba(0, 0, 0, 0.75)',
+            popoverClass: 'driver-popover-banana',
+            onHighlightStarted: (element, step) => {
+                console.log('🎯 Mostrando paso:', step.popover?.title);
+
+                // Si el paso requiere cambiar a una pestaña específica
+                const tabElement = element?.getAttribute?.('data-tab');
+                if (tabElement && activeTab !== tabElement) {
+                    setActiveTab(tabElement);
+                }
+            },
+            onDeselected: () => {
+                console.log('✅ Guía completada');
+                // Opcional: mostrar mensaje de bienvenida final
+                toast.success('¡Guía completada! Ya puedes empezar a crear tu diseño.', {
+                    duration: 3000
+                });
+            }
+        });
+    }, [activeTab, setActiveTab]);
+
+    // Función para iniciar la guía
+    const startTour = useCallback(() => {
+        console.log('🚀 Iniciando tour guiado');
+        driverObj.drive();
+    }, [driverObj]);
 
     // 🖼️ Función para cargar thumbnails guardados desde la base de datos (OPCIONAL)
     const loadStoredThumbnails = useCallback(async () => {
@@ -487,9 +798,9 @@ export default function EditorLibro() {
     // ⚡ NUEVA FUNCIÓN: Generar thumbnail solo de la página actual
     const generateCurrentPageThumbnail = useCallback(async () => {
         if (!pages[currentPage] || !workspaceDimensions) return;
-        
+
         const page = pages[currentPage];
-        
+
         // Si ya existe el thumbnail, no generar
         if (pageThumbnails[page.id]) {
             console.log(`✅ Thumbnail ya existe para página: ${page.id}`);
@@ -545,7 +856,7 @@ export default function EditorLibro() {
             try {
                 // 🚀 OPTIMIZACIÓN: Generar solo thumbnails que no existen
                 const missingThumbnails = pages.filter(page => !pageThumbnails[page.id]);
-                
+
                 if (missingThumbnails.length === 0) {
                     console.log('✅ Todos los thumbnails ya existen');
                     return;
@@ -585,21 +896,21 @@ export default function EditorLibro() {
     // ⚡ NUEVA FUNCIÓN: Generar thumbnails con prioridades
     const generatePriorityThumbnails = useCallback(async (priorityPageIds = []) => {
         if (thumbnailGenerating.current) return;
-        
+
         try {
             thumbnailGenerating.current = true;
-            
+
             // Si hay páginas específicas con prioridad, generarlas primero
             if (priorityPageIds.length > 0) {
                 const priorityPages = pages.filter(p => priorityPageIds.includes(p.id));
                 if (priorityPages.length > 0) {
                     console.log(`🎯 Generando ${priorityPages.length} thumbnails prioritarios...`);
-                    
+
                     const priorityThumbnails = await generateFastThumbnails({
                         pages: priorityPages,
                         workspaceDimensions
                     });
-                    
+
                     if (priorityThumbnails && Object.keys(priorityThumbnails).length > 0) {
                         setPageThumbnails(prev => ({
                             ...prev,
@@ -608,56 +919,56 @@ export default function EditorLibro() {
                     }
                 }
             }
-            
+
             // Luego generar el resto de forma silenciosa
             // DESHABILITADO: Solo generar por página individual
             // setTimeout(() => {
             //     generateLocalThumbnails();
             // }, 100);
-            
+
         } catch (error) {
             console.warn('⚠️ Error en generación prioritaria:', error);
         } finally {
             thumbnailGenerating.current = false;
         }
     }, [pages, workspaceDimensions, generateLocalThumbnails]);
-    
+
     // 🚀 OPTIMIZACIÓN: Pre-cache de imágenes en background
     const preloadImageCache = useCallback((imageUrl) => {
         if (imageBlobCache.has && imageBlobCache.has(imageUrl)) return;
-        
+
         // Crear versión optimizada de la imagen en background
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
             // Solo comprimir si la imagen es muy grande
             const shouldCompress = img.width > 1200 || img.height > 1200;
-            
+
             if (shouldCompress) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+
                 // Calcular nuevo tamaño manteniendo aspect ratio
                 const maxSize = 1200;
                 const ratio = Math.min(maxSize / img.width, maxSize / img.height);
                 const newWidth = img.width * ratio;
                 const newHeight = img.height * ratio;
-                
+
                 canvas.width = newWidth;
                 canvas.height = newHeight;
-                
+
                 // Usar filtro para mejor calidad
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(img, 0, 0, newWidth, newHeight);
-                
+
                 canvas.toBlob((blob) => {
                     if (blob) {
                         const url = URL.createObjectURL(blob);
                         setImageBlobCache(prev => {
                             const newCache = new Map(prev);
                             newCache.set(imageUrl, url);
-                            
+
                             // Limpiar cache si es muy grande
                             if (newCache.size > 15) {
                                 const firstKey = newCache.keys().next().value;
@@ -665,7 +976,7 @@ export default function EditorLibro() {
                                 URL.revokeObjectURL(firstUrl);
                                 newCache.delete(firstKey);
                             }
-                            
+
                             return newCache;
                         });
                     }
@@ -710,7 +1021,7 @@ export default function EditorLibro() {
     // 🖼️ Función para cargar thumbnails con nueva estructura después de generarlos
     const loadThumbnailsWithNewStructure = useCallback(async () => {
         if (!projectData?.id || !pages?.length) return;
-        
+
         // 🛡️ Evitar llamadas múltiples simultáneas
         if (isLoadingThumbnails) {
             console.log('⏳ Ya hay una carga de thumbnails en progreso, omitiendo...');
@@ -720,7 +1031,7 @@ export default function EditorLibro() {
         try {
             setIsLoadingThumbnails(true);
             console.log('🔄 Iniciando carga de thumbnails existentes...');
-            
+
             // 🔄 NUEVA ESTRUCTURA: Cargar thumbnails existentes desde archivos
             const response = await fetch(`/api/thumbnails/${projectData.id}/existing`, {
                 method: 'POST',
@@ -857,12 +1168,12 @@ export default function EditorLibro() {
 
         try {
             console.log('📖 [ALBUM-MODAL] Cargando thumbnails PDF existentes...');
-            
+
             // Crear objeto con las URLs de los thumbnails PDF que deberían existir
             const pdfThumbnails = {};
             const verifiedThumbnails = {};
             let loadedCount = 0;
-            
+
             // Función para verificar si existe un thumbnail
             const verifyThumbnailExists = async (url, pageId) => {
                 return new Promise((resolve) => {
@@ -895,7 +1206,7 @@ export default function EditorLibro() {
             await Promise.all(verificationPromises);
 
             console.log(`✅ [ALBUM-MODAL] Thumbnails verificados: ${Object.keys(verifiedThumbnails).length}/${pages.length}`);
-            
+
             // Retornar todos los URLs (existentes y faltantes) para que el modal maneje los placeholders
             return pdfThumbnails;
 
@@ -960,7 +1271,7 @@ export default function EditorLibro() {
                             return existingPage;
                         });
                     }
-                    
+
                     // Primera carga: usar las páginas de la DB
                     console.log('📄 Carga inicial de páginas desde la base de datos');
                     return updatedPages;
@@ -973,7 +1284,7 @@ export default function EditorLibro() {
                     }
                     return prevHistory;
                 });
-                
+
                 setHistoryIndex(prevIndex => {
                     if (prevIndex === 0 && history.length <= 1) {
                         return 0;
@@ -1606,7 +1917,7 @@ export default function EditorLibro() {
                     delete updated[pages[currentPage].id];
                     return updated;
                 });
-                
+
                 // Generar nuevo thumbnail después de un pequeño delay
                 setTimeout(() => {
                     generateCurrentPageThumbnail();
@@ -1624,7 +1935,7 @@ export default function EditorLibro() {
                 delete updated[pages[currentPage].id];
                 return updated;
             });
-            
+
             setTimeout(() => {
                 generateCurrentPageThumbnail();
             }, 300);
@@ -2052,7 +2363,7 @@ export default function EditorLibro() {
     const [isBookPreviewOpen, setIsBookPreviewOpen] = useState(false);
     const [showProgressRecovery, setShowProgressRecovery] = useState(false);
     const [savedProgress, setSavedProgress] = useState(null);
-    
+
     // 🚀 NUEVOS ESTADOS: Para animación de carga del modal de álbum
     const [albumLoadingState, setAlbumLoadingState] = useState({
         isLoading: false,
@@ -2156,25 +2467,25 @@ export default function EditorLibro() {
 
                 if (result.success) {
                     const images = result.images || [];
-                    
+
                     // 🚀 OPTIMIZACIÓN: Solo actualizar si hay cambios reales
                     const currentImagesStr = JSON.stringify(projectImages);
                     const newImagesStr = JSON.stringify(images);
-                    
+
                     if (currentImagesStr !== newImagesStr) {
                         setProjectImages(images);
-                        
+
                         // 🚀 OPTIMIZACIÓN: Actualizar cache de forma eficiente
                         setImageCache(prevCache => {
                             const newCache = new Map(prevCache);
                             newCache.set(projectData.id, images);
-                            
+
                             // Limpiar cache viejo si hay más de 5 proyectos
                             if (newCache.size > 5) {
                                 const oldestKey = newCache.keys().next().value;
                                 newCache.delete(oldestKey);
                             }
-                            
+
                             return newCache;
                         });
                     }
@@ -2222,7 +2533,7 @@ export default function EditorLibro() {
 
         // 🚀 OPTIMIZACIÓN: Añadir imagen temporalmente al estado para feedback inmediato
         setProjectImages(prev => [tempImage, ...prev]);
-        
+
         // 🚀 OPTIMIZACIÓN: Añadir al canvas inmediatamente para mejor UX
         addImageElement(imageUrl);
 
@@ -2264,7 +2575,7 @@ export default function EditorLibro() {
                     setPages(prevPages => {
                         const updatedPages = [...prevPages];
                         const currentPageData = updatedPages[currentPage];
-                        
+
                         // Buscar y actualizar el elemento con la imagen temporal
                         currentPageData.cells.forEach(cell => {
                             cell.elements.forEach(element => {
@@ -2273,14 +2584,14 @@ export default function EditorLibro() {
                                 }
                             });
                         });
-                        
+
                         return updatedPages;
                     });
                 }, 100);
 
                 toast.dismiss(loadingToast);
-                toast.success(result.has_thumbnail ? 
-                    'Imagen subida y optimizada correctamente' : 
+                toast.success(result.has_thumbnail ?
+                    'Imagen subida y optimizada correctamente' :
                     'Imagen subida correctamente'
                 );
 
@@ -2292,17 +2603,17 @@ export default function EditorLibro() {
                 // 🚀 OPTIMIZACIÓN: Limpiar imagen temporal en caso de error
                 setProjectImages(prev => prev.filter(img => img.id !== tempImage.id));
                 URL.revokeObjectURL(imageUrl);
-                
+
                 toast.dismiss(loadingToast);
                 toast.error(result.message || 'Error al subir la imagen');
             }
         } catch (error) {
             console.error('Error subiendo la imagen:', error);
-            
+
             // 🚀 OPTIMIZACIÓN: Limpiar imagen temporal en caso de error
             setProjectImages(prev => prev.filter(img => img.id !== tempImage.id));
             URL.revokeObjectURL(imageUrl);
-            
+
             toast.dismiss(loadingToast);
             toast.error('Error de red al subir la imagen');
         }
@@ -2342,16 +2653,16 @@ export default function EditorLibro() {
     // 🚀 Añadir elemento sin seleccionarlo automáticamente (para galería de imágenes)
     const addElementToCellWithoutSelection = (cellId, element) => {
         console.log('🖼️ [ADD-IMAGE] Agregando imagen sin selección automática');
-        
+
         // 🚀 PROTECCIÓN: Asegurar que tenemos páginas válidas
         if (!pages || pages.length === 0 || !pages[currentPage]) {
             console.error('❌ [ADD-IMAGE] No hay páginas válidas para agregar imagen');
             return;
         }
-        
+
         // 🚀 PROTECCIÓN: Crear una copia profunda para evitar mutaciones
         const updatedPages = JSON.parse(JSON.stringify(pages));
-        
+
         // Encontrar y actualizar solo la celda correcta
         let cellFound = false;
         for (let i = 0; i < updatedPages[currentPage].cells.length; i++) {
@@ -2362,12 +2673,12 @@ export default function EditorLibro() {
                 break;
             }
         }
-        
+
         if (!cellFound) {
             console.error('❌ [ADD-IMAGE] Celda no encontrada:', cellId);
             return;
         }
-        
+
         // 🚀 PROTECCIÓN: Usar setTimeout para evitar conflictos de estado
         setTimeout(() => {
             updatePages(updatedPages);
@@ -2378,14 +2689,14 @@ export default function EditorLibro() {
     // Función para añadir imagen desde la galería
     const addImageFromGallery = useCallback((imageUrl) => {
         console.log('🖼️ [ADD-FROM-GALLERY] Iniciando proceso de agregar imagen:', imageUrl);
-        
+
         // 🚀 PROTECCIÓN CRÍTICA: Bloquear temporalmente el sistema de recuperación
         const originalProgress = hasInitializedProgress;
         setHasInitializedProgress(true);
-        
+
         // 🚀 PROTECCIÓN: No cambiar de tab si ya estamos en 'images'
         const wasInImagesTab = activeTab === 'images';
-        
+
         const targetCell = selectedCell || pages[currentPage]?.cells[0]?.id;
         if (!targetCell) {
             console.error('❌ [ADD-FROM-GALLERY] No hay celda disponible');
@@ -2434,14 +2745,14 @@ export default function EditorLibro() {
         setTimeout(() => {
             // Primer paso: Agregar elemento sin seleccionarlo
             addElementToCellWithoutSelection(targetCell, newElement);
-            
+
             setTimeout(() => {
                 // Segundo paso: Restaurar tab si es necesario
                 if (wasInImagesTab) {
                     setActiveTab('images');
                     console.log('🔄 [ADD-FROM-GALLERY] Tab restaurado a images');
                 }
-                
+
                 setTimeout(() => {
                     // Tercer paso: Restaurar protección y mostrar éxito
                     setHasInitializedProgress(originalProgress);
@@ -2879,21 +3190,21 @@ export default function EditorLibro() {
 
         console.log('🚀 [SAVE-QUEUE] Iniciando procesamiento de cola...');
         setIsProcessingQueue(true);
-        
+
         try {
             // Capturar la cola actual ANTES de limpiarla
             const currentQueue = saveQueue.slice();
             console.log('� [SAVE-QUEUE] Cola capturada para procesamiento:', currentQueue.length, 'elementos');
-            
+
             // Ahora sí limpiar la cola
             setSaveQueue([]);
             console.log('🧹 [SAVE-QUEUE] Cola limpiada');
-            
+
             for (const saveTask of currentQueue) {
                 console.log('💾 [SAVE-QUEUE] Guardando página:', saveTask.pageIndex);
-                
+
                 const success = await saveFromQueue(saveTask.pages);
-                
+
                 if (success) {
                     // Marcar la página como guardada
                     setPageChanges(prev => {
@@ -2908,7 +3219,7 @@ export default function EditorLibro() {
                     setSaveQueue(prev => [...prev, saveTask]);
                 }
             }
-            
+
             console.log('✅ [SAVE-QUEUE] Cola de guardado procesada completamente');
         } catch (error) {
             console.error('❌ [SAVE-QUEUE] Error procesando cola:', error);
@@ -2929,7 +3240,7 @@ export default function EditorLibro() {
 
         if (saveQueue.length > 0 && !isProcessingQueue) {
             console.log('⏰ [SAVE-QUEUE] Cola detectada, procesando inmediatamente...');
-            
+
             // Pequeño delay para evitar condiciones de carrera
             setTimeout(() => {
                 processSaveQueue();
@@ -2949,22 +3260,22 @@ export default function EditorLibro() {
     // Función para agregar una página a la cola de guardado
     const addToSaveQueue = useCallback((pageIndex, pagesData) => {
         console.log('🔍 [SAVE-QUEUE] Intentando agregar página a cola:', pageIndex);
-        
+
         // Usar función de estado para verificar cambios sin dependencias
         setPageChanges(currentPageChanges => {
             const changedPages = Array.from(currentPageChanges.keys());
             console.log('🔍 [SAVE-QUEUE] Cambios actuales:', changedPages.join(', ') || 'ninguno');
-            
+
             if (!currentPageChanges.has(pageIndex)) {
                 console.log('⚠️ [SAVE-QUEUE] No hay cambios para la página:', pageIndex, '- No se agregará a cola');
                 return currentPageChanges; // Solo guardar si hay cambios
             }
 
             console.log('✅ [SAVE-QUEUE] Página tiene cambios, agregando a cola:', pageIndex);
-            
+
             setSaveQueue(prev => {
                 console.log('🔍 [SAVE-QUEUE] Cola actual antes de agregar:', prev.length, 'elementos');
-                
+
                 // Evitar duplicados
                 const existingIndex = prev.findIndex(item => item.pageIndex === pageIndex);
                 if (existingIndex !== -1) {
@@ -2980,7 +3291,7 @@ export default function EditorLibro() {
                     return newQueue;
                 }
             });
-            
+
             console.log('📤 [SAVE-QUEUE] Página agregada a cola:', pageIndex);
             return currentPageChanges; // Retornar sin cambios
         });
@@ -2989,7 +3300,7 @@ export default function EditorLibro() {
     // Función para cambiar de página con guardado automático
     const handlePageChange = useCallback(async (newPageIndex) => {
         console.log('🔄 [PAGE-CHANGE] Iniciando cambio de página de', currentPage, 'a', newPageIndex);
-        
+
         if (newPageIndex === currentPage) {
             console.log('⚠️ [PAGE-CHANGE] Misma página, no se hace nada');
             return; // No hacer nada si es la misma página
@@ -3000,10 +3311,10 @@ export default function EditorLibro() {
             console.log('🔍 [PAGE-CHANGE] Verificando cambios en página actual:', currentPage);
             const changedPages = Array.from(currentPageChanges.keys());
             console.log('🔍 [PAGE-CHANGE] Páginas con cambios:', changedPages.join(', ') || 'ninguna');
-            
+
             if (currentPageChanges.has(currentPage)) {
                 console.log('💾 [PAGE-CHANGE] ✅ Página actual tiene cambios, guardando antes del cambio:', currentPage);
-                
+
                 // Agregar la página actual a la cola de guardado
                 addToSaveQueue(currentPage, pages);
             } else {
@@ -3028,12 +3339,12 @@ export default function EditorLibro() {
         if (!projectData?.id) return;
 
         // 🚀 PROTECCIÓN: No ejecutar si ya hay elementos en el workspace
-        const hasWorkspaceContent = pages.some(page => 
-            page.cells?.some(cell => 
+        const hasWorkspaceContent = pages.some(page =>
+            page.cells?.some(cell =>
                 cell.elements?.length > 0
             )
         );
-        
+
         if (hasWorkspaceContent) {
             console.log('⚠️ [RECOVERY] Ya hay contenido en el workspace, saltando recuperación automática');
             return;
@@ -3081,7 +3392,7 @@ export default function EditorLibro() {
                 const progressTime = new Date(progressToUse.savedAt || progressToUse.saved_at).getTime();
                 const now = Date.now();
                 const timeDiff = now - progressTime;
-                
+
                 // Solo cargar si el progreso es de los últimos 30 minutos
                 if (timeDiff < 30 * 60 * 1000) {
                     console.log('🔄 [AUTO-RECOVERY] Cargando automáticamente el progreso más reciente');
@@ -3127,7 +3438,7 @@ export default function EditorLibro() {
                 }, 100);
 
                 toast.success('✅ Progreso cargado exitosamente');
-                
+
                 // Cerrar el modal automáticamente si estaba abierto
                 setShowProgressRecovery(false);
             }
@@ -3220,7 +3531,7 @@ export default function EditorLibro() {
                     id: "cell-cover-1",
                     elements: [
                         // Título del álbum
-                      
+
                     ]
                 }]
             };
@@ -3391,7 +3702,7 @@ export default function EditorLibro() {
                 // ✅ COMPLETAMENTE BLOQUEADO - NUNCA cambiar automáticamente a filtros
                 // ✅ Solo establecer la imagen seleccionada para que esté disponible cuando vaya a filtros
                 console.log('🖼️ Imagen seleccionada:', element.id, '- Tab actual mantenido:', activeTab);
-                
+
                 // 🛡️ ASEGURAR que NO se cambie a filtros automáticamente
                 if (activeTab === 'filters') {
                     console.log('✅ Usuario ya está en filtros, manteniendo');
@@ -3472,18 +3783,18 @@ export default function EditorLibro() {
             if (prevPages === newPages) {
                 return prevPages;
             }
-            
+
             // 🚀 OPTIMIZACIÓN: Comparación por contenido solo si es necesario
             const prevPagesStr = JSON.stringify(prevPages);
             const newPagesStr = JSON.stringify(newPages);
-            
+
             if (prevPagesStr === newPagesStr) {
                 console.log('🔄 [UPDATE-PAGES] Sin cambios, evitando actualización');
                 return prevPages;
             }
-            
+
             console.log('📝 [UPDATE-PAGES] Aplicando cambios...');
-            
+
             // 🚀 OPTIMIZACIÓN: Usar requestAnimationFrame para operaciones no críticas
             requestAnimationFrame(() => {
                 // Marcar la página actual como modificada
@@ -3492,7 +3803,7 @@ export default function EditorLibro() {
                     newMap.set(currentPage, Date.now());
                     return newMap;
                 });
-                
+
                 // 🚀 OPTIMIZACIÓN: Invalidar thumbnail solo si hay cambios visuales reales
                 if (newPages[currentPage]) {
                     const currentPageId = newPages[currentPage].id;
@@ -3506,7 +3817,7 @@ export default function EditorLibro() {
                     });
                 }
             });
-            
+
             // 🚀 OPTIMIZACIÓN: Diferir operaciones de historial y localStorage
             setTimeout(() => {
                 // Actualizar el historial de forma más eficiente
@@ -3515,24 +3826,24 @@ export default function EditorLibro() {
                         ...prevHistory.slice(0, historyIndex + 1),
                         newPagesStr,
                     ];
-                    
+
                     // 🚀 OPTIMIZACIÓN: Limitar historial para evitar uso excesivo de memoria
                     if (newHistory.length > 50) {
                         return newHistory.slice(-50);
                     }
-                    
+
                     return newHistory;
                 });
-                
+
                 setHistoryIndex(prevIndex => {
                     const newIndex = prevIndex + 1;
                     return newIndex > 50 ? 49 : newIndex;
                 });
             }, 0);
-            
+
             return newPages;
         });
-        
+
         // 🚀 OPTIMIZACIÓN: Guardar en localStorage con debounce agresivo
         debouncedSaveToLocalStorage(newPages);
     }, [currentPage, historyIndex, debouncedSaveToLocalStorage]);
@@ -4247,9 +4558,9 @@ export default function EditorLibro() {
                 const sourceElement = updatedPages[currentPage].cells[cellIndex].elements.find(
                     (el) => el.id === elementId
                 );
-                
+
                 if (!sourceElement) return prevPages;
-                
+
                 updatedPages[currentPage].cells[cellIndex].elements.push({
                     ...sourceElement,
                     ...updates,
@@ -4263,17 +4574,17 @@ export default function EditorLibro() {
                 if (elementIndex === -1) return prevPages; // Elemento no encontrado
 
                 const currentElement = updatedPages[currentPage].cells[cellIndex].elements[elementIndex];
-                
+
                 // 🚀 OPTIMIZACIÓN: Solo actualizar si hay cambios reales
                 const hasChanges = Object.keys(updates).some(key => {
                     const currentValue = currentElement[key];
                     const newValue = updates[key];
-                    
+
                     // Comparación profunda para objetos anidados (como style, position, size)
                     if (typeof newValue === 'object' && typeof currentValue === 'object') {
                         return JSON.stringify(currentValue) !== JSON.stringify(newValue);
                     }
-                    
+
                     return currentValue !== newValue;
                 });
 
@@ -4286,10 +4597,10 @@ export default function EditorLibro() {
                     ...updates,
                 };
             }
-            
+
             return updatedPages;
         });
-        
+
         // 🚀 OPTIMIZACIÓN: Usar requestAnimationFrame para updatePages en operaciones de drag/resize
         if (updates.position || updates.size) {
             // Para operaciones de redimensionamiento/movimiento, usar RAF para mejor fluidez
@@ -4652,7 +4963,7 @@ export default function EditorLibro() {
             // Usar refs para acceder a los valores actuales sin dependencias
             const currentSaveQueue = saveQueueRef.current;
             const currentPageChanges = pageChangesRef.current;
-            
+
             if (currentSaveQueue.length > 0 || currentPageChanges.size > 0) {
                 // Mostrar mensaje de advertencia
                 event.preventDefault();
@@ -5355,7 +5666,7 @@ export default function EditorLibro() {
                             <div className="bg-white rounded-3xl shadow-2xl p-8 min-w-96 max-w-96 mx-4 text-center relative overflow-hidden animate-in zoom-in duration-500">
                                 {/* Fondo animado con partículas flotantes */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 opacity-60"></div>
-                                
+
                                 {/* Efectos de partículas flotantes */}
                                 <div className="absolute inset-0">
                                     <div className="absolute top-4 left-4 w-2 h-2 bg-purple-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '0s' }}></div>
@@ -5363,7 +5674,7 @@ export default function EditorLibro() {
                                     <div className="absolute bottom-8 left-8 w-1.5 h-1.5 bg-pink-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '1s' }}></div>
                                     <div className="absolute bottom-4 right-4 w-1 h-1 bg-purple-400 rounded-full animate-bounce opacity-60" style={{ animationDelay: '1.5s' }}></div>
                                 </div>
-                                
+
                                 {/* Contenido */}
                                 <div className="relative z-10">
                                     {/* Icono principal animado con glow effect */}
@@ -5372,22 +5683,22 @@ export default function EditorLibro() {
                                             {/* Glow effect */}
                                             <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full animate-ping opacity-20"></div>
                                             <div className="absolute inset-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full animate-pulse"></div>
-                                            
+
                                             {/* Icono del libro */}
                                             <svg className="w-12 h-12 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                             </svg>
                                         </div>
-                                        
+
                                         {/* Anillo de progreso mejorado */}
                                         <div className="absolute inset-0 w-24 h-24 mx-auto">
                                             <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 96 96">
                                                 <circle cx="48" cy="48" r="44" stroke="currentColor" strokeWidth="4" fill="none" className="text-gray-200" />
-                                                <circle 
-                                                    cx="48" cy="48" r="44" 
-                                                    stroke="url(#progressGradient)" 
-                                                    strokeWidth="4" 
-                                                    fill="none" 
+                                                <circle
+                                                    cx="48" cy="48" r="44"
+                                                    stroke="url(#progressGradient)"
+                                                    strokeWidth="4"
+                                                    fill="none"
                                                     strokeLinecap="round"
                                                     strokeDasharray={`${2 * Math.PI * 44}`}
                                                     strokeDashoffset={`${2 * Math.PI * 44 * (1 - albumPreparationModal.progress / 100)}`}
@@ -5407,7 +5718,7 @@ export default function EditorLibro() {
                                     <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 animate-pulse">
                                         {albumPreparationModal.message}
                                     </h2>
-                                    
+
                                     {/* Submensaje */}
                                     <p className="text-gray-600 mb-6 text-base leading-relaxed">
                                         {albumPreparationModal.subMessage}
@@ -5415,7 +5726,7 @@ export default function EditorLibro() {
 
                                     {/* Barra de progreso con glow */}
                                     <div className="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden shadow-inner">
-                                        <div 
+                                        <div
                                             className="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full transition-all duration-500 ease-out relative"
                                             style={{ width: `${albumPreparationModal.progress}%` }}
                                         >
@@ -5429,9 +5740,9 @@ export default function EditorLibro() {
                                         {albumPreparationModal.progress}%
                                     </p>
 
-                                
+
                                 </div>
-                                
+
                                 {/* CSS para efectos adicionales */}
                                 <style jsx>{`
                                     @keyframes shimmer {
@@ -5491,7 +5802,7 @@ export default function EditorLibro() {
                             </div>
 
                             {/* Right section */}
-                            <div className="flex items-center gap-4">
+                            <div id="toolbar-actions" className="flex items-center gap-4">
                                 {/* Cola de guardado indicator */}
                                 {(saveQueue.length > 0 || isProcessingQueue) && (
                                     <div className="flex items-center gap-2 text-xs text-gray-600 bg-blue-50 px-3 py-1.5 rounded-lg">
@@ -5508,7 +5819,7 @@ export default function EditorLibro() {
                                         )}
                                     </div>
                                 )}
-                                
+
                                 <SaveIndicator
                                     saveStatus={autoSave.saveStatus}
                                     lastSaved={autoSave.lastSaved}
@@ -5535,7 +5846,7 @@ export default function EditorLibro() {
                                         Procesar Cola
                                     </button>
                                 )}
-{/*
+                                {/*
                               
                                 <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                                     P{currentPage}: {(pageChanges instanceof Map && pageChanges.has(currentPage)) ? '🔴' : '🟢'}
@@ -5557,16 +5868,17 @@ export default function EditorLibro() {
                                 </button> */}
 
                                 <Button
+                                    id="preview-button"
                                     variant="secondary"
                                     size="sm"
                                     onClick={async (e) => {
                                         // �️ PREVENIR RECARGA: Evitar comportamiento por defecto
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        
+
                                         try {
                                             console.log('🎭 [ALBUM-EXPERIENCE] Iniciando experiencia única de álbum...');
-                                            
+
                                             // 🎭 FASE 1: Mostrar modal de preparación
                                             setAlbumPreparationModal({
                                                 isOpen: true,
@@ -5649,10 +5961,10 @@ export default function EditorLibro() {
                                                 setIsBookPreviewOpen(true);
                                                 console.log('✅ [ALBUM-EXPERIENCE] Experiencia única completada');
                                             }, 300);
-                                            
+
                                         } catch (error) {
                                             console.error('❌ [ALBUM-EXPERIENCE] Error en experiencia:', error);
-                                            
+
                                             // Mostrar error en el modal de preparación
                                             setAlbumPreparationModal(prev => ({
                                                 ...prev,
@@ -5675,24 +5987,19 @@ export default function EditorLibro() {
                                 >
                                     {albumPreparationModal.isOpen ? 'Creando experiencia...' : 'Vista de Álbum'}
                                 </Button>
-                                {/*  <button
-                                    onClick={handleExportPDF}
-                                    disabled={isPDFGenerating}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                                        isPDFGenerating 
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                                            : 'bg-[#af5cb8] text-white hover:bg-[#5f2e61] shadow-md hover:shadow-lg'
-                                    }`}
-                                >
-                                    {isPDFGenerating ? (
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
-                                    ) : (
-                                        <Save className="h-4 w-4" />
-                                    )}
-                                    {isPDFGenerating ? 'Guardando...' : 'Guardar'}
-                                </button> */}
 
-                               
+                                {/* Botón de Ayuda/Guía */}
+                                <button
+                                    onClick={startTour}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-[#040404] border border-gray-200"
+                                    title="Inicia la guía paso a paso"
+                                >
+                                    <HelpCircle className="h-4 w-4" />
+                                    <span className="text-sm font-medium">Ayuda</span>
+                                </button>
+
+
+
                             </div>
                         </div>
                     </header>
@@ -5705,6 +6012,7 @@ export default function EditorLibro() {
                             {/* Icon Navigation */}
                             <div className="w-20 bg-[#f7edfa] border-r border-gray-200 flex flex-col items-center py-6 space-y-2">
                                 <button
+                                    data-tab="pages"
                                     onClick={() => setActiveTab('pages')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'pages'
                                         ? 'bg-[#af5cb8] text-white shadow-md'
@@ -5715,8 +6023,8 @@ export default function EditorLibro() {
                                     <span className="text-xs font-medium">Páginas</span>
                                 </button>
 
-
                                 <button
+                                    data-tab="templates"
                                     onClick={() => setActiveTab('templates')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'templates'
                                         ? 'bg-[#af5cb8] text-white shadow-md'
@@ -5728,6 +6036,7 @@ export default function EditorLibro() {
                                 </button>
 
                                 <button
+                                    data-tab="panel"
                                     onClick={() => setActiveTab('panel')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'panel'
                                         ? 'bg-[#af5cb8] text-white shadow-md'
@@ -5738,20 +6047,8 @@ export default function EditorLibro() {
                                     <span className="text-xs font-medium">Capas</span>
                                 </button>
 
-
-
-                             {/*   <button
-                                    onClick={() => setActiveTab('images')}
-                                    className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'images'
-                                        ? 'bg-[#af5cb8] text-white shadow-md'
-                                        : 'text-[#040404] hover:bg-white hover:shadow-sm'
-                                        }`}
-                                >
-                                    <ImageIcon className="h-6 w-6" />
-                                    <span className="text-xs font-medium">Imagenes</span>
-                                </button> */}
-
                                 <button
+                                    data-tab="text"
                                     onClick={() => setActiveTab('text')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'text'
                                         ? 'bg-[#af5cb8] text-white shadow-md'
@@ -5762,9 +6059,8 @@ export default function EditorLibro() {
                                     <span className="text-xs font-medium">Textos</span>
                                 </button>
 
-                             
-
                                 <button
+                                    data-tab="filters"
                                     onClick={() => setActiveTab('filters')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'filters'
                                         ? 'bg-[#af5cb8] text-white shadow-md'
@@ -5849,7 +6145,7 @@ export default function EditorLibro() {
                                     )}
 
                                     {activeTab === 'text' && (
-                                        <div className="space-y-6">
+                                        <div id="elements-panel" className="space-y-6">
 
 
                                             {/* Text Type Buttons */}
@@ -6326,9 +6622,9 @@ export default function EditorLibro() {
                                         </div>
                                     )}
 
-                                
+
                                     {activeTab === 'pages' && (
-                                        <div className="space-y-4">
+                                        <div id="pages-panel" className="space-y-4">
                                             <div className="flex items-center justify-between mb-4">
                                                 <div className="flex items-center gap-2">
                                                     <Book className="h-5 w-5 text-[#af5cb8]" />
@@ -6337,7 +6633,7 @@ export default function EditorLibro() {
                                                         {pages.length} total
                                                     </span>
                                                 </div>
-                                              
+
                                             </div>
 
                                             {/* ⚡ Indicador de progreso de thumbnail individual */}
@@ -6353,7 +6649,7 @@ export default function EditorLibro() {
                                                         </span>
                                                     </div>
                                                     <div className="w-full bg-blue-200 rounded-full h-2">
-                                                        <div 
+                                                        <div
                                                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                                             style={{ width: `${thumbnailProgress.percentage}%` }}
                                                         ></div>
@@ -6526,7 +6822,7 @@ export default function EditorLibro() {
 
 
                                     {activeTab === "filters" && (
-                                        <div className="space-y-4">
+                                        <div id="properties-panel" className="space-y-4">
                                             <div className="flex items-center gap-2 mb-4">
                                                 <Filter className="h-5 w-5 text-[#af5cb8]" />
                                                 <h3 className="font-semibold text-[#040404]">Filters</h3>
@@ -6594,8 +6890,8 @@ export default function EditorLibro() {
                                                             Select an image to apply filters
                                                         </h4>
                                                         <p className="text-xs text-gray-600">
-                                                            {getSelectedElement() ? 
-                                                                'Filters are only available for image elements' : 
+                                                            {getSelectedElement() ?
+                                                                'Filters are only available for image elements' :
                                                                 'Click on an image element in your canvas to access filters and effects'
                                                             }
                                                         </p>
@@ -6613,114 +6909,114 @@ export default function EditorLibro() {
                         {/* Main canvas area */}
                         <main className="flex-1 flex flex-col h-full">
 
-                            <div className="bg-white border-b px-4 py-2 flex items-center justify-between">
-                               
-                                
-                                    <>
-                                        {/* Left side - History controls */}
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex space-x-1">
-                                                {/* Botones de control de página */}
-
-                                                <button
-                                                    onClick={() => setActiveTab('templates')}
-                                                    className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg shadow-md text-sm font-medium flex items-center gap-1.5 transition-all duration-200 hover:shadow-lg"
-                                                >
-                                                    <Layout className="h-4 w-4" />
-                                                    Diseño de página
-                                                </button>
-                                                <button
-                                                    onClick={() => setActiveTab('panel')}
-                                                    className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg shadow-md text-sm font-medium flex items-center gap-1.5 transition-all duration-200 hover:shadow-lg"
-                                                >
-                                                    <Layers className="h-4 w-4" />
-                                                    Superponer objetos
-                                                </button>
-
-                                            </div>
-
-                                            <div className="h-6 w-px bg-gray-300 mx-2"></div>
-
-                                            {/* Quick add tools */}
-                                            <div className="flex space-x-1">
-                                              
-                                                <Button
-                                                    variant="ghost"
-                                                    tooltip="Añadir Imagen"
-                                                    onClick={() => imageInputRef.current && imageInputRef.current.click()}
-                                                >
-                                                    <ImageIcon className="w-5 h-5" />
-                                                </Button>
-
-                                                <input
-                                                    type="file"
-                                                    ref={imageInputRef}
-                                                    onChange={handleImageUpload}
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                />
-
-                                                
-                                            </div>
-
-                                              {selectedElement && (
-                                                <div className="flex space-x-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (selectedElement && selectedCell) {
-                                                                const element = getSelectedElement();
-                                                                if (element) {
-                                                                    const duplicateElement = {
-                                                                        ...element,
-                                                                        id: `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                                                        position: {
-                                                                            x: element.position.x + 0.05,
-                                                                            y: element.position.y + 0.05
-                                                                        }
-                                                                    };
-                                                                    addElementToCell(selectedCell, duplicateElement);
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="h-8 px-2"
-                                                        icon={<Copy className="h-4 w-4" />}
-                                                    >
-                                                        Duplicar
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            if (selectedElement && selectedCell) {
-                                                                deleteElementFromCell(selectedCell, selectedElement);
-                                                            }
-                                                        }}
-                                                        className="h-8 px-2 text-red-600 hover:text-white"
-                                                        icon={<Trash2 className="h-4 w-4" />}
-                                                    >
-                                                        Eliminar
-                                                    </Button>
-                                                </div>
-                                            )}
+                            <div id="quick-actions-bar" className="bg-white border-b px-4 py-2 flex items-center justify-between">
 
 
-                       
-                                           
+                                <>
+                                    {/* Left side - History controls */}
+                                    <div className="flex items-center space-x-2">
+                                        <div className="flex space-x-1">
+                                            {/* Botones de control de página */}
+
+                                            <button
+                                                onClick={() => setActiveTab('templates')}
+                                                className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg shadow-md text-sm font-medium flex items-center gap-1.5 transition-all duration-200 hover:shadow-lg"
+                                            >
+                                                <Layout className="h-4 w-4" />
+                                                Diseño de página
+                                            </button>
+                                            <button
+                                                onClick={() => setActiveTab('panel')}
+                                                className="bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-lg shadow-md text-sm font-medium flex items-center gap-1.5 transition-all duration-200 hover:shadow-lg"
+                                            >
+                                                <Layers className="h-4 w-4" />
+                                                Superponer objetos
+                                            </button>
+
                                         </div>
 
-                                      
+                                        <div className="h-6 w-px bg-gray-300 mx-2"></div>
+
+                                        {/* Quick add tools */}
+                                        <div className="flex space-x-1">
+
+                                            <Button
+                                                variant="ghost"
+                                                tooltip="Añadir Imagen"
+                                                onClick={() => imageInputRef.current && imageInputRef.current.click()}
+                                            >
+                                                <ImageIcon className="w-5 h-5" />
+                                            </Button>
+
+                                            <input
+                                                type="file"
+                                                ref={imageInputRef}
+                                                onChange={handleImageUpload}
+                                                className="hidden"
+                                                accept="image/*"
+                                            />
+
+
+                                        </div>
+
+                                        {selectedElement && (
+                                            <div className="flex space-x-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (selectedElement && selectedCell) {
+                                                            const element = getSelectedElement();
+                                                            if (element) {
+                                                                const duplicateElement = {
+                                                                    ...element,
+                                                                    id: `${element.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                                                    position: {
+                                                                        x: element.position.x + 0.05,
+                                                                        y: element.position.y + 0.05
+                                                                    }
+                                                                };
+                                                                addElementToCell(selectedCell, duplicateElement);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="h-8 px-2"
+                                                    icon={<Copy className="h-4 w-4" />}
+                                                >
+                                                    Duplicar
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (selectedElement && selectedCell) {
+                                                            deleteElementFromCell(selectedCell, selectedElement);
+                                                        }
+                                                    }}
+                                                    className="h-8 px-2 text-red-600 hover:text-white"
+                                                    icon={<Trash2 className="h-4 w-4" />}
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            </div>
+                                        )}
 
 
 
-                                    </>
-                               
+
+                                    </div>
+
+
+
+
+
+                                </>
+
                             </div>
 
 
                             {/* Canvas workspace - centered */}
-                            <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-gray-100">
+                            <div id="editor-workspace" className="flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-gray-100">
 
 
                                 {previewMode ? (

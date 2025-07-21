@@ -750,11 +750,18 @@
       "_typeof-QjJsDpFa.js"
     ]
   },
-  "_dom-to-image-more.min-Cey65QPP.js": {
-    "file": "assets/dom-to-image-more.min-Cey65QPP.js",
+  "_dom-to-image-more.css": {
+    "file": "dom-to-image-more.css",
+    "src": "_dom-to-image-more.css"
+  },
+  "_dom-to-image-more.min-D1PIV9fo.js": {
+    "file": "assets/dom-to-image-more.min-D1PIV9fo.js",
     "name": "dom-to-image-more.min",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js"
+    ],
+    "css": [
+      "dom-to-image-more.css"
     ]
   },
   "_door-closed-Z4GbcMb-.js": {
@@ -4128,7 +4135,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-D0c9bo0f.js",
+    "file": "assets/BananaLab-DtQN6jc_.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4187,7 +4194,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-NuOM5XUw.js",
+    "file": "assets/Editor-3J59VKKS.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4197,6 +4204,7 @@
       "_index-BH53Isel.js",
       "_EditableCell-DehGgdxe.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
+      "_dom-to-image-more.min-D1PIV9fo.js",
       "_layers-6oegOx-p.js",
       "_chevron-down-DS-mdh9v.js",
       "_chevron-right-Ckt5D2ka.js",
@@ -4216,7 +4224,6 @@
       "_triangle-alert-vFMqKi4t.js",
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
-      "_dom-to-image-more.min-Cey65QPP.js",
       "_chevron-left-B2s3ZsB7.js",
       "_filter-Ci9tsc_e.js",
       "_plus-Bot15Khs.js",
@@ -6526,7 +6533,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filter.jsx": {
-    "file": "assets/Filter-OKGK3RwV.js",
+    "file": "assets/Filter-vf6xUONW.js",
     "name": "Filter",
     "src": "resources/js/Components/Tailwind/Filter.jsx",
     "isDynamicEntry": true,
@@ -6804,7 +6811,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Filters/FilterBananaLab.jsx": {
-    "file": "assets/FilterBananaLab-U5T-UNew.js",
+    "file": "assets/FilterBananaLab-C2Uzn8sU.js",
     "name": "FilterBananaLab",
     "src": "resources/js/Components/Tailwind/Filters/FilterBananaLab.jsx",
     "isDynamicEntry": true,
@@ -7951,7 +7958,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-B9jlLVGP.js",
+    "file": "assets/ProductDetail-CSYHHMgN.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -8077,7 +8084,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx": {
-    "file": "assets/ProductDetailBananaLab-DZEg6HCX.js",
+    "file": "assets/ProductDetailBananaLab-CI9uBHMQ.js",
     "name": "ProductDetailBananaLab",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx",
     "isDynamicEntry": true,
@@ -8101,7 +8108,6 @@
       "_chevron-up-D78jyEhP.js",
       "_chevron-down-DS-mdh9v.js",
       "_brush-CV0tCVRD.js",
-      "_heart-ChuvJi-4.js",
       "_circle-check-big-D6DM3vPb.js",
       "_index-yBjzXJbu.js",
       "_BasicRest-C4m6wu80.js",
@@ -8127,6 +8133,7 @@
       "_x-DBMwyD6F.js",
       "_shopping-cart-CZEUxbmv.js",
       "_arrow-right-DR00rP9v.js",
+      "_heart-ChuvJi-4.js",
       "_adjustTextColor-DJKJvkxA.js",
       "_chevron-left-B2s3ZsB7.js"
     ],
@@ -9809,7 +9816,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-mBX5nso0.js",
+    "file": "assets/Editor-Clot3ua1.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9840,6 +9847,7 @@
       "resources/js/Components/Tailwind/BananaLab/components/Elements/TextElement.jsx",
       "_upload-qgEr5bIl.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
+      "_dom-to-image-more.min-D1PIV9fo.js",
       "_layers-6oegOx-p.js",
       "_chevron-right-Ckt5D2ka.js",
       "_eye-CKCH9ORv.js",
@@ -9860,7 +9868,6 @@
       "_triangle-alert-vFMqKi4t.js",
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
-      "_dom-to-image-more.min-Cey65QPP.js",
       "_filter-Ci9tsc_e.js",
       "_plus-Bot15Khs.js",
       "_circle-check-big-D6DM3vPb.js"
@@ -10018,7 +10025,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-Bif2EVcs.js",
+    "file": "assets/System-BC6n_74Z.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

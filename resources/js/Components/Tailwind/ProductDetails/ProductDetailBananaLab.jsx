@@ -685,7 +685,7 @@ export default function ProductDetailBananaLab({
                                     Crea y edita tu regalo
                                     <Brush width={20} />
                                 </motion.button>
-                                <motion.button
+                         {/*       <motion.button
                                     onClick={(e) =>
                                         onAddFavoritesClicked(e, item)
                                     }
@@ -703,7 +703,7 @@ export default function ProductDetailBananaLab({
                                     ) : (
                                         <Heart width={18} strokeWidth={1.5} />
                                     )}
-                                </motion.button>
+                                </motion.button> */}
                             </motion.div>
 
                             {/* Whatsapp */}

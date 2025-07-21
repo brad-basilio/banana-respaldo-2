@@ -2332,7 +2332,7 @@ const Tooltip = ({ children, text, position = "top" }) => {
 // Componente de Badge con animación mejorada
 const AnimatedBadge = ({ children, color = "blue", onClick, className = "" }) => {
     const colorClasses = {
-        blue: "bg-secondary border-blue-200 customtext-primary",
+        blue: "bg-white border-primary customtext-primary",
       
     };
     
