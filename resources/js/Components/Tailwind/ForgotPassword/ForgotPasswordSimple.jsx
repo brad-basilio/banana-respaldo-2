@@ -104,7 +104,7 @@ export default function ForgotPasswordSimple() {
                     <div className="flex flex-col lg:flex-row lg:min-h-[600px]">
                         <div className="hidden lg:block lg:w-1/2 relative">
                             <img
-                                src={`/assets/${Global.APP_CORRELATIVE}/restore.png` || image}
+                                src={`/assets/bananalab_app/restore.png` || image}
                                 alt="Imagen decorativa"
                                 className="absolute inset-0 w-full h-full object-cover"
                             />

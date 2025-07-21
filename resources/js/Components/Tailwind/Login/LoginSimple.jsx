@@ -74,7 +74,7 @@ export default function LoginSimple() {
                     <div className="flex flex-col lg:flex-row">
                         <div className="hidden lg:block lg:w-1/2 relative">
                             <img
-                                src={`/assets/${Global.APP_CORRELATIVE}/login.png` || image}
+                                src={`/assets/bananalab_app/login.png` || image}
                                 alt="Imagen decorativa"
                                 className="absolute inset-0 w-full h-full object-cover"
                             />
@@ -180,7 +180,7 @@ export default function LoginSimple() {
                                         </div>
                                         <a
                                             href="/forgot-password"
-                                            className="text-sm font-semibold customtext-primary hover:text-sky-600 flex items-center gap-1"
+                                            className="text-sm font-semibold customtext-primary hover:text-primary flex items-center gap-1"
                                         >
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -198,7 +198,7 @@ export default function LoginSimple() {
 
                                     <button
                                         type="submit"
-                                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition duration-150 ease-in-out"
+                                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary focus:outline-none focus:ring-2 focus:ring-offset-2  transition duration-150 ease-in-out"
                                     >
                                         {loading ? "Ingresando..." : "Ingresar"}
                                     </button>
@@ -206,7 +206,7 @@ export default function LoginSimple() {
                                     <div className="text-center mt-4">
                                         <p className="text-sm text-gray-600">
                                             ¿Eres nuevo por aquí?{" "}
-                                            <a href="/crear-cuenta" className="font-medium customtext-primary hover:text-sky-600">
+                                            <a href="/crear-cuenta" className="font-medium customtext-primary hover:text-primary">
                                                 Crea una cuenta
                                             </a>
                                         </p>

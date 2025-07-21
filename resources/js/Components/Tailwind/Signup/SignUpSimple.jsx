@@ -80,7 +80,7 @@ export default function SignUpSimple() {
 
                         <div className="hidden lg:block lg:w-1/2 relative">
                             <img
-                                src={`/assets/${Global.APP_CORRELATIVE}/signup.png` || image}
+                                src={`/assets/bananalab_app/signup.png` || image}
                                 alt="Imagen decorativa"
                                 className="absolute inset-0 w-full h-full object-cover"
                             />

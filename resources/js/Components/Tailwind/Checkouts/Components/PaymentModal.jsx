@@ -42,7 +42,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                 {/* Imagen decorativa - lado izquierdo */}
                 <div className="hidden md:block bg-[#f8f5f2] h-full">
                     <img
-                        src={`/assets/${Global.APP_CORRELATIVE}/portadapagos.png`}
+                        src={`/assets/bananalab_app/portadapagos.png`}
                         alt="Métodos de pago"
                         className="h-full w-full object-cover"
                     />
