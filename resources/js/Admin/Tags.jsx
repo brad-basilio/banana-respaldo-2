@@ -28,7 +28,7 @@ const Tags = () => {
   const backgroundColorRef = useRef()
   const textColorRef = useRef()
   const iconRef = useRef()
-  const imageRef = useRef()
+  //const imageRef = useRef()
   const startDateRef = useRef()
   const endDateRef = useRef()
 
@@ -49,14 +49,15 @@ const Tags = () => {
     endDateRef.current.value = data?.end_date ? new Date(data.end_date).toISOString().slice(0, 16) : ''
     
     // Para el icono (imagen pequeña que va al lado del texto)
-    if (iconRef.current && data?.icon) {
-      iconRef.current.src = `/storage/images/tag/${data.icon}`
-    }
+
+     iconRef.image.src = `/storage/images/tag/${
+            data?.icon ?? "undefined"
+        }`;
     
     // Para la imagen principal (otros fines)
-    if (imageRef.current && data?.image) {
+    /*if (imageRef.current && data?.image) {
       imageRef.current.src = `/storage/images/tag/${data.image}`
-    }
+    } */
 
     $(modalRef.current).modal('show')
   }
@@ -98,9 +99,9 @@ const Tags = () => {
     }
     
     // Agregar imagen principal si se seleccionó una nueva
-    if (imageRef.current.files && imageRef.current.files[0]) {
+  /**  if (imageRef.current.files && imageRef.current.files[0]) {
       formData.append('image', imageRef.current.files[0])
-    }
+    } */
 
     const result = await tagsRest.save(formData)
     if (!result) return
@@ -464,7 +465,7 @@ const Tags = () => {
         
         <ImageFormGroup eRef={iconRef} label='Icono (imagen pequeña que aparece al lado del texto)' col='col-md-6' aspect='1/1' />
         
-        <ImageFormGroup eRef={imageRef} label='Imagen Principal (para otros fines)' col='col-md-6' aspect='16/9' />
+      {/*  <ImageFormGroup eRef={imageRef} label='Imagen Principal (para otros fines)' col='col-md-6' aspect='16/9' /> */}
       </div>
     </Modal>
   </>

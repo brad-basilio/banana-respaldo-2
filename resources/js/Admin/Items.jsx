@@ -62,7 +62,7 @@ const Items = ({ categories, brands, collections }) => {
     const contentImageRef = useRef();
     const backCoverImageRef = useRef();
     const stockRef = useRef();
-    const linkvideoRef = useRef();
+
 
    // const featuresRef = useRef([]);
     const specificationsRef = useRef([]);
@@ -167,7 +167,7 @@ const Items = ({ categories, brands, collections }) => {
         skuRef.current.value = data?.sku || "";
         //colorRef.current.value = data?.color || "";
         summaryRef.current.value = data?.summary || "";
-        linkvideoRef.current.value = data?.linkvideo || "";
+      
         priceRef.current.value = data?.price || 0;
         discountRef.current.value = data?.discount || 0;
 
@@ -269,7 +269,7 @@ const Items = ({ categories, brands, collections }) => {
             pages: pagesRef.current.value,
             features: cleanFeatures,
             specifications: cleanSpecs,
-            linkvideo:linkvideoRef.current.value,
+            linkvideo:""
         };
 
 
