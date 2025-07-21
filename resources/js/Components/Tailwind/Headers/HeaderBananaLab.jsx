@@ -309,7 +309,7 @@ const HeaderBananaLab = ({
                             </AnimatePresence>
                         </div>
                         
-                        <motion.button 
+                     {/*   <motion.button 
                             className="relative customtext-neutral-light hover:customtext-primary transition-colors duration-200"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -321,7 +321,7 @@ const HeaderBananaLab = ({
                             >
                                 0
                             </motion.span>
-                        </motion.button>
+                        </motion.button> */}
                         
                         <motion.button
                             onClick={() => setModalOpen(true)}
@@ -445,7 +445,7 @@ const HeaderBananaLab = ({
                             </AnimatePresence>
                         </div>
                         
-                        <motion.button 
+                       {/* <motion.button 
                             className="customtext-neutral-light hover:customtext-primary transition-colors duration-200 relative"
                             whileTap={{ scale: 0.9 }}
                         >
@@ -453,7 +453,7 @@ const HeaderBananaLab = ({
                             <span className="h-3 w-3 bg-secondary absolute -top-1 -right-2 text-[10px] flex items-center justify-center text-white rounded-full">
                                 0
                             </span>
-                        </motion.button>
+                        </motion.button> */}
                         
                         <motion.button
                             onClick={() => setModalOpen(true)}

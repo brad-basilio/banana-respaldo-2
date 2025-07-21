@@ -100,7 +100,8 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                         const text = content.textContent || content.innerText || "";
 
                         return (
-                            <motion.div
+                            <motion.a
+                            href={`/blog/${item?.slug}`}
                                 key={index}
                                 variants={itemVariants}
                                 whileHover={hoverCard}
@@ -127,7 +128,7 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                                         {text}
                                     </motion.p>
                                 </div>
-                            </motion.div>
+                            </motion.a>
                         );
                     })}
                 </motion.div>

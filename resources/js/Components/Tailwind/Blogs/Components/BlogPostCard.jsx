@@ -19,7 +19,7 @@ export default function BlogPostCard({ data, flex = false, post, featured = fals
         </div>
         <div className={`flex flex-col justify-center py-2 space-y-1 ${flex && "w-1/2 mt-0 gap-1"}`}>
           <span className="customtext-neutral-light opacity-90 font-semibold text-base 2xl:text-lg line-clamp-1 ">
-            {post?.category.name}
+            {post?.category?.name}
           </span>
           <h3 className="text-base md:text-lg xl:text-xl line-clamp-3 lg:line-clamp-4 2xl:text-2xl font-semibold customtext-neutral-dark group-hover:customtext-primary leading-tight">
             {post?.name}
