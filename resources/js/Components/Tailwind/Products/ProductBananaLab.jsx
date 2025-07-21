@@ -55,7 +55,10 @@ const ProductBananaLab = ({ items, data, setCart, cart, setFavorites, favorites 
     }, [swiperInstance]);
 
     return (
-        <section className="pt-6 pb-0 font-paragraph lg:py-4 2xl:py-8">
+      <>
+      {items && items.length > 0 && (
+
+          <section className="pt-6 pb-0 font-paragraph lg:py-4 2xl:py-8">
             <div className="mx-auto px-primary 2xl:px-0 2xl:max-w-7xl">
                 {/* Header */}
                 <div className="md:flex justify-between items-center customborder-neutral-dark">
@@ -182,6 +185,8 @@ const ProductBananaLab = ({ items, data, setCart, cart, setFavorites, favorites 
                 }
             `}</style>
         </section>
+      )}
+      </>
     );
 };
 

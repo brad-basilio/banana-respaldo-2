@@ -114,6 +114,14 @@ class SystemController extends BasicController
                         if ($field === 'views') {
                             // Ordenar por vistas de manera descendente
                             $query->orderBy('views', 'desc');
+                        } elseif ($field === 'mas_vendidos') {
+                            // Ordenar por cantidad de ventas (más vendidos)
+                            $query->leftJoin('sale_details', 'sale_details.item_id', '=', 'items.id')
+                                  ->leftJoin('sales', 'sales.id', '=', 'sale_details.sale_id')
+                                  ->whereNotNull('sales.status_id') // Solo ventas que tienen estado
+                                  ->selectRaw('items.*, COALESCE(SUM(sale_details.quantity), 0) as total_vendido')
+                                  ->groupBy('items.id')
+                                  ->orderBy('total_vendido', 'desc');
                         } else {
                             // Aplicar filtro booleano para otros campos
                             $query->where($field, true);

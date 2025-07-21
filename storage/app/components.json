@@ -1475,7 +1475,8 @@
                         "recommended",
                         "offering",
                         "is_new",
-                        "views"
+                        "views",
+                        "mas_vendidos"
                     ],
                     "with": [
                         "category",
