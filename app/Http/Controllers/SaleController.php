@@ -247,7 +247,7 @@ class SaleController extends BasicController
         $body['code'] = Trace::getId();
         // $body['status_id'] = 'f13fa605-72dd-4729-beaa-ee14c9bbc47b';
         // $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c';
-        $body['status_id'] = 'bd60fc99-c0c0-463d-b738-1c72d7b085f5';
+        $body['status_id'] = 'e13a417d-a2f0-4f5f-93d8-462d57f13d3c'; // Pagado - Por revisión
         $body['user_id'] = Auth::id();
         
         // Document info

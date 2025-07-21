@@ -1,8 +1,9 @@
-"use client";
+
 
 import { useState, useEffect } from "react";
 import ReactModal from "react-modal";
 import General from "../../../../Utils/General";
+import Global from "../../../../Utils/Global";
 
 
 export default function PaymentModal({ isOpen, onClose, onPaymentComplete, contacts }) {
@@ -41,7 +42,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                 {/* Imagen decorativa - lado izquierdo */}
                 <div className="hidden md:block bg-[#f8f5f2] h-full">
                     <img
-                        src="/assets/img/salafabulosa/portadapagos.png"
+                        src={`/assets/${Global.APP_CORRELATIVE}/portadapagos.png`}
                         alt="Métodos de pago"
                         className="h-full w-full object-cover"
                     />
@@ -76,7 +77,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                         className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
                                             paymentMethod === "tarjeta"
                                                 ? "border-primary bg-[#f8f5f2]"
-                                                : "border-gray-200 hover:border-2 hover:border-[#3a2723]"
+                                                : "border-gray-200 hover:border-2 hover:border-primary"
                                         }`}
                                         onClick={() => setPaymentMethod("tarjeta")}
                                     >
@@ -88,7 +89,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                                     name="paymentMethod"
                                                     checked={paymentMethod === "tarjeta"}
                                                     onChange={() => setPaymentMethod("tarjeta")}
-                                                    className="h-5 w-5 text-primary focus:ring-primary hidden"
+                                                    className="h-5 w-5 customtext-primary focus:ring-primary hidden"
                                                 />
                                                 <label
                                                     htmlFor="tarjeta"
@@ -96,14 +97,14 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                                 >
                                                     Pago con Tarjeta
                                                 </label>
-                                                <p className="text-[#5c504c] text-sm 2xl:text-base ml-7 mt-1">
+                                                <p className="customtext-primary text-sm 2xl:text-base ml-7 mt-1">
                                                     Renueva tus espacios con estilo: Fundas exclusivas para cada temporada.
                                                 </p>
                                             </div>
                                             <div className="min-w-5 flex items-center justify-center">
                                                 <div className={`h-5 w-5 rounded-full flex items-center justify-center ${
                                                     paymentMethod === "tarjeta" 
-                                                        ? "bg-[#3a2723]" 
+                                                        ? "bg-primary" 
                                                         : "border-2 border-[#d0ccca]"
                                                 }`}>
                                                     <div className={`h-2 w-2 rounded-full ${
@@ -122,7 +123,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                         className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
                                             paymentMethod === "yape"
                                                 ? "border-primary bg-[#f8f5f2]"
-                                                : "border-gray-200 hover:border-2 hover:border-[#3a2723]"
+                                                : "border-gray-200 hover:border-2 hover:border-primary"
                                         }`}
                                         onClick={() => setPaymentMethod("yape")}
                                     >
@@ -134,7 +135,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                                     name="paymentMethod"
                                                     checked={paymentMethod === "yape"}
                                                     onChange={() => setPaymentMethod("yape")}
-                                                    className="h-5 w-5 text-primary focus:ring-[#3a2723] hidden"
+                                                    className="h-5 w-5 customtext-primary focus:ring-primary hidden"
                                                 />
                                                 <label
                                                     htmlFor="yape"
@@ -142,14 +143,14 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                                 >
                                                     Yape / Plin
                                                 </label>
-                                                <p className="text-[#5c504c] text-sm 2xl:text-base ml-7 mt-1">
+                                                <p className="customtext-primary text-sm 2xl:text-base ml-7 mt-1">
                                                     Realiza el pago desde tu celular sin comisiones.
                                                 </p>
                                             </div>
                                             <div className="min-w-5 flex items-center justify-center">
                                                 <div className={`h-5 w-5 rounded-full flex items-center justify-center ${
                                                     paymentMethod === "yape" 
-                                                        ? "bg-[#3a2723]" 
+                                                        ? "bg-primary" 
                                                         : "border-2 border-[#d0ccca]"
                                                 }`}>
                                                     <div className={`h-2 w-2 rounded-full ${
@@ -168,7 +169,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                         className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
                                             paymentMethod === "transferencia"
                                                 ? "border-primary bg-[#f8f5f2]"
-                                                : "border-gray-200 hover:border-2 hover:border-[#3a2723]"
+                                                : "border-gray-200 hover:border-2 hover:border-primary"
                                         }`}
                                         onClick={() => setPaymentMethod("transferencia")}
                                     >
@@ -180,7 +181,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                                     name="paymentMethod"
                                                     checked={paymentMethod === "transferencia"}
                                                     onChange={() => setPaymentMethod("transferencia")}
-                                                    className="h-5 w-5 text-primary focus:ring-[#3a2723] hidden"
+                                                    className="h-5 w-5 customtext-primary focus:ring-primary hidden"
                                                 />
                                                 <label
                                                     htmlFor="transferencia"
@@ -188,14 +189,14 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                                                 >
                                                     Pago por Transferencia
                                                 </label>
-                                                <p className="text-[#5c504c] text-sm 2xl:text-base ml-7 mt-1">
+                                                <p className="customtext-primary text-sm 2xl:text-base ml-7 mt-1">
                                                     Haz una transferencia bancaria desde tu app o banca por internet.
                                                 </p>
                                             </div>
                                             <div className="min-w-5 flex items-center justify-center">
                                                 <div className={`h-5 w-5 rounded-full flex items-center justify-center ${
                                                     paymentMethod === "transferencia" 
-                                                        ? "bg-[#3a2723]" 
+                                                        ? "bg-primary" 
                                                         : "border-2 border-[#d0ccca]"
                                                 }`}>
                                                     <div className={`h-2 w-2 rounded-full ${
@@ -218,7 +219,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                       General.get("checkout_dwallet") === "true" ||
                       General.get("checkout_transfer") === "true") && (
                         <button
-                            className={`w-full bg-[#3a2723] hover:bg-[#2a1d1a] text-white py-3 rounded-3xl text-base 2xl:text-lg leading-normal font-medium transition-colors 
+                            className={`w-full bg-primary hover:bg-primary hover:scale-105 transition-all duration-300 text-white py-3 rounded-3xl text-base 2xl:text-lg leading-normal font-medium 
                             ${
                                 isButtonDisabled ? "opacity-70 cursor-not-allowed" : ""
                             }`}
@@ -230,7 +231,7 @@ export default function PaymentModal({ isOpen, onClose, onPaymentComplete, conta
                         )
                     }
                         <button
-                            className="w-full border border-[#3a2723] text-[#3a2723] hover:bg-[#f8f5f2] py-3 text-base 2xl:text-lg leading-normal rounded-3xl font-medium transition-colors"
+                            className="w-full border border-primary text-primary hover:bg-[#f8f5f2] py-3 text-base 2xl:text-lg leading-normal rounded-3xl font-medium transition-colors"
                             onClick={onClose}
                             disabled={saving}
                         >

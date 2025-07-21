@@ -78,27 +78,60 @@ export default function UploadVoucherModalYape({
                 details: JSON.stringify(request.cart.map((item) => ({
                     id: item.id,
                     quantity: item.quantity,
-                    project_id:item.project_id
+                    project_id: item.project_id || null
                 }))),
             };
             
             const formData = new FormData();
             Object.keys(updatedRequest).forEach(key => {
-                formData.append(key, updatedRequest[key]);
+                if (updatedRequest[key] !== null && updatedRequest[key] !== undefined) {
+                    formData.append(key, updatedRequest[key]);
+                }
             });
     
             const result = await salesRest.save(formData);
             
-            if (result) {
-                Local.delete(`${Global.APP_CORRELATIVE}_cart`)
-                location.href = `${location.origin}/cart?code=${result.code}`;
+            if (result && result.code) {
+                Local.delete(`${Global.APP_CORRELATIVE}_cart`);
+                toast.success('¡Pago registrado!', {
+                    description: 'Tu comprobante ha sido enviado correctamente',
+                    duration: 3000,
+                    position: 'top-right',
+                });
+                
+                // Pequeño delay para que el usuario vea el mensaje de éxito
+                setTimeout(() => {
+                    location.href = `${location.origin}/cart?code=${result.code}`;
+                }, 1500);
+            } else {
+                throw new Error('No se recibió código de venta válido');
             }
         } catch (error) {
             console.error("Error al procesar el pago:", error);
-            toast.error('Error al procesar el pago:', {
-                description: `Ocurrió un error al procesar tu pago`,
+            
+            let errorMessage = 'Ocurrió un error al procesar tu pago';
+            
+            // Manejar diferentes tipos de errores
+            if (error.response) {
+                // Error de respuesta del servidor
+                if (error.response.status === 422) {
+                    errorMessage = 'Datos de pago inválidos. Verifica la información.';
+                } else if (error.response.status === 500) {
+                    errorMessage = 'Error interno del servidor. Intenta nuevamente.';
+                } else {
+                    errorMessage = error.response.data?.message || errorMessage;
+                }
+            } else if (error.request) {
+                // Error de red
+                errorMessage = 'Error de conexión. Verifica tu internet.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error('Error al procesar el pago', {
+                description: errorMessage,
                 icon: <CircleX className="h-5 w-5 text-red-500" />,
-                duration: 3000,
+                duration: 5000,
                 position: 'top-right',
             });
         } finally {
@@ -106,56 +139,6 @@ export default function UploadVoucherModalYape({
         }
     };
 
-
-    const handleUpload = async () => {
-        
-        if (saving) return; // Evita múltiples ejecuciones
-        
-        if (!voucher) {
-            toast.success('Error al subir comprobante', {
-                description: `Por favor, sube tu comprobante de pago`,
-                icon: <CircleX className="h-5 w-5 text-red-500" />,
-                duration: 3000,
-                position: 'top-right',
-            });
-            return;
-        }
-    
-        setSaving(true); // Deshabilita el botón
-        
-        try {
-            const updatedRequest = {
-                ...request,
-                payment_proof: voucher,
-                details: JSON.stringify(request.cart.map((item) => ({
-                    id: item.id,
-                    quantity: item.quantity
-                }))),
-            };
-            
-            const formData = new FormData();
-            Object.keys(updatedRequest).forEach(key => {
-                formData.append(key, updatedRequest[key]);
-            });
-    
-            const result = await salesRest.save(formData);
-            
-            if (result) {
-                Local.delete(`${Global.APP_CORRELATIVE}_cart`)
-                location.href = `${location.origin}/cart?code=${result.code}`;
-            }
-        } catch (error) {
-            console.error("Error al procesar el pago:", );
-            toast.success('Error al procesar el pago:', {
-                description: `Ocurrió un error al procesar tu pago`,
-                icon: <CircleX className="h-5 w-5 text-red-500" />,
-                duration: 3000,
-                position: 'top-right',
-            });
-        } finally {
-            setSaving(false); // Rehabilita el botón en caso de error
-        }
-    };
 
     useEffect(() => {
         if (isOpen) {
@@ -181,7 +164,7 @@ export default function UploadVoucherModalYape({
 
                 <div className="flex justify-center items-center z-40">
                     <a href="/" className="flex items-center gap-2">
-                        <img src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`} alt={Global.APP_NAME} className="h-14 object-contain object-center" onError={(e) => {
+                        <img src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`} alt={Global.APP_NAME} className="h-10 object-contain object-center" onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = '/assets/img/logo-bk.svg';
                         }} />
@@ -208,7 +191,7 @@ export default function UploadVoucherModalYape({
                 </div>
 
                 {/* Resumen de compra */}
-                <div className="bg-[#EAE8E6] rounded-xl shadow-lg p-6 col-span-2 h-max font-font-general">
+                <div className="bg-gray-50 rounded-xl shadow-lg p-6 col-span-2 h-max font-font-general">
                     <h3 className="text-xl 2xl:text-2xl font-semibold pb-6 customtext-neutral-dark">Detalle de compras</h3>
 
                     <div className="space-y-6 border-b-2 pb-6">

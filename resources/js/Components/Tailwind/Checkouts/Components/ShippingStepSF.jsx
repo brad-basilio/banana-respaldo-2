@@ -9,12 +9,13 @@ import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
 import SelectForm from "./SelectForm";
 import OptionCard from "./OptionCard";
-import { CheckCircleIcon, CircleX, InfoIcon } from "lucide-react";
+import { CheckCircleIcon, CircleX, InfoIcon, X, UserRoundX, Globe } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { renderToString } from "react-dom/server";
 import { debounce } from "lodash";
 import { useUbigeo } from "../../../../Utils/useUbigeo";
 import AsyncSelect from "react-select/async";
+import ReactModal from "react-modal";
 import PaymentModal from "./PaymentModal";
 import UploadVoucherModalYape from "./UploadVoucherModalYape";
 import UploadVoucherModalBancs from "./UploadVoucherModalBancs";
@@ -22,6 +23,7 @@ import { toast } from "sonner";
 import Global from "../../../../Utils/Global";
 import CouponsRest from "../../../../Actions/CouponsRest";
 import Tippy from "@tippyjs/react";
+import HtmlContent from "../../../../Utils/HtmlContent";
 
 const couponRest = new CouponsRest();
 
@@ -45,6 +47,8 @@ export default function ShippingStepSF({
     totalPrice,
     descuentofinal,
     setDescuentoFinal,
+    openModal,
+    generals,
 }) {
     const couponRef = useRef(null);
     const [coupon, setCoupon] = useState(null);
@@ -130,6 +134,7 @@ export default function ShippingStepSF({
     const [selectedOption, setSelectedOption] = useState(null);
     const [costsGet, setCostsGet] = useState(null);
     const [errors, setErrors] = useState({});
+    const [showPrefixDropdown, setShowPrefixDropdown] = useState(false);
 
     // Cargar los departamentos al iniciar el componente
     // useEffect(() => {
@@ -455,57 +460,23 @@ export default function ShippingStepSF({
         }
     };
 
-    useEffect(() => {
-        const htmlTemplate = (data) => {
-          const prefix = data.element.dataset.code
-          const flag = data.element.dataset.flag
-          return renderToString(<span>
-            <span className="inline-block w-8 font-emoji text-center">{flag}</span>
-            <b className="me-1">{data.text}</b>
-            <span className="text-sm text-opacity-20">{prefix}</span>
-          </span>)
-        }
-        $('.select2-prefix-selector').select2({
-          dropdownCssClass: 'py-1',
-          containerCssClass: '!border !border-gray-300 !rounded p-2 !h-[42px]',
-          arrowCssClass: '!text-primary top-1/2 -translate-y-1/2"',
-          //minimumResultsForSearch: -1,
-          templateResult: function (data) {
-            if (!data.id) {
-              return data.text;
-            }
-            var $container = $(htmlTemplate(data));
-            return $container;
-          },
-          templateSelection: function (data) {
-            if (!data.id) {
-              return data.text;
-            }
-            var $container = $(htmlTemplate(data));
-            return $container;
-          },
-          matcher: function (params, data) {
-            if (!params.term || !data.element) return data;
-      
-            const country = data.element.dataset.country || '';
-            const text = data.text || '';
-      
-            if (country.toLowerCase().includes(params.term.toLowerCase()) ||
-                text.toLowerCase().includes(params.term.toLowerCase())) {
-              return data;
-            }
-      
-            return null;
-          }
-        });
-    }, [formData.phone_prefix])
-
-
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showVoucherModal, setShowVoucherModal] = useState(false);
     const [showVoucherModalBancs, setShowVoucherModalBancs] = useState(false);
     const [currentPaymentMethod, setCurrentPaymentMethod] = useState(null);
     const [paymentRequest, setPaymentRequest] = useState(null);
+
+    // Estados para modales de políticas
+    const [modalOpen, setModalOpen] = useState(null);
+    
+    const policyItems = {
+        privacy_policy: "Políticas de privacidad",
+        terms_conditions: "Términos y condiciones",
+        saleback_policy: "Políticas de devolución y cambio",
+    };
+
+    const openPolicyModal = (index) => setModalOpen(index);
+    const closePolicyModal = () => setModalOpen(null);
 
     const handleContinueClick = (e) => {
         e.preventDefault();
@@ -789,6 +760,20 @@ export default function ShippingStepSF({
         });
     }, [formData]);
 
+    // Cerrar dropdown al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showPrefixDropdown && !event.target.closest('.prefix-dropdown-container')) {
+                setShowPrefixDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showPrefixDropdown]);
+
     
     const selectStyles = (hasError) => ({
         control: (base) => ({
@@ -815,36 +800,7 @@ export default function ShippingStepSF({
         }),
     });
 
-    const customStyles = {
-        control: (provided, state) => ({
-          ...provided,
-          padding: '0.5rem',
-          borderColor: state.isFocused ? '#d1d5db' : '#d1d5db', // gray-300
-          borderRadius: '0.75rem', // rounded-xl
-          boxShadow: 'none',
-          '&:hover': {
-            borderColor: '#9ca3af', // gray-400
-          },
-        }),
-        input: (provided) => ({
-          ...provided,
-          color: '#374151', // gray-700
-        }),
-        option: (provided, state) => ({
-          ...provided,
-          backgroundColor: state.isSelected ? '#3b82f6' : 'white', // blue-500 when selected
-          color: state.isSelected ? 'white' : '#374151', // gray-700
-          '&:hover': {
-            backgroundColor: '#e5e7eb', // gray-200
-          },
-        }),
-        singleValue: (provided) => ({
-          ...provided,
-          color: '#374151', // gray-700
-        }),
-      };
-
-      useEffect(() => {
+    useEffect(() => {
         if (coupon) {
             let descuento = 0;
             if (coupon.type === 'percentage') {
@@ -951,44 +907,74 @@ export default function ShippingStepSF({
 
                                 {/* Celular */}
                                 <div className="w-full">
-                                    <label htmlFor="phone" className="block text-sm mb-1">
+                                    <label htmlFor="phone" className="block text-sm 2xl:text-base mb-1 customtext-neutral-dark">
                                         Celular <span className="text-red-500 ml-1">*</span>
                                     </label>
                                     <div className="flex gap-2 w-full">
-                                        <select
-                                            className="select2-prefix-selector max-w-[120px] p-2 border border-gray-300 rounded"
-                                            onChange={(e) => setSelectedPrefix(e.target.value)}
-                                            name="phone_prefix"
-                                            value={formData.phone_prefix}
-                                            styles={customStyles}
-                                            classnameprefix="select"
-                                        >
-                                            <option value="">Selecciona un país</option>
-                                            {
-                                            prefixes
-                                                .sort((a, b) => a.country.localeCompare(b.country))
-                                                .map((prefix, index) => (
-                                                <option
-                                                    key={index}
-                                                    value={prefix.realCode}
-                                                    data-code={prefix.beautyCode}
-                                                    data-flag={prefix.flag}
-                                                    data-country={prefix.country}
-                                                >
-                                                </option>
-                                                ))
-                                            }
-                                        </select>
-                                        <InputForm
-                                            type="text"
-                                            id="phone"
-                                            name="phone"
-                                            value={formData.phone}
-                                            error={errors.phone}
-                                            onChange={handleChange}
-                                            placeholder="000 000 000"
-                                        />
+                                        <div className="relative min-w-[130px] prefix-dropdown-container">
+                                            <button
+                                                type="button"
+                                                className="appearance-none bg-white border border-gray-300 rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-full h-[50px] customtext-neutral-dark flex items-center justify-between"
+                                                onClick={() => setShowPrefixDropdown(!showPrefixDropdown)}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    {formData.phone_prefix ? (
+                                                        <>
+                                                            <span className="text-base">
+                                                                {prefixes.find(p => p.realCode === formData.phone_prefix)?.flag || '🌍'}
+                                                            </span>
+                                                            <span>+{formData.phone_prefix}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="customtext-neutral-light">País</span>
+                                                    )}
+                                                </span>
+                                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                            
+                                            {showPrefixDropdown && (
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                                                    {prefixes
+                                                        .sort((a, b) => a.country.localeCompare(b.country))
+                                                        .map((prefix, index) => (
+                                                        <button
+                                                            key={index}
+                                                            type="button"
+                                                            className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm customtext-neutral-dark transition-colors duration-150"
+                                                            onClick={() => {
+                                                                setFormData(prev => ({ ...prev, phone_prefix: prefix.realCode }));
+                                                                setShowPrefixDropdown(false);
+                                                            }}
+                                                        >
+                                                            <span className="text-base flex-shrink-0">{prefix.flag}</span>
+                                                            <span className="flex-1">{prefix.country}</span>
+                                                            <span className="text-gray-500">+{prefix.realCode}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <InputForm
+                                                type="tel"
+                                                id="phone"
+                                                name="phone"
+                                                value={formData.phone}
+                                                error={errors.phone}
+                                                onChange={(e) => {
+                                                    // Solo permitir números
+                                                    const value = e.target.value.replace(/\D/g, '');
+                                                    setFormData(prev => ({ ...prev, phone: value }));
+                                                }}
+                                                placeholder="987 654 321"
+                                                maxLength="9"
+                                                required
+                                            />
+                                        </div>
                                     </div>
+                                    {errors.phone && <div className="text-red-500 text-sm mt-1">{errors.phone}</div>}
                                 </div>
 
                             </div>
@@ -1131,7 +1117,7 @@ export default function ShippingStepSF({
                                 />
 
                                 <InputForm
-                                    label="Dpto./ Interior/ Piso/ Lote/ Bloque (opcional)"
+                                    label="Dpto./ Interior/ Piso/ Lote/ Bloque"
                                     type="text"
                                     name="comment"
                                     value={formData.comment}
@@ -1236,32 +1222,66 @@ export default function ShippingStepSF({
                         <div className="bg-[#66483966] py-[0.6px]"></div>      
 
                         {/* Tipo de comprobante */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium customtext-neutral-dark">
-                                Tipo de comprobante
+                        <div className="space-y-3">
+                            <label className="block text-sm 2xl:text-base font-medium customtext-neutral-dark">
+                                Tipo de comprobante <span className="text-red-500 ml-1">*</span>
                             </label>
-                            <div className="flex gap-4">
-                                <label className="inline-flex items-center">
-                                    <input
-                                        type="radio"
-                                        className="form-radio"
-                                        name="invoiceType"
-                                        value="boleta"
-                                        checked={formData.invoiceType === "boleta"}
-                                        onChange={handleChange}
-                                    />
-                                    <span className="ml-2">Boleta</span>
+                            <div className="flex gap-6">
+                                <label className="inline-flex items-center cursor-pointer group">
+                                    <div className="relative">
+                                        <input
+                                            type="radio"
+                                            className="sr-only"
+                                            name="invoiceType"
+                                            value="boleta"
+                                            checked={formData.invoiceType === "boleta"}
+                                            onChange={handleChange}
+                                        />
+                                        <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
+                                            formData.invoiceType === "boleta" 
+                                                ? 'border-primary bg-primary' 
+                                                : 'border-gray-300 bg-white group-hover:border-primary'
+                                        }`}>
+                                            {formData.invoiceType === "boleta" && (
+                                                <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className={`ml-3 text-sm 2xl:text-base transition-colors duration-200 ${
+                                        formData.invoiceType === "boleta" 
+                                            ? 'customtext-primary font-medium' 
+                                            : 'customtext-neutral-dark group-hover:customtext-primary'
+                                    }`}>
+                                        Boleta
+                                    </span>
                                 </label>
-                                <label className="inline-flex items-center">
-                                    <input
-                                        type="radio"
-                                        className="form-radio"
-                                        name="invoiceType"
-                                        value="factura"
-                                        checked={formData.invoiceType === "factura"}
-                                        onChange={handleChange}
-                                    />
-                                    <span className="ml-2">Factura</span>
+                                <label className="inline-flex items-center cursor-pointer group">
+                                    <div className="relative">
+                                        <input
+                                            type="radio"
+                                            className="sr-only"
+                                            name="invoiceType"
+                                            value="factura"
+                                            checked={formData.invoiceType === "factura"}
+                                            onChange={handleChange}
+                                        />
+                                        <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
+                                            formData.invoiceType === "factura" 
+                                                ? 'border-primary bg-primary' 
+                                                : 'border-gray-300 bg-white group-hover:border-primary'
+                                        }`}>
+                                            {formData.invoiceType === "factura" && (
+                                                <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className={`ml-3 text-sm 2xl:text-base transition-colors duration-200 ${
+                                        formData.invoiceType === "factura" 
+                                            ? 'customtext-primary font-medium' 
+                                            : 'customtext-neutral-dark group-hover:customtext-primary'
+                                    }`}>
+                                        Factura
+                                    </span>
                                 </label>
                             </div>
                         </div>
@@ -1343,7 +1363,7 @@ export default function ShippingStepSF({
                                 disabled={loading}
                             />
                             <button
-                                className="rounded-r-md bg-[#5339B1] px-4 py-2 text-sm text-white"
+                                className="rounded-r-md bg-primary px-4 py-3 text-sm text-white"
                                 type="button"
                                 onClick={onCouponApply}
                                 disabled={loading}
@@ -1422,7 +1442,7 @@ export default function ShippingStepSF({
                             </div>
                         </div>
                         <div className="space-y-2 pt-4">
-                            <ButtonPrimary className={'payment-button'}
+                            <ButtonPrimary className={'payment-button py-4 rounded-2xl xl:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300'}
                                 // onClick={() => {
                                 //     if (validateForm()) {
                                 //         setShowPaymentModal(true);
@@ -1435,29 +1455,36 @@ export default function ShippingStepSF({
                             </ButtonPrimary>
                             <div id="mercadopago-button-container" ></div>
                             {/* style={{ display: "none" }} */}
-                            <ButtonSecondary onClick={noContinue}>
+                            <ButtonSecondary onClick={noContinue} className="py-4 rounded-2xl xl:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300  ">
                                 {" "}
                                 Cancelar
                             </ButtonSecondary>
                         </div>
                         <div>
                             <p className="text-sm customtext-neutral-dark">
-                                Al realizar tu pedido, aceptas los 
-                                <a className="customtext-primary font-bold">
+                                Al realizar tu pedido, aceptas los{" "}
+                                <button 
+                                    type="button"
+                                    onClick={() => openPolicyModal(1)}
+                                    className="customtext-primary font-bold hover:underline focus:outline-none"
+                                >
                                     Términos y Condiciones
-                                </a>
+                                </button>
                                 , y que nosotros usaremos sus datos personales de
-                                acuerdo con nuestra 
-                                <a className="customtext-primary font-bold">
+                                acuerdo con nuestra{" "}
+                                <button 
+                                    type="button"
+                                    onClick={() => openPolicyModal(0)}
+                                    className="customtext-primary font-bold hover:underline focus:outline-none"
+                                >
                                     Política de Privacidad
-                                </a>
+                                </button>
                                 .
                             </p>
                         </div>
                     </div>
                 </div>
-            </div>
-
+            </div>            
             <PaymentModal
                 isOpen={showPaymentModal}
                 contacts={contacts}
@@ -1494,6 +1521,56 @@ export default function ShippingStepSF({
                 coupon={coupon}
                 descuentofinal={descuentofinal}
             />
+
+            {/* Modales de Políticas */}
+            {Object.keys(policyItems).map((key, index) => {
+                const title = policyItems[key];
+                const content =
+                    generals?.find((x) => x.correlative == key)?.description ??
+                    "";
+                return (
+                    <ReactModal
+                        key={index}
+                        isOpen={modalOpen === index}
+                        onRequestClose={closePolicyModal}
+                        contentLabel={title}
+                        className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center p-4 z-50"
+                        overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-[999]"
+                        ariaHideApp={false}
+                    >
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                <h2 className="text-2xl font-bold text-gray-900 pr-4">{title}</h2>
+                                <button
+                                    onClick={closePolicyModal}
+                                    className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full"
+                                    aria-label="Cerrar modal"
+                                >
+                                    <X size={24} strokeWidth={2} />
+                                </button>
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="prose prose-gray max-w-none">
+                                    <HtmlContent html={content} />
+                                </div>
+                            </div>
+                            
+                            {/* Footer */}
+                            <div className="flex justify-end p-6 border-t border-gray-200">
+                                <button
+                                    onClick={closePolicyModal}
+                                    className="px-6 py-2 bg-primary text-white rounded-lg transition-colors duration-200 font-medium"
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </ReactModal>
+                );
+            })}
 
         </>
     );
