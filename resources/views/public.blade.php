@@ -10,18 +10,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-<<<<<<< HEAD
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $data['name'] ?? 'Página' }} | {{ env('APP_NAME', '') }}</title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v={{ uniqid() }}" type="image/png">
   
-=======
     <title>{{ $data['name'] ?? 'Página' }} | {{ env('APP_NAME', 'xcleretor') }}</title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v={{ uniqid() }}" type="image/png">
     <meta name="description" content="xcleretor">
->>>>>>> builder/main
     @isset($data['description'])
         <meta name="description" content="{{ $data['description'] }}">
     @endisset

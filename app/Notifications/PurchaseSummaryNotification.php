@@ -65,7 +65,6 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
-<<<<<<< HEAD
         $template = \App\Models\General::where('correlative', 'purchase_summary_email')->first();
         
         // Calcular valores monetarios
@@ -87,9 +86,6 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
         $subtotalAmount = $totalOriginalSinEnvio / 1.18;  // Subtotal sin IGV
         $igvAmount = $totalOriginalSinEnvio - $subtotalAmount;  // IGV del subtotal
         
-=======
-        $template = General::where('correlative', 'purchase_summary_email')->first();
->>>>>>> 662ebdbd6466beba159d6862c2f5b8f1a06847f3
         // Armar array de productos para bloque repetible (con más detalles)
         $productos = [];
         foreach ($this->details as $detail) {
@@ -119,14 +115,8 @@ class PurchaseSummaryNotification extends Notification implements ShouldQueue
                 'orderId'        => $this->sale->code,
                 'fecha_pedido'   => $this->sale->created_at ? $this->sale->created_at->format('d/m/Y H:i') : '',
                 'status'         => $this->sale->status->name ?? '',
-<<<<<<< HEAD
                 'status_color'   => optional(\App\Models\SaleStatus::where('name', $this->sale->status->name ?? '')->first())->color ?? '#6c757d',
                 'nombre'         => $this->sale->name ?? ($this->sale->user->name ?? ''),
-=======
-                'status_description' => $this->sale->status->description ?? '',
-                'status_color'   => optional(SaleStatus::where('name', $this->sale->status->name ?? '')->first())->color ?? '#6c757d',
-                'nombre'           => $this->sale->name ?? ($this->sale->user->name ?? ''),
->>>>>>> 662ebdbd6466beba159d6862c2f5b8f1a06847f3
                 'email'          => $this->sale->email ?? ($this->sale->user->email ?? ''),
                 'telefono'       => $this->sale->phone ?? ($this->sale->user->phone ?? ''),
                 'departamento'   => $this->sale->department ?? $this->sale->user->department ?? '',

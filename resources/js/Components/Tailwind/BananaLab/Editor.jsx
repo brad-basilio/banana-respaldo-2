@@ -326,6 +326,8 @@ export default function EditorLibro() {
     const saveQueueRef = useRef(saveQueue);
     const pageChangesRef = useRef(pageChanges);
     const processingTimerRef = useRef(null);
+    const loadingTimeoutRef = useRef(null); // 🚀 Timeout para loading states
+    const thumbnailLoadTimeoutRef = useRef(null); // 🛡️ Timeout para debounce de carga de thumbnails
     
     // Actualizar refs cuando cambien los valores
     useEffect(() => {
@@ -418,6 +420,7 @@ export default function EditorLibro() {
     const [imageCache, setImageCache] = useState(new Map()); // Cache para evitar re-renders
     const [imageBlobCache, setImageBlobCache] = useState(() => new Map()); // 🚀 Cache de blobs optimizado
     const [thumbnailProgress, setThumbnailProgress] = useState(null); // ⚡ Estado de progreso de thumbnails
+    const [isLoadingThumbnails, setIsLoadingThumbnails] = useState(false); // 🛡️ Control de llamadas en progreso
 
     // ✅ MONITOREO: Sistema de filtros corregido
     useEffect(() => {
@@ -707,8 +710,17 @@ export default function EditorLibro() {
     // 🖼️ Función para cargar thumbnails con nueva estructura después de generarlos
     const loadThumbnailsWithNewStructure = useCallback(async () => {
         if (!projectData?.id || !pages?.length) return;
+        
+        // 🛡️ Evitar llamadas múltiples simultáneas
+        if (isLoadingThumbnails) {
+            console.log('⏳ Ya hay una carga de thumbnails en progreso, omitiendo...');
+            return;
+        }
 
         try {
+            setIsLoadingThumbnails(true);
+            console.log('🔄 Iniciando carga de thumbnails existentes...');
+            
             // 🔄 NUEVA ESTRUCTURA: Cargar thumbnails existentes desde archivos
             const response = await fetch(`/api/thumbnails/${projectData.id}/existing`, {
                 method: 'POST',
@@ -740,8 +752,10 @@ export default function EditorLibro() {
             console.warn('⚠️ Error cargando thumbnails existentes:', error);
             // Fallback: generar thumbnail solo de la página actual
             setTimeout(() => generateCurrentPageThumbnail(), 200);
+        } finally {
+            setIsLoadingThumbnails(false);
         }
-    }, [projectData?.id, pages, generateCurrentPageThumbnail]);
+    }, [projectData?.id, pages, generateCurrentPageThumbnail, isLoadingThumbnails]);
 
     // 🖼️ Función para generar y guardar thumbnails en la base de datos
     const generateAndSavePageThumbnails = useCallback(async () => {
@@ -837,6 +851,59 @@ export default function EditorLibro() {
         }
     }, [projectData?.id, pages, workspaceDimensions]);
 
+    // 🚀 NUEVA FUNCIÓN: Cargar thumbnails PDF existentes para el modal (sin generar nuevos)
+    const loadExistingPDFThumbnails = useCallback(async (onProgress = null) => {
+        if (!projectData?.id || !pages?.length) return {};
+
+        try {
+            console.log('📖 [ALBUM-MODAL] Cargando thumbnails PDF existentes...');
+            
+            // Crear objeto con las URLs de los thumbnails PDF que deberían existir
+            const pdfThumbnails = {};
+            const verifiedThumbnails = {};
+            let loadedCount = 0;
+            
+            // Función para verificar si existe un thumbnail
+            const verifyThumbnailExists = async (url, pageId) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        verifiedThumbnails[pageId] = url;
+                        loadedCount++;
+                        onProgress?.(loadedCount, pages.length);
+                        resolve(true);
+                    };
+                    img.onerror = () => {
+                        console.warn(`⚠️ [ALBUM-MODAL] Thumbnail no encontrado: ${url}`);
+                        loadedCount++;
+                        onProgress?.(loadedCount, pages.length);
+                        resolve(false);
+                    };
+                    img.src = url;
+                });
+            };
+
+            // Crear todas las promesas de verificación
+            const verificationPromises = pages.map(async (page, index) => {
+                const pdfUrl = `/storage/images/thumbnails/${projectData.id}/page-${index}-pdf.png`;
+                const pageId = page.id || `page-${index}`;
+                pdfThumbnails[pageId] = pdfUrl;
+                return verifyThumbnailExists(pdfUrl, pageId);
+            });
+
+            // Ejecutar todas las verificaciones en paralelo
+            await Promise.all(verificationPromises);
+
+            console.log(`✅ [ALBUM-MODAL] Thumbnails verificados: ${Object.keys(verifiedThumbnails).length}/${pages.length}`);
+            
+            // Retornar todos los URLs (existentes y faltantes) para que el modal maneje los placeholders
+            return pdfThumbnails;
+
+        } catch (error) {
+            console.warn('⚠️ [ALBUM-MODAL] Error cargando thumbnails PDF:', error);
+            return {};
+        }
+    }, [projectData?.id, pages]);
 
 
     // Actualizar estados del editor cuando se cargan los datos del proyecto
@@ -1985,6 +2052,23 @@ export default function EditorLibro() {
     const [isBookPreviewOpen, setIsBookPreviewOpen] = useState(false);
     const [showProgressRecovery, setShowProgressRecovery] = useState(false);
     const [savedProgress, setSavedProgress] = useState(null);
+    
+    // 🚀 NUEVOS ESTADOS: Para animación de carga del modal de álbum
+    const [albumLoadingState, setAlbumLoadingState] = useState({
+        isLoading: false,
+        loadedImages: 0,
+        totalImages: 0,
+        message: ''
+    });
+
+    // 🎭 NUEVO ESTADO: Modal de preparación con experiencia única
+    const [albumPreparationModal, setAlbumPreparationModal] = useState({
+        isOpen: false,
+        phase: 'preparing', // 'preparing', 'processing', 'finalizing', 'ready'
+        progress: 0,
+        message: 'Iniciando experiencia de álbum...',
+        subMessage: 'Preparando tu vista previa personalizada'
+    });
 
     // Estado para el input de carga de imágenes
     const imageInputRef = useRef(null);
@@ -2989,7 +3073,7 @@ export default function EditorLibro() {
                 progressToUse = serverProgress;
             }
 
-            // 🚀 PROTECCIÓN ADICIONAL: Solo mostrar modal si el progreso es significativamente más reciente
+            // 🚀 CARGA AUTOMÁTICA: Cargar automáticamente el progreso más reciente sin modal
             if (progressToUse &&
                 (progressToUse.pages?.length > 0 || progressToUse.design_data?.pages?.length > 0)) {
 
@@ -2998,10 +3082,12 @@ export default function EditorLibro() {
                 const now = Date.now();
                 const timeDiff = now - progressTime;
                 
-                // Solo mostrar si el progreso es de los últimos 30 minutos
+                // Solo cargar si el progreso es de los últimos 30 minutos
                 if (timeDiff < 30 * 60 * 1000) {
-                    setSavedProgress(progressToUse);
-                    setShowProgressRecovery(true);
+                    console.log('🔄 [AUTO-RECOVERY] Cargando automáticamente el progreso más reciente');
+                    toast.info('🔄 Cargando progreso guardado automáticamente...');
+                    // Cargar automáticamente sin mostrar modal
+                    handleLoadProgress(progressToUse);
                 } else {
                     console.log('📅 [RECOVERY] Progreso muy antiguo, ignorando automáticamente');
                 }
@@ -3041,6 +3127,9 @@ export default function EditorLibro() {
                 }, 100);
 
                 toast.success('✅ Progreso cargado exitosamente');
+                
+                // Cerrar el modal automáticamente si estaba abierto
+                setShowProgressRecovery(false);
             }
 
         } catch (error) {
@@ -3089,13 +3178,25 @@ export default function EditorLibro() {
 
     // Cargar thumbnails existentes cuando las páginas se cargan
     useEffect(() => {
-        if (projectData?.id && pages.length > 0) {
-            // Esperar un poco para que las páginas se rendericen
-            setTimeout(() => {
-                loadThumbnailsWithNewStructure();
-            }, 100);
+        // Limpiar timeout anterior si existe
+        if (thumbnailLoadTimeoutRef.current) {
+            clearTimeout(thumbnailLoadTimeoutRef.current);
         }
-    }, [projectData?.id, pages.length, loadThumbnailsWithNewStructure]);
+
+        if (projectData?.id && pages.length > 0) {
+            // Debounce de 500ms para evitar llamadas excesivas
+            thumbnailLoadTimeoutRef.current = setTimeout(() => {
+                loadThumbnailsWithNewStructure();
+            }, 500);
+        }
+
+        // Cleanup al desmontar o cambiar dependencias
+        return () => {
+            if (thumbnailLoadTimeoutRef.current) {
+                clearTimeout(thumbnailLoadTimeoutRef.current);
+            }
+        };
+    }, [projectData?.id, pages.length]); // Removed loadThumbnailsWithNewStructure to avoid infinite loop
 
     // Función para crear páginas basadas en el preset
     const createPagesFromPreset = (preset, item) => {
@@ -5212,22 +5313,138 @@ export default function EditorLibro() {
                     {/* Book Preview Modal */}
                     <BookPreviewModal
                         isOpen={isBookPreviewOpen}
-                        onRequestClose={() => setIsBookPreviewOpen(false)}
+                        onRequestClose={() => {
+                            setIsBookPreviewOpen(false);
+                            // 🚀 RESET: Limpiar estados al cerrar modal
+                            setAlbumLoadingState({
+                                isLoading: false,
+                                loadedImages: 0,
+                                totalImages: 0,
+                                message: ''
+                            });
+                            // 🎭 RESET: Limpiar modal de preparación
+                            setAlbumPreparationModal({
+                                isOpen: false,
+                                phase: 'preparing',
+                                progress: 0,
+                                message: '',
+                                subMessage: ''
+                            });
+                        }}
                         pages={pages.map((page) => ({
                             ...page,
                             layout: layouts.find((l) => l.id === page.layout) || layouts[0],
                         }))}
+                        pageThumbnails={pageThumbnails}
                         workspaceDimensions={workspaceDimensions}
                         getCurrentLayout={(page) => {
                             if (!page) return layouts[0];
                             return layouts.find((l) => l.id === page.layout) || layouts[0];
                         }}
                         presetData={presetData}
-                        pageThumbnails={pageThumbnails}
                         addAlbumToCart={addAlbumToCart}
                         projectData={projectData}
                         itemData={itemData}
+                        // 🚀 NUEVO: Estado de carga para mostrar animación
+                        albumLoadingState={albumLoadingState}
                     />
+
+                    {/* 🎭 MODAL DE PREPARACIÓN: Experiencia única para el cliente */}
+                    {albumPreparationModal.isOpen && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-500">
+                            <div className="bg-white rounded-3xl shadow-2xl p-8 min-w-96 max-w-96 mx-4 text-center relative overflow-hidden animate-in zoom-in duration-500">
+                                {/* Fondo animado con partículas flotantes */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 opacity-60"></div>
+                                
+                                {/* Efectos de partículas flotantes */}
+                                <div className="absolute inset-0">
+                                    <div className="absolute top-4 left-4 w-2 h-2 bg-purple-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '0s' }}></div>
+                                    <div className="absolute top-8 right-6 w-1 h-1 bg-blue-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.5s' }}></div>
+                                    <div className="absolute bottom-8 left-8 w-1.5 h-1.5 bg-pink-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '1s' }}></div>
+                                    <div className="absolute bottom-4 right-4 w-1 h-1 bg-purple-400 rounded-full animate-bounce opacity-60" style={{ animationDelay: '1.5s' }}></div>
+                                </div>
+                                
+                                {/* Contenido */}
+                                <div className="relative z-10">
+                                    {/* Icono principal animado con glow effect */}
+                                    <div className="mb-6 relative">
+                                        <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl relative">
+                                            {/* Glow effect */}
+                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full animate-ping opacity-20"></div>
+                                            <div className="absolute inset-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full animate-pulse"></div>
+                                            
+                                            {/* Icono del libro */}
+                                            <svg className="w-12 h-12 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                            </svg>
+                                        </div>
+                                        
+                                        {/* Anillo de progreso mejorado */}
+                                        <div className="absolute inset-0 w-24 h-24 mx-auto">
+                                            <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 96 96">
+                                                <circle cx="48" cy="48" r="44" stroke="currentColor" strokeWidth="4" fill="none" className="text-gray-200" />
+                                                <circle 
+                                                    cx="48" cy="48" r="44" 
+                                                    stroke="url(#progressGradient)" 
+                                                    strokeWidth="4" 
+                                                    fill="none" 
+                                                    strokeLinecap="round"
+                                                    strokeDasharray={`${2 * Math.PI * 44}`}
+                                                    strokeDashoffset={`${2 * Math.PI * 44 * (1 - albumPreparationModal.progress / 100)}`}
+                                                    style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
+                                                />
+                                                <defs>
+                                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" style={{ stopColor: '#8b5cf6', stopOpacity: 1 }} />
+                                                        <stop offset="100%" style={{ stopColor: '#ec4899', stopOpacity: 1 }} />
+                                                    </linearGradient>
+                                                </defs>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    {/* Mensaje principal con efecto de typing */}
+                                    <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 animate-pulse">
+                                        {albumPreparationModal.message}
+                                    </h2>
+                                    
+                                    {/* Submensaje */}
+                                    <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                                        {albumPreparationModal.subMessage}
+                                    </p>
+
+                                    {/* Barra de progreso con glow */}
+                                    <div className="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden shadow-inner">
+                                        <div 
+                                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full transition-all duration-500 ease-out relative"
+                                            style={{ width: `${albumPreparationModal.progress}%` }}
+                                        >
+                                            <div className="absolute inset-0 bg-white/30 animate-pulse rounded-full"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shimmer"></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Porcentaje con animación */}
+                                    <p className="text-lg font-bold text-purple-600 mb-4">
+                                        {albumPreparationModal.progress}%
+                                    </p>
+
+                                
+                                </div>
+                                
+                                {/* CSS para efectos adicionales */}
+                                <style jsx>{`
+                                    @keyframes shimmer {
+                                        0% { transform: translateX(-100%) skewX(-12deg); }
+                                        100% { transform: translateX(200%) skewX(-12deg); }
+                                    }
+                                    .animate-shimmer {
+                                        animation: shimmer 2s infinite;
+                                    }
+                                `}</style>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ✅ Navigation Bar (Header) */}
                     <header className="fixed top-0 left-0 right-0 h-16 bg-white shadow-lg flex items-center px-6 z-20 border-b border-gray-200">
@@ -5342,10 +5559,121 @@ export default function EditorLibro() {
                                 <Button
                                     variant="secondary"
                                     size="sm"
-                                    onClick={() => setIsBookPreviewOpen(true)}
+                                    onClick={async (e) => {
+                                        // �️ PREVENIR RECARGA: Evitar comportamiento por defecto
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        
+                                        try {
+                                            console.log('🎭 [ALBUM-EXPERIENCE] Iniciando experiencia única de álbum...');
+                                            
+                                            // 🎭 FASE 1: Mostrar modal de preparación
+                                            setAlbumPreparationModal({
+                                                isOpen: true,
+                                                phase: 'preparing',
+                                                progress: 0,
+                                                message: '✨ Creando tu experiencia',
+                                                subMessage: 'Preparando la magia de tu álbum personalizado...'
+                                            });
+
+                                            // 🎭 FASE 2: Simular preparación (0-30%)
+                                            for (let i = 0; i <= 30; i += 5) {
+                                                await new Promise(resolve => setTimeout(resolve, 100));
+                                                setAlbumPreparationModal(prev => ({
+                                                    ...prev,
+                                                    progress: i,
+                                                    message: '🔧 Construyendo previsualización',
+                                                    subMessage: 'Optimizando cada detalle para ti...'
+                                                }));
+                                            }
+
+                                            // 🎭 FASE 3: Cargar thumbnails en background (30-80%)
+                                            setAlbumPreparationModal(prev => ({
+                                                ...prev,
+                                                phase: 'processing',
+                                                message: 'Cargando el proyecto',
+                                                subMessage: 'Procesando cada página con calidad profesional...'
+                                            }));
+
+                                            const pdfThumbnails = await loadExistingPDFThumbnails((loaded, total) => {
+                                                const loadProgress = 30 + (loaded / total) * 50; // 30% a 80%
+                                                setAlbumPreparationModal(prev => ({
+                                                    ...prev,
+                                                    progress: Math.round(loadProgress),
+                                                    subMessage: `Procesando imagen ${loaded} de ${total}...`
+                                                }));
+                                            });
+
+                                            // 🎭 FASE 4: Finalizando (80-100%)
+                                            setAlbumPreparationModal(prev => ({
+                                                ...prev,
+                                                phase: 'finalizing',
+                                                message: '🎨 Aplicando toques finales',
+                                                subMessage: 'Perfeccionando tu vista previa...'
+                                            }));
+
+                                            for (let i = 80; i <= 100; i += 4) {
+                                                await new Promise(resolve => setTimeout(resolve, 80));
+                                                setAlbumPreparationModal(prev => ({
+                                                    ...prev,
+                                                    progress: i
+                                                }));
+                                            }
+
+                                            // � FASE 5: ¡Listo! (100%)
+                                            setAlbumPreparationModal(prev => ({
+                                                ...prev,
+                                                phase: 'ready',
+                                                progress: 100,
+                                                message: '🎉 ¡Tu álbum está listo!',
+                                                subMessage: 'Experiencia premium creada especialmente para ti'
+                                            }));
+
+                                            // Esperar un momento para que se vea el 100%
+                                            await new Promise(resolve => setTimeout(resolve, 1000));
+
+                                            // 🎭 FASE 6: Cerrar modal de preparación y abrir álbum
+                                            setAlbumPreparationModal(prev => ({
+                                                ...prev,
+                                                isOpen: false
+                                            }));
+
+                                            // Actualizar thumbnails y abrir modal del álbum
+                                            setPageThumbnails(prev => ({
+                                                ...prev,
+                                                ...pdfThumbnails
+                                            }));
+
+                                            // Pequeño delay para transición suave
+                                            setTimeout(() => {
+                                                setIsBookPreviewOpen(true);
+                                                console.log('✅ [ALBUM-EXPERIENCE] Experiencia única completada');
+                                            }, 300);
+                                            
+                                        } catch (error) {
+                                            console.error('❌ [ALBUM-EXPERIENCE] Error en experiencia:', error);
+                                            
+                                            // Mostrar error en el modal de preparación
+                                            setAlbumPreparationModal(prev => ({
+                                                ...prev,
+                                                message: '⚠️ Ups, algo salió mal',
+                                                subMessage: 'Intentando nuevamente...',
+                                                progress: 0
+                                            }));
+
+                                            // Cerrar después de un momento
+                                            setTimeout(() => {
+                                                setAlbumPreparationModal(prev => ({
+                                                    ...prev,
+                                                    isOpen: false
+                                                }));
+                                            }, 2000);
+                                        }
+                                    }}
+                                    disabled={albumPreparationModal.isOpen}
                                     icon={<Book className="h-4 w-4" />}
                                 >
-                                    Vista de Álbum
+                                    {albumPreparationModal.isOpen ? 'Creando experiencia...' : 'Vista de Álbum'}
                                 </Button>
                                 {/*  <button
                                     onClick={handleExportPDF}
@@ -6013,19 +6341,7 @@ export default function EditorLibro() {
                                                         {pages.length} total
                                                     </span>
                                                 </div>
-                                                <button
-                                                    onClick={() => {
-                                                        // Limpiar todos los thumbnails y regenerar en lotes pequeños
-                                                        setPageThumbnails({});
-                                                        clearThumbnailCaches();
-                                                        // Regenerar página actual primero
-                                                        setTimeout(() => generateCurrentPageThumbnail(), 100);
-                                                    }}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-                                                    title="Regenerar todos los thumbnails"
-                                                >
-                                                    🔄 Regenerar
-                                                </button>
+                                              
                                             </div>
 
                                             {/* ⚡ Indicador de progreso de thumbnail individual */}
@@ -6538,7 +6854,8 @@ export default function EditorLibro() {
             {/* Toaster para notificaciones */}
             <Toaster />
 
-            {/* Modal de recuperación de progreso */}
+            {/* Modal de recuperación de progreso - DESHABILITADO: Carga automática */}
+            {/* 
             <ProgressRecoveryModal
                 isOpen={showProgressRecovery}
                 onClose={() => setShowProgressRecovery(false)}
@@ -6546,6 +6863,7 @@ export default function EditorLibro() {
                 onLoadProgress={handleLoadProgress}
                 onDiscardProgress={handleDiscardProgress}
             />
+            */}
         </DndProvider>
     );
 }

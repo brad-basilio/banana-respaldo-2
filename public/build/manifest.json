@@ -143,8 +143,8 @@
     "file": "assets/DxButton-DV0H-ZcL.js",
     "name": "DxButton"
   },
-  "_EditableCell-B3uFPs_m.js": {
-    "file": "assets/EditableCell-B3uFPs_m.js",
+  "_EditableCell-DehGgdxe.js": {
+    "file": "assets/EditableCell-DehGgdxe.js",
     "name": "EditableCell",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js",
@@ -4135,7 +4135,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-BhZAjwkG.js",
+    "file": "assets/BananaLab-BGGjMZTC.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4194,7 +4194,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-B2tzm9Ib.js",
+    "file": "assets/Editor-B1GTm0Km.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4202,7 +4202,7 @@
       "_preload-helper-BfFHrpNk.js",
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_EditableCell-B3uFPs_m.js",
+      "_EditableCell-DehGgdxe.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
       "_layers-6oegOx-p.js",
       "_chevron-down-DS-mdh9v.js",
@@ -4223,7 +4223,6 @@
       "_triangle-alert-vFMqKi4t.js",
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
-      "_file-text-IsDz6MEs.js",
       "_dom-to-image-more.min-Cey65QPP.js",
       "_chevron-left-B2s3ZsB7.js",
       "_user-BvYmyGTY.js",
@@ -4247,7 +4246,6 @@
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_index-Chjiymov.js",
       "_x-DBMwyD6F.js",
-      "_download-Dh5rRDOT.js",
       "_index-BSWw-p5k.js"
     ],
     "dynamicImports": [
@@ -4255,7 +4253,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor_00.jsx": {
-    "file": "assets/Editor_00-CmNtfxFq.js",
+    "file": "assets/Editor_00-AnN1YLEz.js",
     "name": "Editor_00",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor_00.jsx",
     "isEntry": true,
@@ -4277,12 +4275,10 @@
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_index-Chjiymov.js",
-      "_Global-ErywZRdd.js",
       "_x-DBMwyD6F.js",
       "_createLucideIcon-Cy5Ya80P.js",
       "_chevron-left-B2s3ZsB7.js",
-      "_chevron-right-Ckt5D2ka.js",
-      "_download-Dh5rRDOT.js"
+      "_chevron-right-Ckt5D2ka.js"
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/MisProyectos.jsx": {
@@ -4327,7 +4323,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx": {
-    "file": "assets/V1Edit-D1jA5H9V.js",
+    "file": "assets/V1Edit-DTUIljRj.js",
     "name": "V1Edit",
     "src": "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
     "isEntry": true,
@@ -4340,11 +4336,9 @@
       "resources/js/Components/Tailwind/BananaLab/components/Elements/TextElement.jsx",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_jspdf.es.min-D3plwuQr.js",
-      "_Global-ErywZRdd.js",
       "_x-DBMwyD6F.js",
       "_chevron-left-B2s3ZsB7.js",
       "_chevron-right-Ckt5D2ka.js",
-      "_download-Dh5rRDOT.js",
       "_index-yBjzXJbu.js",
       "_index-rimy3MAc.js",
       "_index-fNjTmf9T.js",
@@ -9811,7 +9805,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-D-5rsNZp.js",
+    "file": "assets/Editor-Ccsv48Pf.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9824,7 +9818,7 @@
       "_index-Dq7h7Pqt.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "_preload-helper-BfFHrpNk.js",
-      "_EditableCell-B3uFPs_m.js",
+      "_EditableCell-DehGgdxe.js",
       "_createLucideIcon-Cy5Ya80P.js",
       "_useDrag-BaORhKlM.js",
       "_index-BSWw-p5k.js",
@@ -9854,16 +9848,14 @@
       "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
       "_index-Chjiymov.js",
-      "_Global-ErywZRdd.js",
       "_x-DBMwyD6F.js",
       "_chevron-left-B2s3ZsB7.js",
-      "_download-Dh5rRDOT.js",
+      "_Global-ErywZRdd.js",
       "_save-BvSyoVHO.js",
       "_clock-BTrEpQej.js",
       "_triangle-alert-vFMqKi4t.js",
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
-      "_file-text-IsDz6MEs.js",
       "_dom-to-image-more.min-Cey65QPP.js",
       "_user-BvYmyGTY.js",
       "_filter-Ci9tsc_e.js",
@@ -10023,7 +10015,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CpnT83gE.js",
+    "file": "assets/System-HzIlvvSC.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

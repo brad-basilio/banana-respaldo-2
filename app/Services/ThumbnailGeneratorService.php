@@ -323,9 +323,8 @@ class ThumbnailGeneratorService
             // 2. Generar thumbnail pequeño para sidebar usando Intervention Image
             $this->generateSidebarThumbnail($canvas, $project, $pageIndex, $thumbnailFilename);
             
-            // Retornar URL usando el servicio de imágenes
-            $encodedPath = base64_encode($pdfRelativePath);
-            return "/api/canvas/serve-image/{$encodedPath}";
+            // 🚀 RETORNAR URL DIRECTA usando storage:link
+            return "/storage/images/thumbnails/{$project->id}/{$thumbnailFilename}";
         } else {
             throw new \Exception("Error guardando thumbnail: {$pdfFilename}");
         }

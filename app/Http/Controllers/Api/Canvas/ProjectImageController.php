@@ -191,13 +191,13 @@ class ProjectImageController extends Controller
                 $thumbnailUrl = null;
                 if (Storage::exists($thumbnailFullPath)) {
                     $encodedThumbnailPath = base64_encode($thumbnailFullPath);
-                    $thumbnailUrl = "/api/canvas/serve-image/{$encodedThumbnailPath}";
+                    $thumbnailUrl = "/storage/{$thumbnailPath}/{$thumbnailFilename}";
                 }
                 
                 // Generar URL para la imagen principal
                 $encodedPath = base64_encode($file);
-                $imageUrl = "/api/canvas/serve-image/{$encodedPath}";
-                
+                $imageUrl = "/storage/{$projectPath}/{$pathInfo['filename']}";
+    
                 $images[] = [
                     'id' => pathinfo($filename, PATHINFO_FILENAME), // ID único basado en el nombre
                     'filename' => $filename,
@@ -373,7 +373,7 @@ class ProjectImageController extends Controller
             if ($thumbnailSaved) {
                 // Generar URL usando el servicio de imágenes (no Storage::url)
                 $encodedThumbnailPath = base64_encode($thumbnailPath);
-                $thumbnailUrl = "/api/canvas/serve-image/{$encodedThumbnailPath}";
+                $thumbnailUrl = "/storage/{$thumbnailPath}";
                 
                 return [
                     'success' => true,
@@ -424,7 +424,7 @@ class ProjectImageController extends Controller
 
             // Generar la URL usando el servicio de imágenes (no Storage::url)
             $encodedPath = base64_encode($path);
-            $url = "/api/canvas/serve-image/{$encodedPath}";
+            $url = "/storage/{$projectPath}/{$fullQualityFilename}";
 
             return response()->json([
                 'success' => true,

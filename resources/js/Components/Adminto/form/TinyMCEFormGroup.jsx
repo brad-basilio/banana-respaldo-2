@@ -9,7 +9,6 @@ const TinyMCEFormGroup = ({ label, value, onChange, height = 400, variables = []
             value={value}
             init={{
                 height,
-                menubar: true,
                 plugins: [
                     'advlist', 'autolink', 'link', 'image', 'lists', 'charmap', 'preview', 'anchor', 'pagebreak',
                     'searchreplace', 'wordcount', 'visualblocks', 'visualchars', 'code', 'fullscreen', 'insertdatetime',

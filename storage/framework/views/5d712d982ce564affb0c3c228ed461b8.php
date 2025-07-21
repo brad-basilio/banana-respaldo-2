@@ -10,18 +10,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-<<<<<<< HEAD:storage/framework/views/5d712d982ce564affb0c3c228ed461b8.php
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', '')); ?></title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v=<?php echo e(uniqid()); ?>" type="image/png">
   
-=======
     <title><?php echo e($data['name'] ?? 'Página'); ?> | <?php echo e(env('APP_NAME', 'xcleretor')); ?></title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v=<?php echo e(uniqid()); ?>" type="image/png">
     <meta name="description" content="xcleretor">
->>>>>>> builder/main:storage/framework/views/2c6e759d36b95a19f3b4a50bc104db05.php
     <?php if(isset($data['description'])): ?>
         <meta name="description" content="<?php echo e($data['description']); ?>">
     <?php endif; ?>

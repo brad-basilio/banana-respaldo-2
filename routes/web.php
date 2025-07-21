@@ -41,12 +41,9 @@ use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
-<<<<<<< HEAD
 use App\Http\Controllers\Customer\AlbumController as CustomerAlbumController;
-
-=======
 use App\Http\Controllers\Admin\SaleStatusController as AdminSaleStatusController;
->>>>>>> builder/main
+
 // Public 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RepositoryController;
@@ -68,15 +65,7 @@ use App\Http\Controllers\CanvasController;
 
 Route::get('/', fn() => view('coming-soon'));
 
-// Ruta de test para píxeles (solo para desarrollo)
-Route::get('/test/pixels', [PixelTestController::class, 'index'])->name('test.pixels');
-Route::get('/test/product-tracking', fn() => view('examples.product-tracking'))->name('test.product-tracking');
 
-// Test de notificaciones
-Route::get('/test/notifications', [NotificationTestController::class, 'index'])->name('test.notifications');
-Route::post('/test/notifications/contact', [NotificationTestController::class, 'testContactNotification']);
-Route::post('/test/notifications/purchase', [NotificationTestController::class, 'testPurchaseNotification']);
-Route::get('/test/notifications/corporate-email', [NotificationTestController::class, 'checkCorporateEmail']);
 
 // Verificar si el archivo existe, si no, crear uno vacío
 $filePath = storage_path('app/pages.json');

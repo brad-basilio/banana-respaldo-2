@@ -52,9 +52,10 @@ class ThumbnailService
                 // Devolver URL usando el servicio de imágenes con timestamp para evitar cache
                 $encodedPath = base64_encode($pdfPath);
                 $timestamp = time();
+
                 $url = "/api/canvas/serve-image/{$encodedPath}?v={$timestamp}";
                 Log::info("ThumbnailService: Thumbnail guardado exitosamente: {$pdfFilename}");
-                return $url;
+                  return "/storage/images/thumbnails/{$projectId}/{$thumbnailFilename}?v={$timestamp}";
             }
 
         } catch (\Exception $e) {
@@ -251,8 +252,8 @@ class ThumbnailService
                         // Generar URL para el thumbnail con timestamp para evitar cache
                         $encodedPath = base64_encode($thumbnailPath);
                         $timestamp = Storage::lastModified($thumbnailPath);
-                        $thumbnails[$pageId] = "/api/canvas/serve-image/{$encodedPath}?v={$timestamp}";
-                        
+                        $thumbnails[$pageId] = "/storage/images/thumbnails/{$projectId}/{$thumbnailFilename}?v={$timestamp}";
+                          
                         Log::info("📸 [THUMBNAIL-SERVICE] Thumbnail encontrado", [
                             'page_id' => $pageId,
                             'url' => $thumbnails[$pageId]

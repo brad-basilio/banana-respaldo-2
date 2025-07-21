@@ -23,7 +23,8 @@ use App\Http\Controllers\Admin\AdController as AdminAdController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
-
+use App\Http\Controllers\Admin\SaleStatusController as AdminSaleStatusController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DeliveryPriceController as AdminDeliveryPriceController;
 use App\Http\Controllers\Admin\TypesDeliveryController as AdminTypesDeliveryController;
 use App\Http\Controllers\Admin\StoreController as AdminStoreController;
@@ -51,7 +52,6 @@ use App\Http\Controllers\Admin\NotificationVariableController;
 use App\Http\Controllers\Api\NotificationVariablesController;
 use App\Http\Controllers\Admin\RepositoryController as AdminRepositoryController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-<<<<<<< HEAD
 use App\Http\Controllers\Admin\CanvasPresetController as AdminCanvasPresetController;
 use App\Http\Controllers\CanvasController;
 use App\Http\Controllers\CanvasProjectController;
@@ -60,10 +60,6 @@ use App\Http\Controllers\Api\Canvas\ProjectSaveController;
 use App\Http\Controllers\Api\SimplePDFController;
 use App\Http\Controllers\PDFGeneratorController;
 use App\Http\Controllers\CartPDFController;
-=======
-use App\Http\Controllers\Admin\CouponController as AdminCouponController;
-use App\Http\Controllers\Admin\SaleStatusController as AdminSaleStatusController;
->>>>>>> builder/main
 use App\Http\Controllers\AuthClientController;
 // Public
 use App\Http\Controllers\AuthController;
@@ -239,7 +235,6 @@ Route::middleware('auth')->group(function () {
   Route::post('/profile', [AdminProfileController::class, 'saveProfile']);
   Route::patch('/profile', [AdminProfileController::class, 'save']);
 
-<<<<<<< HEAD
   // Rutas para proyectos de cliente
   Route::prefix('customer')->group(function () {
     Route::get('/projects', [App\Http\Controllers\Customer\ProjectController::class, 'index']);
@@ -268,10 +263,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/cart/process-pdfs', [CartPDFController::class, 'processCartPDFs']);
     Route::post('/cart/check-pdf-status', [CartPDFController::class, 'checkCartPDFStatus']);
   });
-=======
-  // Ruta de exportación sin middleware de permisos
-  Route::get('/admin/sales/export-data', [AdminSaleExportController::class, 'exportData']);
->>>>>>> builder/main
 
   Route::middleware('can:Admin')->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminHomeController::class, 'dashboard']);

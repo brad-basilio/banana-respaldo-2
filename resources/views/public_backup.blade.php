@@ -18,9 +18,6 @@
     <title>{{ $data['name'] ?? 'Página' }} | {{ env('APP_NAME') }}</title>
 
     <link rel="shortcut icon" href="/assets/resources/icon.png?v={{ uniqid() }}" type="image/png">
-<<<<<<< HEAD
-
-=======
    
     @isset($data['description'])
         <meta name="description" content="{{ $data['description'] }}">
@@ -28,7 +25,6 @@
     @isset($data['keywords'])
         <meta name="keywords" content="{{ implode(', ', $data['keywords']) }}">
     @endisset
->>>>>>> builder/main
 
     <meta name="author" content="Powered by Manuel Gamboa">
 

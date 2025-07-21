@@ -74,7 +74,9 @@ const BookPreviewModal = ({
     layouts = [], 
     presetData = null,
     projectData = null,
-    itemData = null
+    itemData = null,
+    // 🚀 NUEVO: Estado de carga del álbum
+    albumLoadingState = { isLoading: false, loadedImages: 0, totalImages: 0, message: '' }
 }) => {
     const [currentPage, setCurrentPage] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -319,10 +321,18 @@ const BookPreviewModal = ({
     // Efectos de React
     useEffect(() => {
         if (isOpen) {
-            if (Object.keys(pageThumbnails).length === 0) {
-                generateHighQualityThumbnails();
-            } else {
+            console.log('📖 [BOOK-MODAL] Modal abierto');
+            console.log('📊 [BOOK-MODAL] Thumbnails recibidos:', Object.keys(pageThumbnails).length, 'de', pages.length, 'páginas');
+            
+            // 🚀 SIEMPRE usar los thumbnails enviados desde Editor.jsx
+            // NO generar nuevos thumbnails aquí para evitar problemas de rendimiento
+            if (Object.keys(pageThumbnails).length > 0) {
+                console.log('✅ [BOOK-MODAL] Usando thumbnails del Editor');
                 setGeneratedThumbnails(pageThumbnails);
+            } else {
+                console.log('ℹ️ [BOOK-MODAL] No se recibieron thumbnails, usando placeholders');
+                // Solo usar placeholders, no generar thumbnails
+                setGeneratedThumbnails({});
             }
         }
     }, [isOpen, pageThumbnails]);
@@ -593,19 +603,44 @@ const BookPreviewModal = ({
             <style dangerouslySetInnerHTML={{ __html: flipbookStyles }} />
 
             {/* Overlay de carga */}
-            {(isGeneratingThumbnails || isGeneratingPDF) && (
+            {(isGeneratingThumbnails || isGeneratingPDF || albumLoadingState.isLoading) && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+                    <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center max-w-md mx-4">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-                        <p className="text-gray-700">
-                            {isGeneratingPDF 
-                                ? 'Generando PDF de alta calidad...' 
-                                : 'Generando vistas previas de alta calidad...'
-                            }
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Esto puede tomar unos segundos
-                        </p>
+                        
+                        {/* 🚀 NUEVA ANIMACIÓN: Progreso específico para carga de álbum */}
+                        {albumLoadingState.isLoading ? (
+                            <>
+                                <p className="text-gray-700 text-center">
+                                    {albumLoadingState.message || 'Cargando álbum...'}
+                                </p>
+                                <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                                    <div 
+                                        className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                                        style={{ 
+                                            width: `${albumLoadingState.totalImages > 0 
+                                                ? (albumLoadingState.loadedImages / albumLoadingState.totalImages) * 100 
+                                                : 0}%` 
+                                        }}
+                                    ></div>
+                                </div>
+                                <p className="text-sm text-gray-500 mt-2">
+                                    {albumLoadingState.loadedImages} de {albumLoadingState.totalImages} imágenes
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-gray-700">
+                                    {isGeneratingPDF 
+                                        ? 'Generando PDF de alta calidad...' 
+                                        : 'Generando vistas previas de alta calidad...'
+                                    }
+                                </p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Esto puede tomar unos segundos
+                                </p>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
@@ -760,32 +795,7 @@ const BookPreviewModal = ({
             </div>
  {/* Botones de acción */}
             <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-2xl mx-auto">
-                {/* Botón Descargar PDF */}
-                <button
-                    className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center ${
-                        isGeneratingPDF
-                            ? 'bg-blue-400 text-white cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                    onClick={generatePDF}
-                    disabled={isGeneratingPDF || isProcessing}
-                >
-                    {isGeneratingPDF ? (
-                        <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Generando PDF...
-                        </>
-                    ) : (
-                        <>
-                            <Download className="h-5 w-5 mr-2" />
-                            Descargar PDF
-                        </>
-                    )}
-                </button>
-
+             
                 {/* Botón Comprar ahora */}
                 <button
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center ${isProcessing
@@ -796,13 +806,71 @@ const BookPreviewModal = ({
                         if (isProcessing) return;
 
                         setIsProcessing(true);
-                        console.log('🚀 === INICIO PROCESO COMPRA (SIN PDF FRONTEND) ===');
+                        console.log('🚀 === INICIO PROCESO COMPRA CON GENERACIÓN PDF BACKEND ===');
 
                         try {
-                            console.log('🔍 Verificando función addAlbumToCart...');
-                            console.log('addAlbumToCart type:', typeof addAlbumToCart);
-                            console.log('addAlbumToCart value:', addAlbumToCart);
+                            // Verificar que tenemos datos del proyecto
+                            if (!projectData?.id) {
+                                console.error('❌ No hay datos del proyecto');
+                                alert('Error: No se encontró información del proyecto.');
+                                setIsProcessing(false);
+                                return;
+                            }
 
+                            console.log('📄 Generando PDF en el backend usando thumbnails existentes...');
+                            console.log('� Proyecto ID:', projectData.id);
+
+                            // Paso 1: Generar PDF en el backend usando los thumbnails
+                            const pdfResponse = await fetch(`/api/projects/${projectData.id}/generate-pdf-backend`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    project_id: projectData.id,
+                                    use_thumbnails: true, // Usar thumbnails del backend
+                                    workspace_dimensions: workspaceDimensions,
+                                    pages: pages
+                                })
+                            });
+
+                            if (!pdfResponse.ok) {
+                                const errorData = await pdfResponse.json();
+                                console.error('❌ Error generando PDF:', errorData);
+                                alert(`Error al generar PDF: ${errorData.message || 'Error del servidor'}`);
+                                setIsProcessing(false);
+                                return;
+                            }
+
+                            const pdfData = await pdfResponse.json();
+                            console.log('✅ PDF generado exitosamente:', pdfData);
+
+                            // El backend debe devolver algo como:
+                            // {
+                            //   success: true,
+                            //   pdf_path: 'storage/app/images/pdf/project-id/album.pdf',
+                            //   pdf_url: '/storage/images/pdf/project-id/album.pdf',
+                            //   pdf_size: 1234567,
+                            //   pages_count: 10,
+                            //   dimensions: { width: 800, height: 600 }
+                            // }
+
+                            if (!pdfData.success || !pdfData.pdf_path) {
+                                console.error('❌ PDF no se generó correctamente:', pdfData);
+                                alert('Error: El PDF no se pudo generar correctamente.');
+                                setIsProcessing(false);
+                                return;
+                            }
+
+                            console.log('📄 PDF guardado en:', pdfData.pdf_path);
+                            console.log('🌐 PDF URL:', pdfData.pdf_url);
+
+                            // Paso 2: Agregar al carrito con los datos del PDF
+                            console.log('🛒 Agregando álbum al carrito con datos del PDF...');
+                            
                             // Verificar que la función addAlbumToCart esté disponible
                             if (typeof addAlbumToCart !== 'function') {
                                 console.error('❌ addAlbumToCart no es una función');
@@ -811,17 +879,23 @@ const BookPreviewModal = ({
                                 return;
                             }
 
-                            // Paso 1: Agregar al carrito (esto guarda en BD y marca proyecto como listo para PDF backend)
-                            console.log('🛒 Agregando álbum al carrito y preparando para PDF backend...');
                             let addedToCart;
                             try {
-                                // Verificar si addAlbumToCart devuelve una promesa
-                                const cartResult = addAlbumToCart();
+                                // Pasar los datos del PDF a la función addAlbumToCart
+                                const cartResult = addAlbumToCart({
+                                    pdf_data: {
+                                        pdf_path: pdfData.pdf_path,
+                                        pdf_url: pdfData.pdf_url,
+                                        pdf_size: pdfData.pdf_size,
+                                        pages_count: pdfData.pages_count,
+                                        dimensions: pdfData.dimensions,
+                                        generated_at: new Date().toISOString()
+                                    }
+                                });
+
                                 if (cartResult && typeof cartResult.then === 'function') {
-                                    // Es una promesa, esperarla
                                     addedToCart = await cartResult;
                                 } else {
-                                    // No es una promesa, usar el resultado directamente
                                     addedToCart = cartResult;
                                 }
                                 console.log('✅ Resultado de addAlbumToCart:', addedToCart);
@@ -839,121 +913,66 @@ const BookPreviewModal = ({
                                 return;
                             }
 
-                            console.log('✅ Álbum agregado al carrito exitosamente');
-                            console.log('📄 El PDF se generará automáticamente en el backend con dimensiones exactas de BD');
+                            console.log('✅ Álbum agregado al carrito exitosamente con PDF backend');
 
-                            // Opcional: Verificar que el proyecto tiene datos para PDF
+                            // Paso 3: Verificar que el carrito tiene los datos correctos
                             try {
                                 const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
                                 const currentCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
                                 const latestItem = currentCart.find(item => 
                                     item.type === 'custom_album' && 
-                                    item.project_id && 
-                                    item.pdf_data
+                                    item.project_id === projectData.id
                                 );
                                 
-                                if (latestItem) {
-                                    console.log('📄 Datos para PDF backend confirmados:', {
+                                if (latestItem && latestItem.pdf_data) {
+                                    console.log('📄 Datos del PDF en carrito confirmados:', {
                                         project_id: latestItem.project_id,
-                                        has_pdf_data: !!latestItem.pdf_data,
-                                        dimensions: latestItem.pdf_data?.dimensions
+                                        pdf_path: latestItem.pdf_data.pdf_path,
+                                        pdf_url: latestItem.pdf_data.pdf_url,
+                                        pdf_size: latestItem.pdf_data.pdf_size,
+                                        pages_count: latestItem.pdf_data.pages_count
                                     });
                                 } else {
-                                    console.warn('⚠️ No se encontraron datos de PDF en el carrito');
+                                    console.warn('⚠️ No se encontraron datos completos del PDF en el carrito');
                                 }
                             } catch (verificationError) {
-                                console.warn('⚠️ Error verificando datos de PDF:', verificationError);
+                                console.warn('⚠️ Error verificando datos de PDF en carrito:', verificationError);
                             }
 
-                            // Paso 2: Redirigir al carrito (SIEMPRE ejecutar)
-                            console.log('🔄 Iniciando redirección al carrito...');
-                            try {
-                                // Esperar un poco para asegurar que el localStorage se actualice
-                                console.log('⏱️ Esperando 1 segundo para asegurar persistencia...');
-                                await new Promise(resolve => setTimeout(resolve, 1000));
+                            // Paso 4: ✅ NAVEGACIÓN SIN RECARGA - Mostrar éxito y cerrar modal
+                            console.log('✅ Álbum agregado al carrito exitosamente');
+                            
+                            // Mostrar mensaje de éxito
+                            alert('¡Álbum agregado al carrito exitosamente!\n\nPuedes continuar editando o ir al carrito cuando termines.');
+                            
+                            // Cerrar el modal después de un breve delay
+                            setTimeout(() => {
+                                onRequestClose();
+                                setIsProcessing(false);
+                            }, 1000);
 
-                                // Verificar múltiples veces que el álbum esté en el carrito
-                                let verifyCart = [];
-                                for (let attempts = 0; attempts < 3; attempts++) {
-                                    verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
-                                    console.log(`🔍 Verificación ${attempts + 1}/3 del carrito:`, verifyCart.length, 'items');
-                                    
-                                    if (verifyCart.length > 0) {
-                                        break; // Carrito tiene items, proceder
-                                    }
-                                    
-                                    // Esperar un poco más en cada intento
-                                    if (attempts < 2) {
-                                        console.log('⏱️ Esperando 500ms más...');
-                                        await new Promise(resolve => setTimeout(resolve, 500));
-                                    }
-                                }
-
-                                // Forzar un último save del localStorage si es necesario
-                                if (verifyCart.length === 0) {
-                                    console.warn('⚠️ Carrito sigue vacío, intentando forzar adición...');
-                                    
-                                    // Intentar agregar al carrito una vez más como fallback
-                                    try {
-                                        const cartResult = addAlbumToCart();
-                                        if (cartResult && typeof cartResult.then === 'function') {
-                                            await cartResult;
-                                        }
-                                        await new Promise(resolve => setTimeout(resolve, 500));
-                                        verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
-                                        console.log('🔍 Verificación después de adición forzada:', verifyCart.length, 'items');
-                                    } catch (forceError) {
-                                        console.error('❌ Error en adición forzada:', forceError);
-                                    }
-                                }
-
-                                // Redirigir al carrito independientemente del estado
-                                const cartUrl = `${Global.APP_URL}/cart`;
-                                console.log('🔄 Redirigiendo a:', cartUrl);
-                                console.log('🔄 Estado final del carrito:', verifyCart.length, 'items');
-
-                                // Forzar la redirección usando múltiples métodos como respaldo
-                                try {
-                                    window.location.href = cartUrl;
-                                } catch (locationError) {
-                                    console.error('❌ Error con window.location.href:', locationError);
-                                    try {
-                                        window.location.replace(cartUrl);
-                                    } catch (replaceError) {
-                                        console.error('❌ Error con window.location.replace:', replaceError);
-                                        window.open(cartUrl, '_self');
-                                    }
-                                }
-
-                            } catch (redirectError) {
-                                console.error('❌ Error durante redirección:', redirectError);
-                                
-                                // Redirección de emergencia ultra-simple
-                                const cartUrl = `${Global.APP_URL}/cart`;
-                                console.log('🔄 Redirección de emergencia a:', cartUrl);
-                                
-                                // Múltiples métodos de respaldo
-                                setTimeout(() => {
-                                    try {
-                                        window.location.href = cartUrl;
-                                    } catch (e) {
-                                        window.location = cartUrl;
-                                    }
-                                }, 100);
-                            }
+                            // 🚀 OPCIONAL: Usar React Router para navegar sin recarga (si está disponible)
+                            // if (window.history && window.history.pushState) {
+                            //     window.history.pushState(null, null, `${Global.APP_URL}/cart`);
+                            // }
 
                         } catch (error) {
-                            console.error('❌ === ERROR GENERAL ===');
+                            console.error('❌ === ERROR GENERAL EN PROCESO COMPRA ===');
                             console.error('Tipo:', error.name);
                             console.error('Mensaje:', error.message);
                             console.error('Stack:', error.stack);
 
-                            // Intentar redirigir de todas formas si hay items en el carrito
+                            // ✅ MANEJO DE ERRORES SIN RECARGA
                             try {
-                                const verifyCart = JSON.parse(localStorage.getItem(`${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`) || '[]');
+                                const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
+                                const verifyCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
                                 if (verifyCart.length > 0) {
-                                    console.log('✅ Hay items en carrito, redirigiendo...');
-                                    window.location.href = `${Global.APP_URL}/cart`;
+                                    console.log('✅ Hay items en carrito, mostrando éxito...');
+                                    alert('¡Álbum agregado al carrito! Puedes continuar editando o ir al carrito manualmente.');
+                                    setTimeout(() => {
+                                        onRequestClose();
+                                        setIsProcessing(false);
+                                    }, 1000);
                                     return;
                                 }
                             } catch (recoveryError) {
@@ -962,15 +981,7 @@ const BookPreviewModal = ({
 
                             alert(`Error: ${error.message}. Si el álbum se agregó, puede ir manualmente al carrito.`);
                         } finally {
-                            // IMPORTANTE: Siempre desbloquear el botón con timeout adicional
-                            console.log('🔄 Desbloqueando botón...');
                             setIsProcessing(false);
-                            
-                            // Timeout adicional como respaldo para asegurar que el botón se desbloquee
-                            setTimeout(() => {
-                                console.log('🔄 Timeout: Desbloqueando botón (respaldo)...');
-                                setIsProcessing(false);
-                            }, 2000);
                         }
                     }}
                     disabled={isProcessing || isGeneratingPDF}
@@ -981,7 +992,7 @@ const BookPreviewModal = ({
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Procesando...
+                            Generando PDF...
                         </>
                     ) : (
                         'Comprar ahora'
