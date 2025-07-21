@@ -10,33 +10,28 @@ import { Navigation, Pagination } from "swiper/modules";
 const CarruselBananaLab = ({ items }) => {
     const [activeIndex, setActiveIndex] = useState(0);
     const [hoveredIndex, setHoveredIndex] = useState(null);
+    const [firstAd, setFirstAd] = useState(null);
     
-    const pasos = [
-        {
-            name: "Paso 1",
-            description: "Elige tus fotos, diseñados, lo que tú quieras",
-            image: "/assets/img/backgrounds/resources/paso1.png",
-            color: "#FF6B6B"
-        },
-        {
-            name: "Paso 2",
-            description: "Selecciona tus productos entre cientos de opciones",
-            image: "/assets/img/backgrounds/resources/paso2.png",
-            color: "#4ECDC4"
-        },
-        {
-            name: "Paso 3",
-            description: "Crea tu proyecto seleccionado tus fotos",
-            image: "/assets/img/backgrounds/resources/paso3.png",
-            color: "#FFE66D"
-        },
-        {
-            name: "Paso 4",
-            description: "Selecciona tus productos entre cientos de opciones",
-            image: "/assets/img/backgrounds/resources/paso4.png",
-            color: "#7D70BA"
-        },
-    ];
+  
+
+    // useEffect para cargar el primer ad
+    useEffect(() => {
+        const fetchFirstAd = async () => {
+            try {
+                const response = await fetch('/api/ads/active');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        setFirstAd(data[0]); // Tomar el primer ad
+                        console.log('First ad loaded:', data[0]);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching ads:', error);
+            }
+        };
+        fetchFirstAd();
+    }, []);
 
     // Animaciones
     const containerVariants = {
@@ -121,7 +116,7 @@ const CarruselBananaLab = ({ items }) => {
                         modules={[Navigation, Pagination]}
                         onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
                     >
-                        {pasos.map((benefit, index) => (
+                        {items && items?.map((benefit, index) => (
                             <SwiperSlide key={index}>
                                 <motion.div
                                     className="flex hover:bg-[#F4B8B8] p-4 flex-col rounded-xl justify-center h-[230px]"
@@ -134,7 +129,7 @@ const CarruselBananaLab = ({ items }) => {
                                         whileHover="hover"
                                     >
                                         <motion.img
-                                            src={benefit.image}
+                                            src={`/storage/images/strength/${benefit.image}`}
                                             className="w-full h-auto"
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
@@ -168,7 +163,7 @@ const CarruselBananaLab = ({ items }) => {
                     className="hidden lg:grid grid-cols-2 lg:p-4 lg:gap-4"
                     variants={containerVariants}
                 >
-                    {pasos.map((benefit, index) => (
+                    {items && items?.map((benefit, index) => (
                         <motion.div
                             key={index}
                             className="flex cursor-pointer hover:bg-[#F4B8B8] p-4 flex-col lg:flex-row lg:items-center lg:gap-4 rounded-xl justify-center h-[230px] lg:h-auto"
@@ -183,7 +178,7 @@ const CarruselBananaLab = ({ items }) => {
                                 whileHover="hover"
                             >
                                 <motion.img
-                                    src={benefit.image}
+                                    src={`/storage/images/strength/${benefit.image}`}
                                     className="w-full h-auto"
                                     animate={{
                                         filter: hoveredIndex === index ? "drop-shadow(0 5px 15px rgba(255,255,255,0.5))" : "none"
@@ -216,14 +211,36 @@ const CarruselBananaLab = ({ items }) => {
 
             {/* Imagen lateral */}
             <motion.div 
-                className="h-[330px] w-full pr-[5%] relative lg:w-4/12"
+                className="!h-[330px] w-full pr-[5%] relative lg:w-4/12"
                 variants={imageVariants}
             >
-                <motion.img
-                    src="/assets/img/backgrounds/resources/anuncio-mobile.png"
-                    className="absolute h-[350px] object-cover object-left lg:w-auto lg:h-full lg:bottom-0 lg:right-0"
-                    whileHover={{ scale: 1.02 }}
-                />
+                {firstAd ? (
+                    <motion.a
+                        href={firstAd.link || '#'}
+                        target={firstAd.link ? "_blank" : "_self"}
+                        className=" h-full w-full flex items-center justify-center relative overflow-hidden rounded-lg"
+                        whileHover={{ scale: 1.02 }}
+                        title={firstAd.description || firstAd.name}
+                    >
+                        <motion.img
+                            src={`/storage/images/ad/${firstAd.image}`}
+                            alt={firstAd.name}
+                            className="absolute !h-[330px] object-contain object-center lg:w-auto lg:h-full lg:bottom-0 lg:right-0 w-full"
+                            onError={(e) => {
+                                // Fallback a la imagen original si falla cargar el ad
+                                e.target.src = "/assets/img/backgrounds/resources/anuncio-mobile.png";
+                            }}
+                        />
+         
+                    </motion.a>
+                ) : (
+                    // Imagen por defecto si no hay ad
+                    <motion.img
+                        src="/assets/img/backgrounds/resources/anuncio-mobile.png"
+                        className="absolute h-[350px] object-cover object-left lg:w-auto lg:h-full lg:bottom-0 lg:right-0"
+                        whileHover={{ scale: 1.02 }}
+                    />
+                )}
             </motion.div>
         </motion.div>
     );

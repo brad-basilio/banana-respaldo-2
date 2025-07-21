@@ -303,7 +303,7 @@
                     "background"
                 ],
                 "using": {
-                    "model": "Indicator"
+                    "model": "Strength"
                 }
             },
             {
@@ -2319,8 +2319,7 @@
                 "name": "FooterSalaFabulosa",
                 "image": "footer-simple.png",
                 "using": {
-                    "model": "Social",
-                    "limit": 10
+                    "model": "Social"
                 },
                 "generals": [
                     "terms_conditions",

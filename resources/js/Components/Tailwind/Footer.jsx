@@ -92,6 +92,8 @@ const Footer = ({ data, which, items, pages, generals, contacts }) => {
                         pages={pages}
                         generals={generals}
                         contacts={contacts}
+                        data={data}
+                      
                     />
                 );
             case "FooterMakita":

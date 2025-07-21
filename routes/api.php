@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\SocialController as AdminSocialController;
+use App\Http\Controllers\SocialController;
 use App\Http\Controllers\Admin\StrengthController as AdminStrengthController;
 use App\Http\Controllers\Admin\CertificationController as AdminCertificationController;
 use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Admin\GeneralController as AdminGeneralController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\AdController as AdminAdController;
+use App\Http\Controllers\AdController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 use App\Http\Controllers\Admin\DiscountRulesController as AdminDiscountRulesController;
@@ -154,6 +156,8 @@ Route::get('/strengths/media/{uuid}', [AdminStrengthController::class, 'media'])
 Route::get('/certifications/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/partners/media/{uuid}', [AdminCertificationController::class, 'media']);
 Route::get('/ads/media/{uuid}', [AdminAdController::class, 'media'])->withoutMiddleware('throttle');
+Route::get('/ads/active', [AdController::class, 'getActiveAds'])->withoutMiddleware('throttle');
+Route::get('/socials/active', [SocialController::class, 'getActiveSocials'])->withoutMiddleware('throttle');
 Route::get('/stores/media/{uuid}', [AdminStoreController::class, 'media']);
 
 Route::post('/posts/paginate', [PostController::class, 'paginate']);

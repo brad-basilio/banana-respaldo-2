@@ -17,50 +17,20 @@ class SocialController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Obtener socials activos para mostrar públicamente
      */
-    public function create()
+    public function getActiveSocials()
     {
-        //
+        try {
+            $socials = Social::where('status', true)
+                           ->where('visible', true)
+                           ->orderBy('name', 'asc')
+                           ->get();
+            return response()->json($socials);
+        } catch (\Exception $e) {
+            return response()->json([], 500);
+        }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreSocialRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Social $social)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Social $social)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateSocialRequest $request, Social $social)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Social $social)
-    {
-        //
-    }
+    
 }

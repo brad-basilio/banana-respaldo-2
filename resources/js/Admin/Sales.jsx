@@ -30,6 +30,7 @@ const Sales = ({ statuses = [] }) => {
     const [saleLoaded, setSaleLoaded] = useState(null);
     const [saleStatuses, setSaleStatuses] = useState([]);
     const [projectPDFs, setProjectPDFs] = useState({}); // Para cargar PDFs de proyectos
+    const [statusLoading, setStatusLoading] = useState(false);
 
     const onStatusChange = async (e, sale) => {
         console.log({sale, saleLoaded})
@@ -78,7 +79,71 @@ const Sales = ({ statuses = [] }) => {
         const newSale = await salesRest.get(saleId);
         console.log("Sale data loaded:", newSale.data); // Debug: ver todos los datos que llegan
         setSaleLoaded(newSale.data);
+        
+        // Cargar información de PDFs para todos los proyectos en el pedido
+        const projectIds = newSale.data?.details?.map(detail => detail.colors).filter(Boolean) || [];
+        const pdfData = {};
+        
+        for (const projectId of projectIds) {
+            try {
+                // Verificar si el PDF existe haciendo una petición HEAD
+                const response = await fetch(`/api/customer/projects/${projectId}/download-pdf`, {
+                    method: 'HEAD'
+                });
+                
+                if (response.ok) {
+                    pdfData[projectId] = {
+                        pdf_generated_at: new Date().toISOString(), // Podríamos obtener la fecha real del archivo
+                        exists: true
+                    };
+                }
+            } catch (error) {
+                console.log(`PDF no disponible para proyecto ${projectId}`);
+                pdfData[projectId] = {
+                    exists: false
+                };
+            }
+        }
+        
+        setProjectPDFs(pdfData);
         $(modalRef.current).modal("show");
+    };
+
+    const downloadProjectPDF = async (projectId) => {
+        try {
+            const response = await fetch(`/api/customer/projects/${projectId}/download-pdf`);
+            
+            if (!response.ok) {
+                throw new Error('PDF no disponible');
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `proyecto-${projectId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+        } catch (error) {
+            console.error('Error al descargar PDF:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudo descargar el PDF del proyecto',
+                icon: 'error'
+            });
+        }
+    };
+
+    const showExportModal = () => {
+        // Función placeholder para el modal de exportación
+        Swal.fire({
+            title: 'Función en desarrollo',
+            text: 'La funcionalidad de exportación estará disponible pronto',
+            icon: 'info'
+        });
     };
 
     useEffect(() => {
@@ -115,7 +180,7 @@ const Sales = ({ statuses = [] }) => {
                 title="Pedidos"
                 rest={salesRest}
                 toolBar={(container) => {
-                    container.unshift({
+                   /* container.unshift({
                         widget: "dxButton",
                         location: "after",
                         options: {
@@ -126,7 +191,7 @@ const Sales = ({ statuses = [] }) => {
                             type: "normal",
                             stylingMode: "outlined"
                         },
-                    });
+                    }); */
                     container.unshift({
                         widget: "dxButton",
                         location: "after",
@@ -515,7 +580,7 @@ const Sales = ({ statuses = [] }) => {
                                         <td align="center">
                                             {detail.colors ? (
                                                 <div className="d-flex flex-column gap-1">
-                                                    {projectPDFs[detail.colors] ? (
+                                                    {projectPDFs[detail.colors]?.exists !== false ? (
                                                         <>
                                                             <Tippy content="Descargar PDF del proyecto">
                                                                 <button
@@ -532,7 +597,7 @@ const Sales = ({ statuses = [] }) => {
                                                             <small className="text-muted">
                                                                 Proyecto: {detail.colors}
                                                             </small>
-                                                            {projectPDFs[detail.colors].pdf_generated_at && (
+                                                            {projectPDFs[detail.colors]?.pdf_generated_at && (
                                                                 <small className="text-success">
                                                                     Generado: {moment(projectPDFs[detail.colors].pdf_generated_at).format('DD/MM/YY HH:mm')}
                                                                 </small>

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import ReactModal from "react-modal";
 
 import Tippy from "@tippyjs/react";
@@ -9,12 +9,32 @@ import HtmlContent from "../../../Utils/HtmlContent";
 import { CheckCircleIcon, X } from "lucide-react";
 import { toast } from "sonner";
 
-const FooterBananaLab = ({ socials = [], pages, generals, contacts }) => {
+const FooterBananaLab = ({  pages, generals, contacts }) => {
     const subscriptionsRest = new SubscriptionsRest();
     const emailRef = useRef();
 
     const [modalOpen, setModalOpen] = useState(null);
     const [saving, setSaving] = useState();
+    const [socials, setSocials] = useState([]);
+
+    // useEffect para cargar socials activos
+    useEffect(() => {
+        const fetchSocials = async () => {
+            try {
+                const response = await fetch('/api/socials/active');
+                if (response.ok) {
+                    const data = await response.json();
+                    setSocials(data);
+                    console.log('Socials loaded:', data);
+                }
+            } catch (error) {
+                console.error('Error fetching socials:', error);
+                // Fallback vacío si hay error
+                setSocials([]);
+            }
+        };
+        fetchSocials();
+    }, []);
 
     const policyItems = {
         terms_conditions: "Términos y condiciones",
@@ -147,7 +167,7 @@ const FooterBananaLab = ({ socials = [], pages, generals, contacts }) => {
                                     className="w-full bg-transparent text-white font-semibold  shadow-xl  py-4 pl-5 border-2 border-white rounded-full focus:ring-0 focus:outline-none placeholder:text-white placeholder:opacity-65"
                                 />
                                 <button
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 py-3 font-bold shadow-xl px-4 bg-primary customtext-primary bg-white rounded-full"
+                                    className="absolute right-3 customtext-primary top-1/2 transform -translate-y-1/2 py-3 font-bold shadow-xl px-4 bg-white   rounded-full"
                                     aria-label="Suscribite"
                                 >
                                     Suscribirme
@@ -273,7 +293,7 @@ const FooterBananaLab = ({ socials = [], pages, generals, contacts }) => {
                             Nuestras redes
                         </h3>
                         <ul className="flex text-white justify-center lg:justify-start gap-2">
-                            {socials.map((social, index) => (
+                            {socials && socials?.map((social, index) => (
                                 <Tippy
                                     key={index}
                                     content={`Ver ${social.name} en ${social.description}`}

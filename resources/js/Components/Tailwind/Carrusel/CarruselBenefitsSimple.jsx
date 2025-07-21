@@ -44,7 +44,7 @@ const CarruselBenefitsSimple = ({ items, data }) => {
                         >
                             {" "}
                             {/*para infinito usa esto flex-shrink-0*/}
-                            <div className="relative w-16 h-16 rounded-full bg-white flex items-center justify-center">
+                            <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center">
                                 {/* Ícono */}
                                 <div className="relative z-10 text-3xl">
                                     <img

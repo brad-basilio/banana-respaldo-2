@@ -253,7 +253,7 @@ class ProjectPDFController extends Controller
             }
 
             // Guardar el PDF únicamente en local storage (no en public)
-            $pdfFileName = "album.pdf";
+            $pdfFileName = "{$projectId}.pdf";
             $pdfPath = "{$pdfDir}/{$pdfFileName}";
             $pdfContent = $dompdf->output();
             
@@ -393,7 +393,7 @@ class ProjectPDFController extends Controller
     {
         try {
             $pdfDir = "images/pdf/{$projectId}";
-            $pdfFileName = "album.pdf";
+            $pdfFileName = "{$projectId}.pdf";
             $pdfPath = "{$pdfDir}/{$pdfFileName}";
             
             // Verificar solo en storage/app/images
@@ -427,7 +427,7 @@ class ProjectPDFController extends Controller
     {
         try {
             $pdfDir = "images/pdf/{$projectId}";
-            $pdfFileName = "album.pdf";
+            $pdfFileName = "{$projectId}.pdf";
             $pdfPath = "{$pdfDir}/{$pdfFileName}";
 
             // Verificar solo en storage/app/images
