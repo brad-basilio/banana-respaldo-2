@@ -250,14 +250,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/canvas-projects/save', [CustomerCanvasProjectController::class, 'save']);
     Route::delete('/canvas-projects/{id}', [CustomerCanvasProjectController::class, 'delete']);
 
-    // 🆕 Rutas para generación de PDF backend con dimensiones exactas
-    // Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\ProjectPDFController::class, 'generatePDF']);
-    // Route::post('/projects/{projectId}/export/pdf', [App\Http\Controllers\ProjectPDFController::class, 'generatePDF']);
-    // Route::post('/projects/{projectId}/debug/html', [App\Http\Controllers\ProjectPDFController::class, 'debugPDFHtml']);
-    // Route::get('/test/pdf-layouts', [App\Http\Controllers\ProjectPDFController::class, 'testPDFWithLayouts']);
-    // Route::get('/projects/{projectId}/debug-real', [App\Http\Controllers\ProjectPDFController::class, 'debugRealProject']);
-    Route::get('/projects/{projectId}/pdf-info', [PDFGeneratorController::class, 'getPDFInfo']);
-    Route::get('/projects/{projectId}/download-pdf', [PDFGeneratorController::class, 'downloadPDF']);
+    // 🆕 Rutas para generación de PDF backend con thumbnails de alta calidad
+    Route::post('/projects/{projectId}/generate-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'generatePDF']);
+    Route::get('/projects/{projectId}/pdf-info', [App\Http\Controllers\Api\ProjectPDFController::class, 'getPDFInfo']);
+    Route::get('/projects/{projectId}/download-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'downloadPDF']);
     
     // 🛒 Rutas para carrito con PDFs backend
     Route::post('/cart/process-pdfs', [CartPDFController::class, 'processCartPDFs']);
@@ -485,6 +481,9 @@ Route::middleware('auth')->group(function () {
       Route::get('/system/has-remote-changes', [AdminSystemController::class, 'hasRemoteChanges']);
 
       Route::get('/system/related/{model}/{method}', [AdminSystemController::class, 'getRelatedFilter']);
+      
+      // 📄 Gestión de PDFs para administradores
+      Route::get('/system/projects-with-pdfs', [AdminSystemController::class, 'getProjectsWithPDFs']);
     });
 
     Route::post('/repository', [AdminRepositoryController::class, 'save']);

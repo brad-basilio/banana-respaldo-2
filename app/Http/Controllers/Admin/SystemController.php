@@ -346,4 +346,47 @@ class SystemController extends BasicController
         });
         return response($response->toArray(), $response->status);
     }
+
+    /**
+     * Obtener proyectos con PDFs generados para administración
+     */
+    public function getProjectsWithPDFs()
+    {
+        $response = Response::simpleTryCatch(function () {
+            $pdfDirectory = storage_path('app/public/images/pdf');
+            $projects = [];
+
+            if (is_dir($pdfDirectory)) {
+                $projectDirs = array_filter(scandir($pdfDirectory), function($item) use ($pdfDirectory) {
+                    return is_dir($pdfDirectory . '/' . $item) && !in_array($item, ['.', '..']);
+                });
+
+                foreach ($projectDirs as $projectId) {
+                    $pdfPath = $pdfDirectory . '/' . $projectId . '/album.pdf';
+                    if (file_exists($pdfPath)) {
+                        $fileInfo = stat($pdfPath);
+                        $projects[] = [
+                            'project_id' => $projectId,
+                            'pdf_path' => '/storage/images/pdf/' . $projectId . '/album.pdf',
+                            'file_size' => $fileInfo['size'],
+                            'created_at' => date('Y-m-d H:i:s', $fileInfo['ctime']),
+                            'modified_at' => date('Y-m-d H:i:s', $fileInfo['mtime'])
+                        ];
+                    }
+                }
+
+                // Ordenar por fecha de modificación (más recientes primero)
+                usort($projects, function($a, $b) {
+                    return strtotime($b['modified_at']) - strtotime($a['modified_at']);
+                });
+            }
+
+            return [
+                'projects' => $projects,
+                'total' => count($projects)
+            ];
+        });
+
+        return response($response->toArray(), $response->status);
+    }
 }

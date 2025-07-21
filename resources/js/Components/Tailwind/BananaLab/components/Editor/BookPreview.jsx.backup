@@ -64,14 +64,14 @@ const flipbookStyles = `
 
 Modal.setAppElement('#app'); // Configurar elemento raíz para accesibilidad
 
-const BookPreviewModal = ({
-    isOpen,
-    onRequestClose,
-    pages,
-    pageThumbnails = {},
-    addAlbumToCart,
-    workspaceDimensions = { width: 800, height: 600 },
-    layouts = [],
+const BookPreviewModal = ({ 
+    isOpen, 
+    onRequestClose, 
+    pages, 
+    pageThumbnails = {}, 
+    addAlbumToCart, 
+    workspaceDimensions = { width: 800, height: 600 }, 
+    layouts = [], 
     presetData = null,
     projectData = null,
     itemData = null,
@@ -195,28 +195,28 @@ const BookPreviewModal = ({
     // Función para generar thumbnails de alta calidad
     const generateHighQualityThumbnails = useCallback(async () => {
         if (!pages || pages.length === 0 || !isOpen) return;
-
+        
         console.log('🚀 Iniciando generación de thumbnails para BookPreview...');
         setIsGeneratingThumbnails(true);
         setGeneratedThumbnails({});
-
+        
         const newThumbnails = {};
         const scale = 4; // Factor de escala para alta resolución
-
+        
         // Función auxiliar para dibujar elementos en la posición correcta
         const drawElementInCell = (ctx, element, cellPosition, scale) => {
             if (!element || !element.image) return;
-
+            
             const img = new Image();
             img.src = element.image;
-
+            
             img.onload = () => {
                 // Calcular posición y tamaño del elemento dentro de la celda
                 const elementX = cellPosition.x + element.x * scale;
                 const elementY = cellPosition.y + element.y * scale;
                 const elementWidth = element.width * scale;
                 const elementHeight = element.height * scale;
-
+                
                 // Dibujar imagen usando la función drawImageCover
                 drawImageCover(ctx, img, elementX, elementY, elementWidth, elementHeight);
             };
@@ -226,11 +226,11 @@ const BookPreviewModal = ({
         const generatePageThumbnail = async (page, index) => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-
+            
             // Establecer dimensiones del canvas
             canvas.width = workspaceDimensions.width * scale;
             canvas.height = workspaceDimensions.height * scale;
-
+            
             // Dibujar fondo de la página
             if (presetData && presetData.final_layer_image) {
                 const bgImg = new Image();
@@ -243,9 +243,9 @@ const BookPreviewModal = ({
             // Obtener posiciones de las celdas
             const layout = layouts.find(l => l.id === page.layoutId);
             if (!layout) return;
-
+            
             const cellPositions = getLayoutCellPositions(layout, workspaceDimensions, page.cells);
-
+            
             // Dibujar elementos en sus celdas correspondientes
             page.cells.forEach(cell => {
                 const cellPosition = cellPositions[cell.id];
@@ -264,7 +264,7 @@ const BookPreviewModal = ({
         // Generar thumbnails para todas las páginas
         const promises = pages.map((page, index) => generatePageThumbnail(page, index));
         const thumbnails = await Promise.all(promises);
-
+        
         // Combinar todos los thumbnails
         thumbnails.forEach(thumb => {
             Object.assign(newThumbnails, thumb);
@@ -285,43 +285,12 @@ const BookPreviewModal = ({
         setIsGeneratingPDF(true);
 
         try {
-            // Crear una versión simplificada de las páginas para el backend
-            const simplifiedPages = pages.map((page, index) => ({
-                id: page.id || `page-${index}`,
-                index: index
-            }));
-            
-            // Asegurarse de que las dimensiones originales están correctamente enviadas
-            // Si workspaceDimensions ya incluye originalWidth/originalHeight, usarlas directamente
-            const enhancedDimensions = {
-                ...workspaceDimensions,
-                // Garantizar que originalWidth y originalHeight siempre estén presentes en mm
-                originalWidth: workspaceDimensions.originalWidth || 
-                    (itemData?.dimensions?.width ? parseFloat(itemData.dimensions.width) : 297), // Valor por defecto A4 horizontal
-                originalHeight: workspaceDimensions.originalHeight || 
-                    (itemData?.dimensions?.height ? parseFloat(itemData.dimensions.height) : 210), // Valor por defecto A4 horizontal
-                // Asegurar que se envían como números, no como strings
-                width: parseInt(workspaceDimensions.width || 800),
-                height: parseInt(workspaceDimensions.height || 600)
-            };
-            
-            console.log('📐 Enviando dimensiones exactas para PDF:', enhancedDimensions);
-            
-            const response = await fetch(`/api/customer/projects/${projectData.id}/generate-pdf`, {
+            const response = await fetch(`/api/projects/${projectData.id}/generate-pdf`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 },
-                body: JSON.stringify({
-                    format: projectData?.format || 'album',
-                    quality: 'high',
-                    pages: simplifiedPages,
-                    pages_count: pages.length,
-                    workspace_dimensions: enhancedDimensions,
-                    product_dimensions: itemData?.dimensions || {},
-                    use_pdf_thumbnails: true
-                })
             });
 
             if (response.ok) {
@@ -344,7 +313,7 @@ const BookPreviewModal = ({
             setIsGeneratingPDF(false);
         }
     };
-
+          
 
     // Funciones auxiliares
 
@@ -354,7 +323,7 @@ const BookPreviewModal = ({
         if (isOpen) {
             console.log('📖 [BOOK-MODAL] Modal abierto');
             console.log('📊 [BOOK-MODAL] Thumbnails recibidos:', Object.keys(pageThumbnails).length, 'de', pages.length, 'páginas');
-
+            
             // 🚀 SIEMPRE usar los thumbnails enviados desde Editor.jsx
             // NO generar nuevos thumbnails aquí para evitar problemas de rendimiento
             if (Object.keys(pageThumbnails).length > 0) {
@@ -376,12 +345,12 @@ const BookPreviewModal = ({
 
 
 
+       
 
-
-    // Función para crear un placeholder elegante para una página específica
+     // Función para crear un placeholder elegante para una página específica
     const createElegantPlaceholderForPage = (page, workspaceDimensions) => {
         console.log(`🎨 Creando placeholder para página ${page.id} (${page.type})`);
-
+        
         // Calcular dimensiones del preview con la proporción exacta del workspace
         const workspaceAspectRatio = workspaceDimensions.width / workspaceDimensions.height;
         const previewBaseWidht = 800;
@@ -480,32 +449,32 @@ const BookPreviewModal = ({
         ctx.strokeStyle = iconColor;
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
-
+        
         // Esquinas decorativas
         const cornerSize = 15;
         const margin = 30;
-
+        
         // Esquina superior izquierda
         ctx.beginPath();
         ctx.moveTo(margin, margin + cornerSize);
         ctx.lineTo(margin, margin);
         ctx.lineTo(margin + cornerSize, margin);
         ctx.stroke();
-
+        
         // Esquina superior derecha
         ctx.beginPath();
         ctx.moveTo(previewWidth - margin - cornerSize, margin);
         ctx.lineTo(previewWidth - margin, margin);
         ctx.lineTo(previewWidth - margin, margin + cornerSize);
         ctx.stroke();
-
+        
         // Esquina inferior izquierda
         ctx.beginPath();
         ctx.moveTo(margin, previewHeight - margin - cornerSize);
         ctx.lineTo(margin, previewHeight - margin);
         ctx.lineTo(margin + cornerSize, previewHeight - margin);
         ctx.stroke();
-
+        
         // Esquina inferior derecha
         ctx.beginPath();
         ctx.moveTo(previewWidth - margin - cornerSize, previewHeight - margin);
@@ -519,8 +488,8 @@ const BookPreviewModal = ({
     // Usar thumbnails en este orden de prioridad:
     // 1. Thumbnails proporcionados (de Editor.jsx)
     // 2. Thumbnails generados localmente
-    const activeThumbnails = Object.keys(pageThumbnails).length > 0 ?
-        pageThumbnails :
+    const activeThumbnails = Object.keys(pageThumbnails).length > 0 ? 
+        pageThumbnails : 
         generatedThumbnails;
 
     if (!pages || !Array.isArray(pages) || pages.length === 0) {
@@ -638,7 +607,7 @@ const BookPreviewModal = ({
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center max-w-md mx-4">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-
+                        
                         {/* 🚀 NUEVA ANIMACIÓN: Progreso específico para carga de álbum */}
                         {albumLoadingState.isLoading ? (
                             <>
@@ -646,12 +615,12 @@ const BookPreviewModal = ({
                                     {albumLoadingState.message || 'Cargando álbum...'}
                                 </p>
                                 <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                                    <div
+                                    <div 
                                         className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                                        style={{
-                                            width: `${albumLoadingState.totalImages > 0
-                                                ? (albumLoadingState.loadedImages / albumLoadingState.totalImages) * 100
-                                                : 0}%`
+                                        style={{ 
+                                            width: `${albumLoadingState.totalImages > 0 
+                                                ? (albumLoadingState.loadedImages / albumLoadingState.totalImages) * 100 
+                                                : 0}%` 
                                         }}
                                     ></div>
                                 </div>
@@ -662,8 +631,8 @@ const BookPreviewModal = ({
                         ) : (
                             <>
                                 <p className="text-gray-700">
-                                    {isGeneratingPDF
-                                        ? 'Generando PDF de alta calidad...'
+                                    {isGeneratingPDF 
+                                        ? 'Generando PDF de alta calidad...' 
                                         : 'Generando vistas previas de alta calidad...'
                                     }
                                 </p>
@@ -677,7 +646,7 @@ const BookPreviewModal = ({
             )}
 
             <div className="relative flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-2xl">
-                {/* Título del modal (oculto visualmente pero accesible) */}
+               {/* Título del modal (oculto visualmente pero accesible) */}
                 <h2 id="modal-title" className="sr-only">Vista previa del álbum</h2>
                 <p id="modal-description" className="sr-only">
                     Navegue por las páginas de su álbum usando los controles de navegación o teclado.
@@ -739,7 +708,7 @@ const BookPreviewModal = ({
                         ref={flipBook}
                         width={previewWidth}
                         height={previewHeight}
-                        size="stretch"
+                          size="stretch"
                         minWidth={previewWidth * 0.7}
                         maxWidth={previewWidth * 1.3}
                         minHeight={previewHeight * 0.7}
@@ -824,34 +793,14 @@ const BookPreviewModal = ({
                     </HTMLFlipBook>
                 </div>
             </div>
-            {/* Botones de acción */}
+ {/* Botones de acción */}
             <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-2xl mx-auto">
-                
-                {/* Botón para generar PDF directamente */}
-                <button
-                    className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center 
-                        ${isGeneratingPDF ? 'bg-blue-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                    onClick={generatePDF}
-                    disabled={isGeneratingPDF || isProcessing}
-                >
-                    {isGeneratingPDF ? (
-                        <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Generando PDF...
-                        </>
-                    ) : (
-                        'Descargar PDF'
-                    )}
-                </button>
-
+             
                 {/* Botón Comprar ahora */}
                 <button
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center ${isProcessing
-                        ? 'bg-purple-400 text-white cursor-not-allowed'
-                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                            ? 'bg-purple-400 text-white cursor-not-allowed'
+                            : 'bg-purple-600 text-white hover:bg-purple-700'
                         }`}
                     onClick={async () => {
                         if (isProcessing) return;
@@ -876,7 +825,7 @@ const BookPreviewModal = ({
 
                             // Paso 1: Agregar al carrito primero
                             console.log('🛒 Agregando álbum al carrito...');
-
+                            
                             // Verificar que la función addAlbumToCart esté disponible
                             if (typeof addAlbumToCart !== 'function') {
                                 console.error('❌ addAlbumToCart no es una función');
@@ -885,26 +834,31 @@ const BookPreviewModal = ({
                                 return;
                             }
 
-                            console.log('🛒 Agregando álbum al carrito...');
-
-                            // Agregar al carrito con los datos del proyecto
-                            const cartResult = addAlbumToCart({
-                                project_id: projectData.id,
-                                pages: pages,
-                                workspace_dimensions: workspaceDimensions,
-                                quality: 'high',
-                                format: 'album',
-                                generate_pdf: true // ✅ Indicar que debe generar PDF
-                            });
-
                             let addedToCart;
-                            if (cartResult && typeof cartResult.then === 'function') {
-                                addedToCart = await cartResult;
-                            } else {
-                                addedToCart = cartResult;
-                            }
+                            try {
+                                // Agregar al carrito con los datos del proyecto
+                                const cartResult = addAlbumToCart({
+                                    project_data: {
+                                        project_id: projectData.id,
+                                        pages: pages,
+                                        workspace_dimensions: workspaceDimensions,
+                                        quality: 'high',
+                                        format: 'album'
+                                    }
+                                });
 
-                            console.log('✅ Álbum agregado al carrito:', addedToCart);
+                                if (cartResult && typeof cartResult.then === 'function') {
+                                    addedToCart = await cartResult;
+                                } else {
+                                    addedToCart = cartResult;
+                                }
+                                console.log('✅ Álbum agregado al carrito:', addedToCart);
+                            } catch (cartError) {
+                                console.error('❌ Error agregando al carrito:', cartError);
+                                alert('Error al agregar al carrito: ' + cartError.message);
+                                setIsProcessing(false);
+                                return;
+                            }
 
                             if (!addedToCart) {
                                 console.error('❌ No se pudo agregar al carrito');
@@ -913,77 +867,87 @@ const BookPreviewModal = ({
                                 return;
                             }
 
-                            console.log('✅ Álbum agregado al carrito exitosamente');
+                            // Paso 2: Procesar PDFs en el carrito usando la ruta correcta del backend
+                            console.log('📄 Procesando PDFs del carrito en el backend...');
                             
-                            // Paso 2: Generar PDF usando el nuevo endpoint backend
-                            console.log('📄 Iniciando generación de PDF...');
-                            
-                            try {
-                                // Generar PDF utilizando el método directo
-                                // Esto garantiza que el PDF se genera correctamente
-                                console.log('📄 Generando PDF directamente...');
-                                
-                                // Crear una versión simplificada de las páginas para el backend
-                                const simplifiedPages = pages.map((page, index) => ({
-                                    id: page.id || `page-${index}`,
-                                    index: index
-                                }));
-                                
-                                // Asegurarse de que las dimensiones originales están correctamente enviadas
-                                const enhancedDimensions = {
-                                    ...workspaceDimensions,
-                                    // Garantizar que originalWidth y originalHeight siempre estén presentes en mm
-                                    originalWidth: workspaceDimensions.originalWidth || 
-                                        (itemData?.dimensions?.width ? parseFloat(itemData.dimensions.width) : 297), // Valor por defecto A4 horizontal
-                                    originalHeight: workspaceDimensions.originalHeight || 
-                                        (itemData?.dimensions?.height ? parseFloat(itemData.dimensions.height) : 210), // Valor por defecto A4 horizontal
-                                    // Asegurar que se envían como números, no como strings
-                                    width: parseInt(workspaceDimensions.width || 800),
-                                    height: parseInt(workspaceDimensions.height || 600)
-                                };
-                                
-                                console.log('📐 Enviando dimensiones exactas para PDF en compra:', enhancedDimensions);
-                                
-                                // Preparar datos para enviar al endpoint
-                                const pdfData = {
-                                    format: projectData?.format || 'album', // Usar el formato del proyecto o un valor por defecto
-                                    quality: 'high',
-                                    pages: simplifiedPages,
-                                    pages_count: pages.length,
-                                    workspace_dimensions: enhancedDimensions,
-                                    product_dimensions: itemData?.dimensions || {},
-                                    use_pdf_thumbnails: true
-                                };
-                                
-                                // Usar la misma lógica que la función generatePDF
-                                const response = await fetch(`/api/customer/projects/${projectData.id}/generate-pdf`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                                    },
-                                    body: JSON.stringify(pdfData)
-                                });
-                                
-                                if (!response.ok) {
-                                    console.warn('⚠️ Error generando PDF, pero continuando con el proceso de compra...');
-                                } else {
-                                    console.log('✅ PDF generado correctamente en el backend');
-                                }
-                            } catch (pdfError) {
-                                console.warn('⚠️ Error al generar PDF (continuando):', pdfError.message);
+                            const pdfResponse = await fetch(`/api/cart/process-pdfs`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    project_id: projectData.id,
+                                    use_pdf_thumbnails: true, // ✅ Usar thumbnails PDF de alta calidad
+                                    workspace_dimensions: workspaceDimensions,
+                                    pages: pages,
+                                    quality: 'high', // Calidad alta para impresión
+                                    format: 'album' // Formato álbum
+                                })
+                            });
+
+                            let pdfData = {}; // Declarar antes del manejo de errores
+
+                            if (!pdfResponse.ok) {
+                                const errorData = await pdfResponse.json().catch(() => ({ message: 'Error del servidor' }));
+                                console.error('❌ Error procesando PDFs:', errorData);
+                                alert(`Error al procesar PDFs: ${errorData.message || 'Error del servidor'}`);
+                                setIsProcessing(false);
+                                return;
+                            } else {
+                                pdfData = await pdfResponse.json();
+                                console.log('✅ PDFs procesados exitosamente:', pdfData);
+
+                            // Verificar que el procesamiento fue exitoso
+                            if (!pdfData.success) {
+                                console.error('❌ PDF no se procesó correctamente:', pdfData);
+                                alert('Error: El PDF no se pudo procesar correctamente.');
+                                setIsProcessing(false);
+                                return;
                             }
-                            
-                            console.log('✅ Proceso completo');
+
+                            console.log('📄 PDF procesado exitosamente en el carrito');
+
+                            // Paso 3: Verificar que el carrito tiene los datos correctos
+                            try {
+                                const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
+                                const currentCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+                                const latestItem = currentCart.find(item => 
+                                    item.type === 'custom_album' && 
+                                    item.project_id === projectData.id
+                                );
+                                
+                                if (latestItem) {
+                                    console.log('📄 Álbum encontrado en carrito:', {
+                                        project_id: latestItem.project_id,
+                                        type: latestItem.type
+                                    });
+                                } else {
+                                    console.warn('⚠️ No se encontró el álbum en el carrito');
+                                }
+                            } catch (verificationError) {
+                                console.warn('⚠️ Error verificando datos en carrito:', verificationError);
+                            }
+
+                            // Paso 4: ✅ NAVEGACIÓN SIN RECARGA - Mostrar éxito y cerrar modal
+                            console.log('✅ Álbum procesado exitosamente');
                             
                             // Mostrar mensaje de éxito
-                            alert('¡Álbum agregado al carrito exitosamente!\n\nEl PDF se está generando en segundo plano.\nPuedes continuar editando o ir al carrito cuando termines.');
+                            alert('¡Álbum agregado al carrito exitosamente!\n\nPuedes continuar editando o ir al carrito cuando termines.');
                             
                             // Cerrar el modal después de un breve delay
                             setTimeout(() => {
                                 onRequestClose();
                                 setIsProcessing(false);
                             }, 1000);
+
+                            // 🚀 OPCIONAL: Usar React Router para navegar sin recarga (si está disponible)
+                            // if (window.history && window.history.pushState) {
+                            //     window.history.pushState(null, null, `${Global.APP_URL}/cart`);
+                            // }
+
                         } catch (error) {
                             console.error('❌ === ERROR GENERAL EN PROCESO COMPRA ===');
                             console.error('Tipo:', error.name);
@@ -1081,35 +1045,35 @@ const InlinePlaceholder = ({ page, pageIdx }) => {
 async function generateHighQualityThumbnails({ pages, workspaceDimensions, presetData }) {
     const newThumbnails = {};
     const scale = 2; // Reducir la escala para mejor rendimiento
-
+    
     // Función para dibujar imagen manteniendo la relación de aspecto
     function drawImageCover(ctx, img, dx, dy, dWidth, dHeight) {
         if (!img || !ctx) {
             console.warn('⚠️ No se puede dibujar: contexto o imagen no válidos');
             return;
         }
-
+        
         const sWidth = img.width;
         const sHeight = img.height;
-
+        
         if (sWidth === 0 || sHeight === 0) {
             console.warn('⚠️ Imagen con dimensiones cero:', { sWidth, sHeight });
             return;
         }
-
+        
         // Asegurarse de que las dimensiones de destino sean válidas
         if (dWidth <= 0 || dHeight <= 0) {
             console.warn('⚠️ Dimensiones de destino inválidas:', { dWidth, dHeight });
             return;
         }
-
+        
         // Calcular relación de aspecto
         const dRatio = dWidth / dHeight;
         const sRatio = sWidth / sHeight;
-
+        
         // Calcular el área de recorte (source) para mantener la relación de aspecto
         let sx, sy, sw, sh;
-
+        
         if (dRatio > sRatio) {
             // La imagen es más ancha que el área de destino
             sw = sWidth;
@@ -1123,25 +1087,25 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
             sx = (sWidth - sw) / 2;
             sy = 0;
         }
-
+        
         try {
             // Dibujar la imagen con las coordenadas y dimensiones calculadas
             ctx.save();
             ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img,
-                Math.max(0, sx),
-                Math.max(0, sy),
-                Math.min(sw, sWidth - sx),
+            ctx.drawImage(img, 
+                Math.max(0, sx), 
+                Math.max(0, sy), 
+                Math.min(sw, sWidth - sx), 
                 Math.min(sh, sHeight - sy),
-                dx,
-                dy,
-                dWidth,
+                dx, 
+                dy, 
+                dWidth, 
                 dHeight
             );
             ctx.restore();
         } catch (e) {
             console.error('❌ Error al dibujar imagen:', e);
-            console.error('Detalles:', {
+            console.error('Detalles:', { 
                 source: { x: sx, y: sy, width: sw, height: sh },
                 dest: { x: dx, y: dy, width: dWidth, height: dHeight },
                 imgSize: { width: sWidth, height: sHeight }
@@ -1152,12 +1116,12 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
         try {
             const customCanvas = document.createElement('canvas');
             const customCtx = customCanvas.getContext('2d', { willReadFrequently: true });
-
+            
             // Calcular dimensiones del canvas basadas en el workspace
             // Usar escala 1:1 para evitar problemas de redondeo
             customCanvas.width = workspaceDimensions.width;
             customCanvas.height = workspaceDimensions.height;
-
+            
             // No aplicar escala aquí, manejaremos el escalado después
             customCtx.scale(1, 1);
             customCtx.imageSmoothingEnabled = true;
@@ -1166,7 +1130,7 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
             customCtx.webkitImageSmoothingEnabled = true;
             customCtx.mozImageSmoothingEnabled = true;
             customCtx.msImageSmoothingEnabled = true;
-
+            
             // --- Renderizar background layer igual que en el workspace ---
             let bgUrl = null;
             if (page.type === 'cover' && presetData?.cover_image) {
@@ -1182,7 +1146,7 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                     ? presetData.final_layer_image
                     : `/storage/images/item_preset/${presetData.final_layer_image}`;
             }
-
+            
             // Si no hay fondo, usar blanco
             if (!bgUrl) {
                 customCtx.fillStyle = '#ffffff';
@@ -1215,7 +1179,7 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
 
                 for (const cell of sortedCells) {
                     if (!cell || !cell.elements) continue;
-
+                    
                     // Calcular dimensiones de la celda
                     const cellWidth = cell.size?.width || workspaceDimensions.width;
                     const cellHeight = cell.size?.height || workspaceDimensions.height;
@@ -1243,12 +1207,12 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
 
                         // Solo renderizar elementos de tipo 'image' y 'text'
                         if (!element || (element.type !== 'image' && element.type !== 'text') || !element.content) continue;
-
+                        
                         if (element.type === 'image') {
                             try {
                                 const img = new Image();
                                 img.crossOrigin = 'anonymous';
-
+                                
                                 // Cargar la imagen
                                 await new Promise((resolve, reject) => {
                                     img.onload = resolve;
@@ -1266,7 +1230,7 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 // Calcular posición absoluta en píxeles
                                 const elX = isRelativeX ? element.position.x * cellWidth : (element.position?.x || 0);
                                 const elY = isRelativeY ? element.position.y * cellHeight : (element.position?.y || 0);
-
+                                
                                 // Calcular dimensiones en píxeles
                                 const elW = isRelativeWidth ? element.size.width * cellWidth : (element.size?.width || cellWidth);
                                 const elH = isRelativeHeight ? element.size.height * cellHeight : (element.size?.height || cellHeight);
@@ -1287,7 +1251,7 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
 
                                 // Dibujar la imagen con las coordenadas y dimensiones calculadas
                                 drawImageCover(customCtx, img, dx, dy, elW, elH);
-
+                                
                             } catch (error) {
                                 console.error('Error al cargar imagen:', error, element);
                             }
@@ -1298,11 +1262,11 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
             // Crear el thumbnail con tamaño fijo manteniendo relación de aspecto
             const thumbnailCanvas = document.createElement('canvas');
             const thumbnailCtx = thumbnailCanvas.getContext('2d');
-
+            
             // Tamaño máximo del thumbnail
             const maxThumbnailSize = 900;
             let thumbWidth, thumbHeight;
-
+            
             // Calcular dimensiones manteniendo la relación de aspecto
             if (workspaceDimensions.width > workspaceDimensions.height) {
                 thumbWidth = Math.min(maxThumbnailSize, workspaceDimensions.width);
@@ -1311,29 +1275,29 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                 thumbHeight = Math.min(maxThumbnailSize, workspaceDimensions.height);
                 thumbWidth = (thumbHeight / workspaceDimensions.height) * workspaceDimensions.width;
             }
-
+            
             // Asegurar valores enteros
             thumbWidth = Math.round(thumbWidth);
             thumbHeight = Math.round(thumbHeight);
-
+            
             // Configurar canvas del thumbnail
             thumbnailCanvas.width = thumbWidth;
             thumbnailCanvas.height = thumbHeight;
-
+            
             // Configurar calidad de renderizado
             thumbnailCtx.imageSmoothingEnabled = true;
             thumbnailCtx.imageSmoothingQuality = 'high';
             thumbnailCtx.webkitImageSmoothingEnabled = true;
             thumbnailCtx.mozImageSmoothingEnabled = true;
             thumbnailCtx.msImageSmoothingEnabled = true;
-
+            
             // Dibujar el contenido escalado al tamaño del thumbnail
             thumbnailCtx.drawImage(
                 customCanvas,
                 0, 0, customCanvas.width, customCanvas.height,
                 0, 0, thumbWidth, thumbHeight
             );
-
+            
             // Convertir a base64
             newThumbnails[page.id] = thumbnailCanvas.toDataURL('image/png', 0.92);
         } catch (error) {
