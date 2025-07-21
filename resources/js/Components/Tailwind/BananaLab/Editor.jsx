@@ -5535,13 +5535,13 @@ export default function EditorLibro() {
                                         Procesar Cola
                                     </button>
                                 )}
-
-                                {/* Debug: Info de estado */}
+{/*
+                              
                                 <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                                     P{currentPage}: {(pageChanges instanceof Map && pageChanges.has(currentPage)) ? '🔴' : '🟢'}
                                 </div>
 
-                                {/* Debug: Botón para marcar página como modificada */}
+                            
                                 <button
                                     onClick={() => {
                                         console.log('🔧 [DEBUG] Marcando página actual como modificada');
@@ -5554,7 +5554,7 @@ export default function EditorLibro() {
                                     className="text-xs text-white bg-green-500 hover:bg-green-600 px-2 py-1 rounded"
                                 >
                                     Marcar Modificada
-                                </button>
+                                </button> */}
 
                                 <Button
                                     variant="secondary"
@@ -5692,11 +5692,7 @@ export default function EditorLibro() {
                                     {isPDFGenerating ? 'Guardando...' : 'Guardar'}
                                 </button> */}
 
-                                <div className="relative">
-                                    <button className="h-8 w-8 rounded-full bg-[#af5cb8] flex items-center justify-center text-white font-medium">
-                                        <User className="h-4 w-4" />
-                                    </button>
-                                </div>
+                               
                             </div>
                         </div>
                     </header>

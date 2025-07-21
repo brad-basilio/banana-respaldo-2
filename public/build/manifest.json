@@ -4142,7 +4142,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-DyV6Uf8P.js",
+    "file": "assets/BananaLab-BiuwZs6s.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4201,7 +4201,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-5KJoZpIR.js",
+    "file": "assets/Editor-CpeNY55n.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4232,7 +4232,6 @@
       "_loader-circle-CrvBvIt1.js",
       "_dom-to-image-more.min-Cey65QPP.js",
       "_chevron-left-B2s3ZsB7.js",
-      "_user-BvYmyGTY.js",
       "_filter-Ci9tsc_e.js",
       "_plus-Bot15Khs.js",
       "_copy-6OEekgvq.js",
@@ -9822,7 +9821,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-CsbwWEjD.js",
+    "file": "assets/Editor-kg2DZiSx.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9874,7 +9873,6 @@
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
       "_dom-to-image-more.min-Cey65QPP.js",
-      "_user-BvYmyGTY.js",
       "_filter-Ci9tsc_e.js",
       "_plus-Bot15Khs.js",
       "_circle-check-big-D6DM3vPb.js"
@@ -10032,7 +10030,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-Cto6eyjw.js",
+    "file": "assets/System-u3A5LAvl.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
