@@ -128,7 +128,7 @@ const Menu = ({ session, hasRole }) => {
                   <li className="menu-title">Landing Page</li>
                   <MenuItem href="/admin/ads" icon='mdi mdi-google-ads'>Pop-ups</MenuItem>
                   <MenuItem href="/admin/posts" icon="mdi mdi-post">Posts</MenuItem>
-                  <MenuItem href="/admin/about" icon="mdi mdi-briefcase">Nosotros</MenuItem>
+        {/*          <MenuItem href="/admin/about" icon="mdi mdi-briefcase">Nosotros</MenuItem> */}
           {/*        <MenuItem href="/admin/delivery-zones" icon="mdi mdi-map-marker-radius">Zonas de Cobertura</MenuItem> */}
                   <MenuItem href="/admin/indicators" icon="mdi mdi-dots-grid">Indicadores</MenuItem>
                  {/* <MenuItem href="/admin/certifications" icon="mdi mdi-dots-grid">Certificaciones</MenuItem> */}
