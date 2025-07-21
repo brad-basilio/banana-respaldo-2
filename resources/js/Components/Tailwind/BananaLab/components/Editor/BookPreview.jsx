@@ -83,6 +83,15 @@ const BookPreviewModal = ({
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [generatedThumbnails, setGeneratedThumbnails] = useState({});
     const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false);
+    const [pdfGenerated, setPdfGenerated] = useState(false);
+    const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+    const [purchaseStep, setPurchaseStep] = useState(0);
+    const [albumPreparationModal, setAlbumPreparationModal] = useState({
+        isOpen: false,
+        message: "Iniciando proceso...",
+        subMessage: "Estamos preparando tu álbum",
+        progress: 0
+    });
     const flipBook = useRef();
 
     // Reemplazar la función drawImageCover por una versión fiel a object-fit: cover
@@ -275,7 +284,82 @@ const BookPreviewModal = ({
         setIsGeneratingThumbnails(false);
     }, [pages, isOpen, workspaceDimensions, layouts, presetData]);
 
-    // Función para generar PDF de alta calidad usando html2canvas como en Editor.jsx
+    // Función para preparar los datos comunes para la generación de PDF
+    const preparePDFData = () => {
+        // Crear una versión simplificada de las páginas para el backend
+        const simplifiedPages = pages.map((page, index) => ({
+            id: page.id || `page-${index}`,
+            index: index
+        }));
+        
+        // Asegurarse de que las dimensiones originales están correctamente enviadas
+        const enhancedDimensions = {
+            ...workspaceDimensions,
+            // Garantizar que originalWidth y originalHeight siempre estén presentes en mm
+            originalWidth: workspaceDimensions.originalWidth || 
+                (itemData?.dimensions?.width ? parseFloat(itemData.dimensions.width) : 297), // Valor por defecto A4 horizontal
+            originalHeight: workspaceDimensions.originalHeight || 
+                (itemData?.dimensions?.height ? parseFloat(itemData.dimensions.height) : 210), // Valor por defecto A4 horizontal
+            // Asegurar que se envían como números, no como strings
+            width: parseInt(workspaceDimensions.width || 800),
+            height: parseInt(workspaceDimensions.height || 600)
+        };
+        
+        return {
+            format: projectData?.format || 'album',
+            quality: 'high',
+            pages: simplifiedPages,
+            pages_count: pages.length,
+            workspace_dimensions: enhancedDimensions,
+            product_dimensions: itemData?.dimensions || {},
+            use_pdf_thumbnails: true
+        };
+    };
+    
+    // Función para generar PDF silenciosamente (sin alertas ni descargas)
+    const generatePDFSilently = async () => {
+        if (!projectData?.id) {
+            console.warn('No hay proyecto cargado para generar PDF automáticamente.');
+            return;
+        }
+
+        try {
+            const pdfData = preparePDFData();
+            console.log('🔄 [AUTO-PDF] Iniciando generación automática de PDF');
+            console.log('📐 [AUTO-PDF] Dimensiones:', pdfData.workspace_dimensions);
+            
+            const response = await fetch(`/api/customer/projects/${projectData.id}/generate-pdf`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify(pdfData)
+            });
+
+            if (response.ok) {
+                console.log('✅ [AUTO-PDF] PDF generado exitosamente');
+                setPdfGenerated(true);
+                
+                // Verificar la URL del PDF generado para mostrar disponibilidad
+                try {
+                    const pdfInfoResponse = await fetch(`/api/customer/projects/${projectData.id}/pdf-info`);
+                    if (pdfInfoResponse.ok) {
+                        const pdfInfo = await pdfInfoResponse.json();
+                        console.log('📄 [AUTO-PDF] Información del PDF:', pdfInfo);
+                    }
+                } catch (infoError) {
+                    console.warn('⚠️ [AUTO-PDF] No se pudo obtener info del PDF:', infoError.message);
+                }
+            } else {
+                console.warn('⚠️ [AUTO-PDF] Error al generar PDF automáticamente');
+            }
+        } catch (error) {
+            console.warn('⚠️ [AUTO-PDF] Error en generación automática:', error.message);
+        }
+    };
+
+    // Función para generar PDF con interacción del usuario (con alertas y descarga)
     const generatePDF = async () => {
         if (!projectData?.id) {
             alert('No se ha cargado ningún proyecto.');
@@ -285,27 +369,8 @@ const BookPreviewModal = ({
         setIsGeneratingPDF(true);
 
         try {
-            // Crear una versión simplificada de las páginas para el backend
-            const simplifiedPages = pages.map((page, index) => ({
-                id: page.id || `page-${index}`,
-                index: index
-            }));
-            
-            // Asegurarse de que las dimensiones originales están correctamente enviadas
-            // Si workspaceDimensions ya incluye originalWidth/originalHeight, usarlas directamente
-            const enhancedDimensions = {
-                ...workspaceDimensions,
-                // Garantizar que originalWidth y originalHeight siempre estén presentes en mm
-                originalWidth: workspaceDimensions.originalWidth || 
-                    (itemData?.dimensions?.width ? parseFloat(itemData.dimensions.width) : 297), // Valor por defecto A4 horizontal
-                originalHeight: workspaceDimensions.originalHeight || 
-                    (itemData?.dimensions?.height ? parseFloat(itemData.dimensions.height) : 210), // Valor por defecto A4 horizontal
-                // Asegurar que se envían como números, no como strings
-                width: parseInt(workspaceDimensions.width || 800),
-                height: parseInt(workspaceDimensions.height || 600)
-            };
-            
-            console.log('📐 Enviando dimensiones exactas para PDF:', enhancedDimensions);
+            const pdfData = preparePDFData();
+            console.log('📐 Enviando dimensiones exactas para PDF:', pdfData.workspace_dimensions);
             
             const response = await fetch(`/api/customer/projects/${projectData.id}/generate-pdf`, {
                 method: 'POST',
@@ -313,15 +378,7 @@ const BookPreviewModal = ({
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 },
-                body: JSON.stringify({
-                    format: projectData?.format || 'album',
-                    quality: 'high',
-                    pages: simplifiedPages,
-                    pages_count: pages.length,
-                    workspace_dimensions: enhancedDimensions,
-                    product_dimensions: itemData?.dimensions || {},
-                    use_pdf_thumbnails: true
-                })
+                body: JSON.stringify(pdfData)
             });
 
             if (response.ok) {
@@ -365,8 +422,16 @@ const BookPreviewModal = ({
                 // Solo usar placeholders, no generar thumbnails
                 setGeneratedThumbnails({});
             }
+            
+            // 🚀 Generar PDF automáticamente cuando se abre el modal
+            if (projectData?.id) {
+                console.log('🔄 [BOOK-MODAL] Iniciando generación automática de PDF...');
+                setTimeout(() => {
+                    generatePDFSilently();
+                }, 1000); // Pequeño retraso para que el modal se cargue completamente primero
+            }
         }
-    }, [isOpen, pageThumbnails]);
+    }, [isOpen, pageThumbnails, projectData]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -663,12 +728,12 @@ const BookPreviewModal = ({
                             <>
                                 <p className="text-gray-700">
                                     {isGeneratingPDF
-                                        ? 'Generando PDF de alta calidad...'
-                                        : 'Generando vistas previas de alta calidad...'
+                                        ? 'Preparando álbum...'
+                                        : 'Cargando vistas previas...'
                                     }
                                 </p>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Esto puede tomar unos segundos
+                                    Procesando contenido
                                 </p>
                             </>
                         )}
@@ -703,6 +768,7 @@ const BookPreviewModal = ({
                         <ChevronLeft className="h-6 w-6" />
                     </button>
 
+                    <div className="flex items-center">
                     <span className="flex items-center text-gray-700 text-base font-medium px-4 py-2 bg-gray-50 rounded-lg" aria-live="polite">
                         {(() => {
                             const currentPageData = bookPages[currentPage];
@@ -723,6 +789,17 @@ const BookPreviewModal = ({
                         <span className="mx-2 text-gray-400">•</span>
                         {Math.ceil((currentPage + 1) / 2)} / {Math.ceil(bookPages.length / 2)} hojas
                     </span>
+                    
+                    {/* Indicador de PDF generado */}
+                    {pdfGenerated && (
+                        <span className="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            PDF listo
+                        </span>
+                    )}
+                </div>
 
                     <button
                         onClick={goToNextPage}
@@ -827,26 +904,6 @@ const BookPreviewModal = ({
             {/* Botones de acción */}
             <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-2xl mx-auto">
                 
-                {/* Botón para generar PDF directamente */}
-                <button
-                    className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center 
-                        ${isGeneratingPDF ? 'bg-blue-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                    onClick={generatePDF}
-                    disabled={isGeneratingPDF || isProcessing}
-                >
-                    {isGeneratingPDF ? (
-                        <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Generando PDF...
-                        </>
-                    ) : (
-                        'Descargar PDF'
-                    )}
-                </button>
-
                 {/* Botón Comprar ahora */}
                 <button
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold shadow transition flex items-center justify-center ${isProcessing
@@ -856,45 +913,58 @@ const BookPreviewModal = ({
                     onClick={async () => {
                         if (isProcessing) return;
 
-                        setIsProcessing(true);
-                        console.log('🚀 === INICIO PROCESO COMPRA CON GENERACIÓN PDF BACKEND ===');
+                        // Mostrar modal premium de preparación
+                        setAlbumPreparationModal({
+                            isOpen: true,
+                            message: "Iniciando proceso...",
+                            subMessage: "Estamos preparando tu álbum",
+                            progress: 0
+                        });
+
+                        // Simular proceso paso a paso con el modal premium
+                        const steps = [
+                            { progress: 20, message: "Verificando proyecto", subMessage: "Validando contenido del álbum", delay: 800 },
+                            { progress: 40, message: "Preparando tu álbum", subMessage: "Organizando páginas y elementos", delay: 1200 },
+                            { progress: 60, message: "Agregando al carrito", subMessage: "Configurando tu pedido", delay: 1500 },
+                            { progress: 80, message: "Finalizando proceso", subMessage: "Últimos detalles", delay: 1000 },
+                            { progress: 100, message: "¡Proceso completado!", subMessage: "Redirigiendo al carrito", delay: 800 }
+                        ];
 
                         try {
+                            for (const step of steps) {
+                                await new Promise(resolve => setTimeout(resolve, step.delay));
+                                setAlbumPreparationModal({
+                                    isOpen: true,
+                                    message: step.message,
+                                    subMessage: step.subMessage,
+                                    progress: step.progress
+                                });
+                            }
+
                             // Verificar que tenemos datos del proyecto
                             if (!projectData?.id) {
                                 console.error('❌ No hay datos del proyecto');
+                                setAlbumPreparationModal({ isOpen: false, message: "", subMessage: "", progress: 0 });
                                 alert('Error: No se encontró información del proyecto.');
-                                setIsProcessing(false);
                                 return;
                             }
-
-                            console.log('📄 Generando PDF en el backend usando thumbnails existentes...');
-                            console.log('� Proyecto ID:', projectData.id);
-
-                            console.log('🛒 Procesando álbum usando sistema de carrito...');
-                            console.log('🆔 Proyecto ID:', projectData.id);
-
-                            // Paso 1: Agregar al carrito primero
-                            console.log('🛒 Agregando álbum al carrito...');
 
                             // Verificar que la función addAlbumToCart esté disponible
                             if (typeof addAlbumToCart !== 'function') {
                                 console.error('❌ addAlbumToCart no es una función');
+                                setAlbumPreparationModal({ isOpen: false, message: "", subMessage: "", progress: 0 });
                                 alert('Error: Función de carrito no disponible. Inténtelo nuevamente.');
-                                setIsProcessing(false);
                                 return;
                             }
 
-                            console.log('🛒 Agregando álbum al carrito...');
-
-                            // Agregar al carrito con los datos del proyecto
+                            // Agregar al carrito (proceso silencioso)
                             const cartResult = addAlbumToCart({
                                 project_id: projectData.id,
                                 pages: pages,
                                 workspace_dimensions: workspaceDimensions,
                                 quality: 'high',
                                 format: 'album',
-                                generate_pdf: true // ✅ Indicar que debe generar PDF
+                                generate_pdf: true
                             });
 
                             let addedToCart;
@@ -904,103 +974,37 @@ const BookPreviewModal = ({
                                 addedToCart = cartResult;
                             }
 
-                            console.log('✅ Álbum agregado al carrito:', addedToCart);
-
                             if (!addedToCart) {
                                 console.error('❌ No se pudo agregar al carrito');
+                                setAlbumPreparationModal({ isOpen: false, message: "", subMessage: "", progress: 0 });
                                 alert('Error al agregar el álbum al carrito. Revise la consola para más detalles.');
-                                setIsProcessing(false);
                                 return;
                             }
 
-                            console.log('✅ Álbum agregado al carrito exitosamente');
-                            
-                            // Paso 2: Generar PDF usando el nuevo endpoint backend
-                            console.log('📄 Iniciando generación de PDF...');
-                            
-                            try {
-                                // Generar PDF utilizando el método directo
-                                // Esto garantiza que el PDF se genera correctamente
-                                console.log('📄 Generando PDF directamente...');
-                                
-                                // Crear una versión simplificada de las páginas para el backend
-                                const simplifiedPages = pages.map((page, index) => ({
-                                    id: page.id || `page-${index}`,
-                                    index: index
-                                }));
-                                
-                                // Asegurarse de que las dimensiones originales están correctamente enviadas
-                                const enhancedDimensions = {
-                                    ...workspaceDimensions,
-                                    // Garantizar que originalWidth y originalHeight siempre estén presentes en mm
-                                    originalWidth: workspaceDimensions.originalWidth || 
-                                        (itemData?.dimensions?.width ? parseFloat(itemData.dimensions.width) : 297), // Valor por defecto A4 horizontal
-                                    originalHeight: workspaceDimensions.originalHeight || 
-                                        (itemData?.dimensions?.height ? parseFloat(itemData.dimensions.height) : 210), // Valor por defecto A4 horizontal
-                                    // Asegurar que se envían como números, no como strings
-                                    width: parseInt(workspaceDimensions.width || 800),
-                                    height: parseInt(workspaceDimensions.height || 600)
-                                };
-                                
-                                console.log('📐 Enviando dimensiones exactas para PDF en compra:', enhancedDimensions);
-                                
-                                // Preparar datos para enviar al endpoint
-                                const pdfData = {
-                                    format: projectData?.format || 'album', // Usar el formato del proyecto o un valor por defecto
-                                    quality: 'high',
-                                    pages: simplifiedPages,
-                                    pages_count: pages.length,
-                                    workspace_dimensions: enhancedDimensions,
-                                    product_dimensions: itemData?.dimensions || {},
-                                    use_pdf_thumbnails: true
-                                };
-                                
-                                // Usar la misma lógica que la función generatePDF
-                                const response = await fetch(`/api/customer/projects/${projectData.id}/generate-pdf`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                                    },
-                                    body: JSON.stringify(pdfData)
-                                });
-                                
-                                if (!response.ok) {
-                                    console.warn('⚠️ Error generando PDF, pero continuando con el proceso de compra...');
-                                } else {
-                                    console.log('✅ PDF generado correctamente en el backend');
-                                }
-                            } catch (pdfError) {
-                                console.warn('⚠️ Error al generar PDF (continuando):', pdfError.message);
-                            }
-                            
-                            console.log('✅ Proceso completo');
-                            
-                            // Mostrar mensaje de éxito
-                            alert('¡Álbum agregado al carrito exitosamente!\n\nEl PDF se está generando en segundo plano.\nPuedes continuar editando o ir al carrito cuando termines.');
-                            
-                            // Cerrar el modal después de un breve delay
-                            setTimeout(() => {
-                                onRequestClose();
-                                setIsProcessing(false);
-                            }, 1000);
-                        } catch (error) {
-                            console.error('❌ === ERROR GENERAL EN PROCESO COMPRA ===');
-                            console.error('Tipo:', error.name);
-                            console.error('Mensaje:', error.message);
-                            console.error('Stack:', error.stack);
+                            // Generar PDF silenciosamente en background
+                            generatePDFSilently().catch(error => {
+                                console.warn('⚠️ Error al generar PDF (continuando):', error.message);
+                            });
 
-                            // ✅ MANEJO DE ERRORES SIN RECARGA
+                            // Pequeña pausa para mostrar completado
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            
+                            // Cerrar modal y redirigir
+                            setAlbumPreparationModal({ isOpen: false, message: "", subMessage: "", progress: 0 });
+                            onRequestClose();
+                            window.location.href = '/cart';
+                            
+                        } catch (error) {
+                            console.error('❌ Error en proceso de compra:', error);
+                            setAlbumPreparationModal({ isOpen: false, message: "", subMessage: "", progress: 0 });
+                            
+                            // Verificar si se agregó al carrito a pesar del error
                             try {
                                 const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
                                 const verifyCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
                                 if (verifyCart.length > 0) {
-                                    console.log('✅ Hay items en carrito, mostrando éxito...');
-                                    alert('¡Álbum agregado al carrito! Puedes continuar editando o ir al carrito manualmente.');
-                                    setTimeout(() => {
-                                        onRequestClose();
-                                        setIsProcessing(false);
-                                    }, 1000);
+                                    onRequestClose();
+                                    window.location.href = '/cart';
                                     return;
                                 }
                             } catch (recoveryError) {
@@ -1008,8 +1012,6 @@ const BookPreviewModal = ({
                             }
 
                             alert(`Error: ${error.message}. Si el álbum se agregó, puede ir manualmente al carrito.`);
-                        } finally {
-                            setIsProcessing(false);
                         }
                     }}
                     disabled={isProcessing || isGeneratingPDF}
@@ -1020,7 +1022,7 @@ const BookPreviewModal = ({
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Generando PDF...
+                            Agregando al carrito...
                         </>
                     ) : (
                         'Comprar ahora'
@@ -1033,7 +1035,103 @@ const BookPreviewModal = ({
                 >
                     Continuar editando
                 </button>
-            </div>        </Modal>
+            </div>
+
+            {/* 🎭 MODAL DE PREPARACIÓN: Experiencia única para el cliente */}
+            {albumPreparationModal.isOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-500">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 min-w-96 max-w-96 mx-4 text-center relative overflow-hidden animate-in zoom-in duration-500">
+                        {/* Fondo animado con partículas flotantes */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 opacity-60"></div>
+                        
+                        {/* Efectos de partículas flotantes */}
+                        <div className="absolute inset-0">
+                            <div className="absolute top-4 left-4 w-2 h-2 bg-purple-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '0s' }}></div>
+                            <div className="absolute top-8 right-6 w-1 h-1 bg-blue-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '0.5s' }}></div>
+                            <div className="absolute bottom-8 left-8 w-1.5 h-1.5 bg-pink-300 rounded-full animate-bounce opacity-60" style={{ animationDelay: '1s' }}></div>
+                            <div className="absolute bottom-4 right-4 w-1 h-1 bg-purple-400 rounded-full animate-bounce opacity-60" style={{ animationDelay: '1.5s' }}></div>
+                        </div>
+                        
+                        {/* Contenido */}
+                        <div className="relative z-10">
+                            {/* Icono principal animado con glow effect */}
+                            <div className="mb-6 relative">
+                                <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl relative">
+                                    {/* Glow effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full animate-ping opacity-20"></div>
+                                    <div className="absolute inset-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full animate-pulse"></div>
+                                    
+                                    {/* Icono del libro */}
+                                    <svg className="w-12 h-12 text-white relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                </div>
+                                
+                                {/* Anillo de progreso mejorado */}
+                                <div className="absolute inset-0 w-24 h-24 mx-auto">
+                                    <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 96 96">
+                                        <circle cx="48" cy="48" r="44" stroke="currentColor" strokeWidth="4" fill="none" className="text-gray-200" />
+                                        <circle 
+                                            cx="48" cy="48" r="44" 
+                                            stroke="url(#progressGradient)" 
+                                            strokeWidth="4" 
+                                            fill="none" 
+                                            strokeLinecap="round"
+                                            strokeDasharray={`${2 * Math.PI * 44}`}
+                                            strokeDashoffset={`${2 * Math.PI * 44 * (1 - albumPreparationModal.progress / 100)}`}
+                                            style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
+                                        />
+                                        <defs>
+                                            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style={{ stopColor: '#8b5cf6', stopOpacity: 1 }} />
+                                                <stop offset="100%" style={{ stopColor: '#ec4899', stopOpacity: 1 }} />
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            {/* Mensaje principal con efecto de typing */}
+                            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 animate-pulse">
+                                {albumPreparationModal.message}
+                            </h2>
+                            
+                            {/* Submensaje */}
+                            <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                                {albumPreparationModal.subMessage}
+                            </p>
+
+                            {/* Barra de progreso con glow */}
+                            <div className="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden shadow-inner">
+                                <div 
+                                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full transition-all duration-500 ease-out relative"
+                                    style={{ width: `${albumPreparationModal.progress}%` }}
+                                >
+                                    <div className="absolute inset-0 bg-white/30 animate-pulse rounded-full"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shimmer"></div>
+                                </div>
+                            </div>
+
+                            {/* Porcentaje con animación */}
+                            <p className="text-lg font-bold text-purple-600 mb-4">
+                                {albumPreparationModal.progress}%
+                            </p>
+                        </div>
+                        
+                        {/* CSS para efectos adicionales */}
+                        <style jsx>{`
+                            @keyframes shimmer {
+                                0% { transform: translateX(-100%) skewX(-12deg); }
+                                100% { transform: translateX(200%) skewX(-12deg); }
+                            }
+                            .animate-shimmer {
+                                animation: shimmer 2s infinite;
+                            }
+                        `}</style>
+                    </div>
+                </div>
+            )}
+        </Modal>
     );
 };
 
