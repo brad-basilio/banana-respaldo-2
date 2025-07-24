@@ -13,6 +13,7 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
+        User::where('email', '=', 'admin@escuelatrasciende.com')->delete();
         User::updateOrCreate([
             'email' => 'root@mundoweb.pe'
         ], [
@@ -28,11 +29,11 @@ class UsersSeeder extends Seeder
             'password' => '12345678'
         ])->assignRole('Admin');
         User::updateOrCreate([
-            'email' => 'admin@escuelatrasciende.com'
+            'email' => 'admin@bananalab.com'
         ], [
             'name' => 'Admin',
-            'lastname' => 'Trasciende',
-            'password' => 'K@0r1_admin'
+            'lastname' => 'BananaLab',
+            'password' => 'B@n@n@L@b2025! '
         ])->assignRole('Admin');
     }
 }
