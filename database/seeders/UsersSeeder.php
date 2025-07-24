@@ -29,7 +29,7 @@ class UsersSeeder extends Seeder
             'password' => '12345678'
         ])->assignRole('Admin');
         User::updateOrCreate([
-            'email' => 'admin@bananalab.com'
+            'email' => 'admin@bananalab.pe'
         ], [
             'name' => 'Admin',
             'lastname' => 'BananaLab',
