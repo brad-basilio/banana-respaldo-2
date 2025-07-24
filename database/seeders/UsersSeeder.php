@@ -33,7 +33,7 @@ class UsersSeeder extends Seeder
         ], [
             'name' => 'Admin',
             'lastname' => 'BananaLab',
-            'password' => 'B@n@n@L@b2025! '
+            'password' => 'B@n@n@L@b2025!'
         ])->assignRole('Admin');
     }
 }
