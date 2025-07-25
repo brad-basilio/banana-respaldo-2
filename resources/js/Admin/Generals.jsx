@@ -1111,14 +1111,16 @@ const Generals = ({ generals }) => {
                               <button className="position-absolute btn btn-xs btn-danger" style={{
                                 top: '5px',
                                 left: '5px'
-                              }} onClick={() => setFormData({
-                                ...formData,
-                                checkout_dwallet_qr: null
-                              })}>
+                              }} onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  checkout_dwallet_qr: null
+                                });
+                              }}>
                                 <i className="mdi mdi-delete"></i>
                               </button>
                             </Tippy>
-                            <img src={`/assets/resources/${formData.checkout_dwallet_qr}`} className="img-thumbnail" style={{
+                            <img src={`/assets/resources/${formData.checkout_dwallet_qr}?t=${Date.now()}`} className="img-thumbnail" style={{
                               height: '200px',
                               width: 'auto'
                             }} />
@@ -1133,7 +1135,8 @@ const Generals = ({ generals }) => {
                               e.target.value = null
 
                               const ext = file.name.split('.').pop()
-                              const dwallet_name = `qr-digital-wallet.${ext}`
+                              const timestamp = Date.now()
+                              const dwallet_name = `qr-digital-wallet-${timestamp}.${ext}`
 
                               const request = new FormData()
                               request.append('image', file)
