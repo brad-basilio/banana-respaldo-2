@@ -180,7 +180,7 @@ export default function UploadVoucherModalYape({
 
                 <div className="w-full flex flex-row items-center justify-center my-1">
                     <Tippy content='Escanee codigo QR'>
-                            <img src={`/assets/resources/${General.get('checkout_dwallet_qr')}`} 
+                            <img src={`/assets/resources/${General.get('checkout_dwallet_qr')}?t=${Date.now()}`} 
                                 alt={General.get('checkout_dwallet_name')} 
                                 className="h-40 w-auto object-cover"
                                 onError={(e) => {
