@@ -279,7 +279,7 @@ const Generals = ({ generals }) => {
         {
           correlative: "corporative_email",
           name: "Correo corporativo",
-          description: formData.corporativeEmail,
+          description: formData.coorporativeEmail,
         },
         {
           correlative: "support_email",

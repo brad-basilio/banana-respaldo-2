@@ -32,7 +32,7 @@ class GeneralController extends BasicController
                     'correlative' => $record['correlative']
                 ], [
                     'name' => $record['name'],
-                    'description' => $record['description']
+                    'description' => $record['description'] ?? null
                 ]);
             }
         });
