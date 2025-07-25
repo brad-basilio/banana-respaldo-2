@@ -38,10 +38,38 @@ const Albums = ({ statuses = [] }) => {
         $(gridRef.current).dxDataGrid("instance").refresh();
     };
 
+    const showModal = (modalRef) => {
+        const modalElement = modalRef.current;
+        if (modalElement) {
+            // Usar API nativo de Bootstrap 5
+            if (window.bootstrap) {
+                const modalInstance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
+                modalInstance.show();
+            } else if (window.$) {
+                // Fallback para jQuery
+                $(modalElement).modal('show');
+            }
+        }
+    };
+
+    const hideModal = (modalRef) => {
+        const modalElement = modalRef.current;
+        if (modalElement) {
+            // Usar API nativo de Bootstrap 5
+            if (window.bootstrap) {
+                const modalInstance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
+                modalInstance.hide();
+            } else if (window.$) {
+                // Fallback para jQuery
+                $(modalElement).modal('hide');
+            }
+        }
+    };
+
     const onModalOpen = async (projectId) => {
         const newProject = await projectsRest.get(projectId);
         setProjectLoaded(newProject.data);
-        $(modalRef.current).modal("show");
+        showModal(modalRef);
     };
 
     const onEditProject = (projectId) => {
@@ -51,7 +79,7 @@ const Albums = ({ statuses = [] }) => {
     const onEditProjectName = async (project) => {
         setEditingProject(project);
         setProjectName(project.name || '');
-        $(editModalRef.current).modal("show");
+        showModal(editModalRef);
     };
 
     const onSaveProjectName = async (e) => {
@@ -92,7 +120,7 @@ const Albums = ({ statuses = [] }) => {
                     timer: 2000
                 });
                 
-                $(editModalRef.current).modal("hide");
+                hideModal(editModalRef);
                 $(gridRef.current).dxDataGrid("instance").refresh();
             }
         } catch (error) {
@@ -412,7 +440,7 @@ const Albums = ({ statuses = [] }) => {
                                         <button
                                             className="btn btn-primary"
                                             onClick={() => {
-                                                $(modalRef.current).modal("hide");
+                                                hideModal(modalRef);
                                                 onEditProjectName(projectLoaded);
                                             }}
                                         >
@@ -422,7 +450,7 @@ const Albums = ({ statuses = [] }) => {
                                         <button
                                             className="btn btn-danger"
                                             onClick={() => {
-                                                $(modalRef.current).modal("hide");
+                                                hideModal(modalRef);
                                                 onDeleteClicked(projectLoaded?.id);
                                             }}
                                         >
