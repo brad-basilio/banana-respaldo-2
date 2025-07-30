@@ -247,9 +247,13 @@ class ProjectPDFController extends Controller
             // Crear directorio para PDFs solo en storage/app/images
             $pdfDir = "images/pdf/{$projectId}";
             
-            // Crear el directorio en local storage
+            // Crear el directorio en local storage con permisos correctos
             if (!Storage::exists($pdfDir)) {
-                Storage::makeDirectory($pdfDir);
+                $fullPath = storage_path('app/' . $pdfDir);
+                if (!file_exists($fullPath)) {
+                    mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
+                    Log::info("📁 [PDF] Directorio creado con permisos 775: {$pdfDir}");
+                }
             }
 
             // Guardar el PDF únicamente en local storage (no en public)

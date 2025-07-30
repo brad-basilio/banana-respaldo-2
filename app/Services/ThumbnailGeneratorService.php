@@ -304,9 +304,13 @@ class ThumbnailGeneratorService
         $projectPath = "images/thumbnails/{$project->id}";
         $pdfRelativePath = "{$projectPath}/{$pdfFilename}";
 
-        // Crear directorio si no existe usando Storage
+        // Crear directorio si no existe con permisos correctos
         if (!Storage::exists($projectPath)) {
-            Storage::makeDirectory($projectPath);
+            $fullPath = storage_path('app/' . $projectPath);
+            if (!file_exists($fullPath)) {
+                mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
+                Log::info("📁 [THUMBNAIL-GENERATOR] Directorio creado con permisos 775: {$projectPath}");
+            }
         }
 
         // 1. Guardar thumbnail de alta calidad (para PDF) como PNG
@@ -355,9 +359,13 @@ class ThumbnailGeneratorService
             $sidebarPath = "images/thumbnails/{$project->id}";
             $sidebarFullPath = "{$sidebarPath}/{$filename}";
             
-            // Crear directorio si no existe
+            // Crear directorio si no existe con permisos correctos
             if (!Storage::exists($sidebarPath)) {
-                Storage::makeDirectory($sidebarPath);
+                $fullPath = storage_path('app/' . $sidebarPath);
+                if (!file_exists($fullPath)) {
+                    mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
+                    Log::info("📁 [THUMBNAIL-GENERATOR] Directorio sidebar creado con permisos 775: {$sidebarPath}");
+                }
             }
             
             // Guardar como PNG para sidebar usando Storage::put
@@ -624,9 +632,13 @@ class ThumbnailGeneratorService
             $filename = "page_{$pageId}.{$extension}";
             $filePath = "{$thumbnailsDir}/{$filename}";
 
-            // Crear directorio si no existe
+            // Crear directorio si no existe con permisos correctos
             if (!Storage::exists($thumbnailsDir)) {
-                Storage::makeDirectory($thumbnailsDir);
+                $fullPath = storage_path('app/' . $thumbnailsDir);
+                if (!file_exists($fullPath)) {
+                    mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
+                    Log::info("📁 [THUMBNAIL-GENERATOR] Directorio de miniaturas creado con permisos 775: {$thumbnailsDir}");
+                }
             }
 
             // Guardar archivo

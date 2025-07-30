@@ -14,6 +14,21 @@ use Intervention\Image\Drivers\Gd\Driver;
 class ProjectImageController extends Controller
 {
     /**
+     * Crear directorio con permisos correctos
+     */
+    private function createDirectoryWithPermissions($storagePath, $permissions = 0775)
+    {
+        if (!Storage::exists($storagePath)) {
+            $fullPath = storage_path('app/' . $storagePath);
+            if (!file_exists($fullPath)) {
+                mkdir($fullPath, $permissions, true);
+                Log::info("📁 [DIRECTORY] Directorio creado con permisos {$permissions}: {$storagePath}");
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
      * Subir imágenes del proyecto al servidor
      */
     public function uploadImages(Request $request, $projectId)
@@ -31,10 +46,7 @@ class ProjectImageController extends Controller
             $projectPath = "images/projects/{$projectId}";
 
             // Crear directorio del proyecto si no existe - USANDO DISCO LOCAL como BasicController
-            if (!Storage::exists($projectPath)) {
-                Storage::makeDirectory($projectPath);
-                Log::info("📁 [IMAGE-UPLOAD] Directorio creado: {$projectPath}");
-            }
+            $this->createDirectoryWithPermissions($projectPath, 0775);
 
             foreach ($request->images as $imageData) {
                 try {
@@ -357,9 +369,7 @@ class ProjectImageController extends Controller
             
             // Crear directorio de miniaturas si no existe
             $thumbnailDir = $projectPath . '/thumbnails';
-            if (!Storage::exists($thumbnailDir)) {
-                Storage::makeDirectory($thumbnailDir);
-            }
+            $this->createDirectoryWithPermissions($thumbnailDir, 0775);
 
             // Redimensionar imagen manteniendo proporción (150x150 máximo)
             $image->cover(150, 150);
@@ -406,9 +416,7 @@ class ProjectImageController extends Controller
             $projectPath = "images/projects/{$projectId}";
 
             // Crear directorio del proyecto si no existe
-            if (!Storage::exists($projectPath)) {
-                Storage::makeDirectory($projectPath);
-            }
+            $this->createDirectoryWithPermissions($projectPath, 0775);
 
             // Generar nombre personalizado
             $originalName = $request->file('image')->getClientOriginalName();

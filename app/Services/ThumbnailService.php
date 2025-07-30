@@ -34,7 +34,11 @@ class ThumbnailService
             // Crear directorio si no existe
             $projectPath = "images/thumbnails/{$projectId}";
             if (!Storage::exists($projectPath)) {
-                Storage::makeDirectory($projectPath);
+                $fullPath = storage_path('app/' . $projectPath);
+                if (!file_exists($fullPath)) {
+                    mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
+                    Log::info("📁 [THUMBNAIL-SERVICE] Directorio creado con permisos 775: {$projectPath}");
+                }
             }
             
             // 🔄 NUEVA ESTRUCTURA: Usar naming consistente con ThumbnailGeneratorService
@@ -204,7 +208,11 @@ class ThumbnailService
             
             // Crear directorio si no existe
             if (!Storage::exists($sidebarPath)) {
-                Storage::makeDirectory($sidebarPath);
+                $fullPath = storage_path('app/' . $sidebarPath);
+                if (!file_exists($fullPath)) {
+                    mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
+                    Log::info("📁 [THUMBNAIL-SERVICE] Directorio sidebar creado con permisos 775: {$sidebarPath}");
+                }
             }
             
             // Guardar como PNG para sidebar usando Storage::put
