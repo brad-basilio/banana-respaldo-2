@@ -1196,9 +1196,57 @@ export default function EditorLibro() {
 
             // Crear todas las promesas de verificación
             const verificationPromises = pages.map(async (page, index) => {
-                const pdfUrl = `/storage/images/thumbnails/${projectData.id}/page-${index}-pdf.png`;
+                // 🔧 FIX DEFINITIVO: Mapear correctamente según configuración y presencia de páginas
+                let realPageNumber;
+                
+                // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
+                const hasCoverEnabled = itemData && (itemData.has_cover_image === true || itemData.has_cover_image === 1);
+                const hasBackCoverEnabled = itemData && (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1);
+                const hasCover = hasCoverEnabled && pages.some(p => p.type === 'cover');
+                const hasBackCover = hasBackCoverEnabled && pages.some(p => p.type === 'final');
+                
+                if (page.type === 'cover') {
+                    // Portada siempre es página 0 cuando está habilitada
+                    realPageNumber = 0;
+                } else if (page.type === 'content') {
+                    // 🎯 SOLUCIÓN DEFINITIVA: Content pages siempre empiezan desde 1 cuando no hay cover
+                    if (hasCover) {
+                        // Si hay portada: portada=0, content empezará desde 1
+                        const contentPages = pages.filter(p => p.type === 'content');
+                        const contentIndex = contentPages.findIndex(p => p.id === page.id);
+                        realPageNumber = contentIndex + 1; // +1 porque portada ocupa el 0
+                    } else {
+                        // Si NO hay portada: content empieza desde 1 directamente (NO desde 0)
+                        const contentPages = pages.filter(p => p.type === 'content');
+                        const contentIndex = contentPages.findIndex(p => p.id === page.id);
+                        realPageNumber = contentIndex + 1; // +1 para empezar desde 1, no desde 0
+                    }
+                } else if (page.type === 'final') {
+                    // Contraportada: obtener el número siguiente al último content
+                    const contentPages = pages.filter(p => p.type === 'content');
+                    const lastContentNumber = hasCover ? contentPages.length : contentPages.length;
+                    realPageNumber = lastContentNumber + (hasCover ? 1 : 1); // Siempre siguiente al último content
+                } else {
+                    // Fallback al índice actual
+                    realPageNumber = index;
+                }
+                
+                const pdfUrl = `/storage/images/thumbnails/${projectData.id}/page-${realPageNumber}-pdf.png`;
                 const pageId = page.id || `page-${index}`;
                 pdfThumbnails[pageId] = pdfUrl;
+                
+                console.log(`🔍 [THUMBNAIL-MAP] Página ${index}:`, {
+                    tipo: page.type,
+                    pageNumber: page.pageNumber,
+                    realPageNumber,
+                    url: pdfUrl,
+                    pageId: page.id,
+                    hasCover,
+                    hasBackCover,
+                    coverEnabled: hasCoverEnabled,
+                    backCoverEnabled: hasBackCoverEnabled
+                });
+                
                 return verifyThumbnailExists(pdfUrl, pageId);
             });
 
@@ -1214,7 +1262,7 @@ export default function EditorLibro() {
             console.warn('⚠️ [ALBUM-MODAL] Error cargando thumbnails PDF:', error);
             return {};
         }
-    }, [projectData?.id, pages]);
+    }, [projectData?.id, pages, itemData]);
 
 
     // Actualizar estados del editor cuando se cargan los datos del proyecto
@@ -1231,7 +1279,7 @@ export default function EditorLibro() {
                     let backgroundColor = presetData.background_color || '#ffffff';
 
                     // Aplicar la lógica de background según el tipo de página y si está habilitada
-                    if (page.type === 'cover' && itemData.has_cover_image !== false) {
+                    if (page.type === 'cover' && (itemData.has_cover_image === true || itemData.has_cover_image === 1)) {
                         if (itemData.cover_image) {
                             backgroundImage = `/storage/images/item/${itemData.cover_image}`;
                         }
@@ -1240,7 +1288,7 @@ export default function EditorLibro() {
                         if (itemData.content_image) {
                             backgroundImage = `/storage/images/item/${itemData.content_image}`;
                         }
-                    } else if ((page.type === 'final' || page.type === 'contraportada') && itemData.has_back_cover_image !== false) {
+                    } else if ((page.type === 'final' || page.type === 'contraportada') && (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1)) {
                         if (itemData.back_cover_image) {
                             backgroundImage = `/storage/images/item/${itemData.back_cover_image}`;
                         }
@@ -1253,10 +1301,10 @@ export default function EditorLibro() {
                     };
                 }).filter(page => {
                     // Filtrar páginas que no deberían existir según la configuración
-                    if (page.type === 'cover' && itemData.has_cover_image === false) {
+                    if (page.type === 'cover' && (itemData.has_cover_image === false || itemData.has_cover_image === 0)) {
                         return false;
                     }
-                    if ((page.type === 'final' || page.type === 'contraportada') && itemData.has_back_cover_image === false) {
+                    if ((page.type === 'final' || page.type === 'contraportada') && (itemData.has_back_cover_image === false || itemData.has_back_cover_image === 0)) {
                         return false;
                     }
                     return true;
@@ -3527,8 +3575,8 @@ export default function EditorLibro() {
             const totalPages = item.pages || preset.pages || 20; // Usar páginas del preset primero
 
 
-            // 1. PÁGINA DE PORTADA - Solo si está habilitada
-            if (item.has_cover_image !== false) { // Incluir si no está definido o es true
+            // 1. PÁGINA DE PORTADA - Solo si está habilitada (true o 1)
+            if (item.has_cover_image === true || item.has_cover_image === 1) {
                 const coverBackgroundImage = item.cover_image ? `/storage/images/item/${item.cover_image}` : null;
                 const coverBackgroundColor = !item.cover_image ? (preset.background_color || "#ffffff") : null;
 
@@ -3574,8 +3622,8 @@ export default function EditorLibro() {
                 newPages.push(contentPage);
             }
 
-            // 3. PÁGINA FINAL/CONTRAPORTADA - Solo si está habilitada
-            if (item.has_back_cover_image !== false) { // Incluir si no está definido o es true
+            // 3. PÁGINA FINAL/CONTRAPORTADA - Solo si está habilitada (true o 1)
+            if (item.has_back_cover_image === true || item.has_back_cover_image === 1) {
                 const finalBackgroundImage = item.back_cover_image ? `/storage/images/item/${item.back_cover_image}` : null;
                 const finalBackgroundColor = !item.back_cover_image ? (preset.background_color || "#ffffff") : null;
 
@@ -3653,12 +3701,99 @@ export default function EditorLibro() {
 
     // Memoize categorized pages for sidebar rendering to avoid re-filtering on every render
     const categorizedPages = useMemo(() => {
+        // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
+        if (!itemData) {
+            return {
+                cover: pages.filter(page => page.type === "cover"),
+                content: pages.filter(page => page.type === "content"),
+                final: pages.filter(page => page.type === "final")
+            };
+        }
+
         return {
-            cover: pages.filter(page => page.type === "cover"),
+            cover: pages.filter(page => 
+                page.type === "cover" && 
+                (itemData.has_cover_image === true || itemData.has_cover_image === 1)
+            ),
             content: pages.filter(page => page.type === "content"),
-            final: pages.filter(page => page.type === "final")
+            final: pages.filter(page => 
+                page.type === "final" && 
+                (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1)
+            )
         };
-    }, [pages]);
+    }, [pages, itemData]);
+
+    // 🎯 FUNCIÓN INTELIGENTE: Detectar tipo de contenido basado en configuración real
+    const getContentType = useCallback(() => {
+        // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
+        if (!itemData) {
+            console.warn('⚠️ [CONTENT-TYPE] itemData no disponible, usando tipo por defecto');
+            return {
+                type: 'album',
+                name: 'Álbum',
+                description: 'Vista de Álbum',
+                icon: '📖',
+                experience: 'book'
+            };
+        }
+
+        // ✅ VALIDACIÓN CORRECTA: Verificar configuración Y existencia de páginas
+        const hasCoverEnabled = (itemData.has_cover_image === true || itemData.has_cover_image === 1);
+        const hasBackCoverEnabled = (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1);
+        const hasCover = hasCoverEnabled && categorizedPages.cover.length > 0;
+        const hasBackCover = hasBackCoverEnabled && categorizedPages.final.length > 0;
+        const contentPages = categorizedPages.content.length;
+
+        console.log('🎯 [CONTENT-TYPE] Análisis de contenido:', {
+            coverEnabled: hasCoverEnabled,
+            backCoverEnabled: hasBackCoverEnabled,
+            coverPagesExist: categorizedPages.cover.length > 0,
+            finalPagesExist: categorizedPages.final.length > 0,
+            hasCover,
+            hasBackCover,
+            contentPages,
+            itemConfig: {
+                has_cover_image: itemData.has_cover_image,
+                has_back_cover_image: itemData.has_back_cover_image
+            }
+        });
+
+        if (hasCover && hasBackCover) {
+            return {
+                type: 'album',
+                name: 'Álbum',
+                description: 'Vista de Álbum',
+                icon: '📖',
+                experience: 'book' // Experiencia tipo libro con tapas
+            };
+        } else if (hasCover || hasBackCover) {
+            return {
+                type: 'booklet',
+                name: 'Folleto',
+                description: 'Vista de Folleto',
+                icon: '📋',
+                experience: 'booklet' // Experiencia híbrida
+            };
+        } else if (contentPages > 1) {
+            return {
+                type: 'catalog',
+                name: 'Catálogo',
+                description: 'Vista de Catálogo',
+                icon: '📑',
+                experience: 'catalog' // Experiencia tipo catálogo/galería
+            };
+        } else {
+            return {
+                type: 'card',
+                name: 'Diseño',
+                description: 'Vista Previa',
+                icon: '🎨',
+                experience: 'single' // Vista única
+            };
+        }
+    }, [categorizedPages, itemData]);
+
+    const contentType = getContentType();
 
     // Modifica la función getSelectedElement para que use useCallback
     const getSelectedElement = useCallback(() => {
@@ -5656,11 +5791,85 @@ export default function EditorLibro() {
                                 subMessage: ''
                             });
                         }}
-                        pages={pages.map((page) => ({
-                            ...page,
-                            layout: layouts.find((l) => l.id === page.layout) || layouts[0],
-                        }))}
-                        pageThumbnails={pageThumbnails}
+                        pages={(() => {
+                            // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
+                            if (!itemData) {
+                                console.warn('⚠️ [EDITOR-TO-MODAL] itemData no disponible, enviando todas las páginas');
+                                return categorizedPages.cover.concat(categorizedPages.content, categorizedPages.final).map((page) => ({
+                                    ...page,
+                                    layout: layouts.find((l) => l.id === page.layout) || layouts[0],
+                                }));
+                            }
+
+                            // ✅ FILTRAR PÁGINAS SEGÚN CONFIGURACIÓN DE CHECKBOXES
+                            let enabledPages = [];
+                            
+                            // Solo incluir portada si está habilitada
+                            if (itemData.has_cover_image === true || itemData.has_cover_image === 1) {
+                                enabledPages = enabledPages.concat(categorizedPages.cover);
+                            }
+                            
+                            // Siempre incluir páginas de contenido
+                            enabledPages = enabledPages.concat(categorizedPages.content);
+                            
+                            // Solo incluir contraportada si está habilitada
+                            if (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1) {
+                                enabledPages = enabledPages.concat(categorizedPages.final);
+                            }
+                            
+                            console.log('📤 [EDITOR-TO-MODAL] Enviando páginas filtradas:', {
+                                total: enabledPages.length,
+                                types: enabledPages.map(p => p.type),
+                                itemConfig: {
+                                    has_cover_image: itemData.has_cover_image,
+                                    has_back_cover_image: itemData.has_back_cover_image
+                                }
+                            });
+                            
+                            return enabledPages.map((page) => ({
+                                ...page,
+                                layout: layouts.find((l) => l.id === page.layout) || layouts[0],
+                            }));
+                        })()}
+                        pageThumbnails={(() => {
+                            // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
+                            if (!itemData) {
+                                console.warn('⚠️ [EDITOR-TO-MODAL] itemData no disponible para filtrar thumbnails');
+                                return pageThumbnails;
+                            }
+
+                            // ✅ FILTRAR THUMBNAILS SEGÚN PÁGINAS HABILITADAS
+                            const filteredThumbnails = {};
+                            
+                            // Obtener IDs de páginas habilitadas
+                            let enabledPageIds = [];
+                            
+                            if (itemData.has_cover_image === true || itemData.has_cover_image === 1) {
+                                enabledPageIds = enabledPageIds.concat(categorizedPages.cover.map(p => p.id));
+                            }
+                            
+                            enabledPageIds = enabledPageIds.concat(categorizedPages.content.map(p => p.id));
+                            
+                            if (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1) {
+                                enabledPageIds = enabledPageIds.concat(categorizedPages.final.map(p => p.id));
+                            }
+                            
+                            // Filtrar thumbnails solo para páginas habilitadas
+                            enabledPageIds.forEach(pageId => {
+                                if (pageThumbnails[pageId]) {
+                                    filteredThumbnails[pageId] = pageThumbnails[pageId];
+                                }
+                            });
+                            
+                            console.log('🖼️ [EDITOR-TO-MODAL] Enviando thumbnails filtrados:', {
+                                totalThumbnails: Object.keys(filteredThumbnails).length,
+                                availableThumbnails: Object.keys(pageThumbnails).length,
+                                enabledPageIds,
+                                filteredThumbnailIds: Object.keys(filteredThumbnails)
+                            });
+                            
+                            return filteredThumbnails;
+                        })()}
                         workspaceDimensions={workspaceDimensions}
                         getCurrentLayout={(page) => {
                             if (!page) return layouts[0];
@@ -5670,6 +5879,9 @@ export default function EditorLibro() {
                         addAlbumToCart={addAlbumToCart}
                         projectData={projectData}
                         itemData={itemData}
+                        // 🎯 NUEVO: Tipo de contenido inteligente
+                        contentType={contentType}
+                        categorizedPages={categorizedPages}
                         // 🚀 NUEVO: Estado de carga para mostrar animación
                         albumLoadingState={albumLoadingState}
                     />
@@ -5886,30 +6098,45 @@ export default function EditorLibro() {
                                     variant="secondary"
                                     size="sm"
                                     onClick={async (e) => {
-                                        // �️ PREVENIR RECARGA: Evitar comportamiento por defecto
+                                        // ⚡️ PREVENIR RECARGA: Evitar comportamiento por defecto
                                         e.preventDefault();
                                         e.stopPropagation();
 
                                         try {
-                                            console.log('🎭 [ALBUM-EXPERIENCE] Iniciando experiencia única de álbum...');
+                                            console.log(`🎭 [${contentType.type.toUpperCase()}-EXPERIENCE] Iniciando experiencia de ${contentType.name.toLowerCase()}...`);
 
-                                            // 🎭 FASE 1: Mostrar modal de preparación
+                                            // 🎭 FASE 1: Mostrar modal de preparación con tipo específico
                                             setAlbumPreparationModal({
                                                 isOpen: true,
                                                 phase: 'preparing',
                                                 progress: 0,
-                                                message: '✨ Creando tu experiencia',
-                                                subMessage: 'Preparando la magia de tu álbum personalizado...'
+                                                message: `${contentType.icon} Creando tu ${contentType.name.toLowerCase()}`,
+                                                subMessage: contentType.type === 'album' 
+                                                    ? 'Preparando la experiencia completa de tu álbum...'
+                                                    : contentType.type === 'catalog'
+                                                    ? 'Organizando tu catálogo de contenido...'
+                                                    : contentType.type === 'booklet'
+                                                    ? 'Preparando tu folleto personalizado...'
+                                                    : 'Optimizando tu diseño único...'
                                             });
 
-                                            // 🎭 FASE 2: Simular preparación (0-30%)
+                                            // 🎭 FASE 2: Simular preparación específica (0-30%)
+                                            const preparationSteps = contentType.type === 'album' 
+                                                ? ['🔧 Encuadernando páginas', '📖 Ajustando tapas', '✨ Puliendo detalles']
+                                                : contentType.type === 'catalog'
+                                                ? ['📑 Organizando contenido', '🎨 Optimizando diseño', '⚡ Finalizando catálogo']
+                                                : contentType.type === 'booklet' 
+                                                ? ['📋 Preparando folleto', '🖼️ Ajustando formato', '✨ Aplicando estilo']
+                                                : ['🎨 Procesando diseño', '⚡ Optimizando calidad', '✨ Finalizando vista'];
+
                                             for (let i = 0; i <= 30; i += 5) {
-                                                await new Promise(resolve => setTimeout(resolve, 100));
+                                                await new Promise(resolve => setTimeout(resolve, contentType.type === 'card' ? 50 : 100));
+                                                const stepIndex = Math.floor((i / 30) * preparationSteps.length);
                                                 setAlbumPreparationModal(prev => ({
                                                     ...prev,
                                                     progress: i,
-                                                    message: '🔧 Construyendo previsualización',
-                                                    subMessage: 'Optimizando cada detalle para ti...'
+                                                    message: preparationSteps[Math.min(stepIndex, preparationSteps.length - 1)],
+                                                    subMessage: `Progreso: ${i}% - Optimizando para mejor experiencia...`
                                                 }));
                                             }
 
@@ -5917,8 +6144,8 @@ export default function EditorLibro() {
                                             setAlbumPreparationModal(prev => ({
                                                 ...prev,
                                                 phase: 'processing',
-                                                message: 'Cargando el proyecto',
-                                                subMessage: 'Procesando cada página con calidad profesional...'
+                                                message: `📷 Procesando ${contentType.name.toLowerCase()}`,
+                                                subMessage: 'Generando vistas de alta calidad...'
                                             }));
 
                                             const pdfThumbnails = await loadExistingPDFThumbnails((loaded, total) => {
@@ -5930,41 +6157,57 @@ export default function EditorLibro() {
                                                 }));
                                             });
 
-                                            // 🎭 FASE 4: Finalizando (80-100%)
+                                            // 🎭 FASE 4: Finalizando específico por tipo (80-100%)
+                                            const finalizingMessages = {
+                                                album: { message: '📖 Encuadernando álbum', sub: 'Creando experiencia premium de lectura...' },
+                                                catalog: { message: '📑 Organizando catálogo', sub: 'Preparando navegación fluida...' },
+                                                booklet: { message: '📋 Finalizando folleto', sub: 'Ajustando formato profesional...' },
+                                                card: { message: '🎨 Puliendo diseño', sub: 'Aplicando toques finales...' }
+                                            };
+
+                                            const finalizing = finalizingMessages[contentType.type];
                                             setAlbumPreparationModal(prev => ({
                                                 ...prev,
                                                 phase: 'finalizing',
-                                                message: '🎨 Aplicando toques finales',
-                                                subMessage: 'Perfeccionando tu vista previa...'
+                                                message: finalizing.message,
+                                                subMessage: finalizing.sub
                                             }));
 
                                             for (let i = 80; i <= 100; i += 4) {
-                                                await new Promise(resolve => setTimeout(resolve, 80));
+                                                await new Promise(resolve => setTimeout(resolve, contentType.type === 'card' ? 40 : 80));
                                                 setAlbumPreparationModal(prev => ({
                                                     ...prev,
                                                     progress: i
                                                 }));
                                             }
 
-                                            // � FASE 5: ¡Listo! (100%)
+                                            // 🎉 FASE 5: ¡Listo! (100%) - Mensaje específico por tipo
+                                            const readyMessages = {
+                                                album: { message: '📖 ¡Tu álbum está listo!', sub: 'Experiencia completa de lectura preparada' },
+                                                catalog: { message: '📑 ¡Tu catálogo está listo!', sub: 'Navegación profesional activada' },
+                                                booklet: { message: '📋 ¡Tu folleto está listo!', sub: 'Formato profesional completado' },
+                                                card: { message: '🎨 ¡Tu diseño está listo!', sub: 'Vista previa perfecta creada' }
+                                            };
+
+                                            const ready = readyMessages[contentType.type];
                                             setAlbumPreparationModal(prev => ({
                                                 ...prev,
                                                 phase: 'ready',
                                                 progress: 100,
-                                                message: '🎉 ¡Tu álbum está listo!',
-                                                subMessage: 'Experiencia premium creada especialmente para ti'
+                                                message: ready.message,
+                                                subMessage: ready.sub
                                             }));
 
                                             // Esperar un momento para que se vea el 100%
                                             await new Promise(resolve => setTimeout(resolve, 1000));
 
-                                            // 🎭 FASE 6: Cerrar modal de preparación y abrir álbum
+                                            // 🎭 FASE 6: Cerrar modal de preparación y abrir vista
                                             setAlbumPreparationModal(prev => ({
                                                 ...prev,
                                                 isOpen: false
                                             }));
 
-                                            // Actualizar thumbnails y abrir modal del álbum
+                                            // Actualizar thumbnails y abrir modal correspondiente
                                             setPageThumbnails(prev => ({
                                                 ...prev,
                                                 ...pdfThumbnails
@@ -5973,11 +6216,11 @@ export default function EditorLibro() {
                                             // Pequeño delay para transición suave
                                             setTimeout(() => {
                                                 setIsBookPreviewOpen(true);
-                                                console.log('✅ [ALBUM-EXPERIENCE] Experiencia única completada');
+                                                console.log(`✅ [${contentType.type.toUpperCase()}-EXPERIENCE] Experiencia de ${contentType.name.toLowerCase()} completada`);
                                             }, 300);
 
                                         } catch (error) {
-                                            console.error('❌ [ALBUM-EXPERIENCE] Error en experiencia:', error);
+                                            console.error(`❌ [${contentType.type.toUpperCase()}-EXPERIENCE] Error en experiencia:`, error);
 
                                             // Mostrar error en el modal de preparación
                                             setAlbumPreparationModal(prev => ({
@@ -5999,7 +6242,7 @@ export default function EditorLibro() {
                                     disabled={albumPreparationModal.isOpen}
                                     icon={<Book className="h-4 w-4" />}
                                 >
-                                    {albumPreparationModal.isOpen ? 'Creando experiencia...' : 'Vista de Álbum'}
+                                    {albumPreparationModal.isOpen ? `Creando ${contentType.name.toLowerCase()}...` : contentType.description}
                                 </Button>
 
                                 {/* Botón de Ayuda/Guía */}
@@ -6684,44 +6927,46 @@ export default function EditorLibro() {
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4">
-                                                    {/* Cover section */}
-                                                    <div>
-                                                        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mr-1.5"></div>
-                                                            Cover
-                                                        </div>
-                                                        {categorizedPages.cover.map((page, index) => (
-                                                            <div
-                                                                key={page.id}
-                                                                className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
-                                                                ${currentPage === pages.indexOf(page)
-                                                                        ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
-                                                                        : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                                                                mb-2`}
-                                                                onClick={() => handlePageChange(pages.indexOf(page))}
-                                                            >
-                                                                <div className="relative bg-purple-50 overflow-hidden border aspect-[4/3] rounded-lg">
-                                                                    <ThumbnailImage
-                                                                        pageId={page.id}
-                                                                        thumbnail={pageThumbnails[page.id]}
-                                                                        altText="Cover"
-                                                                        type="cover"
-                                                                    />
-                                                                    {/* Indicador de cambios sin guardar */}
-                                                                    {(pageChanges instanceof Map && pageChanges.has && pageChanges.has(pages.indexOf(page))) && (
-                                                                        <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
-                                                                            •
+                                                    {/* Cover section - Solo mostrar si hay páginas de cover */}
+                                                    {categorizedPages.cover.length > 0 && (
+                                                        <div>
+                                                            <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mr-1.5"></div>
+                                                                Cover
+                                                            </div>
+                                                            {categorizedPages.cover.map((page, index) => (
+                                                                <div
+                                                                    key={page.id}
+                                                                    className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
+                                                                    ${currentPage === pages.indexOf(page)
+                                                                            ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
+                                                                            : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
+                                                                    mb-2`}
+                                                                    onClick={() => handlePageChange(pages.indexOf(page))}
+                                                                >
+                                                                    <div className="relative bg-purple-50 overflow-hidden border aspect-[4/3] rounded-lg">
+                                                                        <ThumbnailImage
+                                                                            pageId={page.id}
+                                                                            thumbnail={pageThumbnails[page.id]}
+                                                                            altText="Cover"
+                                                                            type="cover"
+                                                                        />
+                                                                        {/* Indicador de cambios sin guardar */}
+                                                                        {(pageChanges instanceof Map && pageChanges.has && pageChanges.has(pages.indexOf(page))) && (
+                                                                            <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
+                                                                                •
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
+                                                                            <span className="text-[10px] text-white font-medium block">
+                                                                                Cover
+                                                                            </span>
                                                                         </div>
-                                                                    )}
-                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
-                                                                        <span className="text-[10px] text-white font-medium block">
-                                                                            Cover
-                                                                        </span>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
 
                                                     {/* Content pages */}
                                                     <div>
@@ -6766,44 +7011,46 @@ export default function EditorLibro() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Final page */}
-                                                    <div>
-                                                        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></div>
-                                                            Back Cover
-                                                        </div>
-                                                        {categorizedPages.final.map((page, index) => (
-                                                            <div
-                                                                key={page.id}
-                                                                className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
-                                                                ${currentPage === pages.indexOf(page)
-                                                                        ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
-                                                                        : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
-                                                                mb-2`}
-                                                                onClick={() => handlePageChange(pages.indexOf(page))}
-                                                            >
-                                                                <div className="relative overflow-hidden border mb-1 aspect-[4/3] rounded-lg">
-                                                                    <ThumbnailImage
-                                                                        pageId={page.id}
-                                                                        thumbnail={pageThumbnails[page.id]}
-                                                                        altText="Back Cover"
-                                                                        type="final"
-                                                                    />
-                                                                    {/* Indicador de cambios sin guardar */}
-                                                                    {(pageChanges instanceof Map && pageChanges.has && pageChanges.has(pages.indexOf(page))) && (
-                                                                        <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
-                                                                            •
+                                                    {/* Final page - Solo mostrar si hay páginas de back cover */}
+                                                    {categorizedPages.final.length > 0 && (
+                                                        <div>
+                                                            <div className="text-xs font-medium text-gray-500 mb-2 flex items-center">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></div>
+                                                                Back Cover
+                                                            </div>
+                                                            {categorizedPages.final.map((page, index) => (
+                                                                <div
+                                                                    key={page.id}
+                                                                    className={`relative group flex flex-col cursor-pointer transition-all duration-200 transform 
+                                                                    ${currentPage === pages.indexOf(page)
+                                                                            ? "ring-2 ring-purple-400 scale-[1.02] shadow-md"
+                                                                            : "hover:bg-gray-50 border border-transparent hover:border-gray-200"}
+                                                                    mb-2`}
+                                                                    onClick={() => handlePageChange(pages.indexOf(page))}
+                                                                >
+                                                                    <div className="relative overflow-hidden border mb-1 aspect-[4/3] rounded-lg">
+                                                                        <ThumbnailImage
+                                                                            pageId={page.id}
+                                                                            thumbnail={pageThumbnails[page.id]}
+                                                                            altText="Back Cover"
+                                                                            type="final"
+                                                                        />
+                                                                        {/* Indicador de cambios sin guardar */}
+                                                                        {(pageChanges instanceof Map && pageChanges.has && pageChanges.has(pages.indexOf(page))) && (
+                                                                            <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] px-1.5 py-0.5 rounded-full shadow-sm">
+                                                                                •
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
+                                                                            <span className="text-[10px] text-white font-medium block">
+                                                                                Back Cover
+                                                                            </span>
                                                                         </div>
-                                                                    )}
-                                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 pt-6 group-hover:opacity-100 opacity-80 transition-opacity">
-                                                                        <span className="text-[10px] text-white font-medium block">
-                                                                            Back Cover
-                                                                        </span>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

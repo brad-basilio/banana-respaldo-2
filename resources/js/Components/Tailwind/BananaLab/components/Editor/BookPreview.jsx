@@ -75,6 +75,9 @@ const BookPreviewModal = ({
     presetData = null,
     projectData = null,
     itemData = null,
+    // 🎯 NUEVO: Tipo de contenido inteligente
+    contentType = { type: 'album', name: 'Álbum', description: 'Vista de Álbum', icon: '📖' },
+    categorizedPages = { cover: [], content: [], final: [] },
     // 🚀 NUEVO: Estado de carga del álbum
     albumLoadingState = { isLoading: false, loadedImages: 0, totalImages: 0, message: '' }
 }) => {
@@ -265,18 +268,31 @@ const BookPreviewModal = ({
                 }
             });
 
-            // Generar thumbnail
+            // 🔧 FIX: Usar page.id como clave en lugar de index para thumbnails
             const thumbnail = canvas.toDataURL('image/jpeg', 0.9);
-            return { [index]: thumbnail };
+            return { [page.id]: thumbnail };
         };
 
         // Generar thumbnails para todas las páginas
         const promises = pages.map((page, index) => generatePageThumbnail(page, index));
         const thumbnails = await Promise.all(promises);
 
+        // 🔧 DEBUG: Log para verificar estructura de thumbnails generados
+        console.log('🖼️ [THUMBNAIL-GEN] Thumbnails generados:', {
+            totalThumbnails: thumbnails.length,
+            thumbnailKeys: thumbnails.map(t => Object.keys(t)).flat(),
+            pageIds: pages.map(p => p.id),
+            pageTypes: pages.map(p => p.type)
+        });
+
         // Combinar todos los thumbnails
         thumbnails.forEach(thumb => {
             Object.assign(newThumbnails, thumb);
+        });
+
+        console.log('🖼️ [THUMBNAIL-GEN] newThumbnails final:', {
+            keys: Object.keys(newThumbnails),
+            hasAllPages: pages.every(p => newThumbnails[p.id])
         });
 
         // Actualizar estado
@@ -639,54 +655,168 @@ const BookPreviewModal = ({
     const previewHeight = previewBaseWidht;
     const previewWidth = Math.round(previewHeight * workspaceAspectRatio);
 
+    // ✅ FUNCIÓN PARA FILTRAR PÁGINAS SEGÚN CONFIGURACIÓN
+    const getEnabledPages = () => {
+        // Verificar qué páginas están habilitadas según la configuración
+        const hasCover = itemData?.has_cover_image === true || itemData?.has_cover_image === 1;
+        const hasBackCover = itemData?.has_back_cover_image === true || itemData?.has_back_cover_image === 1;
+
+        console.log('🔍 [FILTER-PAGES] Configuración de páginas:', {
+            has_cover_image: itemData?.has_cover_image,
+            has_back_cover_image: itemData?.has_back_cover_image,
+            hasCover,
+            hasBackCover,
+            totalPagesReceived: pages.length,
+            pagesReceived: pages.map(p => ({
+                id: p.id,
+                type: p.type,
+                pageNumber: p.pageNumber,
+                layoutId: p.layoutId
+            }))
+        });
+
+        // Filtrar páginas según configuración
+        const enabledPages = pages.filter(page => {
+            if (page.type === 'cover' && !hasCover) {
+                console.log('🚫 [FILTER-PAGES] Eliminando portada (deshabilitada)');
+                return false;
+            }
+            if (page.type === 'final' && !hasBackCover) {
+                console.log('🚫 [FILTER-PAGES] Eliminando contraportada (deshabilitada)');
+                return false;
+            }
+            // Siempre incluir páginas de contenido
+            return true;
+        });
+
+        console.log('✅ [FILTER-PAGES] Páginas habilitadas:', {
+            total: enabledPages.length,
+            types: enabledPages.map(p => p.type),
+            details: enabledPages.map(p => ({ 
+                id: p.id, 
+                type: p.type, 
+                pageNumber: p.pageNumber 
+            }))
+        });
+
+        return enabledPages;
+    };
+
     // Función para organizar páginas como libro real con frente y reverso
     const createBookPages = () => {
-        const bookPages = [];
+        const enabledPages = getEnabledPages();
 
-        // Todas las páginas en orden secuencial
-        const allPages = [
-            ...pages.filter(page => page.type === 'cover'),
-            ...pages.filter(page => page.type === 'content'),
-            ...pages.filter(page => page.type === 'final')
-        ];
-
-        // Para HTMLFlipBook, necesitamos duplicar las páginas para simular frente y reverso
-        // La primera página (portada) solo tiene frente
-        if (allPages.length > 0) {
-            bookPages.push(allPages[0]); // Portada (frente)
-            bookPages.push({ ...allPages[0], isBack: true }); // Portada (reverso - blanco o info)
+        // ✅ Si no hay páginas válidas, retornar array vacío
+        if (enabledPages.length === 0) {
+            console.warn('⚠️ [BOOK-PAGES] No hay páginas válidas para mostrar');
+            return [];
         }
 
-        // Páginas de contenido - cada página es frente y reverso de una hoja
-        for (let i = 1; i < allPages.length - 1; i++) {
-            bookPages.push(allPages[i]); // Frente de la hoja
-            if (i + 1 < allPages.length - 1) {
-                bookPages.push(allPages[i + 1]); // Reverso de la hoja (siguiente página)
-                i++; // Saltamos la siguiente porque ya la incluimos como reverso
+        // ✅ CREAR PÁGINAS PARA HTMLFlipBook
+        // Cada página será individual (sin duplicados de reverso)
+        const bookPages = enabledPages.map((page, index) => {
+            // 🎯 CALCULAR TÍTULO INTELIGENTE
+            let pageTitle = '';
+            
+            if (page.type === 'cover') {
+                pageTitle = 'Portada';
+            } else if (page.type === 'final') {
+                pageTitle = 'Contraportada';
+            } else if (page.type === 'content') {
+                // Para páginas de contenido, usar su número real o calcular basado en su posición
+                const contentPageNumber = page.pageNumber || (index + 1);
+                pageTitle = `Página ${contentPageNumber}`;
             } else {
-                // Si es la última página de contenido, el reverso puede estar en blanco
-                bookPages.push({ ...allPages[i], isBack: true, isEmpty: true });
+                pageTitle = `Página ${index + 1}`;
             }
-        }
 
-        // Contraportada (si existe)
-        const finalPage = allPages.find(page => page.type === 'final');
-        if (finalPage) {
-            bookPages.push({ ...finalPage, isBack: true, isEmpty: true }); // Reverso blanco
-            bookPages.push(finalPage); // Contraportada
-        }
+            return {
+                ...page,
+                id: `${page.id}-display`,
+                originalId: page.id,
+                displayIndex: index,
+                pageType: page.type,
+                pageTitle: pageTitle,
+                originalPageNumber: page.pageNumber // Preservar número original
+            };
+        });
+
+        console.log('🎯 [BOOK-PAGES] Páginas creadas para HTMLFlipBook:', {
+            totalPages: bookPages.length,
+            pageList: bookPages.map(p => ({ 
+                id: p.id, 
+                originalId: p.originalId,
+                type: p.pageType, 
+                title: p.pageTitle,
+                displayIndex: p.displayIndex,
+                originalPageNumber: p.originalPageNumber,
+                pageNumber: p.pageNumber
+            })),
+            contentOnlyPages: bookPages.filter(p => p.pageType === 'content').map(p => ({
+                title: p.pageTitle,
+                originalPageNumber: p.originalPageNumber,
+                pageNumber: p.pageNumber
+            }))
+        });
 
         return bookPages;
     };
 
     const bookPages = createBookPages();
 
+    // ✅ CONFIGURACIÓN INTELIGENTE: Determinar si tenemos portada para configurar HTMLFlipBook
+    const hasRealCover = bookPages.length > 0 && bookPages[0]?.pageType === 'cover';
+    const contentOnlyMode = bookPages.length > 0 && !hasRealCover && 
+                           !bookPages.some(p => p.pageType === 'final');
+
+    console.log('🎯 [FLIPBOOK-CONFIG] Configuración del libro:', {
+        totalPages: bookPages.length,
+        hasRealCover,
+        contentOnlyMode,
+        pageTypes: bookPages.map(p => p.pageType)
+    });
+
+    // Si no hay páginas, mostrar mensaje
+    if (bookPages.length === 0) {
+        return (
+            <Modal
+                isOpen={isOpen}
+                onRequestClose={onRequestClose}
+                style={customStyles}
+                contentLabel="Vista previa del álbum"
+                ariaHideApp={true}
+                shouldCloseOnOverlayClick={true}
+                shouldCloseOnEsc={true}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="modal-title"
+                aria-describedby="modal-description"
+            >
+                <div className="bg-white p-8 rounded-lg shadow-lg max-w-md mx-auto">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 id="modal-title" className="text-xl font-bold">Vista previa del {contentType.name.toLowerCase()}</h2>
+                        <button
+                            onClick={onRequestClose}
+                            className="text-gray-500 hover:text-gray-700"
+                            aria-label="Cerrar vista previa"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+                    <p id="modal-description" className="text-gray-600">
+                        No hay páginas habilitadas para mostrar. Verifique la configuración de portada y contraportada.
+                    </p>
+                </div>
+            </Modal>
+        );
+    }
+
     return (
         <Modal
             isOpen={isOpen}
             onRequestClose={onRequestClose}
             style={customStyles}
-            contentLabel="Vista previa del álbum"
+            contentLabel={`Vista previa del ${contentType.name.toLowerCase()}`}
             ariaHideApp={true}
             shouldCloseOnOverlayClick={true}
             shouldCloseOnEsc={true}
@@ -743,9 +873,9 @@ const BookPreviewModal = ({
 
             <div className="relative flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-2xl">
                 {/* Título del modal (oculto visualmente pero accesible) */}
-                <h2 id="modal-title" className="sr-only">Vista previa del álbum</h2>
+                <h2 id="modal-title" className="sr-only">Vista previa del {contentType.name.toLowerCase()}</h2>
                 <p id="modal-description" className="sr-only">
-                    Navegue por las páginas de su álbum usando los controles de navegación o teclado.
+                    Navegue por las páginas de su {contentType.name.toLowerCase()} usando los controles de navegación o teclado.
                     Puede cerrar esta ventana presionando Escape o el botón de cerrar.
                 </p>
 
@@ -753,7 +883,7 @@ const BookPreviewModal = ({
                 <button
                     onClick={onRequestClose}
                     className="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow z-10"
-                    aria-label="Cerrar vista previa del álbum"
+                    aria-label={`Cerrar vista previa del ${contentType.name.toLowerCase()}`}
                 >
                     <X className="h-6 w-6" />
                 </button>
@@ -774,31 +904,29 @@ const BookPreviewModal = ({
                             const currentPageData = bookPages[currentPage];
                             if (!currentPageData) return 'Cargando...';
 
-                            // Manejo especial para reversos y páginas en blanco
-                            if (currentPageData.isBack && currentPageData.isEmpty) {
-                                return 'Reverso';
-                            }
-                            if (currentPageData.isBack) {
-                                return 'Reverso de la página';
-                            }
+                            // 🔍 DEBUG: Log datos de la página actual
+                            console.log('📊 [CURRENT-PAGE] Datos de página actual:', {
+                                currentPage,
+                                pageData: currentPageData,
+                                pageTitle: currentPageData.pageTitle,
+                                pageType: currentPageData.pageType,
+                                originalPageNumber: currentPageData.originalPageNumber,
+                                pageNumber: currentPageData.pageNumber
+                            });
 
-                            if (currentPageData.type === 'cover') return 'Portada';
-                            if (currentPageData.type === 'final') return 'Contraportada';
-                            return `Página ${currentPageData.pageNumber || Math.ceil((currentPage + 1) / 2)}`;
+                            // Usar el título generado
+                            return currentPageData.pageTitle || `Página ${currentPage + 1}`;
                         })()}
                         <span className="mx-2 text-gray-400">•</span>
-                        {Math.ceil((currentPage + 1) / 2)} / {Math.ceil(bookPages.length / 2)} hojas
+                        {currentPage + 1} / {bookPages.length} páginas
+                        {contentOnlyMode && (
+                            <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                Solo contenido
+                            </span>
+                        )}
                     </span>
                     
-                    {/* Indicador de PDF generado */}
-                    {pdfGenerated && (
-                        <span className="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                            </svg>
-                            PDF listo
-                        </span>
-                    )}
+                  
                 </div>
 
                     <button
@@ -822,7 +950,7 @@ const BookPreviewModal = ({
                         minHeight={previewHeight * 0.7}
                         maxHeight={previewHeight * 1.3}
                         maxShadowOpacity={0.3}
-                        showCover={true}
+                        showCover={hasRealCover}
                         mobileScrollSupport={true}
                         onFlip={(e) => setCurrentPage(e.data)}
                         className="shadow-xl"
@@ -832,50 +960,53 @@ const BookPreviewModal = ({
                         flippingTime={600}
                         useMouseEvents={true}
                         swipeDistance={50}
-                        showPageCorners={true}
+                        showPageCorners={!contentOnlyMode}
                         disableFlipByClick={false}
+                        autoSize={contentOnlyMode}
                         style={{
                             margin: 0,
                             padding: 0
                         }}
                     >
-                        {bookPages.map((page, pageIdx) => (
-                            <div
-                                key={`page-${pageIdx}`}
-                                id={`page-${page.id}`}
-                                className="page-container"
-                                style={{
-                                    width: previewWidth,
-                                    height: previewHeight,
-                                    margin: 0,
-                                    padding: 0,
-                                    overflow: 'hidden',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor: '#ffffff'
-                                }}
-                            >
-                                {/* Página individual con manejo de reversos */}
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {page.isEmpty || page.isBack ? (
-                                        // Página en blanco (reverso)
-                                        <div
-                                            className="flex items-center justify-center text-gray-300 text-xs"
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                backgroundColor: '#ffffff',
-                                                border: '1px solid #f0f0f0'
-                                            }}
-                                        >
-                                            {page.isBack ? 'Reverso' : ''}
-                                        </div>
-                                    ) : activeThumbnails[page.id] ? (
+                        {bookPages.map((page, pageIdx) => {
+                            // 🔧 DEBUG: Log para verificar thumbnails disponibles para cada página
+                            const thumbnailKey = page.originalId || page.id;
+                            const hasThumbnail = !!activeThumbnails[thumbnailKey];
+                            
+                            console.log(`🖼️ [PAGE-RENDER] Página ${pageIdx}:`, {
+                                pageId: page.id,
+                                originalId: page.originalId,
+                                thumbnailKey,
+                                hasThumbnail,
+                                pageType: page.pageType,
+                                pageTitle: page.pageTitle,
+                                availableThumbnailKeys: Object.keys(activeThumbnails)
+                            });
+
+                            return (
+                                <div
+                                    key={`page-${pageIdx}`}
+                                    id={`page-${page.originalId || page.id}`}
+                                    className="page-container"
+                                    style={{
+                                        width: previewWidth,
+                                        height: previewHeight,
+                                        margin: 0,
+                                        padding: 0,
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                >
+                                    {/* Página individual */}
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {activeThumbnails[page.originalId || page.id] ? (
                                         // Página con contenido usando thumbnails disponibles
                                         <img
-                                            src={activeThumbnails[page.id]}
-                                            alt={`${page.type === 'cover' ? 'Portada' : page.type === 'final' ? 'Contraportada' : `Página ${page.pageNumber || pageIdx + 1}`}`}
+                                            src={activeThumbnails[page.originalId || page.id]}
+                                            alt={page.pageTitle || `Página ${pageIdx + 1}`}
                                             style={{
                                                 width: '100%',
                                                 height: '100%',
@@ -897,7 +1028,8 @@ const BookPreviewModal = ({
                                     )}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </HTMLFlipBook>
                 </div>
             </div>
@@ -1137,26 +1269,43 @@ const BookPreviewModal = ({
 
 // Componente para placeholder inline simple
 const InlinePlaceholder = ({ page, pageIdx }) => {
-    let pageTitle = '';
+    // Usar los nuevos campos del objeto page con prioridad
+    const pageTitle = page.pageTitle || 
+                     (page.type === 'content' ? `Página ${page.originalPageNumber || page.pageNumber || pageIdx + 1}` : 
+                      page.type === 'cover' ? 'Portada' :
+                      page.type === 'final' ? 'Contraportada' :
+                      `Página ${pageIdx + 1}`);
+    
+    const pageType = page.pageType || page.type || 'content';
+    
     let pageIcon = '';
 
-    switch (page.type) {
+    switch (pageType) {
         case 'cover':
-            pageTitle = 'Portada';
             pageIcon = '📚';
             break;
         case 'final':
-            pageTitle = 'Contraportada';
             pageIcon = '📖';
             break;
         case 'content':
-            pageTitle = `Página ${page.pageNumber || pageIdx + 1}`;
             pageIcon = '📄';
             break;
         default:
-            pageTitle = `Página ${pageIdx + 1}`;
             pageIcon = '📄';
     }
+
+    // 🔍 DEBUG: Log para entender qué está mostrando
+    console.log('🎨 [PLACEHOLDER] Creando placeholder:', {
+        pageTitle,
+        pageType,
+        pageData: {
+            pageTitle: page.pageTitle,
+            originalPageNumber: page.originalPageNumber,
+            pageNumber: page.pageNumber,
+            type: page.type,
+            pageType: page.pageType
+        }
+    });
 
     return (
         <div
@@ -1169,6 +1318,14 @@ const InlinePlaceholder = ({ page, pageIdx }) => {
             {page.layout && (
                 <div className="text-xs text-gray-400 mt-2">
                     Layout: {page.layout.name || 'Personalizado'}
+                </div>
+            )}
+            {/* 🔍 DEBUG: Mostrar información adicional en desarrollo */}
+            {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-gray-400 mt-2 text-center">
+                    <div>ID: {page.originalId || page.id}</div>
+                    <div>Tipo: {pageType}</div>
+                    <div>Página #: {page.originalPageNumber || page.pageNumber || 'N/A'}</div>
                 </div>
             )}
         </div>

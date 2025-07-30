@@ -148,65 +148,80 @@ const Items = ({ categories, brands, collections }) => {
         if (data?.id) setIsEditing(true);
         else setIsEditing(false);
         setCurrentPdf(data?.pdf ? `/storage/images/item/${data.pdf}` : "");
-        idRef.current.value = data?.id || "";
-        $(categoryRef.current)
-            .val(data?.category_id || null)
-            .trigger("change");
-       /* $(collectionRef.current)
-            .val(data?.collection_id || null)
-            .trigger("change");*/
-        SetSelectValue(
-            subcategoryRef.current,
-            data?.subcategory?.id,
-            data?.subcategory?.name
-        );
-      /*  $(brandRef.current)
-            .val(data?.brand_id || null)
-            .trigger("change");*/
-        nameRef.current.value = data?.name || "";
-        skuRef.current.value = data?.sku || "";
-        //colorRef.current.value = data?.color || "";
-        summaryRef.current.value = data?.summary || "";
-      
-        priceRef.current.value = data?.price || 0;
-        discountRef.current.value = data?.discount || 0;
-
-        // Campos de presets y páginas
-        $(canvasPresetRef.current).val(data?.canvas_preset_id || null).trigger("change");
-        pagesRef.current.value = data?.pages || 1;
-
-        SetSelectValue(tagsRef.current, data?.tags ?? [], "id", "name");
-
-      //  bannerRef.current.value = null;
-        imageRef.current.value = null;
-        coverImageRef.current.value = null;
-        contentImageRef.current.value = null;
-        backCoverImageRef.current.value = null;
         
-      /*  bannerRef.image.src = `/storage/images/item/${
-            data?.banner ?? "undefined"
-        }`;*/
-        imageRef.image.src = `/storage/images/item/${
-            data?.image ?? "undefined"
-        }`;
-      /*  textureRef.image.src = `/storage/images/item/${
-            data?.texture ?? "undefined"
-        }`;*/
-        coverImageRef.image.src = `/storage/images/item/${
-            data?.cover_image ?? "undefined"
-        }`;
-        contentImageRef.image.src = `/storage/images/item/${
-            data?.content_image ?? "undefined"
-        }`;
-        backCoverImageRef.image.src = `/storage/images/item/${
-            data?.back_cover_image ?? "undefined"
-        }`;
+        // Verificar que los refs existan antes de asignar valores
+        if (idRef.current) idRef.current.value = data?.id || "";
+        if (nameRef.current) nameRef.current.value = data?.name || "";
+        if (skuRef.current) skuRef.current.value = data?.sku || "";
+        if (summaryRef.current) summaryRef.current.value = data?.summary || "";
+        if (priceRef.current) priceRef.current.value = data?.price || 0;
+        if (discountRef.current) discountRef.current.value = data?.discount || 0;
+        if (pagesRef.current) pagesRef.current.value = data?.pages || 1;
 
-        // Configurar checkboxes según las imágenes existentes
-        setHasCoverImage(!!(data?.cover_image));
-        setHasBackCoverImage(!!(data?.back_cover_image));
+        
+        // Configurar select con jQuery si los elementos existen
+        if (categoryRef.current) {
+            $(categoryRef.current)
+                .val(data?.category_id || null)
+                .trigger("change");
+        }
+        
+        // Configurar select API con validación
+        if (subcategoryRef.current) {
+            SetSelectValue(
+                subcategoryRef.current,
+                data?.subcategory?.id,
+                data?.subcategory?.name
+            );
+        }
 
-        descriptionRef.editor.root.innerHTML = data?.description ?? "";
+        // Configurar canvas preset select con validación
+        if (canvasPresetRef.current) {
+            $(canvasPresetRef.current).val(data?.canvas_preset_id || null).trigger("change");
+        }
+
+        // Configurar tags
+        if (tagsRef.current) {
+            SetSelectValue(tagsRef.current, data?.tags ?? [], "id", "name");
+        }
+
+        // Limpiar inputs de archivos y configurar imágenes
+        if (imageRef.current) {
+            imageRef.current.value = null;
+            if (imageRef.image) {
+                imageRef.image.src = `/storage/images/item/${data?.image ?? "undefined"}`;
+            }
+        }
+        
+        if (coverImageRef.current) {
+            coverImageRef.current.value = null;
+            if (coverImageRef.image) {
+                coverImageRef.image.src = `/storage/images/item/${data?.cover_image ?? "undefined"}`;
+            }
+        }
+        
+        if (contentImageRef.current) {
+            contentImageRef.current.value = null;
+            if (contentImageRef.image) {
+                contentImageRef.image.src = `/storage/images/item/${data?.content_image ?? "undefined"}`;
+            }
+        }
+        
+        if (backCoverImageRef.current) {
+            backCoverImageRef.current.value = null;
+            if (backCoverImageRef.image) {
+                backCoverImageRef.image.src = `/storage/images/item/${data?.back_cover_image ?? "undefined"}`;
+            }
+        }
+
+        // Configurar checkboxes según los valores booleanos de la base de datos
+        setHasCoverImage(data?.has_cover_image === 1 || data?.has_cover_image === true);
+        setHasBackCoverImage(data?.has_back_cover_image === 1 || data?.has_back_cover_image === true);
+
+        // Configurar editor de descripción
+        if (descriptionRef.current && descriptionRef.editor && descriptionRef.editor.root) {
+            descriptionRef.editor.root.innerHTML = data?.description ?? "";
+        }
 
         //TODO: Cargar las imágenes existentes de la galería
 
@@ -234,7 +249,11 @@ const Items = ({ categories, brands, collections }) => {
         
         // Nuevos campos
         setFeatures(data?.features?.map(f => typeof f === 'object' ? f : { feature: f }) || []);
-        stockRef.current.value = data?.stock;
+        
+        // Verificar que stockRef existe antes de asignar valor
+        if (stockRef.current) {
+            stockRef.current.value = data?.stock || '';
+        }
         
         // Limpiar checkboxes si es un nuevo item
         if (!data?.id) {
@@ -262,27 +281,27 @@ const Items = ({ categories, brands, collections }) => {
         );
 
         const request = {
-            id: idRef.current.value || undefined,
-            category_id: categoryRef.current.value,
+            id: idRef.current?.value || undefined,
+            category_id: categoryRef.current?.value,
           //  collection_id: collectionRef.current.value || null,
-            subcategory_id: subcategoryRef.current.value,
+            subcategory_id: subcategoryRef.current?.value,
            // brand_id: brandRef.current.value,
-            name: nameRef.current.value,
-            sku: skuRef.current.value,
+            name: nameRef.current?.value,
+            sku: skuRef.current?.value,
           //  color: colorRef.current.value,
-            summary: summaryRef.current.value,
-            price: priceRef.current.value,
-            discount: discountRef.current.value,
+            summary: summaryRef.current?.value,
+            price: priceRef.current?.value,
+            discount: discountRef.current?.value,
             tags: $(tagsRef.current).val(),
-            description: descriptionRef.current.value,
-            stock: stockRef.current.value,
-            canvas_preset_id: canvasPresetRef.current.value || null,
-            pages: pagesRef.current.value,
+            description: descriptionRef.current?.value,
+            stock: stockRef.current?.value || '',
+            canvas_preset_id: canvasPresetRef.current?.value || null,
+            pages: pagesRef.current?.value,
             features: cleanFeatures,
             specifications: cleanSpecs,
             linkvideo:"",
-            has_cover_image: hasCoverImage,
-            has_back_cover_image: hasBackCoverImage
+            has_cover_image: hasCoverImage ? 1 : 0,
+            has_back_cover_image: hasBackCoverImage ? 1 : 0
         };
 
 
@@ -307,19 +326,15 @@ const Items = ({ categories, brands, collections }) => {
             formData.append("content_image", contentImage);
         }
         
-        // Solo enviar imágenes opcionales si están habilitadas
-        if (hasCoverImage) {
-            const coverImage = coverImageRef.current.files[0];
-            if (coverImage) {
-                formData.append("cover_image", coverImage);
-            }
+        // Siempre enviar imágenes opcionales si se subieron, independientemente del checkbox
+        const coverImage = coverImageRef.current.files[0];
+        if (coverImage) {
+            formData.append("cover_image", coverImage);
         }
         
-        if (hasBackCoverImage) {
-            const backCoverImage = backCoverImageRef.current.files[0];
-            if (backCoverImage) {
-                formData.append("back_cover_image", backCoverImage);
-            }
+        const backCoverImage = backCoverImageRef.current.files[0];
+        if (backCoverImage) {
+            formData.append("back_cover_image", backCoverImage);
         }
 
         //TODO: Preparar los datos de la galería
@@ -974,29 +989,19 @@ const Items = ({ categories, brands, collections }) => {
                                                 Incluir Imagen de Portada
                                             </label>
                                         </div>
-                                        <small className="text-muted">Opcional para productos como tazas, etc.</small>
+                                        <small className="text-muted">
+                                            Controla si se usa en el diseño (la imagen siempre se guarda)
+                                        </small>
                                     </div>
-                                    {hasCoverImage && (
-                                        <ImageFormGroup
-                                            eRef={coverImageRef}
-                                            label="Imagen de Portada"
-                                            aspect={1}
-                                            col="col-12"
-                                        />
-                                    )}
+                                    <ImageFormGroup
+                                        eRef={coverImageRef}
+                                        label="Imagen de Portada"
+                                        aspect={1}
+                                        col="col-12"
+                                    />
                                     {!hasCoverImage && (
-                                        <div 
-                                            className="border-2 border-dashed p-4 text-center"
-                                            style={{
-                                                borderColor: "#dee2e6",
-                                                backgroundColor: "#f8f9fa",
-                                                borderRadius: "8px",
-                                                minHeight: "120px"
-                                            }}
-                                        >
-                                            <i className="fa fa-image fa-2x text-muted mb-2"></i>
-                                            <p className="text-muted mb-0">Imagen de portada deshabilitada</p>
-                                            <small className="text-muted">Activa el checkbox para habilitar</small>
+                                        <div className="alert alert-warning p-2 mt-2">
+                                            <small>⚠️ Imagen no se usará en el diseño (pero se guardará)</small>
                                         </div>
                                     )}
                                 </div>
@@ -1016,29 +1021,19 @@ const Items = ({ categories, brands, collections }) => {
                                                 Incluir Imagen de Contraportada
                                             </label>
                                         </div>
-                                        <small className="text-muted">Opcional para productos como tazas, etc.</small>
+                                        <small className="text-muted">
+                                            Controla si se usa en el diseño (la imagen siempre se guarda)
+                                        </small>
                                     </div>
-                                    {hasBackCoverImage && (
-                                        <ImageFormGroup
-                                            eRef={backCoverImageRef}
-                                            label="Imagen de Contraportada"
-                                            aspect={1}
-                                            col="col-12"
-                                        />
-                                    )}
+                                    <ImageFormGroup
+                                        eRef={backCoverImageRef}
+                                        label="Imagen de Contraportada"
+                                        aspect={1}
+                                        col="col-12"
+                                    />
                                     {!hasBackCoverImage && (
-                                        <div 
-                                            className="border-2 border-dashed p-4 text-center"
-                                            style={{
-                                                borderColor: "#dee2e6",
-                                                backgroundColor: "#f8f9fa",
-                                                borderRadius: "8px",
-                                                minHeight: "120px"
-                                            }}
-                                        >
-                                            <i className="fa fa-image fa-2x text-muted mb-2"></i>
-                                            <p className="text-muted mb-0">Imagen de contraportada deshabilitada</p>
-                                            <small className="text-muted">Activa el checkbox para habilitar</small>
+                                        <div className="alert alert-warning p-2 mt-2">
+                                            <small>⚠️ Imagen no se usará en el diseño (pero se guardará)</small>
                                         </div>
                                     )}
                                 </div>
