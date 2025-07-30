@@ -1230,16 +1230,17 @@ export default function EditorLibro() {
                     let backgroundImage = null;
                     let backgroundColor = presetData.background_color || '#ffffff';
 
-                    // Aplicar la lógica de background según el tipo de página
-                    if (page.type === 'cover') {
+                    // Aplicar la lógica de background según el tipo de página y si está habilitada
+                    if (page.type === 'cover' && itemData.has_cover_image !== false) {
                         if (itemData.cover_image) {
                             backgroundImage = `/storage/images/item/${itemData.cover_image}`;
                         }
                     } else if (page.type === 'content') {
+                        // Páginas de contenido siempre activas
                         if (itemData.content_image) {
                             backgroundImage = `/storage/images/item/${itemData.content_image}`;
                         }
-                    } else if (page.type === 'final' || page.type === 'contraportada') {
+                    } else if ((page.type === 'final' || page.type === 'contraportada') && itemData.has_back_cover_image !== false) {
                         if (itemData.back_cover_image) {
                             backgroundImage = `/storage/images/item/${itemData.back_cover_image}`;
                         }
@@ -1250,6 +1251,15 @@ export default function EditorLibro() {
                         backgroundImage,
                         backgroundColor
                     };
+                }).filter(page => {
+                    // Filtrar páginas que no deberían existir según la configuración
+                    if (page.type === 'cover' && itemData.has_cover_image === false) {
+                        return false;
+                    }
+                    if ((page.type === 'final' || page.type === 'contraportada') && itemData.has_back_cover_image === false) {
+                        return false;
+                    }
+                    return true;
                 });
 
                 // 🚀 PROTECCIÓN: Solo actualizar si no hay páginas ya cargadas o si es la carga inicial
@@ -3517,28 +3527,30 @@ export default function EditorLibro() {
             const totalPages = item.pages || preset.pages || 20; // Usar páginas del preset primero
 
 
-            // 1. PÁGINA DE PORTADA
-            const coverBackgroundImage = item.cover_image ? `/storage/images/item/${item.cover_image}` : null;
-            const coverBackgroundColor = !item.cover_image ? (preset.background_color || "#ffffff") : null;
+            // 1. PÁGINA DE PORTADA - Solo si está habilitada
+            if (item.has_cover_image !== false) { // Incluir si no está definido o es true
+                const coverBackgroundImage = item.cover_image ? `/storage/images/item/${item.cover_image}` : null;
+                const coverBackgroundColor = !item.cover_image ? (preset.background_color || "#ffffff") : null;
 
-            const coverPage = {
-                id: "page-cover",
-                type: "cover",
-                layout: "layout-1",
-                backgroundImage: coverBackgroundImage,
-                backgroundColor: coverBackgroundColor,
-                cells: [{
-                    id: "cell-cover-1",
-                    elements: [
-                        // Título del álbum
+                const coverPage = {
+                    id: "page-cover",
+                    type: "cover",
+                    layout: "layout-1",
+                    backgroundImage: coverBackgroundImage,
+                    backgroundColor: coverBackgroundColor,
+                    cells: [{
+                        id: "cell-cover-1",
+                        elements: [
+                            // Título del álbum
 
-                    ]
-                }]
-            };
+                        ]
+                    }]
+                };
 
-            newPages.push(coverPage);
+                newPages.push(coverPage);
+            }
 
-            // 2. PÁGINAS DE CONTENIDO
+            // 2. PÁGINAS DE CONTENIDO (Siempre obligatorias)
             const contentBackgroundImage = item.content_image ? `/storage/images/item/${item.content_image}` : null;
             const contentBackgroundColor = !item.content_image ? (preset.background_color || "#ffffff") : null;
 
@@ -3562,43 +3574,45 @@ export default function EditorLibro() {
                 newPages.push(contentPage);
             }
 
-            // 3. PÁGINA FINAL/CONTRAPORTADA
-            const finalBackgroundImage = item.back_cover_image ? `/storage/images/item/${item.back_cover_image}` : null;
-            const finalBackgroundColor = !item.back_cover_image ? (preset.background_color || "#ffffff") : null;
+            // 3. PÁGINA FINAL/CONTRAPORTADA - Solo si está habilitada
+            if (item.has_back_cover_image !== false) { // Incluir si no está definido o es true
+                const finalBackgroundImage = item.back_cover_image ? `/storage/images/item/${item.back_cover_image}` : null;
+                const finalBackgroundColor = !item.back_cover_image ? (preset.background_color || "#ffffff") : null;
 
-            const finalPage = {
-                id: "page-final",
-                type: "final",
-                layout: "layout-1",
-                backgroundImage: finalBackgroundImage,
-                backgroundColor: finalBackgroundColor,
-                cells: [{
-                    id: "cell-final-1",
-                    elements: [
-                        // Texto de cierre
-                        {
-                            id: "final-text",
-                            type: "text",
-                            content: " ",
-                            position: { x: 30, y: 45 },
-                            size: { width: 40, height: 10 },
-                            style: {
-                                fontSize: "20px",
-                                fontFamily: "Arial",
-                                color: "#000000",
-                                fontWeight: "bold",
-                                textAlign: "center"
-                            },
-                            zIndex: 1
-                        }
-                    ]
-                }]
-            };
+                const finalPage = {
+                    id: "page-final",
+                    type: "final",
+                    layout: "layout-1",
+                    backgroundImage: finalBackgroundImage,
+                    backgroundColor: finalBackgroundColor,
+                    cells: [{
+                        id: "cell-final-1",
+                        elements: [
+                            // Texto de cierre
+                            {
+                                id: "final-text",
+                                type: "text",
+                                content: " ",
+                                position: { x: 30, y: 45 },
+                                size: { width: 40, height: 10 },
+                                style: {
+                                    fontSize: "20px",
+                                    fontFamily: "Arial",
+                                    color: "#000000",
+                                    fontWeight: "bold",
+                                    textAlign: "center"
+                                },
+                                zIndex: 1
+                            }
+                        ]
+                    }]
+                };
 
-            newPages.push(finalPage);
+                newPages.push(finalPage);
+            }
 
             setPages(newPages);
-            setCurrentPage(0); // Empezar en la portada
+            setCurrentPage(0); // Empezar en la primera página disponible
 
             // Configurar dimensiones del workspace basadas en el preset
             if (preset.width && preset.height) {
@@ -3621,7 +3635,7 @@ export default function EditorLibro() {
             case "cover":
                 return "Portada";
             case "content":
-                return `Página ${page.pageNumber}`;
+                return `Página ${page.pageNumber || (currentPage)}`;
             case "final":
                 return "Contraportada";
             default:
@@ -3633,8 +3647,8 @@ export default function EditorLibro() {
     const isCurrentPageEditable = () => {
         if (pages.length === 0) return false;
         const page = pages[currentPage];
-        // La portada y contraportada tienen elementos bloqueados, pero se pueden agregar elementos
-        return page?.type === "content";
+        // Todas las páginas son editables, incluida portada y contraportada si existen
+        return !!page;
     };
 
     // Memoize categorized pages for sidebar rendering to avoid re-filtering on every render

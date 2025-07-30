@@ -202,6 +202,10 @@ const Items = ({ categories, brands, collections }) => {
             data?.back_cover_image ?? "undefined"
         }`;
 
+        // Configurar checkboxes según las imágenes existentes
+        setHasCoverImage(!!(data?.cover_image));
+        setHasBackCoverImage(!!(data?.back_cover_image));
+
         descriptionRef.editor.root.innerHTML = data?.description ?? "";
 
         //TODO: Cargar las imágenes existentes de la galería
@@ -231,6 +235,13 @@ const Items = ({ categories, brands, collections }) => {
         // Nuevos campos
         setFeatures(data?.features?.map(f => typeof f === 'object' ? f : { feature: f }) || []);
         stockRef.current.value = data?.stock;
+        
+        // Limpiar checkboxes si es un nuevo item
+        if (!data?.id) {
+            setHasCoverImage(false);
+            setHasBackCoverImage(false);
+        }
+        
         $(modalRef.current).modal("show");
     };
 
@@ -269,7 +280,9 @@ const Items = ({ categories, brands, collections }) => {
             pages: pagesRef.current.value,
             features: cleanFeatures,
             specifications: cleanSpecs,
-            linkvideo:""
+            linkvideo:"",
+            has_cover_image: hasCoverImage,
+            has_back_cover_image: hasBackCoverImage
         };
 
 
@@ -288,25 +301,25 @@ const Items = ({ categories, brands, collections }) => {
         if (image) {
             formData.append("image", image);
         }
-       /* const texture = textureRef.current.files[0];
-        if (texture) {
-            formData.append("texture", texture);
-        }*/
-        //const banner = bannerRef.current.files[0];
-      /*  if (banner) {
-            formData.append("banner", banner);
-        }*/
-        const coverImage = coverImageRef.current.files[0];
-        if (coverImage) {
-            formData.append("cover_image", coverImage);
-        }
+        
         const contentImage = contentImageRef.current.files[0];
         if (contentImage) {
             formData.append("content_image", contentImage);
         }
-        const backCoverImage = backCoverImageRef.current.files[0];
-        if (backCoverImage) {
-            formData.append("back_cover_image", backCoverImage);
+        
+        // Solo enviar imágenes opcionales si están habilitadas
+        if (hasCoverImage) {
+            const coverImage = coverImageRef.current.files[0];
+            if (coverImage) {
+                formData.append("cover_image", coverImage);
+            }
+        }
+        
+        if (hasBackCoverImage) {
+            const backCoverImage = backCoverImageRef.current.files[0];
+            if (backCoverImage) {
+                formData.append("back_cover_image", backCoverImage);
+            }
         }
 
         //TODO: Preparar los datos de la galería
@@ -367,6 +380,10 @@ const Items = ({ categories, brands, collections }) => {
     };
     const [features, setFeatures] = useState([]); // Características
     const [specifications, setSpecifications] = useState([]); // Especificaciones
+
+    // Estados para controlar las imágenes opcionales
+    const [hasCoverImage, setHasCoverImage] = useState(false);
+    const [hasBackCoverImage, setHasBackCoverImage] = useState(false);
 
     // Opciones del campo "type"
     const typeOptions = ["Principal", "General", "Icono"];
@@ -928,29 +945,102 @@ const Items = ({ categories, brands, collections }) => {
                                         Imágenes Específicas del Producto
                                     </h6>
                                 </div>
+                                
+                                {/* Imagen de Contenido (Obligatoria) */}
                                 <div className="col-md-4">
-                                    <ImageFormGroup
-                                        eRef={coverImageRef}
-                                        label="Imagen de Portada"
-                                        aspect={1}
-                                        col="col-12"
-                                    />
-                                </div>
-                                <div className="col-md-4">
+                                    <div className="mb-2">
+                                        <span className="badge bg-success">Obligatoria</span>
+                                    </div>
                                     <ImageFormGroup
                                         eRef={contentImageRef}
-                                        label="Imagen de Contenido"
+                                        label="Imagen de Contenido *"
                                         aspect={1}
                                         col="col-12"
                                     />
                                 </div>
+                                
+                                {/* Imagen de Portada (Opcional) */}
                                 <div className="col-md-4">
-                                    <ImageFormGroup
-                                        eRef={backCoverImageRef}
-                                        label="Imagen de Contraportada"
-                                        aspect={1}
-                                        col="col-12"
-                                    />
+                                    <div className="mb-2">
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                id="hasCoverImage"
+                                                checked={hasCoverImage}
+                                                onChange={(e) => setHasCoverImage(e.target.checked)}
+                                            />
+                                            <label className="form-check-label fw-bold" htmlFor="hasCoverImage">
+                                                Incluir Imagen de Portada
+                                            </label>
+                                        </div>
+                                        <small className="text-muted">Opcional para productos como tazas, etc.</small>
+                                    </div>
+                                    {hasCoverImage && (
+                                        <ImageFormGroup
+                                            eRef={coverImageRef}
+                                            label="Imagen de Portada"
+                                            aspect={1}
+                                            col="col-12"
+                                        />
+                                    )}
+                                    {!hasCoverImage && (
+                                        <div 
+                                            className="border-2 border-dashed p-4 text-center"
+                                            style={{
+                                                borderColor: "#dee2e6",
+                                                backgroundColor: "#f8f9fa",
+                                                borderRadius: "8px",
+                                                minHeight: "120px"
+                                            }}
+                                        >
+                                            <i className="fa fa-image fa-2x text-muted mb-2"></i>
+                                            <p className="text-muted mb-0">Imagen de portada deshabilitada</p>
+                                            <small className="text-muted">Activa el checkbox para habilitar</small>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Imagen de Contraportada (Opcional) */}
+                                <div className="col-md-4">
+                                    <div className="mb-2">
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                id="hasBackCoverImage"
+                                                checked={hasBackCoverImage}
+                                                onChange={(e) => setHasBackCoverImage(e.target.checked)}
+                                            />
+                                            <label className="form-check-label fw-bold" htmlFor="hasBackCoverImage">
+                                                Incluir Imagen de Contraportada
+                                            </label>
+                                        </div>
+                                        <small className="text-muted">Opcional para productos como tazas, etc.</small>
+                                    </div>
+                                    {hasBackCoverImage && (
+                                        <ImageFormGroup
+                                            eRef={backCoverImageRef}
+                                            label="Imagen de Contraportada"
+                                            aspect={1}
+                                            col="col-12"
+                                        />
+                                    )}
+                                    {!hasBackCoverImage && (
+                                        <div 
+                                            className="border-2 border-dashed p-4 text-center"
+                                            style={{
+                                                borderColor: "#dee2e6",
+                                                backgroundColor: "#f8f9fa",
+                                                borderRadius: "8px",
+                                                minHeight: "120px"
+                                            }}
+                                        >
+                                            <i className="fa fa-image fa-2x text-muted mb-2"></i>
+                                            <p className="text-muted mb-0">Imagen de contraportada deshabilitada</p>
+                                            <small className="text-muted">Activa el checkbox para habilitar</small>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

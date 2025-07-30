@@ -36,6 +36,8 @@ class Item extends Model
         'cover_image',
         'content_image',
         'back_cover_image',
+        'has_cover_image',
+        'has_back_cover_image',
         'is_new',
         'offering',
         'recommended',
