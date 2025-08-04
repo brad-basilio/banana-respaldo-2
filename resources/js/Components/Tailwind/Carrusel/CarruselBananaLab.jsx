@@ -225,18 +225,18 @@ const CarruselBananaLab = ({ items }) => {
                         <motion.img
                             src={`/storage/images/ad/${firstAd.image}`}
                             alt={firstAd.name}
-                            className="absolute !h-[330px] object-contain object-center lg:w-auto lg:h-full lg:bottom-0 lg:right-0 w-full"
-                            onError={(e) => {
-                                // Fallback a la imagen original si falla cargar el ad
-                                e.target.src = "/assets/img/backgrounds/resources/anuncio-mobile.png";
-                            }}
+                            className="absolute h-full object-contain object-center lg:w-auto lg:h-full lg:bottom-0 lg:right-0 w-full"
+                           onError={(e) =>
+                                        (e.target.src =
+                                            "/api/cover/thumbnail/null")
+                                    }
                         />
          
                     </motion.a>
                 ) : (
                     // Imagen por defecto si no hay ad
                     <motion.img
-                        src="/assets/img/backgrounds/resources/anuncio-mobile.png"
+                        src="/api/cover/thumbnail/null"
                         className="absolute h-[350px] object-cover object-left lg:w-auto lg:h-full lg:bottom-0 lg:right-0"
                         whileHover={{ scale: 1.02 }}
                     />
