@@ -508,7 +508,7 @@ const Items = ({ categories, brands, collections }) => {
                                         <>
                                             <b className="d-block">{data.canvas_preset.name}</b>
                                             <small className="text-muted">
-                                                {data.canvas_preset.width}x{data.canvas_preset.height}cm
+                                                {data.canvas_preset.width}x{data.canvas_preset.height}mm
                                                 {data.pages && ` • ${data.pages}p`}
                                             </small>
                                         </>
@@ -869,7 +869,7 @@ const Items = ({ categories, brands, collections }) => {
                                         <option value="">Seleccionar preset...</option>
                                         {presets.map((preset) => (
                                             <option key={preset.id} value={preset.id}>
-                                                {preset.name} ({preset.width}x{preset.height}cm, {preset.pages}p)
+                                                {preset.name} ({preset.width}x{preset.height}mm, {preset.pages}p)
                                             </option>
                                         ))}
                                     </SelectFormGroup>
