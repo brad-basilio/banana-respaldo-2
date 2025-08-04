@@ -70,7 +70,6 @@ const CarruselBananaLab = ({data, items }) => {
             }
         },
         hover: {
-            y: -5,
             backgroundColor: "rgba(244, 184, 184, 0.8)",
             transition: { duration: 0.3 }
         }
@@ -134,9 +133,7 @@ const CarruselBananaLab = ({data, items }) => {
                             <SwiperSlide key={index}>
                                 <motion.div
                                     className="flex p-4 flex-col rounded-xl justify-center h-[230px]"
-                                    variants={itemVariants}
                                     whileHover={{
-                                        y: -5,
                                         backgroundColor: "rgba(244, 184, 184, 0.8)",
                                         transition: { duration: 0.3 }
                                     }}
@@ -187,7 +184,6 @@ const CarruselBananaLab = ({data, items }) => {
                             className="flex cursor-pointer p-4 flex-col lg:flex-row lg:items-center lg:gap-4 rounded-xl justify-center h-[230px] lg:h-auto"
                             variants={itemVariants}
                             whileHover={{
-                                y: -5,
                                 backgroundColor: "rgba(244, 184, 184, 0.8)",
                                 transition: { duration: 0.3 }
                             }}
