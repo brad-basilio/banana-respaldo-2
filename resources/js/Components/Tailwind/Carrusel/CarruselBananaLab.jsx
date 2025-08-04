@@ -96,7 +96,7 @@ const CarruselBananaLab = ({ items }) => {
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="pl-[5%] lg:px-[5%] overflow-hidden customtext-neutral-dark font-paragraph mt-5 lg:mt-10 lg:flex lg:gap-8 2xl:px-0 2xl:max-w-7xl mx-auto"
+            className="pl-[5%] lg:px-[5%] overflow-hidden customtext-neutral-dark font-paragraph mt-5 lg:mt-10 lg:flex lg:gap-8 h-full 2xl:px-0 2xl:max-w-7xl mx-auto"
         >
             <motion.div 
                 className="bg-secondary rounded-l-3xl 2xl:px-0 2xl:max-w-7xl mx-auto relative lg:w-9/12 lg:rounded-3xl lg:flex lg:items-center"
@@ -119,9 +119,13 @@ const CarruselBananaLab = ({ items }) => {
                         {items && items?.map((benefit, index) => (
                             <SwiperSlide key={index}>
                                 <motion.div
-                                    className="flex hover:bg-[#F4B8B8] p-4 flex-col rounded-xl justify-center h-[230px]"
+                                    className="flex p-4 flex-col rounded-xl justify-center h-[230px]"
                                     variants={itemVariants}
-                                    whileHover="hover"
+                                    whileHover={{
+                                        y: -5,
+                                        backgroundColor: "rgba(244, 184, 184, 0.8)",
+                                        transition: { duration: 0.3 }
+                                    }}
                                 >
                                     <motion.div 
                                         className="relative w-20 h-20 rounded-full flex justify-start"
@@ -166,9 +170,16 @@ const CarruselBananaLab = ({ items }) => {
                     {items && items?.map((benefit, index) => (
                         <motion.div
                             key={index}
-                            className="flex cursor-pointer hover:bg-[#F4B8B8] p-4 flex-col lg:flex-row lg:items-center lg:gap-4 rounded-xl justify-center h-[230px] lg:h-auto"
+                            className="flex cursor-pointer p-4 flex-col lg:flex-row lg:items-center lg:gap-4 rounded-xl justify-center h-[230px] lg:h-auto"
                             variants={itemVariants}
-                            whileHover="hover"
+                            whileHover={{
+                                y: -5,
+                                backgroundColor: "rgba(244, 184, 184, 0.8)",
+                                transition: { duration: 0.3 }
+                            }}
+                            animate={{
+                                backgroundColor: hoveredIndex === index ? "rgba(244, 184, 184, 0.8)" : "transparent"
+                            }}
                             onHoverStart={() => setHoveredIndex(index)}
                             onHoverEnd={() => setHoveredIndex(null)}
                         >
@@ -211,7 +222,7 @@ const CarruselBananaLab = ({ items }) => {
 
             {/* Imagen lateral */}
             <motion.div 
-                className="!h-[330px] w-full pr-[5%] relative lg:w-4/12"
+                className="min-h-full w-full  lg:w-4/12"
                 variants={imageVariants}
             >
                 {firstAd ? (
@@ -225,7 +236,7 @@ const CarruselBananaLab = ({ items }) => {
                         <motion.img
                             src={`/storage/images/ad/${firstAd.image}`}
                             alt={firstAd.name}
-                            className="absolute h-full object-contain object-center lg:w-auto lg:h-full lg:bottom-0 lg:right-0 w-full"
+                            className="w-full h-full object-cover object-center"
                            onError={(e) =>
                                         (e.target.src =
                                             "/api/cover/thumbnail/null")
@@ -237,7 +248,7 @@ const CarruselBananaLab = ({ items }) => {
                     // Imagen por defecto si no hay ad
                     <motion.img
                         src="/api/cover/thumbnail/null"
-                        className="absolute h-[350px] object-cover object-left lg:w-auto lg:h-full lg:bottom-0 lg:right-0"
+                        className="w-full h-full object-cover object-center"
                         whileHover={{ scale: 1.02 }}
                     />
                 )}
