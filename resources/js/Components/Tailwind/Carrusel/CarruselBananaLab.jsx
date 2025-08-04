@@ -139,7 +139,7 @@ const CarruselBananaLab = ({data, items }) => {
                                     }}
                                 >
                                     <motion.div 
-                                        className="relative min-w-20 min-h-20 rounded-full flex justify-start"
+                                        className="relative min-w-20 min-h-20 max-w-20 max-h-20 rounded-full flex justify-start"
                                         variants={iconVariants}
                                         whileHover="hover"
                                     >
