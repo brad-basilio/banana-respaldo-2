@@ -127,7 +127,12 @@ class ProjectPDFController extends Controller
 
             $filename = "proyecto-" . Str::slug($project->name ?? 'album') . "-" . date('Y-m-d') . ".pdf";
             
-            // Guardar PDF temporalmente para evitar problemas de content-length
+            // Si se solicita solo guardar (para uso en ventas), guardarlo permanentemente
+            if ($request->input('save_only', false)) {
+                return $this->savePDFPermanently($projectId, $pdfOutput, $project);
+            }
+            
+            // Guardar PDF temporalmente para descarga directa
             $tempPath = storage_path('app/temp/' . uniqid('pdf_') . '.pdf');
             if (!is_dir(dirname($tempPath))) {
                 mkdir(dirname($tempPath), 0755, true);
@@ -301,5 +306,59 @@ class ProjectPDFController extends Controller
             'gap' => config('layouts.default_style.gap', '8px'),
             'padding' => config('layouts.default_style.padding', '16px')
         ];
+    }
+
+    /**
+     * Guarda el PDF permanentemente en el storage público para acceso en ventas
+     */
+    private function savePDFPermanently($projectId, $pdfOutput, $project)
+    {
+        try {
+            // Crear directorio para el proyecto
+            $projectDir = storage_path("app/public/images/pdf/{$projectId}");
+            if (!is_dir($projectDir)) {
+                mkdir($projectDir, 0755, true);
+            }
+            
+            // Guardar PDF con el nombre del proyecto
+            $pdfPath = $projectDir . "/{$projectId}.pdf";
+            file_put_contents($pdfPath, $pdfOutput);
+            
+            // También crear una copia con nombre "album.pdf" para compatibilidad
+            $albumPath = $projectDir . "/album.pdf";
+            file_put_contents($albumPath, $pdfOutput);
+            
+            // Actualizar el proyecto con la información del PDF
+            $project->update([
+                'pdf_generated_at' => now(),
+                'pdf_path' => "/storage/images/pdf/{$projectId}/{$projectId}.pdf",
+                'status' => 'pdf_ready'
+            ]);
+            
+            Log::info("📁 [PDF-CONTROLLER] PDF guardado permanentemente", [
+                'project_id' => $projectId,
+                'pdf_path' => $pdfPath,
+                'album_path' => $albumPath,
+                'file_size' => strlen($pdfOutput)
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'PDF generado y guardado exitosamente',
+                'pdf_path' => "/storage/images/pdf/{$projectId}/{$projectId}.pdf",
+                'project_id' => $projectId
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("❌ [PDF-CONTROLLER] Error guardando PDF permanentemente", [
+                'project_id' => $projectId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar el PDF: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

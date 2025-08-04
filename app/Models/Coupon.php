@@ -53,9 +53,16 @@ class Coupon extends Model
 
     public function scopeValid($query)
     {
+        $now = now();
         return $query->where('active', true)
-            ->where('starts_at', '<=', now())
-            ->where('expires_at', '>=', now());
+            ->where(function($q) use ($now) {
+                $q->whereNull('starts_at')
+                  ->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function($q) use ($now) {
+                $q->whereNull('expires_at')
+                  ->orWhere('expires_at', '>=', $now);
+            });
     }
 
     public function scopeAvailable($query)
@@ -70,9 +77,10 @@ class Coupon extends Model
     // Accessors
     public function getIsValidAttribute()
     {
-        return $this->active &&
-            $this->starts_at <= now() &&
-            $this->expires_at >= now();
+        $now = now();
+        return $this->active && 
+            (!$this->starts_at || $this->starts_at <= $now) && 
+            (!$this->expires_at || $this->expires_at >= $now);
     }
 
     public function getIsAvailableAttribute()
@@ -83,9 +91,10 @@ class Coupon extends Model
 
     public function getStatusAttribute()
     {
+        $now = now();
         if (!$this->active) return 'inactive';
-        if ($this->starts_at > now()) return 'pending';
-        if ($this->expires_at < now()) return 'expired';
+        if ($this->starts_at && $this->starts_at > $now) return 'pending';
+        if ($this->expires_at && $this->expires_at < $now) return 'expired';
         if ($this->usage_limit && $this->used_count >= $this->usage_limit) return 'exhausted';
         return 'active';
     }
@@ -100,21 +109,47 @@ class Coupon extends Model
     // Methods
     public function canBeUsedBy($userId, $cartTotal = 0, $categoryIds = [], $productIds = [])
     {
-        // Verificar si el cupón está disponible
-        if (!$this->is_available) {
-            return ['valid' => false, 'message' => 'El cupón no está disponible.'];
+        // Verificar si el cupón está activo, independientemente de otras condiciones
+        if (!$this->active) {
+            return ['valid' => false, 'message' => 'El cupón no está activo.'];
+        }
+
+        // Verificar fechas si están definidas
+        $now = now();
+        if ($this->starts_at && $this->starts_at > $now) {
+            return ['valid' => false, 'message' => 'Este cupón aún no está disponible.'];
+        }
+        
+        if ($this->expires_at && $this->expires_at < $now) {
+            return ['valid' => false, 'message' => 'Este cupón ha expirado.'];
+        }
+
+        // Verificar límite de uso total
+        if ($this->usage_limit && $this->used_count >= $this->usage_limit) {
+            return ['valid' => false, 'message' => 'Este cupón ha alcanzado su límite de uso.'];
         }
 
         // Verificar monto mínimo
-        if ($cartTotal < $this->minimum_amount) {
+        if ($this->minimum_amount > 0 && $cartTotal < $this->minimum_amount) {
             return [
                 'valid' => false,
                 'message' => "El monto mínimo para usar este cupón es S/. " . number_format($this->minimum_amount, 2)
             ];
         }
 
-        // Verificar límite por usuario (requiere implementar la tabla de usos)
-        // Por ahora lo dejamos como válido
+        // Verificar primera compra si aplica
+        if ($this->first_purchase_only && $userId) {
+            $hasOrders = \App\Models\Sale::where('user_id', $userId)->exists();
+            if ($hasOrders) {
+                return ['valid' => false, 'message' => 'Este cupón solo es válido para tu primera compra.'];
+            }
+        }
+
+        // Verificar límite por usuario si está autenticado
+        if ($userId && $this->usage_limit_per_user > 0) {
+            // Implementar conteo de usos por usuario (pendiente)
+            // Por ahora lo dejamos como válido
+        }
 
         // Verificar categorías aplicables
         if (!empty($this->applicable_categories) && !empty($categoryIds)) {
@@ -150,6 +185,33 @@ class Coupon extends Model
         }
 
         return round($discount, 2);
+    }
+    
+    /**
+     * Verifica si el cupón es válido para un monto específico
+     * Este método es necesario para compatibilidad con código existente
+     *
+     * @param float $amount El monto del carrito
+     * @return bool
+     */
+    public function isValid($amount = 0)
+    {
+        // Verificar si el cupón está activo y válido
+        if (!$this->is_valid) {
+            return false;
+        }
+        
+        // Verificar límite de uso
+        if ($this->usage_limit && $this->used_count >= $this->usage_limit) {
+            return false;
+        }
+        
+        // Verificar monto mínimo
+        if ($this->minimum_amount > 0 && $amount < $this->minimum_amount) {
+            return false;
+        }
+        
+        return true;
     }
 
     public function incrementUsage()

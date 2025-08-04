@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useEffect, useRef } from "react";
 import ReactModal from "react-modal";
@@ -20,14 +19,16 @@ export default function UploadVoucherModalYape({
     onClose, 
     onUpload, 
     paymentMethod,
-    cart,
+    cart = [],
     subTotal,
     igv,
     envio,
     totalFinal,
     request,
     coupon = null,
-    descuentofinal = 0
+    descuentofinal = 0,
+    autoDiscounts = [],
+    autoDiscountTotal = 0
 }) {
     const [file, setFile] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -72,15 +73,24 @@ export default function UploadVoucherModalYape({
         setSaving(true);
         
         try {
+            console.log('🔍 === DATOS ENVIADOS DESDE YAPE MODAL ===');
+            console.log('📦 Request original:', request);
+            
             const updatedRequest = {
                 ...request,
                 payment_proof: voucher,
-                details: JSON.stringify(request.cart.map((item) => ({
-                    id: item.id,
-                    quantity: item.quantity,
-                    project_id: item.project_id || null
-                }))),
+                // Asegurar que delivery_type tenga un valor por defecto
+                delivery_type: request.delivery_type || 'domicilio',
+                // Asegurar que applied_promotions sea JSON string si existe
+                applied_promotions: request.applied_promotions 
+                    ? (typeof request.applied_promotions === 'string' 
+                        ? request.applied_promotions 
+                        : JSON.stringify(request.applied_promotions))
+                    : null
             };
+            
+            console.log('📤 Request actualizado:', updatedRequest);
+            console.log('📝 Details en request:', updatedRequest.details);
             
             const formData = new FormData();
             Object.keys(updatedRequest).forEach(key => {
@@ -91,47 +101,16 @@ export default function UploadVoucherModalYape({
     
             const result = await salesRest.save(formData);
             
-            if (result && result.code) {
-                Local.delete(`${Global.APP_CORRELATIVE}_cart`);
-                toast.success('¡Pago registrado!', {
-                    description: 'Tu comprobante ha sido enviado correctamente',
-                    duration: 3000,
-                    position: 'top-right',
-                });
-                
-                // Pequeño delay para que el usuario vea el mensaje de éxito
-                setTimeout(() => {
-                    location.href = `${location.origin}/cart?code=${result.code}`;
-                }, 1500);
-            } else {
-                throw new Error('No se recibió código de venta válido');
+            if (result) {
+                Local.delete(`${Global.APP_CORRELATIVE}_cart`)
+                location.href = `${location.origin}/cart?code=${result.code}`;
             }
         } catch (error) {
             console.error("Error al procesar el pago:", error);
-            
-            let errorMessage = 'Ocurrió un error al procesar tu pago';
-            
-            // Manejar diferentes tipos de errores
-            if (error.response) {
-                // Error de respuesta del servidor
-                if (error.response.status === 422) {
-                    errorMessage = 'Datos de pago inválidos. Verifica la información.';
-                } else if (error.response.status === 500) {
-                    errorMessage = 'Error interno del servidor. Intenta nuevamente.';
-                } else {
-                    errorMessage = error.response.data?.message || errorMessage;
-                }
-            } else if (error.request) {
-                // Error de red
-                errorMessage = 'Error de conexión. Verifica tu internet.';
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            
-            toast.error('Error al procesar el pago', {
-                description: errorMessage,
+            toast.error('Error al procesar el pago:', {
+                description: `Ocurrió un error al procesar tu pago`,
                 icon: <CircleX className="h-5 w-5 text-red-500" />,
-                duration: 5000,
+                duration: 3000,
                 position: 'top-right',
             });
         } finally {
@@ -139,6 +118,52 @@ export default function UploadVoucherModalYape({
         }
     };
 
+
+    const handleUpload = async () => {
+        
+        if (saving) return; // Evita múltiples ejecuciones
+        
+        if (!voucher) {
+            toast.success('Error al subir comprobante', {
+                description: `Por favor, sube tu comprobante de pago`,
+                icon: <CircleX className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: 'top-right',
+            });
+            return;
+        }
+    
+        setSaving(true); // Deshabilita el botón
+        
+        try {
+            const updatedRequest = {
+                ...request,
+                payment_proof: voucher,
+            };
+            
+            const formData = new FormData();
+            Object.keys(updatedRequest).forEach(key => {
+                formData.append(key, updatedRequest[key]);
+            });
+    
+            const result = await salesRest.save(formData);
+            
+            if (result) {
+                Local.delete(`${Global.APP_CORRELATIVE}_cart`)
+                location.href = `${location.origin}/cart?code=${result.code}`;
+            }
+        } catch (error) {
+            console.error("Error al procesar el pago:", );
+            toast.success('Error al procesar el pago:', {
+                description: `Ocurrió un error al procesar tu pago`,
+                icon: <CircleX className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: 'top-right',
+            });
+        } finally {
+            setSaving(false); // Rehabilita el botón en caso de error
+        }
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -164,7 +189,7 @@ export default function UploadVoucherModalYape({
 
                 <div className="flex justify-center items-center z-40">
                     <a href="/" className="flex items-center gap-2">
-                        <img src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`} alt={Global.APP_NAME} className="h-10 object-contain object-center" onError={(e) => {
+                        <img src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`} alt={Global.APP_NAME} className="h-14 object-contain object-center" onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = '/assets/img/logo-bk.svg';
                         }} />
@@ -180,7 +205,7 @@ export default function UploadVoucherModalYape({
 
                 <div className="w-full flex flex-row items-center justify-center my-1">
                     <Tippy content='Escanee codigo QR'>
-                            <img src={`/assets/resources/${General.get('checkout_dwallet_qr')}?t=${Date.now()}`} 
+                            <img src={`/assets/resources/${General.get('checkout_dwallet_qr')}`} 
                                 alt={General.get('checkout_dwallet_name')} 
                                 className="h-40 w-auto object-cover"
                                 onError={(e) => {
@@ -191,7 +216,7 @@ export default function UploadVoucherModalYape({
                 </div>
 
                 {/* Resumen de compra */}
-                <div className="bg-gray-50 rounded-xl shadow-lg p-6 col-span-2 h-max font-font-general">
+                <div className="bg-[#EAE8E6] rounded-xl shadow-lg p-6 col-span-2 h-max font-font-general">
                     <h3 className="text-xl 2xl:text-2xl font-semibold pb-6 customtext-neutral-dark">Detalle de compras</h3>
 
                     <div className="space-y-6 border-b-2 pb-6">
@@ -210,12 +235,15 @@ export default function UploadVoucherModalYape({
                                             {item.name}
                                         </h3>
 
-                                        <p className="text-xs 2xl:text-sm customtext-neutral-light opacity-70">
+                                       {item?.color && (
+
+                                         <p className="text-xs 2xl:text-sm customtext-neutral-light opacity-70">
                                             Color:{" "}
                                             <span className="customtext-neutral-dark">
                                                 {item.color}
                                             </span>
                                         </p>
+                                       )}
                                         <p className="text-xs 2xl:text-sm customtext-neutral-light opacity-70">
                                             Cantidad:{" "}
                                             <span className="customtext-neutral-dark">
@@ -256,7 +284,7 @@ export default function UploadVoucherModalYape({
                                             ></i>
                                         </Tippy>
                                         <small className="block text-xs font-light">
-                                            {coupon.name}{" "}
+                                            {coupon.code}{" "}
                                             <Tippy
                                                 content={
                                                     coupon.description
@@ -265,8 +293,8 @@ export default function UploadVoucherModalYape({
                                                 <i className="mdi mdi-information-outline ms-1"></i>
                                             </Tippy>{" "}
                                             ({coupon.type === 'percentage' 
-                                                ? `-${Math.round(coupon.amount * 100) / 100}%`
-                                                : `S/ -${Number2Currency(coupon.amount)}`})
+                                                ? `${coupon.value}%`
+                                                    : `S/ ${Number2Currency(coupon.value)}`})
                                         </small>
                                     </span>
                                     <span>
@@ -275,6 +303,15 @@ export default function UploadVoucherModalYape({
                                             descuentofinal
                                         )}
                                     </span>
+                                </div>
+                            )}
+                            {autoDiscounts && autoDiscounts.length > 0 && (
+                                <div className="mb-2 mt-2 border-b pb-2">
+                                   
+                                    <div className="flex justify-between items-center text-sm font-bold text-green-600 mt-1 pt-1 border-t">
+                                        <span>Total descuentos automáticos:</span>
+                                        <span>S/ -{Number2Currency(autoDiscountTotal)}</span>
+                                    </div>
                                 </div>
                             )}
                         <div className="flex justify-between text-sm 2xl:text-base">

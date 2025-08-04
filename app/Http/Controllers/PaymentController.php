@@ -148,12 +148,28 @@ class PaymentController extends Controller
                 $itemPrice = is_array($item) ? $item['final_price'] ?? null : $item->final_price ?? null;
                 $itemQuantity = is_array($item) ? $item['quantity'] ?? null : $item->quantity ?? null;
                 $itemImage = is_array($item) ? $item['image'] ?? null : $item->image ?? null;
+                $color = is_array($item) ? $item['color'] ?? null : $item->color ?? null;
+                $projectId = is_array($item) ? $item['project_id'] ?? null : $item->project_id ?? null;
+                $canvasProjectId = is_array($item) ? $item['canvas_project_id'] ?? null : $item->canvas_project_id ?? null;
+                
+                // Si es un álbum personalizado, guardar la información del proyecto en colors como JSON
+                $colorsData = $color;
+                if ($projectId || $canvasProjectId) {
+                    $colorsData = json_encode([
+                        'color' => $color,
+                        'project_id' => $projectId,
+                        'canvas_project_id' => $canvasProjectId,
+                        'type' => 'custom_album'
+                    ]);
+                }
+                
                 SaleDetail::create([
                     'sale_id' => $sale->id,
                     'item_id' => $itemId,
                     'name' => $itemName,
                     'price' => $itemPrice,
                     'quantity' => $itemQuantity,
+                    'colors' => $colorsData,
                     'image' => $itemImage,
                 ]);
 

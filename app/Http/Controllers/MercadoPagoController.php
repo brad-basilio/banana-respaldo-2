@@ -76,6 +76,19 @@ class MercadoPagoController extends Controller
                 $itemPrice = is_array($item) ? $item['final_price'] ?? null : $item->final_price ?? null;
                 $itemQuantity = is_array($item) ? $item['quantity'] ?? null : $item->quantity ?? null;
                 $color = is_array($item) ? $item['color'] ?? null : $item->color ?? null;
+                $projectId = is_array($item) ? $item['project_id'] ?? null : $item->project_id ?? null;
+                $canvasProjectId = is_array($item) ? $item['canvas_project_id'] ?? null : $item->canvas_project_id ?? null;
+                
+                // Si es un álbum personalizado, guardar la información del proyecto en colors como JSON
+                $colorsData = $color;
+                if ($projectId || $canvasProjectId) {
+                    $colorsData = json_encode([
+                        'color' => $color,
+                        'project_id' => $projectId,
+                        'canvas_project_id' => $canvasProjectId,
+                        'type' => 'custom_album'
+                    ]);
+                }
     
                 SaleDetail::create([
                     'sale_id' => $sale->id,
@@ -83,7 +96,7 @@ class MercadoPagoController extends Controller
                     'name' => $itemName,
                     'price' => $itemPrice,
                     'quantity' => $itemQuantity,
-                    'colors' => $color,
+                    'colors' => $colorsData,
                 ]);
             }
             
@@ -329,30 +342,28 @@ class MercadoPagoController extends Controller
 
             // Obtener los items con sus imágenes
             $items = [];
+            $freeItems = [];
+            
             foreach ($saleDetails as $detail) {
                 $item = Item::select('name', 'image', 'color')
                             ->where('id', $detail->item_id)
                             ->first();
                 
-                if ($item) {
-                    $items[] = [
-                        'id' => $detail->item_id,
-                        'name' => $detail->name ?? $item->name,
-                        'image' => $item->image,
-                        'color' => $detail->colors ?? $item->color,
-                        'quantity' => $detail->quantity,
-                        'price' => $detail->price,
-                    ];
+                $itemData = [
+                    'id' => $detail->item_id,
+                    'name' => $detail->name ?? ($item ? $item->name : 'Producto no encontrado'),
+                    'image' => $item ? $item->image : null,
+                    'color' => $detail->colors ?? ($item ? $item->color : null),
+                    'quantity' => $detail->quantity,
+                    'price' => $detail->price,
+                    'is_free' => $detail->price == 0
+                ];
+                
+                // Si el precio es 0, es un producto gratuito
+                if ($detail->price == 0) {
+                    $freeItems[] = $itemData;
                 } else {
-                    // Si el item fue eliminado, usar los datos del detalle
-                    $items[] = [
-                        'id' => $detail->item_id,
-                        'name' => $detail->name,
-                        'image' => null,
-                        'color' => $detail->colors,
-                        'quantity' => $detail->quantity,
-                        'price' => $detail->price,
-                    ];
+                    $items[] = $itemData;
                 }
             }
             
@@ -368,6 +379,11 @@ class MercadoPagoController extends Controller
                     'coupon_id' => $order->coupon_id,
                     'coupon_discount' => $order->coupon_discount,
                     'total_amount' => $order->total_amount,
+                    // Agregar descuentos automáticos
+                    'applied_promotions' => $order->applied_promotions ? json_decode($order->applied_promotions, true) : [],
+                    'promotion_discount' => $order->promotion_discount ?? 0,
+                    'automatic_discounts' => $order->applied_promotions ? json_decode($order->applied_promotions, true) : [],
+                    'automatic_discount_total' => $order->promotion_discount ?? 0,
                     'shipping_address' => [
                         'address' => $order->address,
                         'department' => $order->department,
@@ -382,6 +398,7 @@ class MercadoPagoController extends Controller
                         'phone' => $order->phone,
                     ],
                     'items' => $items,
+                    'free_items' => $freeItems,
                     'invoice_info' => [
                         'invoiceType' => $order->invoiceType,
                         'documentType' => $order->documentType,

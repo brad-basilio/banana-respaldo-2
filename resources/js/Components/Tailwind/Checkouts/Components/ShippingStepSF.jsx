@@ -9,13 +9,13 @@ import ButtonSecondary from "./ButtonSecondary";
 import InputForm from "./InputForm";
 import SelectForm from "./SelectForm";
 import OptionCard from "./OptionCard";
-import { CheckCircleIcon, CircleX, InfoIcon, X, UserRoundX, Globe } from "lucide-react";
+import { CheckCircleIcon, CircleX, InfoIcon, UserRoundX, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { Notify } from "sode-extend-react";
 import { renderToString } from "react-dom/server";
 import { debounce } from "lodash";
 import { useUbigeo } from "../../../../Utils/useUbigeo";
 import AsyncSelect from "react-select/async";
-import ReactModal from "react-modal";
+import Select from "react-select";
 import PaymentModal from "./PaymentModal";
 import UploadVoucherModalYape from "./UploadVoucherModalYape";
 import UploadVoucherModalBancs from "./UploadVoucherModalBancs";
@@ -23,9 +23,12 @@ import { toast } from "sonner";
 import Global from "../../../../Utils/Global";
 import CouponsRest from "../../../../Actions/CouponsRest";
 import Tippy from "@tippyjs/react";
-import HtmlContent from "../../../../Utils/HtmlContent";
+import ReactModal from "react-modal";
+import DiscountRulesRest from "../../../../Actions/DiscountRulesRest";
 
-const couponRest = new CouponsRest();
+
+
+
 
 export default function ShippingStepSF({
     cart,
@@ -47,33 +50,167 @@ export default function ShippingStepSF({
     totalPrice,
     descuentofinal,
     setDescuentoFinal,
+    data, // Para gradientes
     openModal,
-    generals,
+    setCouponDiscount: setParentCouponDiscount,
+    setCouponCode: setParentCouponCode,
+    automaticDiscounts = [], // Se usará como reglas, no como descuentos ya calculados
+    automaticDiscountTotal = 0,
+    totalWithoutDiscounts,
+    conversionScripts,
+    setConversionScripts,
+    onPurchaseComplete,
 }) {
+    // Función para formatear el número de teléfono evitando duplicación de prefijos
+    const formatPhoneNumber = (phonePrefix, phoneNumber) => {
+        if (!phoneNumber) return "";
+        
+        // Si el número ya comienza con el prefijo, no lo agregamos de nuevo
+        if (phoneNumber.startsWith(phonePrefix)) {
+            return phoneNumber;
+        }
+        
+        // Si no, concatenamos el prefijo
+        return `${phonePrefix}${phoneNumber}`;
+    };
+
+    // Función para limpiar el número de teléfono del usuario removiendo prefijos duplicados
+    const cleanPhoneNumber = (phoneNumber, phonePrefix) => {
+        if (!phoneNumber) return "";
+        
+        // Si el número comienza con el prefijo, lo removemos
+        if (phoneNumber.startsWith(phonePrefix)) {
+            return phoneNumber.substring(phonePrefix.length);
+        }
+        
+        return phoneNumber;
+    };
+
     const couponRef = useRef(null);
     const [coupon, setCoupon] = useState(null);
     const [selectedUbigeo, setSelectedUbigeo] = useState(null);
     const [defaultUbigeoOption, setDefaultUbigeoOption] = useState(null);
-    const [formData, setFormData] = useState({
-        name: user?.name || "",
-        lastname: user?.lastname || "",
-        email: user?.email || "",
-        phone_prefix: user?.phone_prefix || "51", //telf
-        phone: user?.phone || "",   //telf
-        department: user?.department || "",
-        province: user?.province || "",
-        district: user?.district || "",
-        address: user?.address || "",
-        number: user?.number || "",
-        comment: user?.comment || "",
-        /*reference: user?.reference || "",*/
-        shippingOption: "delivery", // Valor predeterminado
-        ubigeo: user?.ubigeo || null,
-        invoiceType: user?.invoiceType || "boleta", // Nuevo campo para tipo de comprobante
-        documentType: user?.documentType || "dni", 
-        document: user?.dni || "", 
-        businessName: user?.businessName || "", // Nuevo campo para Razón Social
+    
+    // Estados para los descuentos automáticos calculados
+    const [autoDiscounts, setAutoDiscounts] = useState([]);
+    const [autoDiscountTotal, setAutoDiscountTotal] = useState(0);
+
+    // Get free items from automatic discounts calculados
+    const freeItems = autoDiscounts.reduce((items, discount) => {
+        if (discount.free_items && Array.isArray(discount.free_items)) {
+            return items.concat(discount.free_items);
+        }
+        return items;
+    }, []);
+
+    // Función para calcular todos los descuentos automáticos
+    const calculateAutomaticDiscounts = async (cart, rules) => {
+        if (!cart || cart.length === 0) {
+            return { discounts: [], total: 0 };
+        }
+
+        try {
+            console.log('🔄 ShippingStepSF: Calculating automatic discounts...', { cart, totalWithoutDiscounts });
+            
+            const result = await DiscountRulesRest.applyToCart(cart, totalWithoutDiscounts);
+            
+            if (result.success && result.data) {
+                const discounts = DiscountRulesRest.formatDiscounts(result.data.applied_discounts);
+                const discountAmount = result.data.total_discount || 0;
+                
+                console.log('✅ ShippingStepSF: Automatic discounts calculated', {
+                    discounts,
+                    discountAmount,
+                    freeItems: result.data.free_items
+                });
+                
+                return {
+                    discounts: result.data.applied_discounts,
+                    total: discountAmount
+                };
+            }
+        } catch (error) {
+            console.error('❌ Error calculating automatic discounts:', error);
+        }
+        
+        return { discounts: [], total: 0 };
+    };
+
+    // Recalcular descuentos automáticos cuando cambie el carrito o las reglas
+    useEffect(() => {
+        if (cart && cart.length > 0 && totalWithoutDiscounts) {
+            calculateAutomaticDiscounts(cart, automaticDiscounts).then(result => {
+                setAutoDiscounts(result.discounts);
+                setAutoDiscountTotal(result.total);
+            });
+        } else {
+            setAutoDiscounts([]);
+            setAutoDiscountTotal(0);
+        }
+    }, [cart, automaticDiscounts, totalWithoutDiscounts]);
+    
+    // Tipos de documentos como en ComplaintStech
+    const typesDocument = [
+        { value: "dni", label: "DNI" },
+        { value: "ruc", label: "RUC" },
+        { value: "ce", label: "CE" },
+        { value: "pasaporte", label: "Pasaporte" },
+    ];
+    
+    const [formData, setFormData] = useState(() => {
+        const initialPhonePrefix = user?.phone_prefix || "51";
+        const initialPhone = cleanPhoneNumber(user?.phone || "", initialPhonePrefix);
+        
+        return {
+            name: user?.name || "",
+            lastname: user?.lastname || "",
+            email: user?.email || "",
+            phone_prefix: initialPhonePrefix, //telf
+            phone: initialPhone,   //telf
+            documentType: user?.document_type?.toLowerCase() || "dni",
+            document: user?.document_number || "",
+            department: user?.department || "",
+            province: user?.province || "",
+            district: user?.district || "",
+            address: user?.address || "",
+            number: user?.number || "",
+            comment: user?.comment || "",
+            reference: user?.reference || "",
+            shippingOption: "delivery", // Valor predeterminado
+            ubigeo: user?.ubigeo || null,
+            invoiceType: user?.invoiceType || "boleta", // Nuevo campo para tipo de comprobante
+            businessName: user?.businessName || "", // Nuevo campo para Razón Social
+        };
     });
+    
+    // Efecto para actualizar formData cuando cambien los datos del usuario
+    useEffect(() => {
+        if (user) {
+            const userPhonePrefix = user.phone_prefix || "51";
+            const cleanedPhone = cleanPhoneNumber(user.phone || "", userPhonePrefix);
+            
+            setFormData(prev => ({
+                ...prev,
+                name: user.name || "",
+                lastname: user.lastname || "",
+                email: user.email || "",
+                phone_prefix: userPhonePrefix,
+                phone: cleanedPhone,
+                documentType: user.document_type?.toLowerCase() || "dni",
+                document: user.document_number || "",
+                department: user.department || "",
+                province: user.province || "",
+                district: user.district || "",
+                address: user.address || "",
+                number: user.number || "",
+                comment: user.comment || "",
+                reference: user.reference || "",
+                ubigeo: user.ubigeo || null,
+                invoiceType: user.invoiceType || "boleta",
+                businessName: user.businessName || "",
+            }));
+        }
+    }, [user]);
     
     useEffect(() => {
         if (user?.ubigeo && user?.district && user?.province && user?.department) {
@@ -116,38 +253,125 @@ export default function ShippingStepSF({
     };
 
     // Estados para manejar los valores seleccionados
-    // const [departamento, setDepartamento] = useState("");
-    // const [provincia, setProvincia] = useState("");
-    // const [distrito, setDistrito] = useState("");
-
-    // Estados para las opciones dinámicas
-    // const [departamentos, setDepartamentos] = useState([]);
-    // const [provincias, setProvincias] = useState([]);
-    // const [distritos, setDistritos] = useState([]);
-    
-    // Estado para el precio de envío
-    const [shippingCost, setShippingCost] = useState(0);
-
-    // Estado para el ubigeo
     const [loading, setLoading] = useState(false);
+    const [paymentLoading, setPaymentLoading] = useState(false);
     const [shippingOptions, setShippingOptions] = useState([]);
     const [selectedOption, setSelectedOption] = useState(null);
     const [costsGet, setCostsGet] = useState(null);
     const [errors, setErrors] = useState({});
-    const [showPrefixDropdown, setShowPrefixDropdown] = useState(false);
+    const [searchInput, setSearchInput] = useState("");
+    const [expandedCharacteristics, setExpandedCharacteristics] = useState(false);
+    
+    // Estados para cupones mejorados
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    // El descuento del cupón se calcula sobre el total real, no solo el subtotal
+    const [couponDiscount, setCouponDiscount] = useState(0); // solo para compatibilidad visual
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState("");
+
+    // Estados para retiro en tienda
+    const [selectedStore, setSelectedStore] = useState(null);
+    const [showStoreSelector, setShowStoreSelector] = useState(false);
+
+    // Estado para modal de login
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     // Cargar los departamentos al iniciar el componente
-    // useEffect(() => {
-    //     const uniqueDepartamentos = [
-    //         ...new Set(ubigeoData.map((item) => item.departamento)),
-    //     ];
-    //     setDepartamentos(uniqueDepartamentos);
-    // }, []);
     const numericSubTotal = typeof subTotal === 'number' ? subTotal : parseFloat(subTotal) || 0;
     const numericIgv = typeof igv === 'number' ? igv : parseFloat(igv) || 0;
     const hasShippingFree = parseFloat(getContact("shipping_free"));
    
-    const subFinal = numericSubTotal + numericIgv - descuentofinal;
+    const subFinal = numericSubTotal + numericIgv - descuentofinal - autoDiscountTotal;
+    
+    // Función de validación mejorada con alertas específicas
+    const validateForm = () => {
+        const newErrors = {};
+        
+        // Validación de campos obligatorios
+        if (!formData.name) newErrors.name = "Nombre es requerido";
+        if (!formData.lastname) newErrors.lastname = "Apellido es requerido";
+        if (!formData.email) newErrors.email = "Email es requerido";
+        if (!formData.phone) newErrors.phone = "Teléfono es requerido";
+        if (!formData.ubigeo) newErrors.ubigeo = "Ubicación es requerida";
+        if (!formData.address) newErrors.address = "Dirección es requerida";
+        if (!formData.number) newErrors.number = "Número es requerido";
+        if (!formData.document) newErrors.document = "Documento es requerido";
+
+        // Validación de email
+        if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = "Email inválido";
+        }
+
+        // Validación de documento según tipo
+        if (formData.document) {
+            if (formData.documentType === "dni" && formData.document.length !== 8) {
+                newErrors.document = "DNI debe tener 8 dígitos";
+            } else if (formData.documentType === "ruc" && formData.document.length !== 11) {
+                newErrors.document = "RUC debe tener 11 dígitos";
+            }
+        }
+
+        // Validación de razón social para factura
+        if (formData.invoiceType === "factura" && !formData.businessName) {
+            newErrors.businessName = "Razón social es requerida para factura";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // Función para manejar la selección de tienda
+    const handleStoreSelect = (store) => {
+        setSelectedStore(store);
+        setShowStoreSelector(false);
+        setFormData(prev => ({
+            ...prev,
+            shippingOption: "pickup",
+            address: store.address,
+            department: store.department,
+            province: store.province,
+            district: store.district
+        }));
+    };
+
+    // Función para enfocar el primer campo con error y hacer scroll suave
+    const focusFirstError = (errors) => {
+        const firstErrorKey = Object.keys(errors)[0];
+        
+        setTimeout(() => {
+            let targetElement = null;
+            
+            if (firstErrorKey === 'ubigeo') {
+                targetElement = document.getElementById('ubigeo-select-container');
+            } else if (firstErrorKey === 'phone_prefix') {
+                targetElement = document.querySelector('.select2-prefix-selector')?.parentElement;
+            } else {
+                targetElement = document.querySelector(`[name="${firstErrorKey}"]`);
+            }
+
+            if (targetElement) {
+                highlightElement(targetElement);
+                
+                // Scroll suave al elemento
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                
+                // Enfocar si es un input
+                if (['INPUT', 'SELECT', 'TEXTAREA'].includes(targetElement.tagName)) {
+                    targetElement.focus();
+                }
+            }
+        }, 100);
+    };
+
+    // Función auxiliar para agregar efecto visual temporal a un elemento
+    const highlightElement = (element) => {
+        element.classList.add('highlight-error');
+        setTimeout(() => element.classList.remove('highlight-error'), 2000);
+    };
     
     const handleUbigeoChange = async (selected) => {
         if (!selected) return;
@@ -361,42 +585,21 @@ export default function ShippingStepSF({
         }
 
         if (!user) {
-            toast.error("Acceso requerido", {
-                description: `Debe iniciar sesión para continuar.`,
-                icon: <UserRoundX className="h-5 w-5 text-red-500" />,
-                duration: 3000,
-                position: "bottom-center",
-            });
-
-
+            setShowLoginModal(true);
             return;
         }
 
-        if (
-            !formData.name ||
-            !formData.lastname ||
-            !formData.email ||
-            !formData.address ||
-            !formData.phone ||
-            !formData.ubigeo || 
-            !formData.number 
-        ) {
-            Notify.add({
-                icon: "/assets/img/icon.svg",
-                title: "Campos incompletos",
-                body: "Complete todos los campos obligatorios",
-                type: "danger",
-            });
-
+        if (!validateForm()) {
+            focusFirstError(errors);
             return;
         }
 
         if (!selectedOption) {
-            Notify.add({
-                icon: "/assets/img/icon.svg",
-                title: "Seleccione envío",
-                body: "Debe elegir una zona de envío valido",
-                type: "danger",
+            toast.error("Seleccione envío", {
+                description: `Debe elegir un método de envío`,
+                icon: <CircleX className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "bottom-center",
             });
             return;
         }
@@ -407,6 +610,10 @@ export default function ShippingStepSF({
         }
 
         try {
+            // Obtener el delivery_type del shipping option seleccionado
+            const selectedShippingOption = shippingOptions.find(option => option.type === selectedOption);
+            const deliveryType = selectedShippingOption ? selectedShippingOption.deliveryType : 'domicilio';
+
             const request = {
                 user_id: user?.id || "",
                 name: formData?.name || "",
@@ -414,7 +621,7 @@ export default function ShippingStepSF({
                 fullname: `${formData?.name} ${formData?.lastname}`,
                 phone_prefix: formData?.phone_prefix || "51",
                 email: formData?.email || "",
-                phone: `${formData.phone_prefix}${formData.phone}`,
+                phone: formatPhoneNumber(formData.phone_prefix || "51", formData.phone),
                 country: "Perú",
                 department: formData?.department || "",
                 province: formData?.province || "",
@@ -423,14 +630,21 @@ export default function ShippingStepSF({
                 address: formData?.address || "",
                 number: formData?.number || "",
                 comment: formData?.comment || "",
-                /*reference: formData?.reference || "",*/
+                reference: formData?.reference || "",
                 amount: totalFinal || 0,
                 delivery: envio,
+                delivery_type: deliveryType, // Agregar delivery_type
                 cart: cart,
                 invoiceType: formData.invoiceType || "",
                 documentType: formData.documentType || "",
                 document: formData.document || "",
                 businessName: formData.businessName || "",
+                // Agregar descuentos automáticos
+                automatic_discounts: autoDiscounts,
+                automatic_discount_total: autoDiscountTotal,
+                coupon_id: coupon ? coupon.id : null,
+                coupon_discount: descuentofinal || 0,
+                total_amount: totalFinal || 0,
             };
            
             const response = await processMercadoPagoPayment(request)
@@ -441,42 +655,92 @@ export default function ShippingStepSF({
                 setDelivery(data.delivery);
                 setCode(data.code);
                 
+                // Ejecutar scripts de conversión si existen
+                if (conversionScripts && Array.isArray(conversionScripts)) {
+                    conversionScripts.forEach(script => {
+                        try {
+                            eval(script);
+                        } catch (error) {
+                            console.error('Error executing conversion script:', error);
+                        }
+                    });
+                }
+
+                // Llamar callback de compra completada
+                if (onPurchaseComplete) {
+                    onPurchaseComplete(data);
+                }
+                
             } else {
-                Notify.add({
-                    icon: "/assets/img/icon.svg",
-                    title: "Error en el Pago",
-                    body: "El pago ha sido rechazado",
-                    type: "danger",
+                toast.error("Error en el Pago", {
+                    description: "El pago ha sido rechazado",
+                    icon: <CircleX className="h-5 w-5 text-red-500" />,
+                    duration: 3000,
+                    position: "bottom-center",
                 });
             }
         } catch (error) {
             console.log(error);
-            Notify.add({
-                icon: "/assets/img/icon.svg",
-                title: "Error en el Pago",
-                body: "No se llegó a procesar el pago",
-                type: "danger",
+            toast.error("Error en el Pago", {
+                description: "No se llegó a procesar el pago",
+                icon: <CircleX className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "bottom-center",
             });
         }
     };
+
+    useEffect(() => {
+        const htmlTemplate = (data) => {
+          const prefix = data.element.dataset.code
+          const flag = data.element.dataset.flag
+          return renderToString(<span>
+            <span className="inline-block w-8 font-emoji text-center">{flag}</span>
+            <b className="me-1">{data.text}</b>
+            <span className="text-sm text-opacity-20">{prefix}</span>
+          </span>)
+        }
+        $('.select2-prefix-selector').select2({
+          dropdownCssClass: 'py-1',
+          containerCssClass: '!border !border-gray-300 !rounded p-2 !h-[42px]',
+          arrowCssClass: '!text-primary top-1/2 -translate-y-1/2"',
+          //minimumResultsForSearch: -1,
+          templateResult: function (data) {
+            if (!data.id) {
+              return data.text;
+            }
+            var $container = $(htmlTemplate(data));
+            return $container;
+          },
+          templateSelection: function (data) {
+            if (!data.id) {
+              return data.text;
+            }
+            var $container = $(htmlTemplate(data));
+            return $container;
+          },
+          matcher: function (params, data) {
+            if (!params.term || !data.element) return data;
+      
+            const country = data.element.dataset.country || '';
+            const text = data.text || '';
+      
+            if (country.toLowerCase().includes(params.term.toLowerCase()) ||
+                text.toLowerCase().includes(params.term.toLowerCase())) {
+              return data;
+            }
+      
+            return null;
+          }
+        });
+    }, [formData.phone_prefix])
+
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showVoucherModal, setShowVoucherModal] = useState(false);
     const [showVoucherModalBancs, setShowVoucherModalBancs] = useState(false);
     const [currentPaymentMethod, setCurrentPaymentMethod] = useState(null);
     const [paymentRequest, setPaymentRequest] = useState(null);
-
-    // Estados para modales de políticas
-    const [modalOpen, setModalOpen] = useState(null);
-    
-    const policyItems = {
-        privacy_policy: "Políticas de privacidad",
-        terms_conditions: "Términos y condiciones",
-        saleback_policy: "Políticas de devolución y cambio",
-    };
-
-    const openPolicyModal = (index) => setModalOpen(index);
-    const closePolicyModal = () => setModalOpen(null);
 
     const handleContinueClick = (e) => {
         e.preventDefault();
@@ -485,26 +749,22 @@ export default function ShippingStepSF({
             e.preventDefault();
         }
 
-        // if (!user) {
-        //     toast.success('Iniciar Sesión', {
-        //         description: `Se requiere que incie sesión para realizar la compra`,
-        //         icon: <CircleX className="h-5 w-5 text-red-500" />,
-        //         duration: 3000,
-        //         position: 'top-right',
-        //     });
-        //     return;
-        // }
+        if (!user) {
+            setShowLoginModal(true);
+            return;
+        }
 
         if (!validateForm()) {
+            focusFirstError(errors);
             return;
         }
     
         if (!selectedOption) {
-            toast.success('Seleccione envío', {
+            toast.error('Seleccione envío', {
                 description: `Debe elegir un método de envío`,
                 icon: <CircleX className="h-5 w-5 text-red-500" />,
                 duration: 3000,
-                position: 'top-right',
+                position: 'bottom-center',
             });
             return;
         }
@@ -512,7 +772,7 @@ export default function ShippingStepSF({
         setShowPaymentModal(true);
     };
 
-    const validateForm = () => {
+    const validateFormOld = () => {
         const newErrors = {};
         
         // Validación de campos
@@ -610,10 +870,15 @@ export default function ShippingStepSF({
 
             if (paymentMethod === "tarjeta") {
                 // Procesar pago con tarjeta (MercadoPago)
+                console.log('🛒 ShippingStepSF: Sending cart to MercadoPago:', cart);
                 if (!window.MercadoPago) {
                     console.error("❌ MercadoPago aún no se ha cargado.")
                     return
                 }
+
+                // Obtener el delivery_type del shipping option seleccionado
+                const selectedShippingOption = shippingOptions.find(option => option.type === selectedOption);
+                const deliveryType = selectedShippingOption ? selectedShippingOption.deliveryType : 'domicilio';
 
                 const request = {
                     user_id: user?.id || "",
@@ -622,7 +887,7 @@ export default function ShippingStepSF({
                     fullname: `${formData?.name} ${formData?.lastname}`,
                     phone_prefix: formData?.phone_prefix || "51",
                     email: formData?.email || "",
-                    phone: `${formData.phone_prefix}${formData.phone}`,
+                    phone: formatPhoneNumber(formData.phone_prefix || "51", formData.phone),
                     country: "Perú",
                     department: formData?.department || "",
                     province: formData?.province || "",
@@ -631,19 +896,25 @@ export default function ShippingStepSF({
                     address: formData?.address || "",
                     number: formData?.number || "",
                     comment: formData?.comment || "",
+                    reference: formData?.reference || "",
                     amount: totalPrice || 0,
                     delivery: envio,
+                    delivery_type: deliveryType, // Agregar delivery_type
                     cart: cart,
                     invoiceType: formData.invoiceType || "",
                     documentType: formData.documentType || "",
                     document: formData.document || "",
                     businessName: formData.businessName || "",
                     payment_method: paymentMethod || null,
-                    coupon_id: coupon ? coupon.id : null,
-                    coupon_discount: descuentofinal || 0,
-                    total_amount: totalFinal || 0,
+                    // Cupón aplicado
+                    coupon_id: appliedCoupon ? appliedCoupon.id : null,
+                    coupon_discount: calculatedCouponDiscount || 0,
+                    // Descuentos automáticos
+                    automatic_discounts: autoDiscounts,
+                    automatic_discount_total: autoDiscountTotal,
+                    total_amount: finalTotalWithCoupon || 0,
                 };
-                console.log(request)
+                
                 try {
                     const response = await processMercadoPagoPayment(request)
                     const data = response;
@@ -653,24 +924,54 @@ export default function ShippingStepSF({
                         setDelivery(data.delivery);
                         setCode(data.code);
                         
+                        // Ejecutar scripts de conversión si existen
+                        if (conversionScripts && Array.isArray(conversionScripts)) {
+                            conversionScripts.forEach(script => {
+                                try {
+                                    eval(script);
+                                } catch (error) {
+                                    console.error('Error executing conversion script:', error);
+                                }
+                            });
+                        }
+
+                        // Llamar callback de compra completada
+                        if (onPurchaseComplete) {
+                            onPurchaseComplete(data);
+                        }
+                        
                     } else {
-                        toast.success('Error en el Pago', {
+                        toast.error('Error en el Pago', {
                             description: `El pago ha sido rechazado`,
                             icon: <CircleX className="h-5 w-5 text-red-500" />,
                             duration: 3000,
-                            position: 'top-right',
+                            position: 'bottom-center',
                         });
                     }
                 } catch (error) {
                     console.log(error);
-                    toast.success('Error en el Pago', {
+                    toast.error('Error en el Pago', {
                         description: `No se llegó a procesar el pago`,
                         icon: <CircleX className="h-5 w-5 text-red-500" />,
                         duration: 3000,
-                        position: 'top-right',
+                        position: 'bottom-center',
                     });
                 }
             }else if(paymentMethod === "yape") {
+
+                console.log('🛒 ShippingStepSF: Sending cart details for Yape:', cart);
+                console.log('🔍 Cart items with project data:', cart.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    has_project_id: !!item.project_id,
+                    has_canvas_project_id: !!item.canvas_project_id,
+                    project_id: item.project_id,
+                    canvas_project_id: item.canvas_project_id
+                })));
+                
+                // Obtener el delivery_type del shipping option seleccionado
+                const selectedShippingOption = shippingOptions.find(option => option.type === selectedOption);
+                const deliveryType = selectedShippingOption ? selectedShippingOption.deliveryType : 'domicilio';
 
                 const request = {
                     user_id: user?.id || "",
@@ -679,7 +980,7 @@ export default function ShippingStepSF({
                     fullname: `${formData?.name} ${formData?.lastname}`,
                     phone_prefix: formData?.phone_prefix || "51",
                     email: formData?.email || "",
-                    phone: `${formData.phone_prefix}${formData.phone}`,
+                    phone: formatPhoneNumber(formData.phone_prefix || "51", formData.phone),
                     country: "Perú",
                     department: formData?.department || "",
                     province: formData?.province || "",
@@ -688,24 +989,43 @@ export default function ShippingStepSF({
                     address: formData?.address || "",
                     number: formData?.number || "",
                     comment: formData?.comment || "",
+                    reference: formData?.reference || "",
                     amount: totalPrice || 0,
                     delivery: envio,
-                    cart: cart,
+                    delivery_type: deliveryType, // Agregar delivery_type
+                    details: JSON.stringify(cart.map((item) => ({
+                        id: item.id,
+                        quantity: item.quantity,
+                        project_id: item.project_id || null,
+                        canvas_project_id: item.canvas_project_id || null
+                    }))),
                     invoiceType: formData.invoiceType || "",
                     documentType: formData.documentType || "",
                     document: formData.document || "",
                     businessName: formData.businessName || "",
                     payment_method: paymentMethod || null,
                     payment_proof: null,
-                    coupon_id: coupon ? coupon.id : null,
-                    coupon_discount: descuentofinal || 0,
-                    total_amount: totalFinal || 0,
+                    // Cupón aplicado
+                    coupon_id: appliedCoupon ? appliedCoupon.id : null,
+                    coupon_discount: calculatedCouponDiscount || 0,
+                    // Descuentos automáticos
+                    automatic_discounts: autoDiscounts,
+                    automatic_discount_total: autoDiscountTotal,
+                    total_amount: finalTotalWithCoupon || 0,
                 };
+
+                console.log('📤 Request creado para Yape:', request);
+                console.log('📝 Details en request:', request.details);
 
                 setPaymentRequest(request);
                 setShowVoucherModal(true);
             }else if(paymentMethod === "transferencia") {
 
+                console.log('🛒 ShippingStepSF: Sending cart details for transferencia:', cart);
+                // Obtener el delivery_type del shipping option seleccionado
+                const selectedShippingOption = shippingOptions.find(option => option.type === selectedOption);
+                const deliveryType = selectedShippingOption ? selectedShippingOption.deliveryType : 'domicilio';
+
                 const request = {
                     user_id: user?.id || "",
                     name: formData?.name || "",
@@ -713,7 +1033,7 @@ export default function ShippingStepSF({
                     fullname: `${formData?.name} ${formData?.lastname}`,
                     phone_prefix: formData?.phone_prefix || "51",
                     email: formData?.email || "",
-                    phone: `${formData.phone_prefix}${formData.phone}`,
+                    phone: formatPhoneNumber(formData.phone_prefix || "51", formData.phone),
                     country: "Perú",
                     department: formData?.department || "",
                     province: formData?.province || "",
@@ -722,29 +1042,40 @@ export default function ShippingStepSF({
                     address: formData?.address || "",
                     number: formData?.number || "",
                     comment: formData?.comment || "",
+                    reference: formData?.reference || "",
                     amount: totalPrice || 0,
                     delivery: envio,
-                    cart: cart,
+                    delivery_type: deliveryType, // Agregar delivery_type
+                    details: JSON.stringify(cart.map((item) => ({
+                        id: item.id,
+                        quantity: item.quantity,
+                        project_id: item.project_id || null,
+                        canvas_project_id: item.canvas_project_id || null
+                    }))),
                     invoiceType: formData.invoiceType || "",
                     documentType: formData.documentType || "",
                     document: formData.document || "",
                     businessName: formData.businessName || "",
                     payment_method: paymentMethod || null,
                     payment_proof: null,
-                    coupon_id: coupon ? coupon.id : null,
-                    coupon_discount: descuentofinal || 0,
-                    total_amount: totalFinal || 0,
+                    // Cupón aplicado
+                    coupon_id: appliedCoupon ? appliedCoupon.id : null,
+                    coupon_discount: calculatedCouponDiscount || 0,
+                    // Descuentos automáticos
+                    automatic_discounts: autoDiscounts,
+                    automatic_discount_total: autoDiscountTotal,
+                    total_amount: finalTotalWithCoupon || 0,
                 };
                 setPaymentRequest(request);
                 setShowVoucherModalBancs(true);
             }
         } catch (error) {
             console.error("Error en el pago:", error);
-            toast.success('Error en el Pago', {
+            toast.error('Error en el Pago', {
                 description: `No se llegó a procesar el pago`,
                 icon: <CircleX className="h-5 w-5 text-red-500" />,
                 duration: 3000,
-                position: 'top-right',
+                position: 'bottom-center',
             });
         }
     };
@@ -760,21 +1091,177 @@ export default function ShippingStepSF({
         });
     }, [formData]);
 
-    // Cerrar dropdown al hacer clic fuera
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (showPrefixDropdown && !event.target.closest('.prefix-dropdown-container')) {
-                setShowPrefixDropdown(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showPrefixDropdown]);
-
     
+    // Función para validar cupón
+    const validateCoupon = async () => {
+        if (!couponCode.trim()) {
+            setCouponError("Ingrese un código de cupón");
+            return;
+        }
+
+        setCouponLoading(true);
+        setCouponError("");
+
+        try {
+            // Mostrar información sobre el cupón antes de validar
+            if (couponCode.toUpperCase() === 'TEST50' && subTotal < 100) {
+                toast.warning("Información importante", {
+                    description: `El cupón TEST50 requiere un monto mínimo de S/ 100.00. Tu carrito actual: S/ ${Number2Currency(subTotal)}`,
+                    icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
+                    duration: 5000,
+                    position: "bottom-center",
+                });
+            }
+
+            // Extraer IDs de categorías y productos del carrito
+            const categoryIds = [...new Set(cart.map(item => item.category_id).filter(Boolean))];
+            const productIds = [...new Set(cart.map(item => item.id || item.item_id).filter(Boolean))];
+
+            console.log("Validando cupón:", {
+                code: couponCode.trim(),
+                cart_total: subTotal,
+                category_ids: categoryIds,
+                product_ids: productIds
+            });
+
+            const response = await CouponsRest.validateCoupon({
+                code: couponCode.trim(),
+                cart_total: subTotal,
+                category_ids: categoryIds,
+                product_ids: productIds
+            });
+
+            console.log("Respuesta del cupón:", response);
+
+            // Manejar diferentes estructuras de respuesta
+            const data = response.data || response; // response.data para nueva estructura, response para estructura anterior
+            
+            if (data && data.valid) {
+                setAppliedCoupon(data.coupon);
+                // Redondear el descuento a 2 decimales para evitar problemas de precisión
+                const roundedDiscount = Math.round(data.discount * 100) / 100;
+                setCouponDiscount(roundedDiscount);
+                setCouponCode("");
+                
+                // Actualizar estados del padre si existen
+                if (setParentCouponCode) setParentCouponCode(data.coupon.code);
+                if (setParentCouponDiscount) setParentCouponDiscount(roundedDiscount);
+                
+                toast.success("Cupón aplicado", {
+                    description: `Descuento de S/ ${Number2Currency(roundedDiscount)} aplicado`,
+                    icon: <CheckCircleIcon className="h-5 w-5 text-green-500" />,
+                    duration: 3000,
+                    position: "bottom-center",
+                });
+            } else {
+                const errorMessage = data?.message || "Cupón inválido o no aplicable a estos productos";
+                setCouponError(errorMessage);
+                
+                // Mejorar el mensaje de error para casos específicos
+                let toastMessage = errorMessage;
+                if (errorMessage.includes("monto mínimo")) {
+                    toastMessage = `${errorMessage} Tu carrito actual: S/ ${Number2Currency(subTotal)}`;
+                }
+                
+                toast.error("Cupón inválido", {
+                    description: toastMessage,
+                    icon: <CircleX className="h-5 w-5 text-red-500" />,
+                    duration: 4000,
+                    position: "bottom-center",
+                });
+            }
+        } catch (error) {
+            console.error("Error validating coupon:", error);
+            const errorMessage = error.response?.data?.message || "Error al validar el cupón";
+            setCouponError(errorMessage);
+            
+            toast.error("Error de validación", {
+                description: errorMessage,
+                icon: <CircleX className="h-5 w-5 text-red-500" />,
+                duration: 3000,
+                position: "bottom-center",
+            });
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    // Función para remover cupón
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode("");
+        setCouponDiscount(0);
+        setCouponError("");
+        
+        // Actualizar estados del padre si existen
+        if (setParentCouponCode) setParentCouponCode("");
+        if (setParentCouponDiscount) setParentCouponDiscount(0);
+        
+        toast.success("Cupón removido", {
+            description: "El cupón ha sido removido del pedido",
+            icon: <InfoIcon className="h-5 w-5 text-blue-500" />,
+            duration: 2000,
+            position: "bottom-center",
+        });
+    };
+
+    // Función auxiliar para redondear valores monetarios con mayor precisión
+    const roundToTwoDecimals = (num) => {
+        return Math.round((parseFloat(num) + Number.EPSILON) * 100) / 100;
+    };
+
+    // Calcular el total base antes de cupón
+    const totalBase = roundToTwoDecimals(subTotal) + roundToTwoDecimals(igv) + roundToTwoDecimals(envio) - roundToTwoDecimals(autoDiscountTotal);
+
+    // El descuento del cupón ya viene calculado desde el backend
+    let calculatedCouponDiscount = couponDiscount || 0;
+    
+    // Sincronizar el estado para mantener compatibilidad visual
+    useEffect(() => {
+        if (setParentCouponDiscount) {
+            setParentCouponDiscount(calculatedCouponDiscount);
+        }
+    }, [appliedCoupon, couponDiscount, setParentCouponDiscount]);
+
+    const finalTotalWithCoupon = Math.max(0, roundToTwoDecimals(totalBase - calculatedCouponDiscount));
+
+    // Componente Modal de Login
+    const LoginModal = () => {
+        return (
+            <ReactModal
+                isOpen={showLoginModal}
+                onRequestClose={() => setShowLoginModal(false)}
+                className="modal-content max-w-md mx-auto mt-20 bg-white rounded-lg p-6"
+                overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold mb-4">Iniciar Sesión Requerido</h2>
+                    <p className="text-gray-600 mb-6">
+                        Debe iniciar sesión para continuar con su compra
+                    </p>
+                    <div className="flex gap-4 justify-center">
+                        <button
+                            onClick={() => setShowLoginModal(false)}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowLoginModal(false);
+                                // Redirigir a login o abrir modal de login
+                                window.location.href = '/login';
+                            }}
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                            Iniciar Sesión
+                        </button>
+                    </div>
+                </div>
+            </ReactModal>
+        );
+    };
+
     const selectStyles = (hasError) => ({
         control: (base) => ({
             ...base,
@@ -800,7 +1287,36 @@ export default function ShippingStepSF({
         }),
     });
 
-    useEffect(() => {
+    const customStyles = {
+        control: (provided, state) => ({
+          ...provided,
+          padding: '0.5rem',
+          borderColor: state.isFocused ? '#d1d5db' : '#d1d5db', // gray-300
+          borderRadius: '0.75rem', // rounded-xl
+          boxShadow: 'none',
+          '&:hover': {
+            borderColor: '#9ca3af', // gray-400
+          },
+        }),
+        input: (provided) => ({
+          ...provided,
+          color: '#374151', // gray-700
+        }),
+        option: (provided, state) => ({
+          ...provided,
+          backgroundColor: state.isSelected ? '#3b82f6' : 'white', // blue-500 when selected
+          color: state.isSelected ? 'white' : '#374151', // gray-700
+          '&:hover': {
+            backgroundColor: '#e5e7eb', // gray-200
+          },
+        }),
+        singleValue: (provided) => ({
+          ...provided,
+          color: '#374151', // gray-700
+        }),
+      };
+
+      useEffect(() => {
         if (coupon) {
             let descuento = 0;
             if (coupon.type === 'percentage') {
@@ -854,6 +1370,29 @@ export default function ShippingStepSF({
 
     return (
         <>
+            <style jsx>{`
+                .highlight-error {
+                    animation: highlight 2s ease-in-out;
+                    border: 2px solid #ef4444 !important;
+                    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
+                }
+                
+                @keyframes highlight {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.02); }
+                    100% { transform: scale(1); }
+                }
+                
+                .modal-overlay {
+                    z-index: 9999;
+                }
+                
+                .modal-content {
+                    max-height: 90vh;
+                    overflow-y: auto;
+                }
+            `}</style>
+            
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-y-8 lg:gap-8 ">
                 <div className="lg:col-span-3">
                     {/* Formulario */}
@@ -911,70 +1450,125 @@ export default function ShippingStepSF({
                                         Celular <span className="text-red-500 ml-1">*</span>
                                     </label>
                                     <div className="flex gap-2 w-full">
-                                        <div className="relative min-w-[130px] prefix-dropdown-container">
-                                            <button
-                                                type="button"
-                                                className="appearance-none bg-white border border-gray-300 rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-full h-[50px] customtext-neutral-dark flex items-center justify-between"
-                                                onClick={() => setShowPrefixDropdown(!showPrefixDropdown)}
-                                            >
-                                                <span className="flex items-center gap-2">
-                                                    {formData.phone_prefix ? (
-                                                        <>
-                                                            <span className="text-base">
-                                                                {prefixes.find(p => p.realCode === formData.phone_prefix)?.flag || '🌍'}
-                                                            </span>
-                                                            <span>+{formData.phone_prefix}</span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="customtext-neutral-light">País</span>
-                                                    )}
-                                                </span>
-                                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                            
-                                            {showPrefixDropdown && (
-                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
-                                                    {prefixes
-                                                        .sort((a, b) => a.country.localeCompare(b.country))
-                                                        .map((prefix, index) => (
-                                                        <button
-                                                            key={index}
-                                                            type="button"
-                                                            className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 text-sm customtext-neutral-dark transition-colors duration-150"
-                                                            onClick={() => {
-                                                                setFormData(prev => ({ ...prev, phone_prefix: prefix.realCode }));
-                                                                setShowPrefixDropdown(false);
-                                                            }}
-                                                        >
-                                                            <span className="text-base flex-shrink-0">{prefix.flag}</span>
-                                                            <span className="flex-1">{prefix.country}</span>
-                                                            <span className="text-gray-500">+{prefix.realCode}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
+                                        <div className="max-w-[120px]">
+                                            <Select
+                                                name="phone_prefix"
+                                                value={prefixes.find(p => p.realCode === formData.phone_prefix) ? {
+                                                    value: prefixes.find(p => p.realCode === formData.phone_prefix).realCode,
+                                                    label: `${prefixes.find(p => p.realCode === formData.phone_prefix).beautyCode}`,
+                                                    flag: prefixes.find(p => p.realCode === formData.phone_prefix).flag,
+                                                    code: prefixes.find(p => p.realCode === formData.phone_prefix).beautyCode,
+                                                    country: prefixes.find(p => p.realCode === formData.phone_prefix).country
+                                                } : null}
+                                                onChange={(selected) => setFormData(prev => ({ ...prev, phone_prefix: selected?.value || "" }))}
+                                                options={prefixes
+                                                    .sort((a, b) => a.country.localeCompare(b.country))
+                                                    .map(prefix => ({
+                                                        value: prefix.realCode,
+                                                        label: prefix.beautyCode,
+                                                        flag: prefix.flag,
+                                                        code: prefix.beautyCode,
+                                                        country: prefix.country
+                                                    }))
+                                                }
+                                                formatOptionLabel={({ flag, code, country }) => {
+                                                    // Buscar el país en el array de prefijos para obtener el código ISO
+                                                    const prefix = prefixes.find(p => p.country === country);
+                                                    const countryCode = prefix?.isoCode?.ISO1?.toLowerCase() || country.toLowerCase().substring(0, 2);
+                                                    
+                                                    // Lista de servicios de banderas ordenados por prioridad
+                                                    const flagServices = [
+                                                        `https://flagsapi.com/${countryCode.toUpperCase()}/flat/24.png`,
+                                                        `https://flagcdn.com/${countryCode}.svg`,
+                                                        `https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`,
+                                                        `https://cdn.jsdelivr.net/gh/hampusborgos/country-flags@main/svg/${countryCode}.svg`,
+                                                        `https://raw.githubusercontent.com/lipis/flag-icons/main/flags/4x3/${countryCode}.svg`
+                                                    ];
+                                                    
+                                                    let currentIndex = 0;
+                                                    
+                                                    const handleImageError = (e) => {
+                                                        currentIndex++;
+                                                        if (currentIndex < flagServices.length) {
+                                                            e.target.src = flagServices[currentIndex];
+                                                        } else {
+                                                            // Si todos los servicios fallan, ocultar imagen y mostrar fallback
+                                                            e.target.style.display = 'none';
+                                                            const fallback = e.target.nextElementSibling;
+                                                            if (fallback && fallback.classList.contains('flag-fallback')) {
+                                                                fallback.style.display = 'flex';
+                                                            }
+                                                        }
+                                                    };
+                                                    
+                                                    return (
+                                                        <div className="flex items-center gap-2">
+                                                            <img 
+                                                                src={flagServices[0]}
+                                                                alt={`Bandera de ${country}`}
+                                                                className="w-6 h-4 object-cover rounded-sm flex-shrink-0 border border-gray-200"
+                                                                onError={handleImageError}
+                                                                style={{ minWidth: '24px', minHeight: '16px' }}
+                                                            />
+                                                            <div className="flag-fallback w-6 h-4 bg-gray-200 rounded-sm flex items-center justify-center flex-shrink-0 border border-gray-300" style={{ display: 'none', minWidth: '24px', minHeight: '16px' }}>
+                                                                <span className="text-xs text-gray-500">{countryCode.toUpperCase()}</span>
+                                                            </div>
+                                                            <span className="font-medium text-sm">{code}</span>
+                                                          
+                                                        </div>
+                                                    );
+                                                }}
+                                                placeholder="País"
+                                                isClearable={false}
+                                                isSearchable={true}
+                                                styles={{
+                                                    control: (base) => ({
+                                                        ...base,
+                                                        minHeight: '48px',
+                                                        border: '1px solid #d1d5db',
+                                                        borderRadius: '0.75rem',
+                                                        fontSize: '14px',
+                                                        '&:hover': { borderColor: '#9ca3af' },
+                                                        '&:focus-within': { 
+                                                            borderColor: '#3b82f6',
+                                                            boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.1)'
+                                                        }
+                                                    }),
+                                                    option: (base, state) => ({
+                                                        ...base,
+                                                        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#f3f4f6' : 'white',
+                                                        color: state.isSelected ? 'white' : '#374151',
+                                                        padding: '8px 12px'
+                                                    }),
+                                                    singleValue: (base) => ({
+                                                        ...base,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px'
+                                                    }),
+                                                    menu: (base) => ({
+                                                        ...base,
+                                                        zIndex: 9999
+                                                    })
+                                                }}
+                                                filterOption={(option, inputValue) => {
+                                                    return option.data.country.toLowerCase().includes(inputValue.toLowerCase()) ||
+                                                           option.data.code.toLowerCase().includes(inputValue.toLowerCase());
+                                                }}
+                                            />
                                         </div>
                                         <div className="flex-1">
                                             <InputForm
-                                                type="tel"
+                                                type="text"
                                                 id="phone"
                                                 name="phone"
                                                 value={formData.phone}
                                                 error={errors.phone}
-                                                onChange={(e) => {
-                                                    // Solo permitir números
-                                                    const value = e.target.value.replace(/\D/g, '');
-                                                    setFormData(prev => ({ ...prev, phone: value }));
-                                                }}
-                                                placeholder="987 654 321"
-                                                maxLength="9"
-                                                required
+                                                onChange={handleChange}
+                                                placeholder="000 000 000"
                                             />
                                         </div>
                                     </div>
-                                    {errors.phone && <div className="text-red-500 text-sm mt-1">{errors.phone}</div>}
                                 </div>
 
                             </div>
@@ -1222,11 +1816,11 @@ export default function ShippingStepSF({
                         <div className="bg-[#66483966] py-[0.6px]"></div>      
 
                         {/* Tipo de comprobante */}
-                        <div className="space-y-3">
-                            <label className="block text-sm 2xl:text-base font-medium customtext-neutral-dark">
-                                Tipo de comprobante <span className="text-red-500 ml-1">*</span>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium customtext-neutral-dark">
+                                Tipo de comprobante
                             </label>
-                            <div className="flex gap-6">
+                            <div className="flex gap-4">
                                 <label className="inline-flex items-center cursor-pointer group">
                                     <div className="relative">
                                         <input
@@ -1237,23 +1831,17 @@ export default function ShippingStepSF({
                                             checked={formData.invoiceType === "boleta"}
                                             onChange={handleChange}
                                         />
-                                        <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
+                                        <div className={`w-5 h-5 border-2 rounded-full transition-all duration-200 ${
                                             formData.invoiceType === "boleta" 
                                                 ? 'border-primary bg-primary' 
-                                                : 'border-gray-300 bg-white group-hover:border-primary'
+                                                : 'border-gray-300 bg-white group-hover:border-gray-400'
                                         }`}>
                                             {formData.invoiceType === "boleta" && (
                                                 <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
                                             )}
                                         </div>
                                     </div>
-                                    <span className={`ml-3 text-sm 2xl:text-base transition-colors duration-200 ${
-                                        formData.invoiceType === "boleta" 
-                                            ? 'customtext-primary font-medium' 
-                                            : 'customtext-neutral-dark group-hover:customtext-primary'
-                                    }`}>
-                                        Boleta
-                                    </span>
+                                    <span className="ml-3 text-sm font-medium customtext-neutral-dark">Boleta</span>
                                 </label>
                                 <label className="inline-flex items-center cursor-pointer group">
                                     <div className="relative">
@@ -1265,23 +1853,17 @@ export default function ShippingStepSF({
                                             checked={formData.invoiceType === "factura"}
                                             onChange={handleChange}
                                         />
-                                        <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
+                                        <div className={`w-5 h-5 border-2 rounded-full transition-all duration-200 ${
                                             formData.invoiceType === "factura" 
                                                 ? 'border-primary bg-primary' 
-                                                : 'border-gray-300 bg-white group-hover:border-primary'
+                                                : 'border-gray-300 bg-white group-hover:border-gray-400'
                                         }`}>
                                             {formData.invoiceType === "factura" && (
                                                 <div className="w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
                                             )}
                                         </div>
                                     </div>
-                                    <span className={`ml-3 text-sm 2xl:text-base transition-colors duration-200 ${
-                                        formData.invoiceType === "factura" 
-                                            ? 'customtext-primary font-medium' 
-                                            : 'customtext-neutral-dark group-hover:customtext-primary'
-                                    }`}>
-                                        Factura
-                                    </span>
+                                    <span className="ml-3 text-sm font-medium customtext-neutral-dark">Factura</span>
                                 </label>
                             </div>
                         </div>
@@ -1333,12 +1915,7 @@ export default function ShippingStepSF({
                                             {item.name}
                                         </h3>
 
-                                        <p className="text-sm customtext-neutral-light">
-                                            Color:{" "}
-                                            <span className="customtext-neutral-dark">
-                                                {item.color}
-                                            </span>
-                                        </p>
+                                    
                                         <p className="text-sm customtext-neutral-light">
                                             Cantidad:{" "}
                                             <span className="customtext-neutral-dark">
@@ -1351,27 +1928,85 @@ export default function ShippingStepSF({
                         ))}
                     </div>
 
-                    {!coupon && (
-                        <div className="mt-6 flex">
-                            <input
-                                ref={couponRef}
-                                type="text"
-                                placeholder="Código de cupón"
-                                className="w-full rounded-l-md border border-gray-300 p-2 px-4 text-sm outline-none uppercase focus:border-[#C5B8D4]"
-                                value={coupon?.name}
-                                onKeyDown={onCouponKeyDown}
-                                disabled={loading}
-                            />
-                            <button
-                                className="rounded-r-md bg-primary px-4 py-3 text-sm text-white"
-                                type="button"
-                                onClick={onCouponApply}
-                                disabled={loading}
-                            >
-                                Aplicar
-                            </button>
-                        </div>
+                    {/* Sección de cupón siempre visible */}
+                    <div className="mt-6">
+                        {!appliedCoupon ? (
+                            <div>
+                                <div className="flex">
+                                    <input
+                                        type="text"
+                                        placeholder="Código de cupón"
+                                        className={`w-full rounded-l-md border py-3 px-4 text-sm outline-none uppercase focus:border-[#C5B8D4] ${
+                                            couponError ? 'border-red-500' : 'border-gray-300'
+                                        }`}
+                                        value={couponCode}
+                                        onChange={(e) => {
+                                            setCouponCode(e.target.value);
+                                            setCouponError("");
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                validateCoupon();
+                                            }
+                                        }}
+                                        disabled={couponLoading}
+                                    />
+                                    <button
+                                        className={`rounded-r-md px-4 py-2 text-sm text-white transition-all duration-300 hover:opacity-90 ${
+                                            couponLoading 
+                                                ? 'bg-gray-400 cursor-not-allowed' 
+                                                : data?.gradient ? 'bg-gradient' : 'bg-primary'
+                                        }`}
+                                        type="button"
+                                        onClick={validateCoupon}
+                                        disabled={couponLoading}
+                                    >
+                                        {couponLoading ? "..." : "Aplicar"}
+                                    </button>
+                                </div>
+                              
+                            </div>
+                        ) : (
+                            <div className="bg-secondary border  rounded-lg p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium customtext-neutral-dark   ">
+                                                Cupón aplicado: {appliedCoupon.code}
+                                            </p>
+                                          
+                                            <p className="text-xs customtext-neutral-light">
+                                                Descuento: {appliedCoupon.type === 'percentage' 
+                                                    ? `${appliedCoupon.value}%`
+                                                    : `S/ ${Number2Currency(appliedCoupon.value)}`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={removeCoupon}
+                                        className="text-red-600 hover:text-red-700 transition-colors"
+                                        title="Remover cupón"
+                                    >
+                                      <XCircle/>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {couponError && (
+                        <div className="mt-2 text-red-500 text-sm">{couponError}</div>
                     )}
+
+              
+
+                 
 
                     <div className="space-y-4 mt-6">
                         <div className="flex justify-between">
@@ -1388,46 +2023,28 @@ export default function ShippingStepSF({
                                 S/ {Number2Currency(igv)}
                             </span>
                         </div>
-                        {coupon && (
-                            <div className="mb-2 mt-2 flex justify-between items-center border-b pb-2 text-sm font-bold">
-                                <span>
-                                    Cupón aplicado{" "}
-                                    <Tippy content="Eliminar">
-                                        <i
-                                            className="mdi mdi-close text-red-500 cursor-pointer"
-                                            onClick={() =>{
-                                                setCoupon(null);
-                                                couponRef.current.value = "";
-                                                }
-                                            }
-                                        ></i>
-                                    </Tippy>
-                                    <small className="block text-xs font-light">
-                                        {coupon.name}{" "}
-                                        <Tippy
-                                            content={
-                                                coupon.description
-                                            }
-                                        >
-                                            <i className="mdi mdi-information-outline ms-1"></i>
-                                        </Tippy>{" "}
-                                        ({coupon.type === 'percentage' 
-                                            ? `-${Math.round(coupon.amount * 100) / 100}%`
-                                            : `S/ -${Number2Currency(coupon.amount)}`})
-                                    </small>
+                        
+                        {/* Mostrar descuentos automáticos en el resumen */}
+                        {autoDiscountTotal > 0 && (
+                            <div className="flex justify-between text-green-600">
+                                <span>Descuentos automáticos</span>
+                                <span className="font-semibold">
+                                    -S/ {Number2Currency(autoDiscountTotal)}
                                 </span>
-                                <span>
-                                    S/ -
-                                    {Number2Currency(
-                                        descuentofinal
-                                    )}
+                            </div>
+                        )}
+                        
+                        {appliedCoupon && (
+                            <div className="flex justify-between text-blue-600">
+                                <span>Descuento cupón ({appliedCoupon.code})</span>
+                                <span className="font-semibold">
+                                    -S/ {Number2Currency(calculatedCouponDiscount)}
                                 </span>
                             </div>
                         )}
                         <div className="flex justify-between">
                             <span className="customtext-neutral-dark">Envío</span>
                             <span className="font-semibold">
-                                {/* S/ {Number2Currency(envio)} */}
                                 {hasShippingFree != null && subFinal >= hasShippingFree ? (
                                     <span className="customtext-neutral-dark">Gratis (Compra mayor a S/{hasShippingFree})</span>
                                 ) : (
@@ -1438,53 +2055,35 @@ export default function ShippingStepSF({
                         <div className="py-3 border-y-2 mt-6">
                             <div className="flex justify-between font-bold text-[20px] items-center">
                                 <span>Total</span>
-                                <span>S/ {Number2Currency(totalFinal)}</span>
+                                <span>S/ {Number2Currency(appliedCoupon ? finalTotalWithCoupon : totalFinal)}</span>
                             </div>
                         </div>
                         <div className="space-y-2 pt-4">
-                            <ButtonPrimary className={'payment-button py-4 rounded-2xl xl:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300'}
-                                // onClick={() => {
-                                //     if (validateForm()) {
-                                //         setShowPaymentModal(true);
-                                //     }
-                                // }}
+                            <button
+                                className={`w-full py-3 px-6 rounded-full font-semibold text-lg transition-all duration-300 hover:opacity-90 bg-primary ${data?.class_button ||' text-white'}`}
                                 onClick={handleContinueClick}
                             >
-                                {" "}
                                 Continuar
-                            </ButtonPrimary>
+                            </button>
                             <div id="mercadopago-button-container" ></div>
-                            {/* style={{ display: "none" }} */}
-                            <ButtonSecondary onClick={noContinue} className="py-4 rounded-2xl xl:rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300  ">
-                                {" "}
+                            <ButtonSecondary className="!rounded-full" onClick={noContinue}>
                                 Cancelar
                             </ButtonSecondary>
                         </div>
                         <div>
                             <p className="text-sm customtext-neutral-dark">
-                                Al realizar tu pedido, aceptas los{" "}
-                                <button 
-                                    type="button"
-                                    onClick={() => openPolicyModal(1)}
-                                    className="customtext-primary font-bold hover:underline focus:outline-none"
-                                >
-                                    Términos y Condiciones
-                                </button>
+                                Al realizar tu pedido, aceptas los 
+                                <a href="#" onClick={() => openModal && openModal(1)} className="customtext-primary font-bold"> Términos y Condiciones</a>
                                 , y que nosotros usaremos sus datos personales de
-                                acuerdo con nuestra{" "}
-                                <button 
-                                    type="button"
-                                    onClick={() => openPolicyModal(0)}
-                                    className="customtext-primary font-bold hover:underline focus:outline-none"
-                                >
-                                    Política de Privacidad
-                                </button>
+                                acuerdo con nuestra 
+                                <a href="#" onClick={() => openModal && openModal(0)} className="customtext-primary font-bold"> Política de Privacidad</a>
                                 .
                             </p>
                         </div>
                     </div>
                 </div>
-            </div>            
+            </div>
+
             <PaymentModal
                 isOpen={showPaymentModal}
                 contacts={contacts}
@@ -1498,13 +2097,15 @@ export default function ShippingStepSF({
                 cart={cart}
                 subTotal={subTotal}
                 igv={igv}
-                totalFinal={totalFinal}
+                totalFinal={appliedCoupon ? finalTotalWithCoupon : totalFinal}
                 envio={envio}
                 request={paymentRequest}
                 onClose={() => setShowVoucherModal(false)}
                 paymentMethod={currentPaymentMethod}
-                coupon={coupon}
-                descuentofinal={descuentofinal}
+                coupon={appliedCoupon}
+                descuentofinal={calculatedCouponDiscount}
+                autoDiscounts={autoDiscounts}
+                autoDiscountTotal={autoDiscountTotal}
             />
 
             <UploadVoucherModalBancs
@@ -1512,66 +2113,19 @@ export default function ShippingStepSF({
                 cart={cart}
                 subTotal={subTotal}
                 igv={igv}
-                totalFinal={totalFinal}
+                totalFinal={appliedCoupon ? finalTotalWithCoupon : totalFinal}
                 envio={envio}
                 contacts={contacts}
                 request={paymentRequest}
                 onClose={() => setShowVoucherModalBancs(false)}
                 paymentMethod={currentPaymentMethod}
-                coupon={coupon}
-                descuentofinal={descuentofinal}
+                coupon={appliedCoupon}
+                descuentofinal={calculatedCouponDiscount}
+                autoDiscounts={autoDiscounts}
+                autoDiscountTotal={autoDiscountTotal}
             />
 
-            {/* Modales de Políticas */}
-            {Object.keys(policyItems).map((key, index) => {
-                const title = policyItems[key];
-                const content =
-                    generals?.find((x) => x.correlative == key)?.description ??
-                    "";
-                return (
-                    <ReactModal
-                        key={index}
-                        isOpen={modalOpen === index}
-                        onRequestClose={closePolicyModal}
-                        contentLabel={title}
-                        className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center p-4 z-50"
-                        overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-[999]"
-                        ariaHideApp={false}
-                    >
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <h2 className="text-2xl font-bold text-gray-900 pr-4">{title}</h2>
-                                <button
-                                    onClick={closePolicyModal}
-                                    className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full"
-                                    aria-label="Cerrar modal"
-                                >
-                                    <X size={24} strokeWidth={2} />
-                                </button>
-                            </div>
-                            
-                            {/* Content */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <div className="prose prose-gray max-w-none">
-                                    <HtmlContent html={content} />
-                                </div>
-                            </div>
-                            
-                            {/* Footer */}
-                            <div className="flex justify-end p-6 border-t border-gray-200">
-                                <button
-                                    onClick={closePolicyModal}
-                                    className="px-6 py-2 bg-primary text-white rounded-lg transition-colors duration-200 font-medium"
-                                >
-                                    Cerrar
-                                </button>
-                            </div>
-                        </div>
-                    </ReactModal>
-                );
-            })}
-
+            <LoginModal />
         </>
     );
 }

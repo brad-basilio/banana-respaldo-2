@@ -544,6 +544,11 @@ export default function EditorLibro() {
 
                 const data = await response.json();
 
+                console.log('📊 ===== DATOS DEL PROYECTO CARGADOS =====');
+                console.log('🔍 PROJECT ID desde URL:', projectId);
+                console.log('🔍 PROJECT DATA completo:', data);
+                console.log('🔍 PROJECT DATA ID:', data?.project?.id);
+                console.log('========================================');
 
                 // Establecer los datos en el estado
                 setProjectData(data.project);
@@ -5141,6 +5146,12 @@ export default function EditorLibro() {
 
         try {
 
+            console.log('🚀 ===== INICIANDO addAlbumToCart =====');
+            console.log('📦 itemData:', itemData);
+            console.log('🎨 presetData:', presetData);
+            console.log('📋 projectData:', projectData);
+            console.log('🆔 projectData?.id:', projectData?.id);
+            console.log('=====================================');
 
             if (!itemData || !presetData || !projectData?.id) {
 
@@ -5254,6 +5265,13 @@ export default function EditorLibro() {
                     requires_pdf_generation: true
                 }
             };
+
+            console.log("📦 PRODUCTO ÁLBUM CREADO:", albumProduct);
+            console.log("🎯 PROJECT IDS:", {
+                project_id: cartProjectId,
+                canvas_project_id: projectData.id,
+                item_id: itemData?.id
+            });
 
 
             // Paso 5: Agregar al carrito usando el patrón correcto
