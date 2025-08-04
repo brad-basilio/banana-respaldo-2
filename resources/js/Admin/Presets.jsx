@@ -154,7 +154,7 @@ const Presets = ({ presetTypes = {} }) => {
         {
           caption: 'Dimensiones',
           cellTemplate: (container, { data }) => {
-            container.text(`${data.width} x ${data.height} cm`);
+            container.text(`${data.width} x ${data.height} mm`);
           },
           width: 150,
           allowFiltering: false
@@ -227,7 +227,7 @@ const Presets = ({ presetTypes = {} }) => {
       <div className='row' id='principal-container'>
         <input ref={idRef} type='hidden' />
         <div className="col-md-6">
-          <InputFormGroup eRef={nameRef} label='Nombre del Preset' placeholder='Ej: Canvas 30x40cm' required />
+          <InputFormGroup eRef={nameRef} label='Nombre del Preset' placeholder='Ej: Canvas 30x40mm' required />
         </div>
         {/*<div className="col-md-6">
           <SelectFormGroup dropdownParent={"#principal-container"} eRef={typeRef} label='Tipo de Producto' optionValue='value' optionLabel='label' required >
@@ -241,10 +241,10 @@ const Presets = ({ presetTypes = {} }) => {
           <TextareaFormGroup eRef={descriptionRef} label='Descripción' placeholder='Descripción del preset (opcional)' rows={2} />
         </div>
         <div className="col-md-3">
-          <InputFormGroup eRef={widthRef} label='Ancho (cm)' type='number' min='0.1' step='0.1' required />
+          <InputFormGroup eRef={widthRef} label='Ancho (mm)' type='number' min='0.1' step='0.1' required />
         </div>
         <div className="col-md-3">
-          <InputFormGroup eRef={heightRef} label='Alto (cm)' type='number' min='0.1' step='0.1' required />
+          <InputFormGroup eRef={heightRef} label='Alto (mm)' type='number' min='0.1' step='0.1' required />
         </div>
         <div className="col-md-3">
           <InputFormGroup eRef={dpiRef} label='DPI' type='number' min='72' max='1200' required />
