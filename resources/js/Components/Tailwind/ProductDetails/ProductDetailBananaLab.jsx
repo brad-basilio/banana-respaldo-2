@@ -257,7 +257,7 @@ export default function ProductDetailBananaLab({
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Redirigir al login
-                    window.location.href = "/login";
+                    window.location.href = "/iniciar-sesion";
                 }
             });
             return;
