@@ -176,8 +176,8 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                                     {/* Overlay con el contenido */}
                                     <div className="absolute inset-0 flex flex-col justify-between items-start p-6  ">
                                      <div>
-                                           <h3 className="text-white font-medium text-5xl  mb-2">{renderTextWithBold(data?.name)}</h3>
-                                        <p className="text-neutral-dark text-base mb-4 leading-relaxed">{data?.description}</p>
+                                           <h3 className="text-white font-medium text-5xl  mb-2 whitespace-pre-line">{renderTextWithBold(data?.name)}</h3>
+                                        <p className="text-neutral-dark text-base mb-4 leading-relaxed whitespace-pre-line">{data?.description}</p>
                                       
                                      </div>
                                       
