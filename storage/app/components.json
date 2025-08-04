@@ -296,16 +296,7 @@
                     "model": "Indicator"
                 }
             },
-            {
-                "id": "CarruselBananaLab",
-                "name": "CarruselBananaLab",
-                "data": [
-                    "background"
-                ],
-                "using": {
-                    "model": "Strength"
-                }
-            },
+           
             {
                 "id": "CarruselBenefitsSwiper",
                 "name": "Beneficios Simple Swiper",
@@ -1534,6 +1525,16 @@
                     "title",
                     "image_position"
                 ]
+            },
+            {
+                "id": "CarruselBananaLab",
+                "name": "CarruselBananaLab",
+                "data": [
+                    "background"
+                ],
+                "using": {
+                    "model": "Strength"
+                }
             },
             {
                 "id": "BannerPublicitarioPaani",

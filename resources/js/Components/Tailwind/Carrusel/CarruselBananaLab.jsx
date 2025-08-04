@@ -7,10 +7,24 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Navigation, Pagination } from "swiper/modules";
 
-const CarruselBananaLab = ({ items }) => {
+const CarruselBananaLab = ({data, items }) => {
     const [activeIndex, setActiveIndex] = useState(0);
     const [hoveredIndex, setHoveredIndex] = useState(null);
     const [firstAd, setFirstAd] = useState(null);
+    
+    // Función para procesar texto con **texto** y convertirlo a font-bold
+    const renderTextWithBold = (text) => {
+        if (!text) return text;
+        
+        const parts = text.split(/(\*.*?\*)/g);
+        return parts.map((part, index) => {
+            if (part.startsWith('*') && part.endsWith('*')) {
+                const boldText = part.slice(1, -1); // Remover los asteriscos
+                return <span key={index} className="font-bold text-[#3D143E]">{boldText}</span>;
+            }
+            return part;
+        });
+    };
     
   
 
@@ -222,36 +236,35 @@ const CarruselBananaLab = ({ items }) => {
 
             {/* Imagen lateral */}
             <motion.div 
-                className="min-h-full w-full  lg:w-4/12"
+                className="min-h-full w-full lg:w-4/12"
                 variants={imageVariants}
             >
-                {firstAd ? (
-                    <motion.a
-                        href={firstAd.link || '#'}
-                        target={firstAd.link ? "_blank" : "_self"}
-                        className=" h-full w-full flex items-center justify-center relative overflow-hidden rounded-lg"
-                        whileHover={{ scale: 1.02 }}
-                        title={firstAd.description || firstAd.name}
-                    >
-                        <motion.img
-                            src={`/storage/images/ad/${firstAd.image}`}
-                            alt={firstAd.name}
-                            className="w-full h-full object-cover object-center"
-                           onError={(e) =>
-                                        (e.target.src =
-                                            "/api/cover/thumbnail/null")
-                                    }
-                        />
-         
-                    </motion.a>
-                ) : (
-                    // Imagen por defecto si no hay ad
+                <motion.a
+                    href={data.button_link || '#'}
+                    target={data.button_link ? "_blank" : "_self"}
+                    className="h-full w-full flex items-center justify-center relative overflow-hidden rounded-lg"
+                
+                    title={data.description || data.name}
+                >
                     <motion.img
-                        src="/api/cover/thumbnail/null"
-                        className="w-full h-full object-cover object-center"
-                        whileHover={{ scale: 1.02 }}
+                        src={`/storage/images/system/${data?.background}`}
+                        alt={data.name}
+                        className="w-full min-h-full object-cover object-center"
+                        onError={(e) =>
+                            (e.target.src =
+                                "/api/cover/thumbnail/null")
+                        }
                     />
-                )}
+                    
+                    {/* Overlay con el contenido */}
+                    <div className="absolute inset-0 flex flex-col justify-center items-start p-6  ">
+                        <h3 className="text-white font-medium text-3xl max-w-[70%] mb-2">{renderTextWithBold(data.name)}</h3>
+                        <p className="text-white text-base mb-4 max-w-[70%] leading-relaxed">{renderTextWithBold(data.description)}</p>
+                        <a href={data.button_link || '#'} target={data.button_link ? "_blank" : "_self"} className="text-white bg-primary px-6 py-3 rounded-full font-semibold hover:bg-primary-dark transition-colors">
+                            {data.button_text}
+                        </a>
+                    </div>
+                </motion.a>
             </motion.div>
         </motion.div>
     );

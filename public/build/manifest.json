@@ -4863,7 +4863,7 @@
     "isDynamicEntry": true
   },
   "resources/js/Components/Tailwind/Banner.jsx": {
-    "file": "assets/Banner-BqkR50AB.js",
+    "file": "assets/Banner-Kx-drWw6.js",
     "name": "Banner",
     "src": "resources/js/Components/Tailwind/Banner.jsx",
     "isDynamicEntry": true,
@@ -4887,7 +4887,8 @@
       "resources/js/Components/Tailwind/Banners/BannerSimpleD2.jsx",
       "resources/js/Components/Tailwind/Banners/BannerBananaLab.jsx",
       "resources/js/Components/Tailwind/Banners/BannerCTAMakita.jsx",
-      "resources/js/Components/Tailwind/Banners/BannerContactMakita.jsx"
+      "resources/js/Components/Tailwind/Banners/BannerContactMakita.jsx",
+      "resources/js/Components/Tailwind/Carrusel/CarruselBananaLab.jsx"
     ]
   },
   "resources/js/Components/Tailwind/Banners/BannerAd.jsx": {
@@ -5336,7 +5337,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Carrusel.jsx": {
-    "file": "assets/Carrusel-DqKdgn55.js",
+    "file": "assets/Carrusel-CHc6lKbP.js",
     "name": "Carrusel",
     "src": "resources/js/Components/Tailwind/Carrusel.jsx",
     "isDynamicEntry": true,
@@ -10041,7 +10042,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-waUxoOXZ.js",
+    "file": "assets/System-DRNrkJ3f.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
