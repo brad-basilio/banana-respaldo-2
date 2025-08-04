@@ -395,12 +395,15 @@ class BasicController extends Controller
       $table = (new $this->model)->getTable();
       $hasStatusColumn = Schema::hasColumn($table, 'status');
       
-      if ($this->softDeletion && $hasStatusColumn) {
+      // Primero intentamos eliminar el registro, independientemente del softDeletion
+      $deleted = $this->model::where('id', $id)
+          ->delete();
+      
+      // Si el soft deletion está habilitado y el modelo tiene un campo status, pero el borrado no funcionó,
+      // entonces intentamos hacer soft delete actualizando status=false
+      if (!$deleted && $this->softDeletion && $hasStatusColumn) {
         $deleted = $this->model::where('id', $id)
           ->update(\array_merge(['status' => false], $body));
-      } else {
-        $deleted = $this->model::where('id', $id)
-          ->delete();
       }
       if ($deleted) {
         $snake_case = Text::camelToSnakeCase(str_replace('App\\Models\\', '', $this->model));
