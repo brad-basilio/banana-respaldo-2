@@ -4863,7 +4863,7 @@
     "isDynamicEntry": true
   },
   "resources/js/Components/Tailwind/Banner.jsx": {
-    "file": "assets/Banner-Bz76f24d.js",
+    "file": "assets/Banner-CE-Z06Mo.js",
     "name": "Banner",
     "src": "resources/js/Components/Tailwind/Banner.jsx",
     "isDynamicEntry": true,
@@ -4888,7 +4888,8 @@
       "resources/js/Components/Tailwind/Banners/BannerBananaLab.jsx",
       "resources/js/Components/Tailwind/Banners/BannerCTAMakita.jsx",
       "resources/js/Components/Tailwind/Banners/BannerContactMakita.jsx",
-      "resources/js/Components/Tailwind/Carrusel/CarruselBananaLab.jsx"
+      "resources/js/Components/Tailwind/Carrusel/CarruselBananaLab.jsx",
+      "resources/js/Components/Tailwind/Blogs/BlogCarruselBananaLab.jsx"
     ]
   },
   "resources/js/Components/Tailwind/Banners/BannerAd.jsx": {
@@ -5074,7 +5075,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Blog.jsx": {
-    "file": "assets/Blog-HEsjgKMB.js",
+    "file": "assets/Blog-CBj10sWO.js",
     "name": "Blog",
     "src": "resources/js/Components/Tailwind/Blog.jsx",
     "isDynamicEntry": true,
@@ -10042,7 +10043,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CSq9D6_M.js",
+    "file": "assets/System-CXJrhWgy.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

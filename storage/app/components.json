@@ -1537,6 +1537,23 @@
                 }
             },
             {
+                "id": "BlogCarruselBananaLab",
+                "name": "BlogCarruselBananaLab",
+                "data": [
+                    "title",
+                    "description",
+                    "button_text_section",
+                    "link_blog"
+                ],
+                "using": {
+                    "model": "Post",
+                    "limit": 2,
+                    "with": [
+                        "category"
+                    ]
+                }
+            },
+            {
                 "id": "BannerPublicitarioPaani",
                 "name": "BannerPublicitarioPaani",
                 "data": [
@@ -2004,23 +2021,7 @@
                     ]
                 }
             },
-            {
-                "id": "BlogCarruselBananaLab",
-                "name": "BlogCarruselBananaLab",
-                "data": [
-                    "title",
-                    "description",
-                    "button_text",
-                    "link_blog"
-                ],
-                "using": {
-                    "model": "Post",
-                    "limit": 2,
-                    "with": [
-                        "category"
-                    ]
-                }
-            },
+            
             {
                 "id": "BlogSectionMakita",
                 "name": "BlogSectionMakita",

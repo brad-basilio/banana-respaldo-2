@@ -4,7 +4,18 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 const BlogCarruselBananaLab = ({ data, items }) => {
     const [secondAd, setSecondAd] = useState(null);
+    const renderTextWithBold = (text) => {
+        if (!text) return text;
 
+        const parts = text.split(/(\*.*?\*)/g);
+        return parts.map((part, index) => {
+            if (part.startsWith('*') && part.endsWith('*')) {
+                const boldText = part.slice(1, -1); // Remover los asteriscos
+                return <span key={index} className="font-bold customtext-primary text-6xl ">{boldText}</span>;
+            }
+            return part;
+        });
+    };
     // useEffect para cargar el segundo ad
     useEffect(() => {
         const fetchSecondAd = async () => {
@@ -83,7 +94,7 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                             whileHover={{ x: 5 }}
                             transition={{ type: "spring", stiffness: 300 }}
                         >
-                            {data?.button_text}{" "}
+                            {data?.button_text_section}{" "}
                             <i className="mdi mdi-chevron-right"></i>
                         </motion.a>
                     </motion.div>
@@ -145,33 +156,37 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                             className="col-span-1 md:col-span-1 lg:col-span-1 rounded-2xl mt-2"
                         >
                             <div className="bg-white rounded-3xl overflow-hidden shadow-sm h-full">
-                                {secondAd ? (
-                                    <motion.a
-                                        href={secondAd.link || '#'}
-                                        target={secondAd.link ? "_blank" : "_self"}
-                                        className="block h-full w-full relative overflow-hidden"
-                                        whileHover={{ scale: 1.02 }}
-                                        title={secondAd.description || secondAd.name}
-                                    >
-                                        <motion.img
-                                            src={`/storage/images/ad/${secondAd.image}`}
-                                            alt={secondAd.name}
-                                            className="h-full w-full object-cover"
-                                            onError={(e) => {
-                                                // Fallback a la imagen original si falla cargar el ad
-                                                e.target.src =   src="/api/cover/thumbnail/null";
-                                            }}
-                                        />
 
-                                    </motion.a>
-                                ) : (
-                                    // Imagen por defecto si no hay segundo ad
-                                    <img
-                                       src="/api/cover/thumbnail/null"
-                                        alt=""
-                                        className="h-full object-cover"
+                                <motion.a
+                                    href={data?.button_link || '#'}
+                                    target={data?.button_link ? "_blank" : "_self"}
+                                    className="block h-full w-full relative overflow-hidden"
+                                    whileHover={{ scale: 1.02 }}
+                                    title={data?.description || data?.name}
+                                >
+                                    <motion.img
+                                        src={`/storage/images/system/${data?.background}`}
+                                        alt={data?.name}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                            // Fallback a la imagen original si falla cargar el ad
+                                            e.target.src = src = "/api/cover/thumbnail/null";
+                                        }}
                                     />
-                                )}
+                                    {/* Overlay con el contenido */}
+                                    <div className="absolute inset-0 flex flex-col justify-between items-start p-6  ">
+                                     <div>
+                                           <h3 className="text-white font-medium text-5xl  mb-2">{renderTextWithBold(data?.name)}</h3>
+                                        <p className="text-neutral-dark text-base mb-4 leading-relaxed">{data?.description}</p>
+                                      
+                                     </div>
+                                      
+                                        <a href={data?.button_link || '#'} target={data?.button_link ? "_blank" : "_self"} className="text-white w-full text-center bg-primary px-6 py-3 rounded-full font-semibold hover:bg-primary-dark transition-colors">
+                                            {data?.button_text}
+                                        </a>
+                                    </div>
+                                </motion.a>
+
                             </div>
                         </motion.div>
                     </motion.div>
