@@ -4863,7 +4863,7 @@
     "isDynamicEntry": true
   },
   "resources/js/Components/Tailwind/Banner.jsx": {
-    "file": "assets/Banner-Bxv4Ma1u.js",
+    "file": "assets/Banner-CQhJs4eT.js",
     "name": "Banner",
     "src": "resources/js/Components/Tailwind/Banner.jsx",
     "isDynamicEntry": true,
@@ -5338,7 +5338,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Carrusel.jsx": {
-    "file": "assets/Carrusel-Cm2ys4S_.js",
+    "file": "assets/Carrusel-BAPU6xDf.js",
     "name": "Carrusel",
     "src": "resources/js/Components/Tailwind/Carrusel.jsx",
     "isDynamicEntry": true,
@@ -10043,7 +10043,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-BMkrqF_B.js",
+    "file": "assets/System-DeG11cvB.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
