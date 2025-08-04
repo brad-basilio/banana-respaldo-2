@@ -20,7 +20,7 @@ const CarruselBananaLab = ({data, items }) => {
         return parts.map((part, index) => {
             if (part.startsWith('*') && part.endsWith('*')) {
                 const boldText = part.slice(1, -1); // Remover los asteriscos
-                return <span key={index} className="font-bold !text-[#3D143E]">{boldText}</span>;
+                return <span key={index} className="font-bold customtext-primary">{boldText}</span>;
             }
             return part;
         });

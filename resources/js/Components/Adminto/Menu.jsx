@@ -133,7 +133,7 @@ const Menu = ({ session, hasRole }) => {
                   <MenuItem href="/admin/indicators" icon="mdi mdi-dots-grid">Indicadores</MenuItem>
                  {/* <MenuItem href="/admin/certifications" icon="mdi mdi-dots-grid">Certificaciones</MenuItem> */}
              {/*     <MenuItem href="/admin/partners" icon="mdi mdi-dots-grid">Aliados</MenuItem> */}
-                  <MenuItem href="/admin/strengths" icon="mdi mdi-arm-flex">Pasos</MenuItem>
+                  <MenuItem href="/admin/strengths" icon="mdi mdi-arm-flex">Valores</MenuItem>
                   <MenuItem href="/admin/banners" icon="mdi mdi-post-outline">Banners</MenuItem>
                   <MenuItem href="/admin/sliders" icon="mdi mdi-page-layout-body">Sliders</MenuItem>
     {/*              <MenuItem href="/admin/faqs" icon="mdi mdi-forum">Preguntas Frecuentes</MenuItem>
