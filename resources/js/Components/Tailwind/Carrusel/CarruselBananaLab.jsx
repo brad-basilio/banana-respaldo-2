@@ -145,7 +145,7 @@ const CarruselBananaLab = ({data, items }) => {
                                     >
                                         <motion.img
                                             src={`/storage/images/strength/${benefit.image}`}
-                                            className="min-w-20 min-h-20 object-cover"
+                                            className="min-w-20 min-h-20 max-w-20 max-h-20 object-cover"
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
                                             transition={{ delay: 0.2 }}
