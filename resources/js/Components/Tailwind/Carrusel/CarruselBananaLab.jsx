@@ -35,7 +35,7 @@ const CarruselBananaLab = ({data, items }) => {
                 const response = await fetch('/api/ads/active');
                 if (response.ok) {
                     const data = await response.json();
-                    if (data && data.length > 0) {
+                    if (data && data?.length > 0) {
                         setFirstAd(data[0]); // Tomar el primer ad
                         console.log('First ad loaded:', data[0]);
                     }
@@ -240,15 +240,15 @@ const CarruselBananaLab = ({data, items }) => {
                 variants={imageVariants}
             >
                 <motion.a
-                    href={data.button_link || '#'}
-                    target={data.button_link ? "_blank" : "_self"}
+                    href={data?.button_link || '#'}
+                    target={data?.button_link ? "_blank" : "_self"}
                     className="h-full w-full flex items-center justify-center relative overflow-hidden rounded-lg"
                 
-                    title={data.description || data.name}
+                    title={data?.description || data?.name}
                 >
                     <motion.img
                         src={`/storage/images/system/${data?.background}`}
-                        alt={data.name}
+                        alt={data?.name}
                         className="w-full min-h-full object-cover object-center"
                         onError={(e) =>
                             (e.target.src =
@@ -258,10 +258,10 @@ const CarruselBananaLab = ({data, items }) => {
                     
                     {/* Overlay con el contenido */}
                     <div className="absolute inset-0 flex flex-col justify-center items-start p-6  ">
-                        <h3 className="text-white font-medium text-3xl max-w-[70%] mb-2">{renderTextWithBold(data.name)}</h3>
-                        <p className="text-white text-base mb-4 max-w-[70%] leading-relaxed">{renderTextWithBold(data.description)}</p>
-                        <a href={data.button_link || '#'} target={data.button_link ? "_blank" : "_self"} className="text-white bg-primary px-6 py-3 rounded-full font-semibold hover:bg-primary-dark transition-colors">
-                            {data.button_text}
+                        <h3 className="text-white font-medium text-3xl max-w-[70%] mb-2">{renderTextWithBold(data?.name)}</h3>
+                        <p className="text-white text-base mb-4 max-w-[70%] leading-relaxed">{renderTextWithBold(data?.description)}</p>
+                        <a href={data?.button_link || '#'} target={data?.button_link ? "_blank" : "_self"} className="text-white bg-primary px-6 py-3 rounded-full font-semibold hover:bg-primary-dark transition-colors">
+                            {data?.button_text}
                         </a>
                     </div>
                 </motion.a>
