@@ -159,7 +159,7 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                                             className="h-full w-full object-cover"
                                             onError={(e) => {
                                                 // Fallback a la imagen original si falla cargar el ad
-                                                e.target.src = "/assets/img/backgrounds/resources/anuncio-mobile-footer.png";
+                                                e.target.src =   src="/api/cover/thumbnail/null";
                                             }}
                                         />
 
@@ -167,7 +167,7 @@ const BlogCarruselBananaLab = ({ data, items }) => {
                                 ) : (
                                     // Imagen por defecto si no hay segundo ad
                                     <img
-                                        src={`/assets/img/backgrounds/resources/anuncio-mobile-footer.png`}
+                                       src="/api/cover/thumbnail/null"
                                         alt=""
                                         className="h-full object-cover"
                                     />
