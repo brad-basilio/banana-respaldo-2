@@ -5788,6 +5788,29 @@ export default function EditorLibro() {
                 </div>
             ) : (
                 <div className="h-screen w-screen overflow-hidden bg-[#141b34] font-sans">
+                    {/* CSS para permitir que las imágenes se extiendan más allá de los bordes en modo edición */}
+                    <style>{`
+                        /* Solo aplicar overflow visible en modo edición (no en preview ni captura) */
+                        .editor-workspace:not(.preview-mode) [data-element-type="image"] {
+                            overflow: visible !important;
+                        }
+                        
+                        .editor-workspace:not(.preview-mode) [data-element-type="image"] > div {
+                            overflow: visible !important;
+                        }
+                        
+                        /* Mantener overflow hidden solo para el contenedor principal para evitar scroll */
+                        .editor-workspace:not(.preview-mode) #page-${pages[currentPage]?.id} {
+                            overflow: visible !important;
+                        }
+                        
+                        /* En preview mode y captura, mantener overflow hidden para el resultado final */
+                        .preview-mode [data-element-type="image"],
+                        .capture-mode [data-element-type="image"] {
+                            overflow: hidden !important;
+                        }
+                    `}</style>
+                    
                     {/* Book Preview Modal */}
                     <BookPreviewModal
                         isOpen={isBookPreviewOpen}
@@ -7295,7 +7318,7 @@ export default function EditorLibro() {
 
 
                             {/* Canvas workspace - centered */}
-                            <div id="editor-workspace" className="flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-gray-100">
+                            <div id="editor-workspace" className={`editor-workspace flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-gray-100 ${previewMode ? 'preview-mode' : ''}`}>
 
 
                                 {previewMode ? (

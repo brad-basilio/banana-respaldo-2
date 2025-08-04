@@ -200,7 +200,7 @@ const CarruselBananaLab = ({data, items }) => {
                             >
                                 <motion.img
                                     src={`/storage/images/strength/${benefit.image}`}
-                                    className="w-full h-auto"
+                                   className="min-w-20 min-h-20 max-w-20 max-h-20 object-cover"
                                     animate={{
                                         filter: hoveredIndex === index ? "drop-shadow(0 5px 15px rgba(255,255,255,0.5))" : "none"
                                     }}
