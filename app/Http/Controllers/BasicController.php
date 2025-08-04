@@ -161,7 +161,12 @@ class BasicController extends Controller
       if (Auth::check()) {
         $table = $this->prefix4filter ? $this->prefix4filter : (new $this->model)->getTable();
         if (Schema::hasColumn($table, 'status')) {
-          $instance->whereNotNull($this->prefix4filter ? $this->prefix4filter . '.status' : 'status');
+          // Filtrar registros con status que sean nulos, 0 o false
+          $statusField = $this->prefix4filter ? $this->prefix4filter . '.status' : 'status';
+          $instance->where(function($query) use ($statusField) {
+            $query->where($statusField, '=', 1)
+                  ->orWhere($statusField, '=', true);
+          });
         }
       }
 
