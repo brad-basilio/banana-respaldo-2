@@ -291,6 +291,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/coupons/{id}', [AdminCouponController::class, 'delete']);
     Route::post('/coupons/validate', [AdminCouponController::class, 'validateCoupon']);
     Route::get('/coupons/generate-code', [AdminCouponController::class, 'generateCode']);
+    Route::post('/coupons/check-first-purchase-coupon', [AdminCouponController::class, 'checkFirstPurchaseCoupon']);
 
     // Reglas de Descuento
     Route::post('/discount-rules', [AdminDiscountRulesController::class, 'save']);

@@ -116,6 +116,29 @@ const Coupons = ({ categories, products }) => {
     const onModalSubmit = async (e) => {
         e.preventDefault();
 
+        // Validar si ya existe un cupón activo con first_purchase_only
+        if (firstPurchaseOnlyRef.current.checked) {
+            // Verificar si el cupón estará activo (usando el checkbox de active si existe, o asumiendo true para nuevos cupones)
+            const activeCheckbox = document.querySelector('input[name="active"]');
+            const isActive = activeCheckbox ? activeCheckbox.checked : true;
+            
+            if (isActive) {
+                // Verificar si ya existe un cupón activo con first_purchase_only
+                const existingFirstPurchaseCoupon = await couponsRest.checkFirstPurchaseCoupon(
+                    idRef.current.value || 0 // Si hay ID, excluirlo de la validación (para edición)
+                );
+                
+                if (existingFirstPurchaseCoupon) {
+                    Swal.fire({
+                        title: "Error de validación",
+                        text: "Ya existe un cupón activo para primera compra. Desactive ese cupón antes de crear uno nuevo o desmarque la opción 'Solo primera compra'.",
+                        icon: "error",
+                    });
+                    return;
+                }
+            }
+        }
+
         const request = {
             id: idRef.current.value || undefined,
             code: codeRef.current.value,
@@ -496,7 +519,7 @@ const Coupons = ({ categories, products }) => {
                                     eRef={startsAtRef}
                                     label="Fecha de inicio"
                                     type="datetime-local"
-                                    required
+                                    
                                 />
                             </div>
                             <div className="col-md-6">
@@ -504,7 +527,7 @@ const Coupons = ({ categories, products }) => {
                                     eRef={expiresAtRef}
                                     label="Fecha de expiración"
                                     type="datetime-local"
-                                    required
+                                    
                                 />
                             </div>
                         </div>

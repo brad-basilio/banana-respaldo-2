@@ -12,10 +12,14 @@ class VerifyAccountNotification extends Notification implements ShouldQueue
 {
     use Queueable;
     protected $verificationUrl;
+    protected $cuponDescuento;
+    protected $mensajeCupon;
 
-    public function __construct($verificationUrl)
+    public function __construct($verificationUrl, $cuponDescuento = null, $mensajeCupon = null)
     {
         $this->verificationUrl = $verificationUrl;
+        $this->cuponDescuento = $cuponDescuento;
+        $this->mensajeCupon = $mensajeCupon ?: 'Usa este cupón en tu primera compra para obtener un descuento especial.';
     }
 
         /**
@@ -30,7 +34,8 @@ class VerifyAccountNotification extends Notification implements ShouldQueue
             'email' => 'Correo electrónico',
             'year' => 'Año actual',
             'fecha_registro' => 'Fecha de registro',
-           
+            'cupon_descuento' => 'Cupón de descuento para primera compra',
+            'mensaje_cupon' => 'Mensaje sobre el cupón de descuento',
         ];
     }
 
@@ -49,6 +54,8 @@ class VerifyAccountNotification extends Notification implements ShouldQueue
                 'email' => $notifiable->email ?? '',
                 'year' => date('Y'),
                 'fecha_registro' => $notifiable->created_at->translatedFormat('d \d\e F \d\e\l Y'),
+                'cupon_descuento' => $this->cuponDescuento ?? '',
+                'mensaje_cupon' => $this->cuponDescuento ? $this->mensajeCupon : '',
             ])
             : 'Plantilla no encontrada';
         return (new RawHtmlMail($body, 'Verifica tu cuenta',$notifiable->email));

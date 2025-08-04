@@ -64,4 +64,26 @@ export default class CouponsRest extends BasicRest {
             return null;
         }
     }
+
+    async checkFirstPurchaseCoupon(currentId = 0) {
+        try {
+            const { status, result } = await Fetch(`/api/${this.path}/check-first-purchase-coupon`, {
+                method: "POST",
+                body: JSON.stringify({ current_id: currentId }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            return status && result.exists;
+        } catch (error) {
+            toast.error("¡Error!", {
+                description: "Error al verificar cupones de primera compra",
+                duration: 3000,
+                position: "bottom-center",
+                richColors: true
+            });
+            return false;
+        }
+    }
 }

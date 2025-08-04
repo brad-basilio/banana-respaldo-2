@@ -133,4 +133,34 @@ class CouponController extends BasicController
 
         return $code;
     }
+
+    public function checkFirstPurchaseCoupon(Request $request)
+    {
+        try {
+            $currentId = $request->input('current_id', 0);
+            
+            $query = Coupon::where('active', 1)
+                           ->where('first_purchase_only', 1);
+            
+            if ($currentId > 0) {
+                $query->where('id', '!=', $currentId);
+            }
+            
+            $exists = $query->exists();
+            
+            return response()->json([
+                'status' => 200,
+                'message' => $exists ? 'Ya existe un cupón activo para primera compra' : 'No existe cupón activo para primera compra',
+                'exists' => $exists
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Error al verificar cupones de primera compra',
+                'error' => $e->getMessage(),
+                'exists' => false
+            ], 500);
+        }
+    }
 }

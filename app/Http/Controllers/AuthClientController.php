@@ -11,6 +11,7 @@ use App\Models\Person;
 use App\Models\PreUser;
 use App\Models\SpecialtiesByUser;
 use App\Models\Specialty;
+use App\Models\Coupon;
 use App\Notifications\PasswordChangedNotification;
 use App\Notifications\VerifyAccountNotification;
 use App\Providers\RouteServiceProvider;
@@ -37,6 +38,31 @@ class AuthClientController extends BasicController
     {
         $regex = "/^[\w\.-]+@[a-zA-Z\d\.-]+\.[a-zA-Z]{2,}$/";
         return preg_match($regex, $email) === 1;
+    }
+    
+    /**
+     * Obtiene el cupón de primera compra activo
+     * Si no existe un cupón de primera compra activo, devuelve null
+     * @return \App\Models\Coupon|null
+     */
+    private function getFirstPurchaseCoupon()
+    {
+        // Buscar un cupón activo de primera compra
+        return Coupon::where('active', 1)
+                     ->where('first_purchase_only', 1)
+                     ->where(function ($query) {
+                         $query->where(function ($q) {
+                             // Si tiene fecha de inicio, debe ser menor o igual a ahora
+                             $q->whereNull('starts_at')
+                               ->orWhere('starts_at', '<=', now());
+                         });
+                     })
+                     ->where(function ($query) {
+                         // Si tiene fecha de expiración, debe ser mayor o igual a ahora
+                         $query->whereNull('expires_at')
+                               ->orWhere('expires_at', '>=', now());
+                     })
+                     ->first();
     }
 
     public function login(Request $request): HttpResponse | ResponseFactory | RedirectResponse
@@ -109,9 +135,19 @@ class AuthClientController extends BasicController
                 'email_verified_at' => now(), // O null si requiere confirmación
             ]);
 
-            // Enviar correo de bienvenida
+            // Buscar cupón de primera compra
+            $firstPurchaseCoupon = $this->getFirstPurchaseCoupon();
+            $cuponDescuento = $firstPurchaseCoupon ? $firstPurchaseCoupon->code : null;
+            $mensajeCupon = $firstPurchaseCoupon 
+                ? "¡Usa este cupón en tu primera compra para obtener un {$firstPurchaseCoupon->formatted_value} de descuento!" 
+                : null;
+
+            // Enviar correo de bienvenida con el cupón
             $notificationService = new EmailNotificationService();
-            $notificationService->sendToUser($user, new VerifyAccountNotification(url('/')));
+            $notificationService->sendToUser(
+                $user, 
+                new VerifyAccountNotification(url('/'), $cuponDescuento, $mensajeCupon)
+            );
 
             // Asignar rol
             $role = Role::firstOrCreate(['name' => 'Customer']);
