@@ -147,7 +147,7 @@ export default function ImageElement({
             saturate(${(element.filters?.saturation ?? 100) / 100})
             sepia(${(element.filters?.tint ?? 0) / 100})
             hue-rotate(${(element.filters?.hue ?? 0)}deg)
-            blur(${element.filters?.blur ?? 0}px)
+            blur(${Math.max(element.filters?.blur ?? 0, element.filters?.gaussianBlur ?? 0)}px)
         `.replace(/\s+/g, ' ').trim(),
         transform: `scale(${element.filters?.scale ?? 1}) rotate(${
             element.filters?.rotate ?? 0
@@ -156,6 +156,8 @@ export default function ImageElement({
         }`.replace(/\s+/g, ' ').trim(),
         mixBlendMode: element.filters?.blendMode ?? "normal",
         opacity: (element.filters?.opacity ?? 100) / 100,
+        zIndex: element.filters?.zIndex ?? 1,
+        position: 'relative',
         willChange: 'filter, transform, opacity',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
@@ -554,6 +556,7 @@ export default function ImageElement({
                             img.style.transform = filterStyle.transform;
                             img.style.mixBlendMode = filterStyle.mixBlendMode;
                             img.style.opacity = filterStyle.opacity;
+                            img.style.zIndex = filterStyle.zIndex;
                             img.style.willChange = 'filter, transform, opacity';
                             setTimeout(() => {
                                 if (img) img.style.willChange = 'auto';

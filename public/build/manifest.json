@@ -143,8 +143,8 @@
     "file": "assets/DxButton-DV0H-ZcL.js",
     "name": "DxButton"
   },
-  "_EditableCell-CXEpoeUR.js": {
-    "file": "assets/EditableCell-CXEpoeUR.js",
+  "_EditableCell-CgoXiC0w.js": {
+    "file": "assets/EditableCell-CgoXiC0w.js",
     "name": "EditableCell",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js",
@@ -4146,7 +4146,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-BAvacPKo.js",
+    "file": "assets/BananaLab-DOkcFDGG.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4205,7 +4205,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-DsNmlzFH.js",
+    "file": "assets/Editor-CyPqwchy.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4213,7 +4213,7 @@
       "_preload-helper-BfFHrpNk.js",
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_EditableCell-CXEpoeUR.js",
+      "_EditableCell-CgoXiC0w.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
       "_dom-to-image-more.min-D1PIV9fo.js",
       "_layers-6oegOx-p.js",
@@ -9834,7 +9834,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-BC6XYckc.js",
+    "file": "assets/Editor-f411Ylx0.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9847,7 +9847,7 @@
       "_index-Dq7h7Pqt.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
       "_preload-helper-BfFHrpNk.js",
-      "_EditableCell-CXEpoeUR.js",
+      "_EditableCell-CgoXiC0w.js",
       "_createLucideIcon-Cy5Ya80P.js",
       "_useDrag-BaORhKlM.js",
       "_index-BSWw-p5k.js",
@@ -10043,7 +10043,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CX2h4U14.js",
+    "file": "assets/System-6dYN0zKa.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

@@ -19,7 +19,7 @@ export const AdvancedSettings = ({ filters = {}, onFilterChange, selectedElement
             <div className="space-y-3">
                 <Slider
                     label="Opacidad"
-                    value={filters.opacity || 100}
+                    value={filters.opacity ?? 100}
                     onChange={(value) => updateFilter("opacity", value)}
                     min={0}
                     max={100}
@@ -28,12 +28,12 @@ export const AdvancedSettings = ({ filters = {}, onFilterChange, selectedElement
                 />
             </div>
 
-            {/* Blend mode selection for images
-             {selectedElement?.type === "image" && (
+            {/* Blend mode selection for images 
+                {selectedElement?.type === "image" && (
                 <div className="space-y-3">
                     <label className="text-sm font-medium text-gray-700">Modo de mezcla</label>
                     <select
-                        value={filters.blendMode || "normal"}
+                        value={filters.blendMode ?? "normal"}
                         onChange={(e) => updateFilter("blendMode", e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
@@ -56,28 +56,28 @@ export const AdvancedSettings = ({ filters = {}, onFilterChange, selectedElement
                     </select>
                 </div>
             )}
-            
             */}
-           
+        
 
-            {/* Additional transform controls */}
+            {/* Additional transform controls
+            
             <div className="space-y-3">
                 <h4 className="text-sm font-medium text-gray-700">Transformaciones adicionales</h4>
                 
-                {/* Z-index control */}
+            
                 <Slider
                     label="Profundidad (Z-Index)"
-                    value={filters.zIndex || 1}
+                    value={filters.zIndex ?? 1}
                     onChange={(value) => updateFilter("zIndex", value)}
                     min={1}
                     max={100}
                     step={1}
                 />
 
-                {/* Advanced blur */}
+         
                 <Slider
                     label="Desenfoque gaussiano"
-                    value={filters.gaussianBlur || 0}
+                    value={filters.gaussianBlur ?? 0}
                     onChange={(value) => updateFilter("gaussianBlur", value)}
                     min={0}
                     max={50}
@@ -85,6 +85,8 @@ export const AdvancedSettings = ({ filters = {}, onFilterChange, selectedElement
                     unit="px"
                 />
             </div>
+            */}
+            
         </div>
     );
 };
