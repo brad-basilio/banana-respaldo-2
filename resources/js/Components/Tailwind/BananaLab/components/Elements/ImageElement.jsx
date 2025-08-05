@@ -67,30 +67,42 @@ export default function ImageElement({
 
     // Effect para forzar re-render cuando cambian los filtros
     useEffect(() => {
+        console.log('🖼️ [ImageElement] Filtros actualizados:', element.filters);
         if (imageRef.current && element.filters) {
             // Forzar repaint aplicando los estilos directamente
             const img = imageRef.current;
             img.style.filter = `
-                brightness(${(element.filters?.brightness || 100) / 100})
-                contrast(${(element.filters?.contrast || 100) / 100})
-                saturate(${(element.filters?.saturation || 100) / 100})
-                sepia(${(element.filters?.tint || 0) / 100})
-                hue-rotate(${(element.filters?.hue || 0) * 3.6}deg)
-                blur(${element.filters?.blur || 0}px)
+                brightness(${(element.filters?.brightness ?? 100) / 100})
+                contrast(${(element.filters?.contrast ?? 100) / 100})
+                saturate(${(element.filters?.saturation ?? 100) / 100})
+                sepia(${(element.filters?.tint ?? 0) / 100})
+                hue-rotate(${(element.filters?.hue ?? 0)}deg)
+                blur(${element.filters?.blur ?? 0}px)
             `.replace(/\s+/g, ' ').trim();
             
-            img.style.transform = `scale(${element.filters?.scale || 1}) rotate(${
-                element.filters?.rotate || 0
+            img.style.transform = `scale(${element.filters?.scale ?? 1}) rotate(${
+                element.filters?.rotate ?? 0
             }deg) ${element.filters?.flipHorizontal ? "scaleX(-1)" : ""} ${
                 element.filters?.flipVertical ? "scaleY(-1)" : ""
             }`.replace(/\s+/g, ' ').trim();
             
-            img.style.mixBlendMode = element.filters?.blendMode || "normal";
-            img.style.opacity = (element.filters?.opacity || 100) / 100;
+            img.style.mixBlendMode = element.filters?.blendMode ?? "normal";
+            img.style.opacity = (element.filters?.opacity ?? 100) / 100;
+            
+            console.log('🎨 [ImageElement] Estilos aplicados:', {
+                filter: img.style.filter,
+                transform: img.style.transform,
+                mixBlendMode: img.style.mixBlendMode,
+                opacity: img.style.opacity
+            });
+            
+            // Forzar repaint
+            img.style.willChange = 'filter, transform, opacity';
+            setTimeout(() => {
+                if (img) img.style.willChange = 'auto';
+            }, 100);
         }
-    }, [element.filters]);
-
-    // 🎯 SOLUCIÓN PERFECTA: Detectar clics fuera del elemento para ocultar controles
+    }, [element.filters]);    // 🎯 SOLUCIÓN PERFECTA: Detectar clics fuera del elemento para ocultar controles
     useEffect(() => {
         const handleClickOutside = (event) => {
             // Solo actuar si el elemento está seleccionado
@@ -130,20 +142,20 @@ export default function ImageElement({
     // Aplicar filtros CSS mejorados y forzar estilos de recorte en línea
     const filterStyle = {
         filter: `
-            brightness(${(element.filters?.brightness || 100) / 100})
-            contrast(${(element.filters?.contrast || 100) / 100})
-            saturate(${(element.filters?.saturation || 100) / 100})
-            sepia(${(element.filters?.tint || 0) / 100})
-            hue-rotate(${(element.filters?.hue || 0) * 3.6}deg)
-            blur(${element.filters?.blur || 0}px)
+            brightness(${(element.filters?.brightness ?? 100) / 100})
+            contrast(${(element.filters?.contrast ?? 100) / 100})
+            saturate(${(element.filters?.saturation ?? 100) / 100})
+            sepia(${(element.filters?.tint ?? 0) / 100})
+            hue-rotate(${(element.filters?.hue ?? 0)}deg)
+            blur(${element.filters?.blur ?? 0}px)
         `.replace(/\s+/g, ' ').trim(),
-        transform: `scale(${element.filters?.scale || 1}) rotate(${
-            element.filters?.rotate || 0
+        transform: `scale(${element.filters?.scale ?? 1}) rotate(${
+            element.filters?.rotate ?? 0
         }deg) ${element.filters?.flipHorizontal ? "scaleX(-1)" : ""} ${
             element.filters?.flipVertical ? "scaleY(-1)" : ""
         }`.replace(/\s+/g, ' ').trim(),
-        mixBlendMode: element.filters?.blendMode || "normal",
-        opacity: (element.filters?.opacity || 100) / 100,
+        mixBlendMode: element.filters?.blendMode ?? "normal",
+        opacity: (element.filters?.opacity ?? 100) / 100,
         willChange: 'filter, transform, opacity',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
@@ -542,6 +554,10 @@ export default function ImageElement({
                             img.style.transform = filterStyle.transform;
                             img.style.mixBlendMode = filterStyle.mixBlendMode;
                             img.style.opacity = filterStyle.opacity;
+                            img.style.willChange = 'filter, transform, opacity';
+                            setTimeout(() => {
+                                if (img) img.style.willChange = 'auto';
+                            }, 100);
                         }
                     }}
                 />                {/* Controles de redimensionamiento mejorados */}

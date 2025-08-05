@@ -21,21 +21,20 @@ export const FilterControls = ({ filters = {}, onFilterChange, selectedElement }
         }));
     };
 
-    // Default filter values
+    // Default filter values - solo aplicar defaults para valores undefined
     const defaultFilters = {
-        brightness: 100,
-        contrast: 100,
-        saturation: 100,
-        tint: 0,
-        hue: 0,
-        blur: 0,
-        scale: 1,
-        rotate: 0,
-        opacity: 100,
-        blendMode: "normal",
-        flipHorizontal: false,
-        flipVertical: false,
-        ...filters
+        brightness: filters.brightness ?? 100,
+        contrast: filters.contrast ?? 100,
+        saturation: filters.saturation ?? 100,
+        tint: filters.tint ?? 0,
+        hue: filters.hue ?? 0,
+        blur: filters.blur ?? 0,
+        scale: filters.scale ?? 1,
+        rotate: filters.rotate ?? 0,
+        opacity: filters.opacity ?? 100,
+        blendMode: filters.blendMode ?? "normal",
+        flipHorizontal: filters.flipHorizontal ?? false,
+        flipVertical: filters.flipVertical ?? false,
     };
 
     const updateFilter = (key, value) => {
@@ -43,6 +42,7 @@ export const FilterControls = ({ filters = {}, onFilterChange, selectedElement }
             ...defaultFilters,
             [key]: value
         };
+        console.log('🎨 [FilterControls] Actualizando filtro:', { key, value, newFilters });
         onFilterChange(newFilters);
     };
 

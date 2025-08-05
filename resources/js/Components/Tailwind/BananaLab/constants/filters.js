@@ -24,9 +24,9 @@ export const filterPresets = [
     {
         name: "Monocromo",
         filters: {
-            brightness: 105,
-            contrast: 115,
-            saturation: 0,
+            brightness: 100,
+            contrast: 120,
+            saturation: 0, // Elimina completamente el color
             tint: 0,
             hue: 0,
             blur: 0,

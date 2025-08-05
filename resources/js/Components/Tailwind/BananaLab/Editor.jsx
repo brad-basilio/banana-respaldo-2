@@ -4698,6 +4698,8 @@ export default function EditorLibro() {
         updates,
         isDuplicate = false
     ) => {
+        console.log('🔄 [updateElementInCell] Actualizando elemento:', { cellId, elementId, updates, isDuplicate });
+        
         // 🚀 OPTIMIZACIÓN: Usar función de callback para evitar re-renders innecesarios
         setPages(prevPages => {
             const updatedPages = [...prevPages];
@@ -4743,13 +4745,18 @@ export default function EditorLibro() {
                 });
 
                 if (!hasChanges) {
+                    console.log('🚫 [updateElementInCell] No hay cambios reales, saltando actualización');
                     return prevPages; // No hay cambios reales
                 }
 
-                updatedPages[currentPage].cells[cellIndex].elements[elementIndex] = {
+                const updatedElement = {
                     ...currentElement,
                     ...updates,
                 };
+                
+                console.log('✅ [updateElementInCell] Elemento actualizado:', updatedElement);
+                
+                updatedPages[currentPage].cells[cellIndex].elements[elementIndex] = updatedElement;
             }
 
             return updatedPages;

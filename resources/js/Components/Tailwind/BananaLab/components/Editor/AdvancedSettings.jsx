@@ -28,14 +28,14 @@ export const AdvancedSettings = ({ filters = {}, onFilterChange, selectedElement
                 />
             </div>
 
-            {/* Blend mode selection for images */}
-            {selectedElement?.type === "image" && (
+            {/* Blend mode selection for images
+             {selectedElement?.type === "image" && (
                 <div className="space-y-3">
                     <label className="text-sm font-medium text-gray-700">Modo de mezcla</label>
                     <select
                         value={filters.blendMode || "normal"}
                         onChange={(e) => updateFilter("blendMode", e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                        className="w-full p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                         <option value="normal">Normal</option>
                         <option value="multiply">Multiplicar</option>
@@ -49,9 +49,16 @@ export const AdvancedSettings = ({ filters = {}, onFilterChange, selectedElement
                         <option value="lighten">Aclarar</option>
                         <option value="difference">Diferencia</option>
                         <option value="exclusion">Exclusión</option>
+                        <option value="hue">Tono</option>
+                        <option value="saturation">Saturación</option>
+                        <option value="color">Color</option>
+                        <option value="luminosity">Luminosidad</option>
                     </select>
                 </div>
             )}
+            
+            */}
+           
 
             {/* Additional transform controls */}
             <div className="space-y-3">

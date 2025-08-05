@@ -2,16 +2,32 @@ import { filterPresets } from "../../constants/filters";
 import { Sparkles } from "lucide-react"; // Ícono amigable para representar filtros
 
 export const FilterPresets = ({ onSelectPreset, selectedImage }) => {
-    const getFilterStyle = (filters) => ({
-        filter: `
-            brightness(${filters.brightness}%)
-            contrast(${filters.contrast}%)
-            saturate(${filters.saturation}%)
-            sepia(${filters.tint}%)
-            hue-rotate(${filters.hue}deg)
-            blur(${filters.blur}px)
-        `,
-    });
+    const getFilterStyle = (filters) => {
+        const style = {
+            filter: `
+                brightness(${(filters.brightness ?? 100) / 100})
+                contrast(${(filters.contrast ?? 100) / 100})
+                saturate(${(filters.saturation ?? 100) / 100})
+                sepia(${(filters.tint ?? 0) / 100})
+                hue-rotate(${(filters.hue ?? 0)}deg)
+                blur(${filters.blur ?? 0}px)
+            `.replace(/\s+/g, ' ').trim(),
+            transform: `scale(${filters.scale ?? 1}) rotate(${
+                filters.rotate ?? 0
+            }deg) ${filters.flipHorizontal ? "scaleX(-1)" : ""} ${
+                filters.flipVertical ? "scaleY(-1)" : ""
+            }`.replace(/\s+/g, ' ').trim(),
+            mixBlendMode: filters.blendMode ?? "normal",
+            opacity: (filters.opacity ?? 100) / 100,
+        };
+        
+        console.log('🎨 [FilterPresets] Aplicando filtro:', filters.name || 'unknown', {
+            filters,
+            generatedStyle: style
+        });
+        
+        return style;
+    };
 
     return (
         <div className="space-y-4">
@@ -23,7 +39,10 @@ export const FilterPresets = ({ onSelectPreset, selectedImage }) => {
                     <div
                         key={preset.name}
                         className="relative group cursor-pointer rounded-xl overflow-hidden border border-gray-100 bg-white hover:shadow-md transition duration-300"
-                        onClick={() => onSelectPreset(preset.filters)}
+                        onClick={() => {
+                            console.log('🎯 [FilterPresets] Aplicando preset:', preset.name, preset.filters);
+                            onSelectPreset(preset.filters);
+                        }}
                     >
                         {/* Imagen con estilo */}
                         <div className="aspect-square bg-gray-100 overflow-hidden">
@@ -32,7 +51,7 @@ export const FilterPresets = ({ onSelectPreset, selectedImage }) => {
                                     src={selectedImage.content}
                                     alt={`Previsualización de ${preset.name}`}
                                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                    style={getFilterStyle(preset.filters)}
+                                    style={getFilterStyle({...preset.filters, name: preset.name})}
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-400">
