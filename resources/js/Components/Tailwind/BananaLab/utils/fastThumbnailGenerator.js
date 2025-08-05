@@ -116,10 +116,11 @@ async function preloadImage(src) {
 function fastRenderElement(ctx, element, cellBounds) {
     const { x: cellX, y: cellY, width: cellWidth, height: cellHeight } = cellBounds;
     
-    // Calcular posición del elemento
+    // Calcular posición del elemento con corrección de coordenadas
     const posX = element.position?.x || 0;
     const posY = element.position?.y || 0;
     
+    // Cálculo mejorado de coordenadas para evitar problemas de posicionamiento
     const elementX = cellX + (posX <= 1 ? posX * cellWidth : posX);
     const elementY = cellY + (posY <= 1 ? posY * cellHeight : posY);
     
@@ -142,6 +143,9 @@ function fastRenderElement(ctx, element, cellBounds) {
         const img = imageCache.get(element.content);
         if (img) {
             ctx.save();
+            
+            // Asegurar que siempre se aplica un contexto para renderizado consistente
+            ctx.translate(elementX, elementY);
             
             // APLICAR TODOS LOS FILTROS CSS COMPLETOS
             if (element.filters) {
@@ -171,7 +175,8 @@ function fastRenderElement(ctx, element, cellBounds) {
                     const flipHorizontal = element.filters.flipHorizontal ?? false;
                     const flipVertical = element.filters.flipVertical ?? false;
                     
-                    ctx.translate(elementX + elementWidth/2, elementY + elementHeight/2);
+                    // Translación correcta centrada en el elemento (ahora desde 0,0 porque ya hicimos translate al elemento)
+                    ctx.translate(elementWidth/2, elementHeight/2);
                     ctx.scale(
                         scale * (flipHorizontal ? -1 : 1), 
                         scale * (flipVertical ? -1 : 1)
@@ -201,7 +206,8 @@ function fastRenderElement(ctx, element, cellBounds) {
                 sy = (img.height - sh) / 2;
             }
             
-            ctx.drawImage(img, sx, sy, sw, sh, elementX, elementY, elementWidth, elementHeight);
+            // Asegurar que siempre se dibuje la imagen correctamente (ahora dibujando desde 0,0 porque ya hicimos translate al elemento)
+            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, elementWidth, elementHeight);
             console.log('🖼️ [FastThumbnail] Imagen dibujada con filtros y máscaras');
             
             ctx.restore();

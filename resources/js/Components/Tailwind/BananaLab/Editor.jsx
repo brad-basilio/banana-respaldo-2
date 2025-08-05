@@ -618,7 +618,7 @@ export default function EditorLibro() {
     
     // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails
     window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
-    window.PREVENT_THUMBNAIL_RESET = true; // Evitar que se reseteen las miniaturas
+    window.PREVENT_THUMBNAIL_RESET = false; // Permitir generación automática de thumbnails normales
     
     // Crear una función global para forzar la regeneración desde cualquier lugar
     useEffect(() => {
@@ -857,15 +857,21 @@ export default function EditorLibro() {
 
     // ⚡ NUEVA FUNCIÓN: Generar thumbnail solo de la página actual
     const generateCurrentPageThumbnail = useCallback(async (forceRegenerate = false) => {
-        // 🚨 PROTECCIÓN ANTI-RESET: Evitar regeneraciones automáticas que puedan sobreescribir thumbnails con filtros
+        // Evitar regeneración si hay bloqueo activo temporal y no es forzada
         if (window.BLOCK_AUTO_REGENERATION && !forceRegenerate) {
             console.log('🛡️ [PROTECCIÓN] Bloqueando regeneración automática mientras los filtros están aplicándose');
             return;
         }
         
-        // 🚨 PROTECCIÓN SECUNDARIA: Si el thumbnail ya tiene filtros aplicados, evitar sobrescribirlo
-        if (window.THUMBNAIL_PROTECTED && pageThumbnails[pages[currentPage]?.id] && !forceRegenerate) {
-            console.log('🔒 [PROTECCIÓN] Thumbnail protegido contra sobrescritura no forzada');
+        // Verificar si esta página tiene filtros aplicados (protección selectiva)
+        const currentPageData = pages[currentPage];
+        const pageId = currentPageData?.id;
+        const hasProtectedThumbnail = pageId && window._protectedThumbnailIds && 
+                                     window._protectedThumbnailIds?.includes(pageId);
+        
+        // Proteger solo thumbnails con filtros aplicados
+        if ((hasProtectedThumbnail || window.THUMBNAIL_PROTECTED) && pageThumbnails[pageId] && !forceRegenerate) {
+            console.log('🔒 [PROTECCIÓN SELECTIVA] Thumbnail con filtros protegido contra regeneración');
             return;
         }
         
@@ -4922,6 +4928,15 @@ export default function EditorLibro() {
         // Marcar los thumbnails como protegidos para evitar regeneración automática posterior
         window.THUMBNAIL_PROTECTED = true;
         
+        // Inicializar lista de páginas protegidas si no existe
+        if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
+        
+        // Agregar la página actual a la lista de páginas protegidas
+        const currentPageId = pages[currentPage]?.id;
+        if (currentPageId && !window._protectedThumbnailIds.includes(currentPageId)) {
+            window._protectedThumbnailIds.push(currentPageId);
+        }
+        
         // Forzar bloqueador temporal de regeneración automática
         window.BLOCK_AUTO_REGENERATION = true;
         
@@ -4953,15 +4968,14 @@ export default function EditorLibro() {
 
     // Función avanzada para bloquear permanentemente cualquier regeneración no autorizada
     const lockThumbnailsForever = useCallback(() => {
-        console.log('🔒 [BLOQUEO-PERMANENTE] Activando protección permanente de thumbnails');
+        console.log('🔒 [BLOQUEO-SELECTIVO] Activando protección para thumbnails con filtros');
         
-        // Activar TODOS los bloqueadores posibles
-        window.THUMBNAIL_PROTECTED = true;
+        // Activar solo los bloqueadores necesarios
+        window.THUMBNAIL_PROTECTED = true; 
         window.PERMANENT_THUMBNAIL_LOCK = true;
-        window.PREVENT_THUMBNAIL_RESET = true;
-        window.BLOCK_AUTO_REGENERATION = true;
+        window.BLOCK_AUTO_REGENERATION = false; // Permitir regeneración automática para thumbnails normales
         
-        // Guardar IDs actuales de miniaturas protegidas
+        // Guardar IDs actuales de miniaturas con filtros aplicados
         window._protectedThumbnailIds = Object.keys(pageThumbnails);
         
         // 🔒 Sobrescribir la función de regeneración para bloquear cualquier intento
@@ -5216,9 +5230,15 @@ export default function EditorLibro() {
 
     // useEffect optimizado que regenera thumbnails cuando cambia el contenido
     useEffect(() => {
-        // 🚨 BLOQUEO PERMANENTE: Evitar regeneraciones automáticas que borren nuestras miniaturas con filtros
-        if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED) {
-            console.log('🛡️ [PROTECCIÓN ACTIVA] Bloqueando regeneración automática de thumbnails');
+        // 🚨 BLOQUEO SELECTIVO: Solo proteger miniaturas con filtros aplicados
+        // Verificar si la página actual tiene una miniatura protegida por filtros
+        const currentPageData = pages[currentPage];
+        const pageId = currentPageData?.id;
+        const hasProtectedThumbnail = pageId && window._protectedThumbnailIds && 
+                                     window._protectedThumbnailIds.includes(pageId);
+        
+        if ((hasProtectedThumbnail || window.THUMBNAIL_PROTECTED) && pageThumbnails[pageId]) {
+            console.log('🛡️ [PROTECCIÓN SELECTIVA] Saltando regeneración para miniatura con filtros');
             return;
         }
 
@@ -5290,18 +5310,18 @@ export default function EditorLibro() {
 
     // Generación de miniaturas en segundo plano (solo para páginas que no tienen miniatura)
     useEffect(() => {
-        // 🚨 BLOQUEO PERMANENTE: Evitar regeneraciones automáticas en segundo plano
-        if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED || window.BLOCK_AUTO_REGENERATION) {
-            console.log('🛡️ [PROTECCIÓN ACTIVA] Bloqueando generación de miniaturas en segundo plano');
+        // 🚨 BLOQUEO SELECTIVO: Permitir generación automática pero proteger miniaturas con filtros
+        if (window.BLOCK_AUTO_REGENERATION) {
+            console.log('🛡️ [PROTECCIÓN PARCIAL] Bloqueando generación temporal en segundo plano');
             return;
         }
 
         if (pages.length === 0 || isLoading) return;
 
         const generateBackgroundThumbnails = async () => {
-            // 🚨 BLOQUEO SECUNDARIO: Verificar de nuevo por si la protección se activó mientras esperábamos
-            if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED || window.BLOCK_AUTO_REGENERATION) {
-                console.log('🛡️ [PROTECCIÓN ACTIVA] Generación en segundo plano cancelada');
+            // 🚨 BLOQUEO SELECTIVO: Verificar solo las páginas con filtros
+            if (window.BLOCK_AUTO_REGENERATION) {
+                console.log('🛡️ [PROTECCIÓN TEMPORAL] Generación en segundo plano pausada');
                 return;
             }
             
