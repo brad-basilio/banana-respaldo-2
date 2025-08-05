@@ -43,7 +43,39 @@ export const FilterControls = ({ filters = {}, onFilterChange, selectedElement }
             [key]: value
         };
         console.log('🎨 [FilterControls] Actualizando filtro:', { key, value, newFilters });
+        
+        // 🚨 SOLUCIÓN CRÍTICA: Limpiar caché de thumbnails antes de aplicar el filtro
+        if (window.FORCE_THUMBNAIL_REGENERATION) {
+            console.log('🧨 [EMERGENCIA] Limpiando caché y forzando regeneración por cambio en: ' + key);
+            if (window.thumbnailCache) window.thumbnailCache = {};
+        }
+        
+        // Llamar al callback original
         onFilterChange(newFilters);
+        
+        // 🚨 SOLUCIÓN CRÍTICA: Forzar regeneración después de aplicar el filtro
+        if (window.FORCE_THUMBNAIL_REGENERATION && window.forceRegenerateThumbnail) {
+            setTimeout(() => {
+                console.log('🚀 [EMERGENCIA] Ejecutando regeneración forzada después de cambio en: ' + key);
+                try {
+                    // Permitir explícitamente esta regeneración
+                    if (window._allowNextRegeneration) {
+                        window._allowNextRegeneration();
+                    }
+                    window.forceRegenerateThumbnail();
+                    
+                    // 🔒 BLOQUEO DEFINITIVO: Después de regenerar, activar protección permanente
+                    setTimeout(() => {
+                        if (window.lockThumbnailsForever) {
+                            console.log('🔒 [AUTO-PROTECCIÓN] Activando bloqueo permanente después de regenerar');
+                            window.lockThumbnailsForever();
+                        }
+                    }, 500);
+                } catch (error) {
+                    console.error('Error al regenerar thumbnail:', error);
+                }
+            }, 100);
+        }
     };
 
     const resetFilters = () => {
@@ -61,7 +93,27 @@ export const FilterControls = ({ filters = {}, onFilterChange, selectedElement }
             flipHorizontal: false,
             flipVertical: false
         };
+        
+        // 🚨 SOLUCIÓN CRÍTICA: Limpiar caché al resetear filtros
+        if (window.FORCE_THUMBNAIL_REGENERATION) {
+            console.log('🧨 [EMERGENCIA-RESET] Limpiando caché y forzando regeneración al resetear todos los filtros');
+            if (window.thumbnailCache) window.thumbnailCache = {};
+        }
+        
+        // Aplicar cambios
         onFilterChange(resetValues);
+        
+        // 🚨 SOLUCIÓN CRÍTICA: Forzar regeneración tras reseteo
+        if (window.FORCE_THUMBNAIL_REGENERATION && window.forceRegenerateThumbnail) {
+            setTimeout(() => {
+                console.log('🚀 [EMERGENCIA-RESET] Ejecutando regeneración forzada después de resetear filtros');
+                try {
+                    window.forceRegenerateThumbnail();
+                } catch (error) {
+                    console.error('Error al regenerar thumbnail después de reset:', error);
+                }
+            }, 100);
+        }
     };    const filterTabs = [
         { id: "basic", label: "Básico", icon: Sliders },
         ...(selectedElement?.type === "image" ? [{ id: "presets", label: "Presets", icon: Palette }] : []),
@@ -282,7 +334,26 @@ export const FilterControls = ({ filters = {}, onFilterChange, selectedElement }
                 {activeFilterTab === "presets" && (
                     <FilterPresets
                         onSelectPreset={(presetFilters) => {
+                            // 🚨 SOLUCIÓN CRÍTICA: Limpiar caché al aplicar presets
+                            if (window.FORCE_THUMBNAIL_REGENERATION) {
+                                console.log('🧨 [EMERGENCIA-PRESET] Limpiando caché y forzando regeneración al aplicar preset');
+                                if (window.thumbnailCache) window.thumbnailCache = {};
+                            }
+                            
+                            // Aplicar preset
                             onFilterChange({ ...defaultFilters, ...presetFilters });
+                            
+                            // 🚨 SOLUCIÓN CRÍTICA: Forzar regeneración tras aplicar preset
+                            if (window.FORCE_THUMBNAIL_REGENERATION && window.forceRegenerateThumbnail) {
+                                setTimeout(() => {
+                                    console.log('🚀 [EMERGENCIA-PRESET] Ejecutando regeneración forzada después de aplicar preset');
+                                    try {
+                                        window.forceRegenerateThumbnail();
+                                    } catch (error) {
+                                        console.error('Error al regenerar thumbnail después de aplicar preset:', error);
+                                    }
+                                }, 100);
+                            }
                         }}
                         selectedImage={selectedElement || null}
                     />

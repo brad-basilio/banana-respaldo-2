@@ -8,6 +8,75 @@ const imageCache = new Map();
 const thumbnailCache = new Map();
 
 /**
+ * Aplica una máscara (clipPath) al contexto del canvas
+ */
+function applyMaskToCanvas(ctx, mask, x, y, width, height) {
+    if (!mask || !mask.type) return;
+    
+    console.log('🎭 [Mask] Aplicando máscara:', mask.type);
+    
+    ctx.save();
+    ctx.beginPath();
+    
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+    
+    switch (mask.type) {
+        case 'circle':
+            const radius = Math.min(width, height) / 2;
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            break;
+            
+        case 'ellipse':
+            ctx.ellipse(centerX, centerY, width / 2, height / 2, 0, 0, 2 * Math.PI);
+            break;
+            
+        case 'star':
+            const spikes = 5;
+            const outerRadius = Math.min(width, height) / 2;
+            const innerRadius = outerRadius * 0.4;
+            
+            for (let i = 0; i < spikes * 2; i++) {
+                const angle = (i * Math.PI) / spikes;
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const px = centerX + Math.cos(angle) * radius;
+                const py = centerY + Math.sin(angle) * radius;
+                
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            break;
+            
+        case 'hexagon':
+            const hexRadius = Math.min(width, height) / 2;
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                const px = centerX + Math.cos(angle) * hexRadius;
+                const py = centerY + Math.sin(angle) * hexRadius;
+                
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            break;
+            
+        case 'triangle':
+            ctx.moveTo(centerX, y);
+            ctx.lineTo(x, y + height);
+            ctx.lineTo(x + width, y + height);
+            ctx.closePath();
+            break;
+            
+        default:
+            // Rectangle por defecto
+            ctx.rect(x, y, width, height);
+    }
+    
+    ctx.clip();
+}
+
+/**
  * Pre-carga y cachea una imagen de forma asíncrona
  */
 async function preloadImage(src) {
@@ -61,20 +130,64 @@ function fastRenderElement(ctx, element, cellBounds) {
         (element.size.height <= 1 ? element.size.height * cellHeight : element.size.height) : 
         cellHeight;
 
+    console.log(`🎨 [FastThumbnail] Renderizando elemento ${element.id}:`, {
+        type: element.type,
+        hasFilters: !!element.filters,
+        hasMask: !!element.mask,
+        filters: element.filters,
+        mask: element.mask
+    });
+
     if (element.type === 'image' && element.content) {
         const img = imageCache.get(element.content);
         if (img) {
             ctx.save();
             
-            // Aplicar filtros básicos solo si es necesario
+            // APLICAR TODOS LOS FILTROS CSS COMPLETOS
             if (element.filters) {
-                const { brightness = 100, contrast = 100, saturation = 100, opacity = 100 } = element.filters;
-                if (brightness !== 100 || contrast !== 100 || saturation !== 100 || opacity !== 100) {
-                    ctx.filter = `brightness(${brightness/100}) contrast(${contrast/100}) saturate(${saturation/100}) opacity(${opacity/100})`;
+                console.log('🎨 [FastThumbnail] APLICANDO FILTROS COMPLETOS:', element.filters);
+                
+                const filterString = `
+                    brightness(${(element.filters.brightness ?? 100) / 100})
+                    contrast(${(element.filters.contrast ?? 100) / 100})
+                    saturate(${(element.filters.saturation ?? 100) / 100})
+                    sepia(${(element.filters.tint ?? 0) / 100})
+                    hue-rotate(${element.filters.hue ?? 0}deg)
+                    blur(${Math.max(element.filters.blur ?? 0, element.filters.gaussianBlur ?? 0)}px)
+                    opacity(${(element.filters.opacity ?? 100) / 100})
+                `.replace(/\s+/g, ' ').trim();
+                
+                console.log('🎨 [FastThumbnail] Filter string:', filterString);
+                ctx.filter = filterString;
+                
+                // Aplicar transformaciones si existen
+                if (element.filters.scale !== undefined || 
+                    element.filters.rotate !== undefined || 
+                    element.filters.flipHorizontal || 
+                    element.filters.flipVertical) {
+                    
+                    const scale = element.filters.scale ?? 1;
+                    const rotate = element.filters.rotate ?? 0;
+                    const flipHorizontal = element.filters.flipHorizontal ?? false;
+                    const flipVertical = element.filters.flipVertical ?? false;
+                    
+                    ctx.translate(elementX + elementWidth/2, elementY + elementHeight/2);
+                    ctx.scale(
+                        scale * (flipHorizontal ? -1 : 1), 
+                        scale * (flipVertical ? -1 : 1)
+                    );
+                    ctx.rotate((rotate * Math.PI) / 180);
+                    ctx.translate(-elementWidth/2, -elementHeight/2);
                 }
             }
             
-            // Dibujo rápido con object-fit cover
+            // APLICAR MÁSCARA SI EXISTE (ANTES del dibujo)
+            if (element.mask) {
+                console.log('🎭 [FastThumbnail] APLICANDO MÁSCARA:', element.mask);
+                applyMaskToCanvas(ctx, element.mask, elementX, elementY, elementWidth, elementHeight);
+            }
+            
+            // Dibujo con object-fit cover
             const imgRatio = img.width / img.height;
             const destRatio = elementWidth / elementHeight;
             
@@ -89,6 +202,8 @@ function fastRenderElement(ctx, element, cellBounds) {
             }
             
             ctx.drawImage(img, sx, sy, sw, sh, elementX, elementY, elementWidth, elementHeight);
+            console.log('🖼️ [FastThumbnail] Imagen dibujada con filtros y máscaras');
+            
             ctx.restore();
         }
     } else if (element.type === 'text' && element.content) {

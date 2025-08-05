@@ -615,6 +615,61 @@ export default function EditorLibro() {
         setActiveTab(newTab);
     }, [activeTab]);
     console.log('🎉 [FILTERS FIX] Editor cargado - Fix del problema de filtros ACTIVADO');
+    
+    // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails
+    window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
+    window.PREVENT_THUMBNAIL_RESET = true; // Evitar que se reseteen las miniaturas
+    
+    // Crear una función global para forzar la regeneración desde cualquier lugar
+    useEffect(() => {
+        // Exponer función de emergencia para forzar regeneración desde cualquier parte
+        window.forceRegenerateAllThumbnails = () => {
+            console.log('💣 [EMERGENCIA-GLOBAL] Forzando regeneración de TODOS los thumbnails');
+            // Limpiar caché completamente
+            window.thumbnailCache = {};
+            
+            // Marcar todas las páginas como necesitando regeneración
+            setPageChanges(prev => {
+                const newMap = new Map(prev);
+                // Marcar todas las páginas
+                pages.forEach((_, pageIndex) => {
+                    newMap.set(pageIndex, Date.now());
+                });
+                return newMap;
+            });
+            
+            // Regenerar el thumbnail actual
+            console.log('1️⃣ Regenerando página actual');
+            generateCurrentPageThumbnail(true).then(() => {
+                console.log('✅ Primera regeneración completa');
+                
+                // Bloquear cualquier regeneración automática por 5 segundos
+                window.BLOCK_AUTO_REGENERATION = true;
+                
+                // Regeneración secundaria después de un breve retraso
+                setTimeout(() => {
+                    console.log('2️⃣ Ejecutando segunda regeneración forzada');
+                    if (window.forceRegenerateThumbnail) {
+                        window.forceRegenerateThumbnail();
+                    }
+                    
+                    // Configurar protección contra resets posteriores
+                    window.THUMBNAIL_PROTECTED = true;
+                    
+                    // Desbloquear después de 5 segundos
+                    setTimeout(() => {
+                        window.BLOCK_AUTO_REGENERATION = false;
+                        console.log('🔓 Regeneración automática desbloqueada');
+                    }, 5000);
+                }, 200);
+            }).catch(error => {
+                console.error('❌ Error en regeneración de emergencia:', error);
+            });
+        };
+        
+        // Registrar método para uso desde consola
+        console.log('📢 Puedes forzar la regeneración de thumbnails usando window.forceRegenerateAllThumbnails()');
+    }, [pages]);
 
     // 🚀 Estado para control de inicialización de progreso
     const [hasInitializedProgress, setHasInitializedProgress] = useState(false);
@@ -801,13 +856,25 @@ export default function EditorLibro() {
     }, [projectData?.id]);
 
     // ⚡ NUEVA FUNCIÓN: Generar thumbnail solo de la página actual
-    const generateCurrentPageThumbnail = useCallback(async () => {
+    const generateCurrentPageThumbnail = useCallback(async (forceRegenerate = false) => {
+        // 🚨 PROTECCIÓN ANTI-RESET: Evitar regeneraciones automáticas que puedan sobreescribir thumbnails con filtros
+        if (window.BLOCK_AUTO_REGENERATION && !forceRegenerate) {
+            console.log('🛡️ [PROTECCIÓN] Bloqueando regeneración automática mientras los filtros están aplicándose');
+            return;
+        }
+        
+        // 🚨 PROTECCIÓN SECUNDARIA: Si el thumbnail ya tiene filtros aplicados, evitar sobrescribirlo
+        if (window.THUMBNAIL_PROTECTED && pageThumbnails[pages[currentPage]?.id] && !forceRegenerate) {
+            console.log('🔒 [PROTECCIÓN] Thumbnail protegido contra sobrescritura no forzada');
+            return;
+        }
+        
         if (!pages[currentPage] || !workspaceDimensions) return;
 
         const page = pages[currentPage];
 
-        // Si ya existe el thumbnail, no generar
-        if (pageThumbnails[page.id]) {
+        // Si ya existe el thumbnail y no forzamos regeneración, no generar
+        if (pageThumbnails[page.id] && !forceRegenerate) {
             console.log(`✅ Thumbnail ya existe para página: ${page.id}`);
             return;
         }
@@ -820,7 +887,21 @@ export default function EditorLibro() {
         thumbnailGenerating.current = true;
 
         try {
-            console.log(`📸 Generando thumbnail para página actual: ${page.id}`);
+            console.log(`📸 Generando thumbnail para página actual: ${page.id} (forzado: ${forceRegenerate})`);
+
+            // Si forzamos regeneración, limpiar cache primero
+            if (forceRegenerate) {
+                console.log('🧹 [FORCE-REGEN] Limpiando cache antes de regenerar');
+                clearThumbnailCaches();
+                // FORZAR eliminación del thumbnail actual
+                setPageThumbnails(prev => {
+                    const newThumbnails = { ...prev };
+                    delete newThumbnails[page.id];
+                    return newThumbnails;
+                });
+            }
+
+            console.log(`📸 [FORCE-GENERATION] Generando thumbnail FORZADO para: ${page.id}`);
 
             const thumbnailData = await generateSingleThumbnail({
                 page,
@@ -845,9 +926,21 @@ export default function EditorLibro() {
         }
     }, [pages, currentPage, workspaceDimensions, pageThumbnails]);
 
-    // 🖼️ Función para generar thumbnails locales usando la función importada (OPTIMIZADA)
+    // ️ Función para generar thumbnails locales usando la función importada (OPTIMIZADA)
     const generateLocalThumbnails = useCallback(
         debounce(async () => {
+            // 🚨 PROTECCIÓN ANTI-RESET: Bloquear regeneraciones automáticas que puedan sobrescribir thumbnails con filtros
+            if (window.BLOCK_AUTO_REGENERATION) {
+                console.log('🛡️ [PROTECCIÓN-GLOBAL] Bloqueando generación masiva mientras los filtros están protegidos');
+                return;
+            }
+            
+            // 🚨 PROTECCIÓN SECUNDARIA: No regenerar si tenemos thumbnails protegidos
+            if (window.THUMBNAIL_PROTECTED) {
+                console.log('🔒 [PROTECCIÓN-GLOBAL] Generación masiva bloqueada, thumbnails protegidos');
+                return;
+            }
+            
             if (!pages?.length || !workspaceDimensions) return;
 
             // 🚀 OPTIMIZACIÓN: Evitar regeneración si ya están generando
@@ -4699,6 +4792,12 @@ export default function EditorLibro() {
         isDuplicate = false
     ) => {
         console.log('🔄 [updateElementInCell] Actualizando elemento:', { cellId, elementId, updates, isDuplicate });
+        console.log('🔍 [updateElementInCell] Verificando si hay cambios en filtros/máscaras:', {
+            hasFilters: !!updates.filters,
+            hasMask: !!updates.mask,
+            filtersData: updates.filters,
+            maskData: updates.mask
+        });
         
         // 🚀 OPTIMIZACIÓN: Usar función de callback para evitar re-renders innecesarios
         setPages(prevPages => {
@@ -4757,6 +4856,39 @@ export default function EditorLibro() {
                 console.log('✅ [updateElementInCell] Elemento actualizado:', updatedElement);
                 
                 updatedPages[currentPage].cells[cellIndex].elements[elementIndex] = updatedElement;
+                
+                // 🎨 REGENERACIÓN AUTOMÁTICA DE THUMBNAILS CUANDO CAMBIAN FILTROS O MÁSCARAS
+                if (updates.filters || updates.mask) {
+                    console.log('🔄 [AUTO-REGEN] Cambios en filtros/máscaras detectados, regenerando thumbnail...');
+                    console.log('🔄 [AUTO-REGEN] Datos de cambios:', { filters: updates.filters, mask: updates.mask });
+                    
+                    // 🚨 SOLUCIÓN CRÍTICA: Limpiar caché cuando se detectan cambios de filtros/máscaras
+                    if (window.FORCE_THUMBNAIL_REGENERATION) {
+                        console.log('💥 [FORZADO-EMERGENCIA] Limpiando caché de thumbnails completamente');
+                        window.thumbnailCache = {};
+                    }
+                    
+                    // Regeneración inmediata sin delay
+                    generateCurrentPageThumbnail(true).then(() => {
+                        console.log('✅ [AUTO-REGEN] Thumbnail regenerado exitosamente');
+                        
+                        // 🚨 SOLUCIÓN CRÍTICA: Forzar regeneración secundaria para garantizar actualización
+                        if (window.FORCE_THUMBNAIL_REGENERATION && window.forceRegenerateThumbnail) {
+                            setTimeout(() => {
+                                console.log('🔄 [FORZADO-EMERGENCIA] Ejecutando regeneración forzada secundaria');
+                                try {
+                                    window.forceRegenerateThumbnail();
+                                } catch (error) {
+                                    console.error('❌ [FORZADO-EMERGENCIA] Error en regeneración secundaria:', error);
+                                }
+                            }, 150);
+                        }
+                    }).catch(error => {
+                        console.error('❌ [AUTO-REGEN] Error regenerando thumbnail:', error);
+                    });
+                } else {
+                    console.log('🚫 [AUTO-REGEN] No hay cambios en filtros/máscaras, saltando regeneración');
+                }
             }
 
             return updatedPages;
@@ -4779,6 +4911,113 @@ export default function EditorLibro() {
             debouncedUpdatePages();
         }
     }, [currentPage, debouncedUpdatePages]);
+
+    // 🚨 FUNCIONES DE DEBUG PARA TESTING DE THUMBNAILS CON FILTROS (DESPUÉS DE updateElementInCell)
+    const forceRegenerateThumbnail = useCallback(() => {
+        console.log('🚨 [FORCE-REGEN] Iniciando regeneración forzada...');
+        
+        // Limpiar completamente la caché de thumbnails
+        if (window.thumbnailCache) window.thumbnailCache = {};
+        
+        // Marcar los thumbnails como protegidos para evitar regeneración automática posterior
+        window.THUMBNAIL_PROTECTED = true;
+        
+        // Forzar bloqueador temporal de regeneración automática
+        window.BLOCK_AUTO_REGENERATION = true;
+        
+        // Ejecutar regeneración forzada
+        generateCurrentPageThumbnail(true);
+        
+        // Mantener protección por 10 segundos para evitar que otras regeneraciones la sobreescriban
+        setTimeout(() => {
+            window.BLOCK_AUTO_REGENERATION = false;
+            console.log('🔓 Regeneración automática desbloqueada después de protección');
+        }, 10000);
+    }, [generateCurrentPageThumbnail]);
+
+    const testFilterApplication = useCallback(() => {
+        if (selectedElement && selectedCell) {
+            console.log('🧪 [TEST] Aplicando filtro grayscale de prueba...');
+            updateElementInCell(selectedCell, selectedElement, {
+                filters: {
+                    brightness: 100,
+                    contrast: 100,
+                    saturation: 0, // GRAYSCALE
+                    opacity: 100
+                }
+            });
+        } else {
+            console.log('⚠️ [TEST] No hay elemento seleccionado');
+        }
+    }, [selectedElement, selectedCell, updateElementInCell]);
+
+    // Función avanzada para bloquear permanentemente cualquier regeneración no autorizada
+    const lockThumbnailsForever = useCallback(() => {
+        console.log('🔒 [BLOQUEO-PERMANENTE] Activando protección permanente de thumbnails');
+        
+        // Activar TODOS los bloqueadores posibles
+        window.THUMBNAIL_PROTECTED = true;
+        window.PERMANENT_THUMBNAIL_LOCK = true;
+        window.PREVENT_THUMBNAIL_RESET = true;
+        window.BLOCK_AUTO_REGENERATION = true;
+        
+        // Guardar IDs actuales de miniaturas protegidas
+        window._protectedThumbnailIds = Object.keys(pageThumbnails);
+        
+        // 🔒 Sobrescribir la función de regeneración para bloquear cualquier intento
+        const originalGenerateCurrentPageThumbnail = window.forceRegenerateThumbnail;
+        
+        // Reemplazar con versión que verifica si ya está protegido
+        window.forceRegenerateThumbnail = (...args) => {
+            if (window._userInitiated) {
+                console.log('✅ [REGENERACIÓN AUTORIZADA] Permitiendo regeneración solicitada por usuario');
+                window._userInitiated = false;
+                return originalGenerateCurrentPageThumbnail(...args);
+            }
+            console.log('🛑 [REGENERACIÓN BLOQUEADA] Intento de regeneración no autorizado bloqueado');
+            return false;
+        };
+        
+        // Método para permitir regeneración manual explícita
+        window._allowNextRegeneration = () => {
+            window._userInitiated = true;
+        };
+        
+        // Crear método seguro para regenerar manualmente
+        window.safeRegenerateThumbnail = () => {
+            window._allowNextRegeneration();
+            window.forceRegenerateThumbnail();
+        };
+        
+        // Tomar un snapshot de las miniaturas actuales para evitar pérdida
+        window._thumbnailBackup = {...pageThumbnails};
+        
+        // Mostrar mensaje informativo para el usuario
+        alert('🔒 Miniaturas protegidas exitosamente!\n\nSi necesitas regenerar una miniatura específica, usa window.safeRegenerateThumbnail() en la consola.');
+        
+        console.log('🔒 [BLOQUEO-PERMANENTE] Thumbnails protegidos:', window._protectedThumbnailIds);
+        console.log('🔒 [BLOQUEO-PERMANENTE] No se permitirán más regeneraciones automáticas');
+        console.log('📢 [INSTRUCCIONES] Para regenerar manualmente una miniatura, ejecuta window.safeRegenerateThumbnail() en la consola');
+    }, [pageThumbnails]);
+
+    // Exponer funciones globalmente para testing
+    useEffect(() => {
+        window.forceRegenerateThumbnail = forceRegenerateThumbnail;
+        window.testFilterApplication = testFilterApplication;
+        window.lockThumbnailsForever = lockThumbnailsForever;
+        
+        // Añadir mensaje en consola para el usuario
+        console.log('📢 [AYUDA] Funciones disponibles:');
+        console.log('- window.forceRegenerateThumbnail(): Regenera la miniatura actual con filtros');
+        console.log('- window.forceRegenerateAllThumbnails(): Regenera todas las miniaturas');
+        console.log('- window.lockThumbnailsForever(): Bloquea permanentemente las regeneraciones automáticas');
+        
+        return () => {
+            delete window.forceRegenerateThumbnail;
+            delete window.testFilterApplication;
+            delete window.lockThumbnailsForever;
+        };
+    }, [forceRegenerateThumbnail, testFilterApplication, lockThumbnailsForever]);
 
     // Eliminar un elemento de una celda
     const deleteElementFromCell = (cellId, elementId) => {
@@ -4977,6 +5216,12 @@ export default function EditorLibro() {
 
     // useEffect optimizado que regenera thumbnails cuando cambia el contenido
     useEffect(() => {
+        // 🚨 BLOQUEO PERMANENTE: Evitar regeneraciones automáticas que borren nuestras miniaturas con filtros
+        if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED) {
+            console.log('🛡️ [PROTECCIÓN ACTIVA] Bloqueando regeneración automática de thumbnails');
+            return;
+        }
+
         if (pages.length === 0 || isLoading || !thumbnailGenerationKey) {
             return;
         }
@@ -4984,6 +5229,12 @@ export default function EditorLibro() {
         let isCancelled = false;
 
         const generateThumbnailForCurrentPage = async () => {
+            // 🚨 BLOQUEO SECUNDARIO: Verificar de nuevo por si la protección se activó mientras esperábamos
+            if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED) {
+                console.log('🛡️ [PROTECCIÓN ACTIVA] Regeneración cancelada');
+                return;
+            }
+            
             try {
                 const currentPageData = pages[currentPage];
                 if (!currentPageData || !currentPageData.id) {
@@ -4992,12 +5243,15 @@ export default function EditorLibro() {
 
                 const pageId = currentPageData.id;
 
-                // Eliminar thumbnail existente antes de generar uno nuevo
-                setPageThumbnails(prev => {
-                    const updated = { ...prev };
-                    delete updated[pageId];
-                    return updated;
-                });
+                // 🚨 PROTECCIÓN CRÍTICA: No eliminar thumbnails protegidos
+                if (!window.PREVENT_THUMBNAIL_RESET && !window.THUMBNAIL_PROTECTED) {
+                    // Eliminar thumbnail existente antes de generar uno nuevo
+                    setPageThumbnails(prev => {
+                        const updated = { ...prev };
+                        delete updated[pageId];
+                        return updated;
+                    });
+                }
 
                 // Esperar un poco para que el DOM se estabilice y el thumbnail se elimine
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -5036,9 +5290,21 @@ export default function EditorLibro() {
 
     // Generación de miniaturas en segundo plano (solo para páginas que no tienen miniatura)
     useEffect(() => {
+        // 🚨 BLOQUEO PERMANENTE: Evitar regeneraciones automáticas en segundo plano
+        if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED || window.BLOCK_AUTO_REGENERATION) {
+            console.log('🛡️ [PROTECCIÓN ACTIVA] Bloqueando generación de miniaturas en segundo plano');
+            return;
+        }
+
         if (pages.length === 0 || isLoading) return;
 
         const generateBackgroundThumbnails = async () => {
+            // 🚨 BLOQUEO SECUNDARIO: Verificar de nuevo por si la protección se activó mientras esperábamos
+            if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED || window.BLOCK_AUTO_REGENERATION) {
+                console.log('🛡️ [PROTECCIÓN ACTIVA] Generación en segundo plano cancelada');
+                return;
+            }
+            
             // Encontrar páginas sin miniatura
             const pagesWithoutThumbnails = pages.filter(page => !pageThumbnails[page.id]);
 
@@ -7180,11 +7446,30 @@ export default function EditorLibro() {
                                                             <FilterControls
                                                                 filters={currentElement.filters || {}}
                                                                 onFilterChange={(newFilters) => {
+                                                                    console.log('🔥 [FILTER-CHANGE-IMMEDIATE] APLICANDO FILTROS Y REGENERANDO AHORA!');
+                                                                    
+                                                                    // 1. Actualizar elemento inmediatamente
                                                                     updateElementInCell(
                                                                         selectedCell,
                                                                         selectedElement,
                                                                         { filters: newFilters }
                                                                     );
+                                                                    
+                                                                    // 2. FORZAR regeneración inmediata con múltiples intentos
+                                                                    setTimeout(() => {
+                                                                        console.log('🔥 [IMMEDIATE-REGEN] Intento 1 de regeneración...');
+                                                                        generateCurrentPageThumbnail(true);
+                                                                    }, 50);
+                                                                    
+                                                                    setTimeout(() => {
+                                                                        console.log('🔥 [IMMEDIATE-REGEN] Intento 2 de regeneración...');
+                                                                        generateCurrentPageThumbnail(true);
+                                                                    }, 200);
+                                                                    
+                                                                    setTimeout(() => {
+                                                                        console.log('🔥 [IMMEDIATE-REGEN] Intento 3 de regeneración...');
+                                                                        generateCurrentPageThumbnail(true);
+                                                                    }, 500);
                                                                 }}
                                                                 selectedElement={currentElement}
                                                             />
