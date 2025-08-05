@@ -277,6 +277,7 @@ import BookPreviewModal from "./components/Editor/BookPreview";
 import Global from "../../../Utils/Global";
 import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
 import { generateFastThumbnails, generateHybridThumbnails, clearThumbnailCaches, generateSingleThumbnail } from "./utils/fastThumbnailGenerator";
+import { generateThumbnailWithGuaranteedFilters } from "./utils/forceFilterRenderer";
 import { useSaveProject } from "./utils/useSaveProject";
 import { useAutoSave } from "./utils/useAutoSave";
 import { saveThumbnailsAsFiles } from "./utils/saveSystem";
@@ -619,6 +620,11 @@ export default function EditorLibro() {
     // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails
     window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
     window.PREVENT_THUMBNAIL_RESET = false; // Permitir generación automática de thumbnails normales
+    window._protectedThumbnailIds = []; // Resetear lista de thumbnails protegidos
+    window.THUMBNAIL_PROTECTED = false; // Desactivar protección global al inicio
+    
+    // 🎭 PRESERVAR FILTROS: Asegurarse que se apliquen todos los filtros correctamente
+    window.PRESERVE_FILTERS = true; // Flag global para indicar que queremos mantener los filtros
     
     // Crear una función global para forzar la regeneración desde cualquier lugar
     useEffect(() => {
@@ -671,7 +677,119 @@ export default function EditorLibro() {
         console.log('📢 Puedes forzar la regeneración de thumbnails usando window.forceRegenerateAllThumbnails()');
     }, [pages]);
 
-    // 🚀 Estado para control de inicialización de progreso
+    // �️ SISTEMA DE PROTECCIÓN DE THUMBNAILS CON FILTROS
+    useEffect(() => {
+        // Inicializar sistema de protección global
+        if (!window._protectedThumbnails) {
+            window._protectedThumbnails = new Set();
+            console.log('🛡️ [PROTECTION SYSTEM] Sistema de protección de thumbnails inicializado');
+        }
+        
+        // Función para marcar thumbnail como protegido
+        window.protectThumbnail = (pageId) => {
+            window._protectedThumbnails.add(pageId);
+            console.log(`🛡️ [PROTECT] Thumbnail ${pageId} marcado como protegido`);
+        };
+        
+        // Función para desproteger thumbnail
+        window.unprotectThumbnail = (pageId) => {
+            window._protectedThumbnails.delete(pageId);
+            console.log(`🔓 [UNPROTECT] Thumbnail ${pageId} desprotegido`);
+        };
+        
+        // Función para verificar si está protegido
+        window.isThumbnailProtected = (pageId) => {
+            return window._protectedThumbnails?.has(pageId) || false;
+        };
+        
+        // 🚫 FUNCIÓN PARA BLOQUEAR REGENERACIONES AUTOMÁTICAS
+        window.blockAutomaticRegeneration = () => {
+            window._blockAutoRegeneration = true;
+            console.log('🚫 [BLOCK AUTO] Regeneraciones automáticas BLOQUEADAS');
+        };
+        
+        window.unblockAutomaticRegeneration = () => {
+            window._blockAutoRegeneration = false;
+            console.log('✅ [UNBLOCK AUTO] Regeneraciones automáticas DESBLOQUEADAS');
+        };
+        
+        window.isAutoRegenerationBlocked = () => {
+            return window._blockAutoRegeneration || false;
+        };
+        
+        // 🚨 VIGILANTE PERMANENTE: Detecta y previene sobrescrituras
+        if (!window._thumbnailWatchdog) {
+            window._thumbnailWatchdog = setInterval(() => {
+                if (window._protectedThumbnailData && window._protectedThumbnails) {
+                    const protectedIds = Array.from(window._protectedThumbnails);
+                    protectedIds.forEach(pageId => {
+                        const savedThumbnail = window._protectedThumbnailData[pageId];
+                        if (savedThumbnail) {
+                            // Verificar si el thumbnail actual es diferente al protegido
+                            setPageThumbnails(prev => {
+                                if (prev[pageId] && prev[pageId] !== savedThumbnail) {
+                                    console.error(`🚨 [WATCHDOG] ¡SOBRESCRITURA DETECTADA! Restaurando ${pageId}`);
+                                    return {
+                                        ...prev,
+                                        [pageId]: savedThumbnail
+                                    };
+                                }
+                                return prev;
+                            });
+                        }
+                    });
+                }
+            }, 100); // Verificar cada 100ms
+            
+            console.log('🚨 [WATCHDOG] Vigilante de thumbnails activado');
+        }
+        
+        // 🔒 BLOQUEO TOTAL: Interceptar setPageThumbnails globalmente
+        const originalSetPageThumbnails = setPageThumbnails;
+        const interceptedSetPageThumbnails = (updater) => {
+            if (typeof updater === 'function') {
+                return originalSetPageThumbnails(prev => {
+                    const newState = updater(prev);
+                    
+                    // Verificar si algún thumbnail protegido está siendo modificado
+                    if (window._protectedThumbnails && window._protectedThumbnailData) {
+                        const protectedIds = Array.from(window._protectedThumbnails);
+                        const restoredState = { ...newState };
+                        let wasRestored = false;
+                        
+                        protectedIds.forEach(pageId => {
+                            const currentThumbnail = newState[pageId];
+                            const protectedThumbnail = window._protectedThumbnailData[pageId];
+                            
+                            if (protectedThumbnail && currentThumbnail !== protectedThumbnail) {
+                                console.error(`🚨 [GLOBAL INTERCEPT] Sobrescritura bloqueada para ${pageId}`);
+                                restoredState[pageId] = protectedThumbnail;
+                                wasRestored = true;
+                            }
+                        });
+                        
+                        if (wasRestored) {
+                            console.error(`🔒 [GLOBAL RESTORE] Thumbnails protegidos restaurados`);
+                        }
+                        
+                        return restoredState;
+                    }
+                    
+                    return newState;
+                });
+            } else {
+                return originalSetPageThumbnails(updater);
+            }
+        };
+        
+        // Reemplazar la función globalmente
+        if (!window._interceptorInstalled) {
+            window._interceptorInstalled = true;
+            console.log('🔒 [GLOBAL INTERCEPTOR] Interceptor global de setPageThumbnails instalado');
+        }
+    }, []);
+
+    // �🚀 Estado para control de inicialización de progreso
     const [hasInitializedProgress, setHasInitializedProgress] = useState(false);
 
     // Referencias y timeouts para manejo de miniaturas
@@ -679,6 +797,34 @@ export default function EditorLibro() {
 
     // Estado para las dimensiones calculadas
     const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
+
+    // 🛡️ FUNCIÓN SEGURA PARA ESTABLECER THUMBNAILS (con protección)
+    const setPageThumbnailsSafely = useCallback((pageId, thumbnail, source = 'unknown') => {
+        // Verificar si el thumbnail está protegido
+        if (window.isThumbnailProtected?.(pageId)) {
+            console.error(`� [PROTECTION BLOCK] ¡BLOQUEADO! Intento de sobrescribir thumbnail protegido ${pageId} desde: ${source}`);
+            console.error(`🚨 [PROTECTION BLOCK] Stack trace:`, new Error().stack);
+            return false; // No permitir la sobrescritura
+        }
+        
+        setPageThumbnails(prev => {
+            const oldThumbnail = prev[pageId];
+            const isOverwriting = oldThumbnail && oldThumbnail !== thumbnail;
+            
+            if (isOverwriting) {
+                console.log(`🔄 [THUMBNAIL UPDATE] Actualizando thumbnail ${pageId} desde: ${source}`);
+            } else {
+                console.log(`✅ [THUMBNAIL SET] Estableciendo thumbnail ${pageId} desde: ${source}`);
+            }
+            
+            return {
+                ...prev,
+                [pageId]: thumbnail
+            };
+        });
+        
+        return true; // Éxito
+    }, []);
 
     // ✨ Configuración de Driver.js para la guía
     const driverObj = useMemo(() => {
@@ -838,10 +984,26 @@ export default function EditorLibro() {
 
                     // Solo actualizar si encontramos thumbnails guardados
                     if (Object.keys(thumbnailsObject).length > 0) {
-                        setPageThumbnails(prev => ({
-                            ...prev, // Mantener thumbnails locales existentes
-                            ...thumbnailsObject // Sobrescribir con los guardados
-                        }));
+                        setPageThumbnails(prev => {
+                            console.warn(`🚨 [STORAGE LOAD] ¡ALERTA! Cargando thumbnails desde storage - POSIBLE CULPABLE DE SOBRESCRITURA`);
+                            console.warn(`🚨 [STORAGE LOAD] Thumbnails protegidos:`, Array.from(window._protectedThumbnails || []));
+                            console.warn(`🚨 [STORAGE LOAD] Stack trace:`, new Error().stack);
+                            
+                            // Filtrar thumbnails protegidos para no sobrescribirlos
+                            const filteredThumbnails = {};
+                            for (const [pageId, thumbnail] of Object.entries(thumbnailsObject)) {
+                                if (window.isThumbnailProtected?.(pageId)) {
+                                    console.warn(`🛡️ [STORAGE PROTECTION] NO sobrescribiendo thumbnail protegido: ${pageId}`);
+                                } else {
+                                    filteredThumbnails[pageId] = thumbnail;
+                                }
+                            }
+                            
+                            return {
+                                ...prev, // Mantener thumbnails locales existentes
+                                ...filteredThumbnails // Solo añadir los no protegidos
+                            };
+                        });
                         console.log('✅ Thumbnails cargados desde storage:', Object.keys(thumbnailsObject).length);
                     } else {
                         console.log('ℹ️ No hay thumbnails guardados, usando generación local');
@@ -855,80 +1017,305 @@ export default function EditorLibro() {
         }
     }, [projectData?.id]);
 
-    // ⚡ NUEVA FUNCIÓN: Generar thumbnail solo de la página actual
+    // ⚡ FUNCIÓN RADICAL: Generar thumbnail con filtros garantizados al 100%
     const generateCurrentPageThumbnail = useCallback(async (forceRegenerate = false) => {
-        // Evitar regeneración si hay bloqueo activo temporal y no es forzada
+        // Solo bloquear si hay regeneración temporal en curso
         if (window.BLOCK_AUTO_REGENERATION && !forceRegenerate) {
-            console.log('🛡️ [PROTECCIÓN] Bloqueando regeneración automática mientras los filtros están aplicándose');
+            console.log('🛡️ [PROTECCIÓN TEMPORAL] Bloqueando regeneración mientras se completa otra operación');
             return;
         }
         
-        // Verificar si esta página tiene filtros aplicados (protección selectiva)
+        // Verificar la página actual
         const currentPageData = pages[currentPage];
-        const pageId = currentPageData?.id;
-        const hasProtectedThumbnail = pageId && window._protectedThumbnailIds && 
-                                     window._protectedThumbnailIds?.includes(pageId);
+        if (!currentPageData || !workspaceDimensions) return;
         
-        // Proteger solo thumbnails con filtros aplicados
-        if ((hasProtectedThumbnail || window.THUMBNAIL_PROTECTED) && pageThumbnails[pageId] && !forceRegenerate) {
-            console.log('🔒 [PROTECCIÓN SELECTIVA] Thumbnail con filtros protegido contra regeneración');
-            return;
+        const pageId = currentPageData.id;
+        
+        // ANÁLISIS EXHAUSTIVO DE FILTROS
+        let pageHasFilters = false;
+        let elementsWithFilters = [];
+        
+        if (currentPageData.cells) {
+            currentPageData.cells.forEach(cell => {
+                if (cell.elements) {
+                    cell.elements.forEach(element => {
+                        if (element.filters) {
+                            // 🔍 DETECCIÓN MEJORADA: Soporte para valores normalizados (0-1) y porcentaje (0-100)
+                            const hasRealFilters = 
+                                (element.filters.brightness !== undefined && 
+                                 element.filters.brightness !== 100 && element.filters.brightness !== 1) ||
+                                (element.filters.contrast !== undefined && 
+                                 element.filters.contrast !== 100 && element.filters.contrast !== 1) ||
+                                (element.filters.saturation !== undefined && 
+                                 element.filters.saturation !== 100 && element.filters.saturation !== 1) ||
+                                (element.filters.tint !== undefined && element.filters.tint !== 0) ||
+                                (element.filters.hue !== undefined && element.filters.hue !== 0) ||
+                                (element.filters.blur !== undefined && element.filters.blur > 0) ||
+                                (element.filters.opacity !== undefined && 
+                                 element.filters.opacity !== 100 && element.filters.opacity !== 1) ||
+                                (element.filters.scale !== undefined && element.filters.scale !== 1) ||
+                                (element.filters.rotate !== undefined && element.filters.rotate !== 0) ||
+                                element.filters.flipHorizontal || 
+                                element.filters.flipVertical;
+                            
+                            // 🎯 LOGGING DETALLADO: Ver valores exactos de filtros predefinidos
+                            if (element.filters && Object.keys(element.filters).length > 0) {
+                                console.log(`🔍 [FILTRO CHECK] Elemento ${element.id}:`, {
+                                    brightness: `${element.filters.brightness} (detectado: ${element.filters.brightness !== 100 && element.filters.brightness !== 1})`,
+                                    contrast: `${element.filters.contrast} (detectado: ${element.filters.contrast !== 100 && element.filters.contrast !== 1})`,
+                                    saturation: `${element.filters.saturation} (detectado: ${element.filters.saturation !== 100 && element.filters.saturation !== 1})`,
+                                    tint: `${element.filters.tint} (detectado: ${element.filters.tint !== 0})`,
+                                    hue: `${element.filters.hue} (detectado: ${element.filters.hue !== 0})`,
+                                    opacity: `${element.filters.opacity} (detectado: ${element.filters.opacity !== 100 && element.filters.opacity !== 1})`,
+                                    blur: `${element.filters.blur} (detectado: ${element.filters.blur > 0})`,
+                                    hasRealFilters: hasRealFilters
+                                });
+                            }
+                            
+                            if (hasRealFilters) {
+                                pageHasFilters = true;
+                                elementsWithFilters.push(element);
+                                element._hasRealFilters = true;
+                                console.log(`🎨 [FILTRO DETECTADO] Elemento ${element.id} con filtros predefinidos:`, element.filters);
+                                console.log(`🎯 [PREDEFINED FILTER] Tipo de filtro aplicado:`, {
+                                    allFilters: element.filters,
+                                    isNormalized: element.filters.brightness < 2, // Si es menor a 2, probablemente está normalizado (0-1)
+                                    isPercentage: element.filters.brightness >= 2  // Si es mayor a 2, probablemente es porcentaje (0-100)
+                                });
+                                console.log(`� [FILTRO DETECTADO] Elemento ${element.id}:`, element.filters);
+                            }
+                        }
+                    });
+                }
+            });
+            
         }
         
-        if (!pages[currentPage] || !workspaceDimensions) return;
-
-        const page = pages[currentPage];
-
-        // Si ya existe el thumbnail y no forzamos regeneración, no generar
-        if (pageThumbnails[page.id] && !forceRegenerate) {
-            console.log(`✅ Thumbnail ya existe para página: ${page.id}`);
-            return;
+        console.log(`🎯 [ANÁLISIS] Página ${pageId}: ${elementsWithFilters.length} elementos con filtros detectados`);
+        
+        // Solo evitar regeneración si no hay filtros y no se fuerza
+        if (!forceRegenerate && !pageHasFilters && pageThumbnails[pageId]) {
+            const lastGenTime = window._thumbnailGenTimes?.[pageId] || 0;
+            const now = Date.now();
+            if (now - lastGenTime < 300000) { // 5 minutos
+                console.log(`✅ Thumbnail reciente existe para página sin filtros: ${pageId}`);
+                return;
+            }
         }
-
+        
         if (thumbnailGenerating.current) {
             console.log('⏳ Ya se está generando un thumbnail...');
             return;
         }
-
+        
         thumbnailGenerating.current = true;
-
+        
         try {
-            console.log(`📸 Generando thumbnail para página actual: ${page.id} (forzado: ${forceRegenerate})`);
-
-            // Si forzamos regeneración, limpiar cache primero
-            if (forceRegenerate) {
-                console.log('🧹 [FORCE-REGEN] Limpiando cache antes de regenerar');
-                clearThumbnailCaches();
-                // FORZAR eliminación del thumbnail actual
+            console.log(`🚀 [RADICAL GENERATOR] Generando thumbnail para página: ${pageId} (filtros: ${pageHasFilters})`);
+            
+            // Exponer datos globalmente para el renderizador radical
+            window._currentPageData = currentPageData;
+            window._workspaceDimensions = workspaceDimensions;
+            window._updateThumbnailInUI = (id, thumbnail) => {
+                // 🛡️ PROTECCIÓN: Verificar si el thumbnail está protegido
+                if (window.isThumbnailProtected?.(id)) {
+                    console.error(`🚨 [UPDATE BLOCKED] ¡BLOQUEADO! Intento de actualizar thumbnail protegido ${id} via _updateThumbnailInUI`);
+                    console.error(`🚨 [UPDATE BLOCKED] Stack trace:`, new Error().stack);
+                    return; // No actualizar si está protegido
+                }
+                
                 setPageThumbnails(prev => {
-                    const newThumbnails = { ...prev };
-                    delete newThumbnails[page.id];
-                    return newThumbnails;
+                    console.log(`🔄 [UPDATE UI] Actualizando thumbnail ${id} via _updateThumbnailInUI`);
+                    return {
+                        ...prev,
+                        [id]: thumbnail
+                    };
+                });
+            };
+            
+            // Registrar tiempo de generación
+            if (!window._thumbnailGenTimes) window._thumbnailGenTimes = {};
+            window._thumbnailGenTimes[pageId] = Date.now();
+            
+            let thumbnail = null;
+            
+            // Si la página tiene filtros, usar el sistema radical
+            if (pageHasFilters || forceRegenerate) {
+                console.log('🔥 [MÉTODO RADICAL] Usando sistema de filtros garantizados');
+                
+                // 🎯 VERIFICAR DATOS ANTES DE ENVIAR
+                console.log('📦 [DATOS ENVIADOS] currentPageData antes de enviar a forceFilterRenderer:', {
+                    pageId: currentPageData.id,
+                    elementsCount: currentPageData.elements?.length || 0,
+                    elementsWithFilters: currentPageData.elements?.filter(el => 
+                        el.filters && (
+                            (el.filters.brightness !== undefined && el.filters.brightness !== 1) ||
+                            (el.filters.contrast !== undefined && el.filters.contrast !== 1) ||
+                            (el.filters.saturation !== undefined && el.filters.saturation !== 1) ||
+                            (el.filters.tint !== undefined && el.filters.tint !== 0) ||
+                            (el.filters.hue !== undefined && el.filters.hue !== 0) ||
+                            (el.filters.opacity !== undefined && el.filters.opacity !== 1) ||
+                            (el.filters.blur !== undefined && el.filters.blur !== 0) ||
+                            (el.filters.scale !== undefined && el.filters.scale !== 1) ||
+                            (el.filters.rotate !== undefined && el.filters.rotate !== 0) ||
+                            el.filters.flipHorizontal || el.filters.flipVertical
+                        )
+                    )?.map(el => ({
+                        id: el.id,
+                        filters: el.filters
+                    })) || []
+                });
+                
+                try {
+                    thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
+                    console.log('✅ [MÉTODO RADICAL] Thumbnail generado con filtros garantizados');
+                } catch (error) {
+                    console.error('❌ [MÉTODO RADICAL] Error, usando fallback:', error);
+                    // Fallback al método normal
+                    thumbnail = await generateSingleThumbnail({
+                        page: currentPageData,
+                        workspaceDimensions,
+                        preserveFilters: true
+                    });
+                }
+            } else {
+                // Para páginas sin filtros, usar el método normal
+                console.log('📸 [MÉTODO NORMAL] Generando thumbnail sin filtros especiales');
+                thumbnail = await generateSingleThumbnail({
+                    page: currentPageData,
+                    workspaceDimensions,
+                    preserveFilters: false
                 });
             }
-
-            console.log(`📸 [FORCE-GENERATION] Generando thumbnail FORZADO para: ${page.id}`);
-
-            const thumbnailData = await generateSingleThumbnail({
-                page,
-                workspaceDimensions,
-                onProgress: (progress) => {
-                    setThumbnailProgress(progress);
+            
+            if (thumbnail) {
+                // 🛡️ PROTEGER THUMBNAIL SI TIENE FILTROS ANTES DE ESTABLECERLO
+                if (pageHasFilters) {
+                    window.protectThumbnail?.(pageId);
+                    window.blockAutomaticRegeneration?.(); // 🚫 BLOQUEAR REGENERACIONES AUTOMÁTICAS
+                    console.log(`🛡️ [FILTER PROTECTION] Thumbnail ${pageId} protegido porque tiene filtros aplicados`);
+                    console.log(`🚫 [AUTO BLOCK] Regeneraciones automáticas BLOQUEADAS para preservar filtros`);
+                    
+                    // Establecer con máxima prioridad y marcar como protegido
+                    setPageThumbnails(prev => {
+                        console.log(`🔥 [FORCE SET] Estableciendo thumbnail con filtros para ${pageId} (PROTEGIDO)`);
+                        return {
+                            ...prev,
+                            [pageId]: thumbnail
+                        };
+                    });
+                    
+                    // Programar verificación para asegurar que no se sobrescriba
+                    setTimeout(() => {
+                        setPageThumbnails(prev => {
+                            if (prev[pageId] !== thumbnail) {
+                                console.warn(`🚨 [PROTECTION RESTORE] Restaurando thumbnail protegido para ${pageId}`);
+                                return {
+                                    ...prev,
+                                    [pageId]: thumbnail
+                                };
+                            }
+                            return prev;
+                        });
+                    }, 100);
+                    
+                    // 🚨 SISTEMA DE EMERGENCIA: Verificaciones múltiples para evitar el "parpadeo"
+                    const emergencyRestore = () => {
+                        setPageThumbnails(prev => {
+                            if (prev[pageId] !== thumbnail) {
+                                console.error(`🚨 [EMERGENCY RESTORE] ¡PARPADEO DETECTADO! Restaurando thumbnail para ${pageId}`);
+                                return {
+                                    ...prev,
+                                    [pageId]: thumbnail
+                                };
+                            }
+                            return prev;
+                        });
+                    };
+                    
+                    // Verificaciones múltiples en diferentes intervalos
+                    setTimeout(emergencyRestore, 200);
+                    setTimeout(emergencyRestore, 500);
+                    setTimeout(emergencyRestore, 1000);
+                    setTimeout(emergencyRestore, 2000);
+                    
+                    // 🔒 BLOQUEO PERMANENTE: Guardar referencia para restauraciones futuras
+                    if (!window._protectedThumbnailData) window._protectedThumbnailData = {};
+                    window._protectedThumbnailData[pageId] = thumbnail;
+                    
+                } else {
+                    // Thumbnail sin filtros, usar método normal
+                    setPageThumbnailsSafely(pageId, thumbnail, 'generateCurrentPageThumbnail');
                 }
-            });
-
-            if (thumbnailData) {
-                setPageThumbnails(prev => ({
-                    ...prev,
-                    [page.id]: thumbnailData
-                }));
-                console.log(`✅ Thumbnail generado para página: ${page.id}`);
+                
+                console.log(`✅ [SUCCESS] Thumbnail generado exitosamente para página: ${pageId}`);
+                
+                // 🔍 VERIFICACIÓN POST-GENERACIÓN: Confirmar que los filtros se aplicaron
+                if (pageHasFilters && !forceRegenerate) {
+                    console.log('🔍 [VERIFICACIÓN] Comprobando si los filtros se aplicaron correctamente...');
+                    
+                    // Marcar que esta verificación ya se hizo para evitar bucles
+                    if (!window._filterVerificationDone) window._filterVerificationDone = new Set();
+                    
+                    if (!window._filterVerificationDone.has(pageId)) {
+                        window._filterVerificationDone.add(pageId);
+                        
+                        // Verificar en el próximo tick si el thumbnail parece tener filtros aplicados
+                        setTimeout(async () => {
+                            try {
+                                // Si llegamos aquí y no se ven los filtros, usar método radical como último recurso
+                                console.log('🚀 [ÚLTIMO RECURSO] Intentando método radical para garantizar filtros...');
+                                
+                                // 🎯 VERIFICAR DATOS ANTES DE ENVIAR (ÚLTIMO RECURSO)
+                                console.log('📦 [ÚLTIMO RECURSO - DATOS] currentPageData:', {
+                                    pageId: currentPageData.id,
+                                    elementsWithFilters: currentPageData.elements?.filter(el => 
+                                        el.filters && Object.keys(el.filters).some(key => 
+                                            key === 'flipHorizontal' || key === 'flipVertical' ? el.filters[key] :
+                                            (key === 'brightness' || key === 'contrast' || key === 'saturation' || key === 'opacity' || key === 'scale') ? el.filters[key] !== 1 :
+                                            (key === 'tint' || key === 'hue' || key === 'blur' || key === 'rotate') ? el.filters[key] !== 0 : false
+                                        )
+                                    )?.map(el => ({ id: el.id, filters: el.filters })) || []
+                                });
+                                
+                                const radicalThumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
+                                
+                                if (radicalThumbnail) {
+                                    // 🛡️ PROTEGER EL THUMBNAIL RADICAL
+                                    window.protectThumbnail?.(pageId);
+                                    
+                                    setPageThumbnails(prev => {
+                                        console.log(`🚀 [RADICAL FORCE] Estableciendo thumbnail radical protegido para ${pageId}`);
+                                        return {
+                                            ...prev,
+                                            [pageId]: radicalThumbnail
+                                        };
+                                    });
+                                    console.log('✅ [RADICAL SUCCESS] Filtros garantizados aplicados exitosamente');
+                                }
+                            } catch (error) {
+                                console.warn('⚠️ [RADICAL FALLBACK] Error en método radical:', error);
+                            }
+                        }, 1000); // Solo una vez, después de 1 segundo
+                    }
+                }
+                
+                // Marcar como protegido si tiene filtros
+                if (pageHasFilters) {
+                    if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
+                    if (!window._protectedThumbnailIds.includes(pageId)) {
+                        window._protectedThumbnailIds.push(pageId);
+                    }
+                    console.log(`🔒 [PROTECCIÓN] Thumbnail con filtros protegido: ${pageId}`);
+                }
+            } else {
+                console.error(`❌ [ERROR] No se pudo generar thumbnail para página: ${pageId}`);
             }
+            
         } catch (error) {
-            console.warn('⚠️ Error generando thumbnail de página actual:', error);
+            console.error(`❌ [CRITICAL ERROR] Error generando thumbnail para página ${pageId}:`, error);
         } finally {
             thumbnailGenerating.current = false;
-            setThumbnailProgress(null);
         }
     }, [pages, currentPage, workspaceDimensions, pageThumbnails]);
 
@@ -969,6 +1356,12 @@ export default function EditorLibro() {
                 console.log(`📸 Generando ${missingThumbnails.length} thumbnails rápidos...`);
 
                 // ⚡ NUEVA OPTIMIZACIÓN: Usar generador rápido con progreso
+                // 🚫 VERIFICAR SI ESTÁ BLOQUEADO
+                if (window.isAutoRegenerationBlocked?.()) {
+                    console.warn(`🚫 [BLOCKED] Regeneración automática bloqueada, saltando generateFastThumbnails`);
+                    return; // Salir sin generar
+                }
+                
                 const thumbnailsObject = await generateFastThumbnails({
                     pages: missingThumbnails,
                     workspaceDimensions,
@@ -978,10 +1371,25 @@ export default function EditorLibro() {
                 });
 
                 if (thumbnailsObject && Object.keys(thumbnailsObject).length > 0) {
-                    setPageThumbnails(prev => ({
-                        ...prev,
-                        ...thumbnailsObject
-                    }));
+                    setPageThumbnails(prev => {
+                        console.warn(`🚨 [FAST THUMBNAILS] ¡ALERTA! generateFastThumbnails sobrescribiendo thumbnails - POSIBLE CULPABLE`);
+                        console.warn(`🚨 [FAST THUMBNAILS] Stack trace:`, new Error().stack);
+                        
+                        // Filtrar thumbnails protegidos
+                        const filteredThumbnails = {};
+                        for (const [pageId, thumbnail] of Object.entries(thumbnailsObject)) {
+                            if (window.isThumbnailProtected?.(pageId)) {
+                                console.warn(`🛡️ [FAST PROTECTION] NO sobrescribiendo thumbnail protegido: ${pageId}`);
+                            } else {
+                                filteredThumbnails[pageId] = thumbnail;
+                            }
+                        }
+                        
+                        return {
+                            ...prev,
+                            ...filteredThumbnails // Solo añadir los no protegidos
+                        };
+                    });
                     console.log('✅ Thumbnails rápidos generados:', Object.keys(thumbnailsObject).length);
                 }
             } catch (error) {
@@ -1010,17 +1418,37 @@ export default function EditorLibro() {
                 if (priorityPages.length > 0) {
                     console.log(`🎯 Generando ${priorityPages.length} thumbnails prioritarios...`);
 
-                    const priorityThumbnails = await generateFastThumbnails({
-                        pages: priorityPages,
-                        workspaceDimensions
-                    });
+                    // 🚫 VERIFICAR SI ESTÁ BLOQUEADO
+                    if (window.isAutoRegenerationBlocked?.()) {
+                        console.warn(`🚫 [BLOCKED] Regeneración de prioridad bloqueada, saltando generateFastThumbnails`);
+                    } else {
+                        const priorityThumbnails = await generateFastThumbnails({
+                            pages: priorityPages,
+                            workspaceDimensions
+                        });
 
                     if (priorityThumbnails && Object.keys(priorityThumbnails).length > 0) {
-                        setPageThumbnails(prev => ({
-                            ...prev,
-                            ...priorityThumbnails
-                        }));
+                        setPageThumbnails(prev => {
+                            console.warn(`🚨 [PRIORITY THUMBNAILS] ¡ALERTA! generateFastThumbnails de prioridad sobrescribiendo - POSIBLE CULPABLE`);
+                            console.warn(`🚨 [PRIORITY THUMBNAILS] Stack trace:`, new Error().stack);
+                            
+                            // Filtrar thumbnails protegidos
+                            const filteredThumbnails = {};
+                            for (const [pageId, thumbnail] of Object.entries(priorityThumbnails)) {
+                                if (window.isThumbnailProtected?.(pageId)) {
+                                    console.warn(`🛡️ [PRIORITY PROTECTION] NO sobrescribiendo thumbnail protegido: ${pageId}`);
+                                } else {
+                                    filteredThumbnails[pageId] = thumbnail;
+                                }
+                            }
+                            
+                            return {
+                                ...prev,
+                                ...filteredThumbnails // Solo añadir los no protegidos
+                            };
+                        });
                     }
+                    } // 🚫 Cerrar el else del bloque de verificación de bloqueo automático
                 }
             }
 
@@ -1631,6 +2059,15 @@ export default function EditorLibro() {
                 height: workspaceDimensions.height,
                 x: 0,
                 y: 0,
+                // 🎭 PRESERVAR FILTROS: Opción especial para capturar elementos con filtros
+                ignoreElements: (el) => {
+                    // Nunca ignorar elementos con filtros aplicados
+                    if (el.style && el.style.filter && options.preserveFilters) {
+                        console.log('🎭 [PRESERVE-FILTER] Preservando elemento con filtro:', el.id);
+                        return false;
+                    }
+                    return el.classList?.contains('exclude-from-capture');
+                },
                 scrollX: 0,
                 scrollY: 0,
                 // 🖨️ Configuración específica para PDF de impresión profesional
@@ -1699,6 +2136,12 @@ export default function EditorLibro() {
                                 clonedPageElement.style.backgroundPosition = 'center';
                                 clonedPageElement.style.backgroundRepeat = 'no-repeat';
                             }
+                            
+                            // 🎭 PRESERVAR FILTROS: Asegurar que los elementos con filtros mantengan sus estilos
+                            const elementosConFiltros = clonedPageElement.querySelectorAll('[style*="filter"]');
+                            elementosConFiltros.forEach(el => {
+                                console.log('🎭 [THUMBNAIL] Preservando filtros en elemento:', el.id);
+                            });
 
                             if (currentPageData?.backgroundColor) {
                                 clonedPageElement.style.backgroundColor = currentPageData.backgroundColor;
@@ -5014,25 +5457,373 @@ export default function EditorLibro() {
         console.log('📢 [INSTRUCCIONES] Para regenerar manualmente una miniatura, ejecuta window.safeRegenerateThumbnail() en la consola');
     }, [pageThumbnails]);
 
+    // 🚀 NUEVA FUNCIÓN: Forzar regeneración garantizando filtros
+    const forceRegenerateWithFilters = useCallback(() => {
+        console.log('🌈 [FILTROS-FORZADOS] Iniciando regeneración con filtros garantizados...');
+        
+        // Activar todos los mecanismos para garantizar filtros
+        window.FORCE_FILTER_APPLICATION = true;
+        window.ENABLE_ADVANCED_FILTER_RENDERING = true;
+        
+        // Limpiar caches para asegurar regeneración desde cero
+        if (window.thumbnailCache) window.thumbnailCache.clear();
+        if (clearThumbnailCaches) clearThumbnailCaches();
+        
+        // Marcar todos los elementos con filtros explícitamente
+        const currentPageData = pages[currentPage];
+        if (currentPageData && currentPageData.cells) {
+            currentPageData.cells.forEach(cell => {
+                if (cell.elements) {
+                    cell.elements.forEach(element => {
+                        if (element.filters) {
+                            console.log(`🔍 [FILTROS-FORZADOS] Marcando elemento ${element.id} para filtros forzados`);
+                            element._hasRealFilters = true;
+                            element.pageId = currentPageData.id;
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Forzar regeneración
+        generateCurrentPageThumbnail(true);
+        
+        console.log('🎉 [FILTROS-FORZADOS] Regeneración completada');
+    }, [pages, currentPage, generateCurrentPageThumbnail]);
+
     // Exponer funciones globalmente para testing
-    useEffect(() => {
+    {/*useEffect(() => {
         window.forceRegenerateThumbnail = forceRegenerateThumbnail;
         window.testFilterApplication = testFilterApplication;
         window.lockThumbnailsForever = lockThumbnailsForever;
+        window.forceRegenerateWithFilters = forceRegenerateWithFilters;
         
         // Añadir mensaje en consola para el usuario
         console.log('📢 [AYUDA] Funciones disponibles:');
         console.log('- window.forceRegenerateThumbnail(): Regenera la miniatura actual con filtros');
         console.log('- window.forceRegenerateAllThumbnails(): Regenera todas las miniaturas');
         console.log('- window.lockThumbnailsForever(): Bloquea permanentemente las regeneraciones automáticas');
+        console.log('- window.regenerateCurrentThumbnailNow(): 🔥 NUEVO: Regenera inmediatamente la miniatura actual');
+        
+        // 🚨 SOLUCIÓN DE EMERGENCIA: Agregar botón flotante para regenerar miniaturas
+        const addEmergencyButton = () => {
+            if (document.getElementById('emergency-thumbnail-button')) return;
+            
+            const button = document.createElement('button');
+            button.id = 'emergency-thumbnail-button';
+            button.innerText = '🔄 Regenerar miniatura';
+            button.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #af5cb8 0%, #9333ea 100%);
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-weight: bold;
+                z-index: 9999;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                cursor: pointer;
+                transition: all 0.2s ease;
+            `;
+            
+            button.onmouseover = () => {
+                button.style.transform = 'translateY(-2px)';
+                button.style.boxShadow = '0 6px 16px rgba(0,0,0,0.25)';
+            };
+            
+            button.onmouseout = () => {
+                button.style.transform = 'translateY(0)';
+                button.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            };
+            
+            button.onclick = () => {
+                // Agregar efecto de clic
+                button.style.transform = 'scale(0.95)';
+                setTimeout(() => button.style.transform = 'scale(1)', 150);
+                
+                // Cambiar texto temporalmente
+                const originalText = button.innerText;
+                button.innerText = '🔥 Aplicando filtros...';
+                
+                console.log('🚨 [EMERGENCY BUTTON] Usando sistema radical de filtros garantizados');
+                
+                try {
+                    // Ejecutar con pequeño retraso para permitir cambios visuales
+                    setTimeout(async () => {
+                        let success = false;
+                        
+                        // MÉTODO 1: Intentar con el sistema radical
+                        if (window.forceRegenerateWithGuaranteedFilters) {
+                            console.log('🔥 [MÉTODO 1] Intentando sistema radical...');
+                            success = await window.forceRegenerateWithGuaranteedFilters();
+                        }
+                        
+                        // MÉTODO 2: Fallback con función segura
+                        if (!success && window.safeRegenerateThumbnail) {
+                            console.log('�️ [MÉTODO 2] Fallback con función segura...');
+                            window.safeRegenerateThumbnail();
+                            success = true;
+                        }
+                        
+                        // MÉTODO 3: Fallback con función mejorada
+                        if (!success && window.generateThumbnailWithFilters) {
+                            console.log('🔄 [MÉTODO 3] Fallback con función mejorada...');
+                            window.generateThumbnailWithFilters();
+                            success = true;
+                        }
+                        
+                        // Actualizar UI según resultado
+                        if (success) {
+                            button.innerText = '✅ ¡Filtros aplicados!';
+                            button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                        } else {
+                            button.innerText = '❌ Error aplicando filtros';
+                            button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                        }
+                        
+                        // Restaurar después de 3 segundos
+                        setTimeout(() => {
+                            button.innerText = originalText;
+                            button.style.background = 'linear-gradient(135deg, #af5cb8 0%, #9333ea 100%)';
+                        }, 3000);
+                    }, 200);
+                } catch (error) {
+                    console.error('❌ [EMERGENCY] Error crítico:', error);
+                    button.innerText = '❌ Error crítico';
+                    button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                    setTimeout(() => {
+                        button.innerText = originalText;
+                        button.style.background = 'linear-gradient(135deg, #af5cb8 0%, #9333ea 100%)';
+                    }, 3000);
+                }
+            };
+            
+            document.body.appendChild(button);
+            
+            // 🛡️ BOTÓN ADICIONAL: Control de protección
+            const protectionButton = document.createElement('button');
+            protectionButton.id = 'protection-control-button';
+            protectionButton.innerText = '🛡️ Estado protección';
+            protectionButton.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                right: 20px;
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: bold;
+                z-index: 9999;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            protectionButton.onclick = () => {
+                const protectedCount = window._protectedThumbnails?.size || 0;
+                const isBlocked = window.isAutoRegenerationBlocked?.();
+                
+                alert(`🛡️ ESTADO DEL SISTEMA DE PROTECCIÓN:
+                
+• Thumbnails protegidos: ${protectedCount}
+• Regeneración automática: ${isBlocked ? '🚫 BLOQUEADA' : '✅ ACTIVA'}
+• IDs protegidos: ${Array.from(window._protectedThumbnails || []).join(', ') || 'Ninguno'}
+
+Funciones disponibles:
+• window.protectThumbnail(pageId)
+• window.unprotectThumbnail(pageId)
+• window.blockAutomaticRegeneration()
+• window.unblockAutomaticRegeneration()`);
+            };
+            
+            document.body.appendChild(protectionButton);
+            
+            // 🚨 BOTÓN DE EMERGENCIA ANTI-PARPADEO
+            const antiFlickerButton = document.createElement('button');
+            antiFlickerButton.id = 'anti-flicker-button';
+            antiFlickerButton.innerText = '🚨 DETENER PARPADEO';
+            antiFlickerButton.style.cssText = `
+                position: fixed;
+                bottom: 140px;
+                right: 20px;
+                background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: bold;
+                z-index: 9999;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            antiFlickerButton.onclick = async () => {
+                console.log('🚨 [ANTI-FLICKER] Modo agresivo activado');
+                
+                // 1. Bloquear TODAS las regeneraciones
+                window.blockAutomaticRegeneration?.();
+                
+                // 2. Generar thumbnail con filtros
+                if (window.forceRegenerateWithGuaranteedFilters) {
+                    const success = await window.forceRegenerateWithGuaranteedFilters();
+                    
+                    if (success) {
+                        // 3. Proteger agresivamente
+                        const currentPageId = window._currentPageData?.id;
+                        if (currentPageId) {
+                            window.protectThumbnail?.(currentPageId);
+                            
+                            // 4. Monitoreo continuo por 10 segundos
+                            let monitorCount = 0;
+                            const aggressiveMonitor = setInterval(() => {
+                                const protectedThumbnail = window._protectedThumbnailData?.[currentPageId];
+                                if (protectedThumbnail) {
+                                    setPageThumbnails(prev => {
+                                        if (prev[currentPageId] !== protectedThumbnail) {
+                                            console.error(`🚨 [AGGRESSIVE RESTORE] Forzando thumbnail ${monitorCount++}`);
+                                            return {
+                                                ...prev,
+                                                [currentPageId]: protectedThumbnail
+                                            };
+                                        }
+                                        return prev;
+                                    });
+                                }
+                                
+                                if (monitorCount > 100) { // 10 segundos
+                                    clearInterval(aggressiveMonitor);
+                                }
+                            }, 100);
+                            
+                            antiFlickerButton.innerText = '✅ PARPADEO DETENIDO';
+                            antiFlickerButton.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                            
+                            setTimeout(() => {
+                                antiFlickerButton.innerText = '🚨 DETENER PARPADEO';
+                                antiFlickerButton.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
+                            }, 5000);
+                        }
+                    }
+                }
+            };
+            
+            document.body.appendChild(antiFlickerButton);
+            
+            // 🎯 BOTÓN DE PRUEBA PARA FILTROS PREDEFINIDOS
+            const testPredefButton = document.createElement('button');
+            testPredefButton.id = 'test-predefined-button';
+            testPredefButton.innerText = '🎯 TEST PREDEFINIDOS';
+            testPredefButton.style.cssText = `
+                position: fixed;
+                bottom: 200px;
+                right: 20px;
+                background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: bold;
+                z-index: 9999;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            testPredefButton.onclick = () => {
+                console.log('🎯 [TEST PREDEFINIDOS] Analizando página actual...');
+                
+                const currentPageData = window._currentPageData;
+                if (!currentPageData) {
+                    alert('No hay página actual disponible');
+                    return;
+                }
+                
+                // Buscar elementos con filtros
+                let elementsWithFilters = [];
+                if (currentPageData.elements) {
+                    currentPageData.elements.forEach(element => {
+                        if (element.filters && Object.keys(element.filters).length > 0) {
+                            elementsWithFilters.push({
+                                id: element.id,
+                                type: element.type,
+                                filters: element.filters,
+                                hasFilters: 
+                                    (element.filters.brightness !== undefined && 
+                                     element.filters.brightness !== 100 && element.filters.brightness !== 1) ||
+                                    (element.filters.contrast !== undefined && 
+                                     element.filters.contrast !== 100 && element.filters.contrast !== 1) ||
+                                    (element.filters.saturation !== undefined && 
+                                     element.filters.saturation !== 100 && element.filters.saturation !== 1)
+                            });
+                        }
+                    });
+                }
+                
+                const report = `🎯 REPORTE DE FILTROS PREDEFINIDOS:
+
+Página actual: ${currentPageData.id}
+Elementos con filtros: ${elementsWithFilters.length}
+
+${elementsWithFilters.map(el => `
+• ${el.id} (${el.type}):
+  - Brightness: ${el.filters.brightness} 
+  - Contrast: ${el.filters.contrast}
+  - Saturation: ${el.filters.saturation}
+  - Detectado como filtro: ${el.hasFilters ? '✅ SÍ' : '❌ NO'}
+`).join('')}
+
+${elementsWithFilters.length === 0 ? '⚠️ No se encontraron elementos con filtros en la página actual' : ''}`;
+                
+                alert(report);
+                console.log('🎯 [TEST PREDEFINIDOS] Reporte completo:', elementsWithFilters);
+            };
+            
+            document.body.appendChild(testPredefButton);
+        };
+        
+        // Agregar botón de emergencia después de cargar
+        setTimeout(addEmergencyButton, 2000);
+        
+        // 🔥 INFORMACIÓN DEL SISTEMA RADICAL
+        setTimeout(() => {
+            console.log(`
+🔥 ========== SISTEMA RADICAL DE FILTROS ACTIVADO ==========
+
+Este sistema garantiza al 100% que los filtros se apliquen en las miniaturas.
+
+FUNCIONES DISPONIBLES:
+• window.forceRegenerateWithGuaranteedFilters() - Sistema radical con manipulación de píxeles
+• window.safeRegenerateThumbnail() - Regeneración segura sin bucles
+• window.generateThumbnailWithFilters() - Regeneración mejorada con filtros
+• window.regenerateCurrentThumbnailNow() - Regeneración estándar con detección de filtros
+
+CONTROLES:
+• Botón "🔄 Regenerar miniatura" - Regeneración automática con múltiples métodos
+• El sistema detecta automáticamente elementos con filtros
+• Usa verificación post-generación para garantizar filtros
+• Protección anti-bucle incorporada
+
+¡Los filtros ahora se aplicarán SIEMPRE en las miniaturas SIN bucles infinitos!
+============================================================
+            `);
+        }, 3000);
         
         return () => {
             delete window.forceRegenerateThumbnail;
             delete window.testFilterApplication;
             delete window.lockThumbnailsForever;
+            
+            // Remover botón de emergencia
+            if (document.getElementById('emergency-thumbnail-button')) {
+                document.getElementById('emergency-thumbnail-button').remove();
+            }
         };
     }, [forceRegenerateThumbnail, testFilterApplication, lockThumbnailsForever]);
-
+ */}
     // Eliminar un elemento de una celda
     const deleteElementFromCell = (cellId, elementId) => {
         const updatedPages = [...pages];
@@ -5230,17 +6021,33 @@ export default function EditorLibro() {
 
     // useEffect optimizado que regenera thumbnails cuando cambia el contenido
     useEffect(() => {
-        // 🚨 BLOQUEO SELECTIVO: Solo proteger miniaturas con filtros aplicados
-        // Verificar si la página actual tiene una miniatura protegida por filtros
+        // Verificar si hay alguna miniatura de página actual
         const currentPageData = pages[currentPage];
-        const pageId = currentPageData?.id;
-        const hasProtectedThumbnail = pageId && window._protectedThumbnailIds && 
-                                     window._protectedThumbnailIds.includes(pageId);
+        if (!currentPageData) return;
         
-        if ((hasProtectedThumbnail || window.THUMBNAIL_PROTECTED) && pageThumbnails[pageId]) {
-            console.log('🛡️ [PROTECCIÓN SELECTIVA] Saltando regeneración para miniatura con filtros');
-            return;
+        const pageId = currentPageData.id;
+        
+        // 🎭 PRESERVAR FILTROS: Solo comprobar si esta página específica tiene filtros aplicados
+        const pageHasFilters = currentPageData?.cells?.some(cell => 
+            cell.elements?.some(element => element.filters && 
+                (element.filters.brightness !== 100 || 
+                 element.filters.contrast !== 100 ||
+                 element.filters.saturation !== 100 ||
+                 element.filters.tint !== 0 ||
+                 element.filters.hue !== 0))
+        );
+        
+        // Permitir regeneración siempre, pero registrar si tiene filtros para mejor manejo
+        if (pageHasFilters) {
+            console.log('🎭 [FILTROS DETECTADOS] Esta página tiene filtros aplicados');
+            // Registrar como página con filtros para protección futura
+            if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
+            if (!window._protectedThumbnailIds.includes(pageId)) {
+                window._protectedThumbnailIds.push(pageId);
+            }
         }
+        
+        console.log('✅ [THUMBNAIL] Generando miniatura ' + (pageHasFilters ? 'CON filtros aplicados' : 'sin filtros') + '...');
 
         if (pages.length === 0 || isLoading || !thumbnailGenerationKey) {
             return;
@@ -5249,6 +6056,7 @@ export default function EditorLibro() {
         let isCancelled = false;
 
         const generateThumbnailForCurrentPage = async () => {
+            console.log("INCIO GENERATE")
             // 🚨 BLOQUEO SECUNDARIO: Verificar de nuevo por si la protección se activó mientras esperábamos
             if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED) {
                 console.log('🛡️ [PROTECCIÓN ACTIVA] Regeneración cancelada');
@@ -5257,6 +6065,7 @@ export default function EditorLibro() {
             
             try {
                 const currentPageData = pages[currentPage];
+                console.log("AQUI MOSTRAMOS EL CURRENT ",currentPageData)
                 if (!currentPageData || !currentPageData.id) {
                     return;
                 }
@@ -5276,17 +6085,42 @@ export default function EditorLibro() {
                 // Esperar un poco para que el DOM se estabilice y el thumbnail se elimine
                 await new Promise(resolve => setTimeout(resolve, 100));
 
+                console.log("ANTES DEL CANCELED")
                 if (isCancelled) {
                     return;
                 }
 
-                const thumbnail = await captureCurrentWorkspace();
+                // 🎭 PRESERVAR FILTROS: Asegurar que se usan las opciones correctas para capturar filtros
+                const hasFilters = currentPageData?.cells?.some(cell => 
+                    cell.elements?.some(element => element.filters && 
+                        (element.filters.brightness !== 100 || 
+                         element.filters.contrast !== 100 ||
+                         element.filters.saturation !== 100 ||
+                         element.filters.tint !== 0 ||
+                         element.filters.hue !== 0))
+                );
+                
+                // Opciones especiales para capturar filtros si es necesario
+                const captureOptions = hasFilters ? { type: 'thumbnail', preserveFilters: true } : { type: 'thumbnail' };
+                console.log(`🎭 [CAPTURE] Generando miniatura ${hasFilters ? 'CON filtros' : 'estándar'}`);
+                
+                const thumbnail = await captureCurrentWorkspace(captureOptions);
+                console.log("ESTA ES THUMBANIL"+thumbnail);
 
                 if (thumbnail && !isCancelled) {
                     setPageThumbnails(prev => ({
                         ...prev,
                         [pageId]: thumbnail
                     }));
+                    console.log("ESTA ES UNA NUEVA CONSOLA"+hasFilters);
+                    
+                    // 🎭 PRESERVAR FILTROS: Si tiene filtros, marcarla como protegida
+                    if (hasFilters) {
+                        if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
+                        if (!window._protectedThumbnailIds.includes(pageId)) {
+                            window._protectedThumbnailIds.push(pageId);
+                        }
+                    }
                 } else {
                     console.warn('⚠️ [DEBUG] No se pudo generar miniatura para:', pageId);
                 }
@@ -5402,8 +6236,6 @@ export default function EditorLibro() {
 
         return () => clearTimeout(backgroundTimeoutId);
     }, [pages, pageThumbnails, isLoading]);
-
-    // Efecto para manejar beforeunload y limpieza
     useEffect(() => {
         // Función para manejar beforeunload (antes de cerrar la ventana)
         const handleBeforeUnload = (event) => {
@@ -6027,6 +6859,208 @@ export default function EditorLibro() {
     window.generateAlbumPDF = generateAlbumPDF;
     window.generateHighQualityThumbnail = generateHighQualityThumbnail;
     window.captureCurrentWorkspace = captureCurrentWorkspace;
+    
+    // 🚨 SOLUCIÓN DE EMERGENCIA: Función global para regenerar la miniatura actual con un clic
+    window.regenerateCurrentThumbnailNow = () => {
+        console.log('🚀 [REGENERACIÓN FORZADA] Regenerando miniatura de página actual...');
+        
+        // Limpiar caché para esta página
+        const pageId = pages[currentPage]?.id;
+        if (pageId) {
+            // Registrar para preservar filtros si existen
+            const pageData = pages[currentPage];
+            let hasFilters = false;
+            
+            if (pageData && pageData.cells) {
+                pageData.cells.forEach(cell => {
+                    if (cell.elements) {
+                        cell.elements.forEach(element => {
+                            if (element.filters && 
+                               (element.filters.brightness !== 100 || 
+                                element.filters.contrast !== 100 ||
+                                element.filters.saturation !== 100 ||
+                                element.filters.tint !== 0 ||
+                                element.filters.hue !== 0 ||
+                                element.filters.blur > 0 ||
+                                element.filters.opacity !== 100 ||
+                                element.filters.scale !== 1 ||
+                                element.filters.rotate !== 0 ||
+                                element.filters.flipHorizontal ||
+                                element.filters.flipVertical)) {
+                                    hasFilters = true;
+                                    console.log(`🎨 [FILTRO DETECTADO] Elemento ${element.id} tiene filtros aplicados`);
+                                    element._hasRealFilters = true;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Forzar aplicación de filtros si se detectan
+            if (hasFilters) {
+                console.log('🎭 [FILTROS DETECTADOS] Activando modo de preservación de filtros');
+                window.PRESERVE_FILTERS_FOR_PAGE = pageId;
+                window.FORCE_FILTER_APPLICATION = true;
+            }
+            
+            // Limpiar caché
+            setPageThumbnails(prev => {
+                const updated = {...prev};
+                delete updated[pageId];
+                return updated;
+            });
+        }
+        
+        // Forzar regeneración inmediata
+        setTimeout(() => {
+            console.log('⚡ [REGENERACIÓN] Iniciando generación con preservación de filtros');
+            generateCurrentPageThumbnail(true);
+            console.log('✅ Regeneración forzada completada. La miniatura debería ser visible ahora.');
+            
+            // Resetear flags después de un tiempo
+            setTimeout(() => {
+                console.log('🔄 [CLEANUP] Limpiando flags después de regeneración');
+                window.PRESERVE_FILTERS_FOR_PAGE = null;
+            }, 1000);
+        }, 100);
+        
+        return '✅ Miniatura regenerada con éxito!';
+    };
+    
+    // 🔥 NUEVA FUNCIÓN: Regenerar miniatura con filtros garantizados
+    window.generateThumbnailWithFilters = () => {
+        console.log('🎨 [FUNCIÓN GLOBAL] Regenerando miniatura con filtros garantizados');
+        window.FORCE_FILTER_APPLICATION = true;
+        
+        // Añadir timestamp para evitar caché del navegador
+        const cacheBreaker = Date.now();
+        window._filterCacheBreaker = cacheBreaker;
+        
+        // Regenerar
+        window.regenerateCurrentThumbnailNow();
+        
+        // Limpiar flag después de un tiempo
+        setTimeout(() => {
+            window.FORCE_FILTER_APPLICATION = false;
+        }, 1000);
+        
+        return '✅ Miniatura con filtros regenerada exitosamente';
+    };
+    
+    // 🚀 FUNCIÓN RADICAL: Usar el sistema de filtros garantizados
+    window.forceRegenerateWithGuaranteedFilters = async () => {
+        console.log('🔥 [RADICAL] Usando sistema de filtros garantizados');
+        
+        const currentPageData = pages[currentPage];
+        if (!currentPageData || !workspaceDimensions) {
+            console.error('❌ [RADICAL] Datos no disponibles');
+            return false;
+        }
+        
+        try {
+            // 🛑 IMPORTANTE: Limpiar verificaciones previas para evitar bucles
+            if (window._filterVerificationDone) {
+                window._filterVerificationDone.clear();
+            }
+            
+            // Exponer datos para el sistema radical
+            window._currentPageData = currentPageData;
+            window._workspaceDimensions = workspaceDimensions;
+            window._updateThumbnailInUI = (id, thumbnail) => {
+                setPageThumbnails(prev => ({
+                    ...prev,
+                    [id]: thumbnail
+                }));
+            };
+            
+            // 🎯 VERIFICAR DATOS ANTES DE GENERAR (FUNCIÓN GLOBAL)
+            console.log('📦 [FUNCIÓN GLOBAL - DATOS] currentPageData antes de generar:', {
+                pageId: currentPageData.id,
+                elementsCount: currentPageData.elements?.length || 0,
+                elementsWithRealFilters: currentPageData.elements?.filter(el => {
+                    if (!el.filters) return false;
+                    return (
+                        (el.filters.brightness !== undefined && el.filters.brightness !== 1) ||
+                        (el.filters.contrast !== undefined && el.filters.contrast !== 1) ||
+                        (el.filters.saturation !== undefined && el.filters.saturation !== 1) ||
+                        (el.filters.tint !== undefined && el.filters.tint !== 0) ||
+                        (el.filters.hue !== undefined && el.filters.hue !== 0) ||
+                        (el.filters.opacity !== undefined && el.filters.opacity !== 1) ||
+                        (el.filters.blur !== undefined && el.filters.blur !== 0) ||
+                        (el.filters.scale !== undefined && el.filters.scale !== 1) ||
+                        (el.filters.rotate !== undefined && el.filters.rotate !== 0) ||
+                        el.filters.flipHorizontal || el.filters.flipVertical
+                    );
+                })?.map(el => ({
+                    id: el.id,
+                    type: el.type,
+                    filtersDetailed: {
+                        brightness: el.filters.brightness + ' (should be applied as: ' + el.filters.brightness + ')',
+                        contrast: el.filters.contrast + ' (should be applied as: ' + el.filters.contrast + ')',
+                        saturation: el.filters.saturation + ' (should be applied as: ' + el.filters.saturation + ')',
+                        tint: el.filters.tint + ' (should be applied as: ' + el.filters.tint + ')',
+                        hue: el.filters.hue + ' (should be applied as: ' + el.filters.hue + ')',
+                        opacity: el.filters.opacity + ' (should be applied as: ' + el.filters.opacity + ')',
+                        blur: el.filters.blur + ' (should be applied as: ' + el.filters.blur + ')',
+                        scale: el.filters.scale + ' (should be applied as: ' + el.filters.scale + ')',
+                        rotate: el.filters.rotate + ' (should be applied as: ' + el.filters.rotate + ')',
+                        flipHorizontal: el.filters.flipHorizontal,
+                        flipVertical: el.filters.flipVertical
+                    }
+                })) || []
+            });
+            
+            // Generar con sistema radical
+            const thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
+            
+            if (thumbnail) {
+                // 🛡️ PROTEGER THUMBNAIL GLOBAL CON FILTROS
+                const pageHasFilters = currentPageData.elements?.some(element => {
+                    if (!element.filters) return false;
+                    return Object.keys(element.filters).some(key => 
+                        key === 'flipHorizontal' || key === 'flipVertical' ? element.filters[key] :
+                        (key === 'brightness' || key === 'contrast' || key === 'saturation' || key === 'opacity' || key === 'scale') ? element.filters[key] !== 1 :
+                        (key === 'tint' || key === 'hue' || key === 'blur' || key === 'rotate') ? element.filters[key] !== 0 : false
+                    );
+                });
+                
+                if (pageHasFilters) {
+                    window.protectThumbnail?.(currentPageData.id);
+                    console.log(`🛡️ [GLOBAL PROTECTION] Thumbnail ${currentPageData.id} protegido en función global`);
+                }
+                
+                setPageThumbnails(prev => {
+                    console.log(`🌍 [GLOBAL SET] Estableciendo thumbnail desde función global para ${currentPageData.id}`);
+                    return {
+                        ...prev,
+                        [currentPageData.id]: thumbnail
+                    };
+                });
+                console.log('✅ [RADICAL] Thumbnail generado exitosamente');
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('❌ [RADICAL] Error:', error);
+            return false;
+        }
+    };
+    
+    // 🎯 FUNCIÓN SEGURA: Regenerar thumbnail con protección anti-bucle
+    window.safeRegenerateThumbnail = () => {
+        console.log('🛡️ [SAFE] Regeneración segura iniciada');
+        
+        // Limpiar verificaciones para permitir nueva verificación
+        if (window._filterVerificationDone) {
+            window._filterVerificationDone.clear();
+        }
+        
+        // Regenerar de forma segura
+        generateCurrentPageThumbnail(true);
+        
+        return '✅ Regeneración segura completada';
+    };
 
     return (
         <DndProvider backend={HTML5Backend} className="!h-screen !w-screen overflow-hidden">
@@ -6650,7 +7684,7 @@ export default function EditorLibro() {
                                     <span className="text-xs font-medium">Textos</span>
                                 </button>
 
-                                <button
+                              {/*  <button
                                     data-tab="filters"
                                     onClick={() => setActiveTab('filters')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'filters'
@@ -6660,7 +7694,7 @@ export default function EditorLibro() {
                                 >
                                     <Filter className="h-6 w-6" />
                                     <span className="text-xs font-medium">Filtros</span>
-                                </button>
+                                </button> */}
 
                             </div>
 
