@@ -121,10 +121,7 @@ const SaveIndicator = ({
                     {statusDisplay.text}
                 </span>
                 
-                {/* Badge de cambios sin guardar */}
-                {hasUnsavedChanges && saveStatus !== 'saving' && (
-                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                )}
+               
                 
                 {/* Indicador de conexión */}
                 <div className="flex items-center">
@@ -136,32 +133,7 @@ const SaveIndicator = ({
                 </div>
             </div>
 
-            {/* Tooltip detallado */}
-            <div className="
-                absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
-                bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg
-                opacity-0 group-hover:opacity-100 pointer-events-none
-                transition-opacity duration-200 z-50 whitespace-nowrap
-            ">
-                <div className="space-y-1">
-                    <div className="font-medium">{statusDisplay.text}</div>
-                    <div className="text-gray-300">{statusDisplay.detail}</div>
-                    
-                    {lastSaved && (
-                        <div className="text-gray-400 text-xs">
-                            Último guardado manual: {getTimeAgo(lastSaved)}
-                        </div>
-                    )}
-                    
-                    <div className="text-gray-400 text-xs">
-                        {isOnline ? '🌐 En línea' : '📴 Sin conexión'}
-                        {saveStatus !== 'saving' && ' • Click para guardar'}
-                    </div>
-                </div>
-                
-                {/* Flecha del tooltip */}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-            </div>
+       
 
             {/* Barra de progreso para guardado */}
             {saveStatus === 'saving' && (

@@ -94,12 +94,7 @@ import{_ as Xn}from"./preload-helper-BfFHrpNk.js";import{j as e}from"./AboutSimp
                     transition-all duration-200 cursor-pointer
                     ${O.bg} ${O.color}
                     hover:shadow-md
-                `,onClick:()=>o!=="saving"&&(N==null?void 0:N()),children:[O.icon,e.jsx("span",{className:"text-sm font-medium",children:O.text}),m&&o!=="saving"&&e.jsx("div",{className:"w-2 h-2 bg-orange-500 rounded-full animate-pulse"}),e.jsx("div",{className:"flex items-center",children:i?e.jsx(Sa,{className:"w-3 h-3 text-green-500"}):e.jsx(on,{className:"w-3 h-3 text-orange-500"})})]}),e.jsxs("div",{className:`
-                absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
-                bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg
-                opacity-0 group-hover:opacity-100 pointer-events-none
-                transition-opacity duration-200 z-50 whitespace-nowrap
-            `,children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("div",{className:"font-medium",children:O.text}),e.jsx("div",{className:"text-gray-300",children:O.detail}),n&&e.jsxs("div",{className:"text-gray-400 text-xs",children:["Último guardado manual: ",E(n)]}),e.jsxs("div",{className:"text-gray-400 text-xs",children:[i?"🌐 En línea":"📴 Sin conexión",o!=="saving"&&" • Click para guardar"]})]}),e.jsx("div",{className:"absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"})]}),o==="saving"&&e.jsx("div",{className:"absolute bottom-0 left-0 w-full h-1 bg-blue-200 rounded-b-lg overflow-hidden",children:e.jsx("div",{className:"h-full bg-blue-500 animate-pulse"})})]})},sr=`
+                `,onClick:()=>o!=="saving"&&(N==null?void 0:N()),children:[O.icon,e.jsx("span",{className:"text-sm font-medium",children:O.text}),e.jsx("div",{className:"flex items-center",children:i?e.jsx(Sa,{className:"w-3 h-3 text-green-500"}):e.jsx(on,{className:"w-3 h-3 text-orange-500"})})]}),o==="saving"&&e.jsx("div",{className:"absolute bottom-0 left-0 w-full h-1 bg-blue-200 rounded-b-lg overflow-hidden",children:e.jsx("div",{className:"h-full bg-blue-500 animate-pulse"})})]})},sr=`
     .driver-popover-banana {
         background: linear-gradient(135deg, #ffffff 0%, #faf7fb 100%);
         border: 2px solid #af5cb8;
