@@ -289,6 +289,12 @@ class ProjectSaveController extends Controller
             
             // Guardar la imagen usando Storage::put como BasicController
             Storage::put($path, file_get_contents($imageFile));
+            
+            // ✅ FIJO: Establecer permisos 777
+            $fullPath = storage_path('app/' . $path);
+            if (file_exists($fullPath)) {
+                chmod($fullPath, 0777);
+            }
 
             Log::info("Imagen subida exitosamente", [
                 'project_id' => $projectId,
@@ -399,6 +405,12 @@ class ProjectSaveController extends Controller
 
         // Guardar archivo usando Storage::put como BasicController
         Storage::put($path, $imageData);
+        
+        // ✅ FIJO: Establecer permisos 777
+        $fullPath = storage_path('app/' . $path);
+        if (file_exists($fullPath)) {
+            chmod($fullPath, 0777);
+        }
 
         // Retornar solo el filename (no la URL completa)
         // El frontend deberá usar la ruta del media endpoint

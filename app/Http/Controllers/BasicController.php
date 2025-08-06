@@ -264,6 +264,13 @@ class BasicController extends Controller
         $ext = $full->getClientOriginalExtension();
         $path = "images/{$snake_case}/{$uuid}.{$ext}";
         Storage::put($path, file_get_contents($full));
+        
+        // ✅ FIJO: Establecer permisos 777 después de guardar
+        $fullPath = storage_path('app/' . $path);
+        if (file_exists($fullPath)) {
+          chmod($fullPath, 0777);
+        }
+        
         $body[$field] = "{$uuid}.{$ext}";
       }
 

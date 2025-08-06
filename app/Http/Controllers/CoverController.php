@@ -62,6 +62,17 @@ class CoverController extends Controller
 
             Storage::put($thumbnailPath, file_get_contents($thumbnail));
             Storage::put($fullPath, file_get_contents($full));
+            
+            // ✅ FIJO: Establecer permisos 777
+            $thumbnailFullPath = storage_path('app/' . $thumbnailPath);
+            if (file_exists($thumbnailFullPath)) {
+                chmod($thumbnailFullPath, 0777);
+            }
+            
+            $fullFullPath = storage_path('app/' . $fullPath);
+            if (file_exists($fullFullPath)) {
+                chmod($fullFullPath, 0777);
+            }
 
             $response->data = [
                 'uuid' => $userJpa->uuid

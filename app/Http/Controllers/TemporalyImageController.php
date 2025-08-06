@@ -29,6 +29,13 @@ class TemporalyImageController extends BasicController
             $ext = $full->getClientOriginalExtension();
             $path = "images/temporaly_image/{$uuid}.{$ext}";
             Storage::put($path, file_get_contents($full));
+            
+            // ✅ FIJO: Establecer permisos 777
+            $fullPath = storage_path('app/' . $path);
+            if (file_exists($fullPath)) {
+                chmod($fullPath, 0777);
+            }
+            
             $temp = TemporalyImage::create(['filename' => "{$uuid}.{$ext}"]);
 
             return response()->json(['id' => $temp->id]);

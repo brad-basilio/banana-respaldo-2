@@ -110,6 +110,13 @@ class ItemController extends BasicController
                 $ext = $full->getClientOriginalExtension();
                 $path = "images/{$snake_case}/{$uuid}.{$ext}";
                 Storage::put($path, file_get_contents($full));
+                
+                // ✅ FIJO: Establecer permisos 777
+                $fullPath = storage_path('app/' . $path);
+                if (file_exists($fullPath)) {
+                    chmod($fullPath, 0777);
+                }
+                
                 $item->image = "{$uuid}.{$ext}";
                 $item->save();
             }
@@ -122,6 +129,13 @@ class ItemController extends BasicController
                 $ext = $full->getClientOriginalExtension();
                 $path = "images/{$snake_case}/{$uuid}.{$ext}";
                 Storage::put($path, file_get_contents($full));
+                
+                // ✅ FIJO: Establecer permisos 777
+                $fullPath = storage_path('app/' . $path);
+                if (file_exists($fullPath)) {
+                    chmod($fullPath, 0777);
+                }
+                
                 $item->banner = "{$uuid}.{$ext}";
                 $item->save();
             }
@@ -134,6 +148,13 @@ class ItemController extends BasicController
                 $ext = $full->getClientOriginalExtension();
                 $path = "images/{$snake_case}/{$uuid}.{$ext}";
                 Storage::put($path, file_get_contents($full));
+                
+                // ✅ FIJO: Establecer permisos 777
+                $fullPath = storage_path('app/' . $path);
+                if (file_exists($fullPath)) {
+                    chmod($fullPath, 0777);
+                }
+                
                 $item->cover_image = "{$uuid}.{$ext}";
                 $item->save();
             }
@@ -146,6 +167,13 @@ class ItemController extends BasicController
                 $ext = $full->getClientOriginalExtension();
                 $path = "images/{$snake_case}/{$uuid}.{$ext}";
                 Storage::put($path, file_get_contents($full));
+                
+                // ✅ FIJO: Establecer permisos 777
+                $fullPath = storage_path('app/' . $path);
+                if (file_exists($fullPath)) {
+                    chmod($fullPath, 0777);
+                }
+                
                 $item->content_image = "{$uuid}.{$ext}";
                 $item->save();
             }
@@ -158,6 +186,13 @@ class ItemController extends BasicController
                 $ext = $full->getClientOriginalExtension();
                 $path = "images/{$snake_case}/{$uuid}.{$ext}";
                 Storage::put($path, file_get_contents($full));
+                
+                // ✅ FIJO: Establecer permisos 777
+                $fullPath = storage_path('app/' . $path);
+                if (file_exists($fullPath)) {
+                    chmod($fullPath, 0777);
+                }
+                
                 $item->back_cover_image = "{$uuid}.{$ext}";
                 $item->save();
             }
@@ -172,6 +207,13 @@ class ItemController extends BasicController
                     $ext = $full->getClientOriginalExtension();
                     $path = "images/{$snake_case}/gallery/{$uuid}.{$ext}";
                     Storage::put($path, file_get_contents($full));
+                    
+                    // ✅ FIJO: Establecer permisos 777
+                    $fullPath = storage_path('app/' . $path);
+                    if (file_exists($fullPath)) {
+                        chmod($fullPath, 0777);
+                    }
+                    
                     $item->images()->create(['url' => "{$uuid}.{$ext}"]);
                 }
             }

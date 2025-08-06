@@ -264,6 +264,12 @@ class ProjectPDFController extends Controller
             // Guardar en local storage
             Storage::put($pdfPath, $pdfContent);
             
+            // ✅ FIJO: Establecer permisos 777
+            $fullPath = storage_path('app/' . $pdfPath);
+            if (file_exists($fullPath)) {
+                chmod($fullPath, 0777);
+            }
+            
             // Generar la URL para acceso
             $pdfUrl = "/api/customer/projects/{$projectId}/download-pdf"; // URL para descargar mediante API
             $pdfSize = strlen($pdfContent);

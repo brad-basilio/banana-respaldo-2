@@ -16,7 +16,7 @@ class ProjectImageController extends Controller
     /**
      * Crear directorio con permisos correctos
      */
-    private function createDirectoryWithPermissions($storagePath, $permissions = 0775)
+    private function createDirectoryWithPermissions($storagePath, $permissions = 0777)
     {
         if (!Storage::exists($storagePath)) {
             $fullPath = storage_path('app/' . $storagePath);
@@ -27,6 +27,26 @@ class ProjectImageController extends Controller
             }
         }
         return false;
+    }
+
+    /**
+     * Guardar archivo con permisos 777
+     */
+    private function saveFileWithPermissions($path, $content, $permissions = 0777)
+    {
+        // Guardar el archivo usando Storage::put
+        $saved = Storage::put($path, $content);
+        
+        if ($saved) {
+            // Establecer permisos específicos después de guardar
+            $fullPath = storage_path('app/' . $path);
+            if (file_exists($fullPath)) {
+                chmod($fullPath, $permissions);
+                Log::info("📄 [FILE PERMISSIONS] Permisos {$permissions} aplicados a: {$path}");
+            }
+        }
+        
+        return $saved;
     }
     /**
      * Subir imágenes del proyecto al servidor
@@ -46,7 +66,7 @@ class ProjectImageController extends Controller
             $projectPath = "images/projects/{$projectId}";
 
             // Crear directorio del proyecto si no existe - USANDO DISCO LOCAL como BasicController
-            $this->createDirectoryWithPermissions($projectPath, 0775);
+            $this->createDirectoryWithPermissions($projectPath, 0777);
 
             foreach ($request->images as $imageData) {
                 try {
@@ -65,8 +85,8 @@ class ProjectImageController extends Controller
                     $uniqueFilename = $pathInfo['filename'] . '-fullquality-' . $timestamp . '.' . ($pathInfo['extension'] ?? 'jpg');
                     $fullPath = $projectPath . '/' . $uniqueFilename;
 
-                    // Guardar la imagen principal
-                    $saved = Storage::put($fullPath, $imageContent);
+                    // Guardar la imagen principal con permisos 777
+                    $saved = $this->saveFileWithPermissions($fullPath, $imageContent, 0777);
 
                     if ($saved) {
                         // Generar miniatura automáticamente
@@ -369,7 +389,7 @@ class ProjectImageController extends Controller
             
             // Crear directorio de miniaturas si no existe
             $thumbnailDir = $projectPath . '/thumbnails';
-            $this->createDirectoryWithPermissions($thumbnailDir, 0775);
+            $this->createDirectoryWithPermissions($thumbnailDir, 0777);
 
             // Redimensionar imagen manteniendo proporción (150x150 máximo)
             $image->cover(150, 150);
@@ -377,8 +397,8 @@ class ProjectImageController extends Controller
             // Convertir a JPG con 85% calidad para reducir tamaño
             $encodedImage = $image->toJpeg(85);
 
-            // Guardar la miniatura en storage/app (NO en public)
-            $thumbnailSaved = Storage::put($thumbnailPath, $encodedImage);
+            // Guardar la miniatura con permisos 777
+            $thumbnailSaved = $this->saveFileWithPermissions($thumbnailPath, $encodedImage, 0777);
 
             if ($thumbnailSaved) {
                 // Generar URL usando el servicio de imágenes (no Storage::url)
@@ -416,7 +436,7 @@ class ProjectImageController extends Controller
             $projectPath = "images/projects/{$projectId}";
 
             // Crear directorio del proyecto si no existe
-            $this->createDirectoryWithPermissions($projectPath, 0775);
+            $this->createDirectoryWithPermissions($projectPath, 0777);
 
             // Generar nombre personalizado
             $originalName = $request->file('image')->getClientOriginalName();
@@ -424,25 +444,31 @@ class ProjectImageController extends Controller
             $timestamp = time();
             $fullQualityFilename = $pathInfo['filename'] . '-fullquality-' . $timestamp . '.' . $pathInfo['extension'];
             
-            // Guardar la imagen con nombre personalizado
-            $path = $request->file('image')->storeAs($projectPath, $fullQualityFilename);
+            // Guardar la imagen con nombre personalizado y permisos 777
+            $imageContent = file_get_contents($request->file('image'));
+            $path = $projectPath . '/' . $fullQualityFilename;
+            $saved = $this->saveFileWithPermissions($path, $imageContent, 0777);
 
-            // Generar miniatura automáticamente
-            $thumbnailResult = $this->generateThumbnail($path, $fullQualityFilename, $projectPath);
+            if ($saved) {
+                // Generar miniatura automáticamente
+                $thumbnailResult = $this->generateThumbnail($path, $fullQualityFilename, $projectPath);
 
-            // Generar la URL usando el servicio de imágenes (no Storage::url)
-            $encodedPath = base64_encode($path);
-            $url = "/storage/{$projectPath}/{$fullQualityFilename}";
+                // Generar la URL usando el servicio de imágenes (no Storage::url)
+                $encodedPath = base64_encode($path);
+                $url = "/storage/{$projectPath}/{$fullQualityFilename}";
 
-            return response()->json([
-                'success' => true,
-                'url' => $url,
-                'path' => $path,
-                'thumbnail_url' => $thumbnailResult['url'] ?? null,
-                'thumbnail_path' => $thumbnailResult['path'] ?? null,
-                'has_thumbnail' => $thumbnailResult['success'] ?? false,
-                'filename' => $fullQualityFilename
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'url' => $url,
+                    'path' => $path,
+                    'thumbnail_url' => $thumbnailResult['url'] ?? null,
+                    'thumbnail_path' => $thumbnailResult['path'] ?? null,
+                    'has_thumbnail' => $thumbnailResult['success'] ?? false,
+                    'filename' => $fullQualityFilename
+                ]);
+            } else {
+                throw new \Exception('Error guardando la imagen');
+            }
 
         } catch (\Exception $e) {
             Log::error("❌ [EDITOR-UPLOAD] Error subiendo imagen: " . $e->getMessage());
