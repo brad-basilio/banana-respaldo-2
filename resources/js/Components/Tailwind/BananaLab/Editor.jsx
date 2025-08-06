@@ -4311,6 +4311,100 @@ export default function EditorLibro() {
         return !!page;
     };
 
+    // 🎯 FUNCIÓN: Organizar páginas con lógica correcta de libro
+    const organizeBookPages = useCallback((pages) => {
+        if (!pages || pages.length === 0) return [];
+
+        // Separar páginas por tipo
+        const coverPages = pages.filter(p => p.type === 'cover');
+        const contentPages = pages.filter(p => p.type === 'content');
+        const finalPages = pages.filter(p => p.type === 'final');
+
+        console.log('🎯 [BOOK-ORGANIZE] Organizando páginas del libro:', {
+            cover: coverPages.length,
+            content: contentPages.length, 
+            final: finalPages.length,
+            total: pages.length
+        });
+
+        // Si no hay tapa ni contratapa, devolver como está
+        if (coverPages.length === 0 && finalPages.length === 0) {
+            console.log('📖 [BOOK-ORGANIZE] Sin tapas - orden normal');
+            return pages;
+        }
+
+        const organizedPages = [];
+
+        // 1. Agregar TAPA si existe (siempre primera, página derecha)
+        if (coverPages.length > 0) {
+            organizedPages.push(...coverPages);
+            console.log('📕 [BOOK-ORGANIZE] Tapa agregada en posición 0 (derecha)');
+            
+            // 🎯 LÓGICA CLAVE: Después de la tapa, agregar reverso con logo
+            // Esto hace que la página 1 del contenido aparezca en la siguiente página (izquierda)
+            organizedPages.push({
+                id: `blank-page-cover-back-${Date.now()}`,
+                type: 'blank',
+                isBlankPage: true,
+                hasLogo: true, // 🎯 NUEVO: Indicador para mostrar logo
+                logoUrl: '/assets/resources/logo.png', // 🎯 NUEVO: URL del logo
+                cells: [],
+                backgroundColor: '#ffffff',
+                layout: layouts[0]?.id || 'layout1' // Layout básico
+            });
+            console.log('📄 [BOOK-ORGANIZE] Reverso de tapa con logo agregado en posición 1 (izquierda)');
+        }
+
+        // 2. Agregar páginas de CONTENIDO
+        if (contentPages.length > 0) {
+            // 🎯 AHORA: La página 1 del contenido aparecerá en la posición correcta (izquierda si hay tapa)
+            organizedPages.push(...contentPages);
+            console.log('📄 [BOOK-ORGANIZE] Contenido agregado:', contentPages.length + ' páginas, página 1 en posición', organizedPages.length - contentPages.length);
+        }
+
+        // 3. Agregar CONTRATAPA si existe (siempre última, página izquierda)
+        if (finalPages.length > 0) {
+            // 🎯 LÓGICA CLAVE: La contratapa debe estar en la página izquierda
+            // Si tenemos un número impar de páginas antes, necesitamos agregar una página en blanco
+            const totalBeforeBackCover = organizedPages.length;
+            
+            // Si el total es impar, la contratapa estará en la derecha (incorrecto)
+            // Necesitamos agregar una página en blanco para que esté en la izquierda
+            if (totalBeforeBackCover % 2 === 1) {
+                // Agregar página en blanco virtual para que la contratapa quede en la izquierda
+                organizedPages.push({
+                    id: `blank-page-before-back-${Date.now()}`,
+                    type: 'blank',
+                    isBlankPage: true,
+                    cells: [],
+                    backgroundColor: '#ffffff',
+                    layout: layouts[0]?.id || 'layout1' // Layout básico
+                });
+                console.log('📄 [BOOK-ORGANIZE] Página en blanco agregada para correcto posicionamiento de contratapa');
+            }
+            
+            organizedPages.push(...finalPages);
+            console.log('📕 [BOOK-ORGANIZE] Contratapa agregada en posición', organizedPages.length - 1, '(izquierda)');
+        }
+
+        console.log('✅ [BOOK-ORGANIZE] Organización final:', {
+            totalPages: organizedPages.length,
+            sequence: organizedPages.map((p, index) => ({
+                position: index,
+                type: p.type,
+                side: index === 0 ? 'Tapa (derecha)' : 
+                      index === 1 && p.type === 'blank' ? 'Reverso tapa (izquierda)' :
+                      index === organizedPages.length - 1 && p.type === 'final' ? 'Contratapa (izquierda)' :
+                      p.type === 'blank' ? 'Página en blanco' :
+                      index % 2 === 1 ? 'Izquierda' : 'Derecha',
+                id: p.id,
+                pageNumber: p.type === 'content' ? `Página ${contentPages.indexOf(p) + 1}` : ''
+            }))
+        });
+
+        return organizedPages;
+    }, [layouts]);
+
     // Memoize categorized pages for sidebar rendering to avoid re-filtering on every render
     const categorizedPages = useMemo(() => {
         // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
@@ -7228,10 +7322,11 @@ CONTROLES:
                             // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
                             if (!itemData) {
                                 console.warn('⚠️ [EDITOR-TO-MODAL] itemData no disponible, enviando todas las páginas');
-                                return categorizedPages.cover.concat(categorizedPages.content, categorizedPages.final).map((page) => ({
+                                const allPages = categorizedPages.cover.concat(categorizedPages.content, categorizedPages.final).map((page) => ({
                                     ...page,
                                     layout: layouts.find((l) => l.id === page.layout) || layouts[0],
                                 }));
+                                return organizeBookPages(allPages);
                             }
 
                             // ✅ FILTRAR PÁGINAS SEGÚN CONFIGURACIÓN DE CHECKBOXES
@@ -7259,10 +7354,13 @@ CONTROLES:
                                 }
                             });
                             
-                            return enabledPages.map((page) => ({
+                            const pagesWithLayout = enabledPages.map((page) => ({
                                 ...page,
                                 layout: layouts.find((l) => l.id === page.layout) || layouts[0],
                             }));
+                            
+                            // 🎯 ORGANIZAR PÁGINAS CON LÓGICA CORRECTA DE LIBRO
+                            return organizeBookPages(pagesWithLayout);
                         })()}
                         pageThumbnails={(() => {
                             // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
@@ -7538,11 +7636,51 @@ CONTROLES:
                                         try {
                                             console.log(`🎭 [${contentType.type.toUpperCase()}-EXPERIENCE] Iniciando experiencia de ${contentType.name.toLowerCase()}...`);
 
-                                            // 🎭 FASE 1: Mostrar modal de preparación con tipo específico
+                                            // 💾 NUEVA FASE 0: Guardar automáticamente antes de continuar
+                                            console.log('💾 [AUTO-SAVE] Guardando cambios antes de abrir preview...');
+                                            
+                                            // Mostrar modal de preparación inicial
                                             setAlbumPreparationModal({
                                                 isOpen: true,
-                                                phase: 'preparing',
+                                                phase: 'saving',
                                                 progress: 0,
+                                                message: '💾 Guardando cambios',
+                                                subMessage: 'Asegurando que todo esté actualizado...'
+                                            });
+
+                                            // Ejecutar guardado manual
+                                            try {
+                                                await saveProgressManually();
+                                                console.log('✅ [AUTO-SAVE] Guardado completado exitosamente');
+                                                
+                                                // Actualizar progreso del guardado
+                                                setAlbumPreparationModal(prev => ({
+                                                    ...prev,
+                                                    progress: 15,
+                                                    message: '✅ Cambios guardados',
+                                                    subMessage: 'Preparando vista previa...'
+                                                }));
+                                                
+                                                // Pequeña pausa para mostrar el éxito
+                                                await new Promise(resolve => setTimeout(resolve, 500));
+                                                
+                                            } catch (saveError) {
+                                                console.error('❌ [AUTO-SAVE] Error al guardar:', saveError);
+                                                // Continuar de todas formas, pero mostrar advertencia
+                                                setAlbumPreparationModal(prev => ({
+                                                    ...prev,
+                                                    progress: 10,
+                                                    message: '⚠️ Guardado parcial',
+                                                    subMessage: 'Continuando con vista previa...'
+                                                }));
+                                                await new Promise(resolve => setTimeout(resolve, 300));
+                                            }
+
+                                            // 🎭 FASE 1: Mostrar modal de preparación con tipo específico
+                                            setAlbumPreparationModal(prev => ({
+                                                ...prev,
+                                                phase: 'preparing',
+                                                progress: 15,
                                                 message: `${contentType.icon} Creando tu ${contentType.name.toLowerCase()}`,
                                                 subMessage: contentType.type === 'album' 
                                                     ? 'Preparando la experiencia completa de tu álbum...'
@@ -7551,9 +7689,9 @@ CONTROLES:
                                                     : contentType.type === 'booklet'
                                                     ? 'Preparando tu folleto personalizado...'
                                                     : 'Optimizando tu diseño único...'
-                                            });
+                                            }));
 
-                                            // 🎭 FASE 2: Simular preparación específica (0-30%)
+                                            // 🎭 FASE 2: Simular preparación específica (15-30%)
                                             const preparationSteps = contentType.type === 'album' 
                                                 ? ['🔧 Encuadernando páginas', '📖 Ajustando tapas', '✨ Puliendo detalles']
                                                 : contentType.type === 'catalog'
@@ -7562,9 +7700,9 @@ CONTROLES:
                                                 ? ['📋 Preparando folleto', '🖼️ Ajustando formato', '✨ Aplicando estilo']
                                                 : ['🎨 Procesando diseño', '⚡ Optimizando calidad', '✨ Finalizando vista'];
 
-                                            for (let i = 0; i <= 30; i += 5) {
+                                            for (let i = 15; i <= 30; i += 3) {
                                                 await new Promise(resolve => setTimeout(resolve, contentType.type === 'card' ? 50 : 100));
-                                                const stepIndex = Math.floor((i / 30) * preparationSteps.length);
+                                                const stepIndex = Math.floor(((i - 15) / 15) * preparationSteps.length);
                                                 setAlbumPreparationModal(prev => ({
                                                     ...prev,
                                                     progress: i,

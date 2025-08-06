@@ -1002,7 +1002,42 @@ const BookPreviewModal = ({
                                 >
                                     {/* Página individual */}
                                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        {activeThumbnails[page.originalId || page.id] ? (
+                                        {page.isBlankPage ? (
+                                            // 📄 PÁGINA EN BLANCO: Para correcto posicionamiento de tapas
+                                            <div style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                backgroundColor: '#ffffff',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#f3f4f6',
+                                                fontSize: '14px',
+                                                fontStyle: 'italic'
+                                            }}>
+                                                {/* 🎯 NUEVO: Mostrar logo si está disponible */}
+                                                {page.hasLogo && page.logoUrl ? (
+                                                    <img 
+                                                        src={page.logoUrl}
+                                                        alt="Logo"
+                                                        style={{
+                                                            maxWidth: '120px',
+                                                            maxHeight: '120px',
+                                                            objectFit: 'contain',
+                                                            opacity: 0.8,
+                                                            filter: 'grayscale(20%)'
+                                                        }}
+                                                        onError={(e) => {
+                                                            console.warn('⚠️ [BOOK-PREVIEW] Error cargando logo:', page.logoUrl);
+                                                            e.target.style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    // Página en blanco sin logo
+                                                    null
+                                                )}
+                                            </div>
+                                        ) : activeThumbnails[page.originalId || page.id] ? (
                                         // Página con contenido usando thumbnails disponibles
                                         <img
                                             src={activeThumbnails[page.originalId || page.id]}
