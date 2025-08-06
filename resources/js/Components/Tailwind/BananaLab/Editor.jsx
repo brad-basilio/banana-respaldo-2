@@ -2,8 +2,36 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import html2canvas from 'html2canvas'; // Para captura de alta calidad
+
+// ⚡ OPTIMIZACIÓN: Configuración optimizada para html2canvas
+const HTML2CANVAS_CONFIG = {
+    allowTaint: true,
+    useCORS: true,
+    scale: 0.75, // ⚡ Escala reducida para mejor rendimiento
+    logging: false, // ⚡ Desactivar logs para mejor rendimiento
+    height: 150, // ⚡ Altura fija para thumbnails
+    width: 200,  // ⚡ Ancho fijo para thumbnails
+    backgroundColor: '#ffffff',
+    onclone: (clonedDoc) => {
+        // ⚡ OPTIMIZACIÓN: Remover elementos costosos en el clone
+        const scripts = clonedDoc.querySelectorAll('script');
+        scripts.forEach(script => script.remove());
+        
+        const videos = clonedDoc.querySelectorAll('video');
+        videos.forEach(video => video.remove());
+        
+        const iframes = clonedDoc.querySelectorAll('iframe');
+        iframes.forEach(iframe => iframe.remove());
+    }
+};
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
+
+// ⚡ OPTIMIZACIÓN: Sistema de logging inteligente
+const isDev = process.env.NODE_ENV === 'development';
+const log = isDev ? console.log : () => {};
+const warn = isDev ? console.warn : () => {};
+const error = console.error; // Errores siempre visibles
 
 // Estilos personalizados para Driver.js con tema BananaLab
 const driverStyles = `
@@ -1017,7 +1045,16 @@ export default function EditorLibro() {
         }
     }, [projectData?.id]);
 
-    // ⚡ FUNCIÓN RADICAL: Generar thumbnail con filtros garantizados al 100%
+    // ⚡ OPTIMIZACIÓN: Referencias adicionales para debounce y cache
+    const thumbnailDebounceTimers = useRef(new Map());
+    const thumbnailCache = useRef(new Map());
+    
+    // ⚡ OPTIMIZACIÓN: Memoizar cache key para evitar recálculos
+    const workspaceCacheKey = useMemo(() => 
+        JSON.stringify(workspaceDimensions), [workspaceDimensions]
+    );
+    
+    // ⚡ FUNCIÓN OPTIMIZADA: Generar thumbnail con debounce mejorado
     const generateCurrentPageThumbnail = useCallback(async (forceRegenerate = false) => {
         // Solo bloquear si hay regeneración temporal en curso
         if (window.BLOCK_AUTO_REGENERATION && !forceRegenerate) {
@@ -1031,7 +1068,33 @@ export default function EditorLibro() {
         
         const pageId = currentPageData.id;
         
-        // ANÁLISIS EXHAUSTIVO DE FILTROS
+        // ⚡ OPTIMIZACIÓN: Debounce para evitar regeneraciones múltiples
+        if (!forceRegenerate) {
+            if (thumbnailDebounceTimers.current.has(pageId)) {
+                clearTimeout(thumbnailDebounceTimers.current.get(pageId));
+            }
+            
+            const timer = setTimeout(() => {
+                thumbnailDebounceTimers.current.delete(pageId);
+                generateCurrentPageThumbnail(true); // Llamada real después del debounce
+            }, 300); // 300ms de debounce
+            
+            thumbnailDebounceTimers.current.set(pageId, timer);
+            return;
+        }
+        
+        // ⚡ OPTIMIZACIÓN: Cache rápido de thumbnails
+        const cacheKey = `${pageId}-${workspaceCacheKey}`;
+        if (!forceRegenerate && thumbnailCache.current.has(cacheKey)) {
+            const cachedThumbnail = thumbnailCache.current.get(cacheKey);
+            if (cachedThumbnail && Date.now() - cachedThumbnail.timestamp < 60000) { // Cache por 1 minuto
+                console.log(`⚡ [CACHE HIT] Usando thumbnail cacheado para ${pageId}`);
+                setPageThumbnails(prev => ({ ...prev, [pageId]: cachedThumbnail.data }));
+                return;
+            }
+        }
+        
+        // ANÁLISIS OPTIMIZADO DE FILTROS (reducir logging)
         let pageHasFilters = false;
         let elementsWithFilters = [];
         
@@ -1040,7 +1103,7 @@ export default function EditorLibro() {
                 if (cell.elements) {
                     cell.elements.forEach(element => {
                         if (element.filters) {
-                            // 🔍 DETECCIÓN MEJORADA: Soporte para valores normalizados (0-1) y porcentaje (0-100)
+                            // ⚡ OPTIMIZACIÓN: Detección rápida de filtros sin logging excesivo
                             const hasRealFilters = 
                                 (element.filters.brightness !== undefined && 
                                  element.filters.brightness !== 100 && element.filters.brightness !== 1) ||
@@ -1058,40 +1121,25 @@ export default function EditorLibro() {
                                 element.filters.flipHorizontal || 
                                 element.filters.flipVertical;
                             
-                            // 🎯 LOGGING DETALLADO: Ver valores exactos de filtros predefinidos
-                            if (element.filters && Object.keys(element.filters).length > 0) {
-                                console.log(`🔍 [FILTRO CHECK] Elemento ${element.id}:`, {
-                                    brightness: `${element.filters.brightness} (detectado: ${element.filters.brightness !== 100 && element.filters.brightness !== 1})`,
-                                    contrast: `${element.filters.contrast} (detectado: ${element.filters.contrast !== 100 && element.filters.contrast !== 1})`,
-                                    saturation: `${element.filters.saturation} (detectado: ${element.filters.saturation !== 100 && element.filters.saturation !== 1})`,
-                                    tint: `${element.filters.tint} (detectado: ${element.filters.tint !== 0})`,
-                                    hue: `${element.filters.hue} (detectado: ${element.filters.hue !== 0})`,
-                                    opacity: `${element.filters.opacity} (detectado: ${element.filters.opacity !== 100 && element.filters.opacity !== 1})`,
-                                    blur: `${element.filters.blur} (detectado: ${element.filters.blur > 0})`,
-                                    hasRealFilters: hasRealFilters
-                                });
-                            }
-                            
                             if (hasRealFilters) {
                                 pageHasFilters = true;
                                 elementsWithFilters.push(element);
                                 element._hasRealFilters = true;
-                                console.log(`🎨 [FILTRO DETECTADO] Elemento ${element.id} con filtros predefinidos:`, element.filters);
-                                console.log(`🎯 [PREDEFINED FILTER] Tipo de filtro aplicado:`, {
-                                    allFilters: element.filters,
-                                    isNormalized: element.filters.brightness < 2, // Si es menor a 2, probablemente está normalizado (0-1)
-                                    isPercentage: element.filters.brightness >= 2  // Si es mayor a 2, probablemente es porcentaje (0-100)
-                                });
-                                console.log(`� [FILTRO DETECTADO] Elemento ${element.id}:`, element.filters);
+                                // ⚡ OPTIMIZACIÓN: Solo log esencial para filtros
+                                if (process.env.NODE_ENV === 'development') {
+                                    console.log(`🎨 [FILTRO] Elemento ${element.id}:`, element.filters);
+                                }
                             }
                         }
                     });
                 }
             });
-            
         }
         
-        console.log(`🎯 [ANÁLISIS] Página ${pageId}: ${elementsWithFilters.length} elementos con filtros detectados`);
+        // ⚡ OPTIMIZACIÓN: Logging reducido
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`🎯 [ANÁLISIS] Página ${pageId}: ${elementsWithFilters.length} elementos con filtros detectados`);
+        }
         
         // Solo evitar regeneración si no hay filtros y no se fuerza
         if (!forceRegenerate && !pageHasFilters && pageThumbnails[pageId]) {
@@ -1306,8 +1354,25 @@ export default function EditorLibro() {
                     if (!window._protectedThumbnailIds.includes(pageId)) {
                         window._protectedThumbnailIds.push(pageId);
                     }
-                    console.log(`🔒 [PROTECCIÓN] Thumbnail con filtros protegido: ${pageId}`);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log(`🔒 [PROTECCIÓN] Thumbnail con filtros protegido: ${pageId}`);
+                    }
                 }
+                
+                // ⚡ OPTIMIZACIÓN: Guardar en cache todos los thumbnails exitosos
+                const cacheKey = `${pageId}-${workspaceCacheKey}`;
+                thumbnailCache.current.set(cacheKey, {
+                    data: thumbnail,
+                    timestamp: Date.now(),
+                    hasFilters: pageHasFilters
+                });
+                
+                // ⚡ OPTIMIZACIÓN: Limpiar cache viejo (máximo 50 entradas)
+                if (thumbnailCache.current.size > 50) {
+                    const oldestKey = thumbnailCache.current.keys().next().value;
+                    thumbnailCache.current.delete(oldestKey);
+                }
+                
             } else {
                 console.error(`❌ [ERROR] No se pudo generar thumbnail para página: ${pageId}`);
             }
@@ -3590,9 +3655,9 @@ export default function EditorLibro() {
             console.error('❌ [AUTO-SAVE] Error en auto-save con procesamiento de imágenes:', error);
             return false;
         }
-    }, [pages, currentPage, workspaceDimensions, workspaceSize, selectedElement, selectedCell, history, historyIndex, projectData?.id, itemData?.name, itemData?.id, presetData?.id, pageThumbnails, processAndSaveImages, generateLocalThumbnails]);
+    }, [pages, currentPage, workspaceDimensions, workspaceSize, projectData?.id, itemData?.name, itemData?.id, presetData?.id, processAndSaveImages, generateLocalThumbnails]); // ⚡ OPTIMIZACIÓN: Reducidas dependencias innecesarias
 
-    // 💾 Auto-save de respaldo cada 5 minutos (solo como respaldo)
+    // 💾 ⚡ OPTIMIZACIÓN: Auto-save menos agresivo cada 10 minutos (reducido impacto)
     useEffect(() => {
         if (!projectData?.id) return;
 
@@ -3600,7 +3665,7 @@ export default function EditorLibro() {
             if (pages.length > 0) {
                 autoSaveToDatabase(pages, false);
             }
-        }, 5 * 60 * 1000); // 5 minutos = 300,000ms
+        }, 10 * 60 * 1000); // ⚡ 10 minutos = 600,000ms (menos agresivo)
 
         return () => clearInterval(backupAutoSaveInterval);
     }, [autoSaveToDatabase, pages, projectData?.id]);
