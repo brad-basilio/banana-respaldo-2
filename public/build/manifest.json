@@ -633,6 +633,13 @@
       "resources/js/Components/Tailwind/Blogs/BlogCarousel.jsx"
     ]
   },
+  "_book-BuHIVa2d.js": {
+    "file": "assets/book-BuHIVa2d.js",
+    "name": "book",
+    "imports": [
+      "_createLucideIcon-Cy5Ya80P.js"
+    ]
+  },
   "_brush-CV0tCVRD.js": {
     "file": "assets/brush-CV0tCVRD.js",
     "name": "brush",
@@ -756,12 +763,9 @@
     "file": "dom-to-image-more.css",
     "src": "_dom-to-image-more.css"
   },
-  "_dom-to-image-more.min-CtP51zX5.js": {
-    "file": "assets/dom-to-image-more.min-CtP51zX5.js",
+  "_dom-to-image-more.min-BtE-uU7c.js": {
+    "file": "assets/dom-to-image-more.min-BtE-uU7c.js",
     "name": "dom-to-image-more.min",
-    "imports": [
-      "_createLucideIcon-Cy5Ya80P.js"
-    ],
     "css": [
       "dom-to-image-more.css"
     ]
@@ -4146,7 +4150,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-B9fsdIeR.js",
+    "file": "assets/BananaLab-BO6NSmSi.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4205,7 +4209,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-BS1e47ZW.js",
+    "file": "assets/Editor-B21wMb-Z.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4215,7 +4219,7 @@
       "_index-BH53Isel.js",
       "_EditableCell-upyYeQZg.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
-      "_dom-to-image-more.min-CtP51zX5.js",
+      "_dom-to-image-more.min-BtE-uU7c.js",
       "_layers-6oegOx-p.js",
       "_chevron-down-DS-mdh9v.js",
       "_chevron-right-Ckt5D2ka.js",
@@ -4236,6 +4240,7 @@
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
       "_chevron-left-B2s3ZsB7.js",
+      "_book-BuHIVa2d.js",
       "_plus-Bot15Khs.js",
       "_filter-Ci9tsc_e.js",
       "_copy-6OEekgvq.js",
@@ -4556,6 +4561,20 @@
       "_index-yBjzXJbu.js"
     ]
   },
+  "resources/js/Components/Tailwind/BananaLab/components/Editor/ThumbnailIntegration.jsx": {
+    "file": "assets/ThumbnailIntegration-C1Syi0t5.js",
+    "name": "ThumbnailIntegration",
+    "src": "resources/js/Components/Tailwind/BananaLab/components/Editor/ThumbnailIntegration.jsx",
+    "isEntry": true,
+    "imports": [
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
+      "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
+      "_book-BuHIVa2d.js",
+      "_index-yBjzXJbu.js",
+      "_createLucideIcon-Cy5Ya80P.js"
+    ]
+  },
   "resources/js/Components/Tailwind/BananaLab/components/Elements/EditableCell.jsx": {
     "file": "assets/EditableCell-BiIX7XB-.js",
     "name": "EditableCell",
@@ -4798,6 +4817,19 @@
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-yBjzXJbu.js"
+    ]
+  },
+  "resources/js/Components/Tailwind/BananaLab/components/UI/OptimizedThumbnail.jsx": {
+    "file": "assets/OptimizedThumbnail-BQe7ifAL.js",
+    "name": "OptimizedThumbnail",
+    "src": "resources/js/Components/Tailwind/BananaLab/components/UI/OptimizedThumbnail.jsx",
+    "isEntry": true,
+    "imports": [
+      "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
+      "_index-BH53Isel.js",
+      "_book-BuHIVa2d.js",
+      "_index-yBjzXJbu.js",
+      "_createLucideIcon-Cy5Ya80P.js"
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/components/UI/ProgressRecoveryModal.jsx": {
@@ -9835,7 +9867,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-CsqpRDkZ.js",
+    "file": "assets/Editor-CpCi8jpy.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9866,7 +9898,7 @@
       "resources/js/Components/Tailwind/BananaLab/components/Elements/TextElement.jsx",
       "_upload-qgEr5bIl.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
-      "_dom-to-image-more.min-CtP51zX5.js",
+      "_dom-to-image-more.min-BtE-uU7c.js",
       "_layers-6oegOx-p.js",
       "_chevron-right-Ckt5D2ka.js",
       "_eye-CKCH9ORv.js",
@@ -9887,6 +9919,7 @@
       "_triangle-alert-vFMqKi4t.js",
       "_check-DQ7QoS0v.js",
       "_loader-circle-CrvBvIt1.js",
+      "_book-BuHIVa2d.js",
       "_plus-Bot15Khs.js",
       "_filter-Ci9tsc_e.js",
       "_circle-check-big-D6DM3vPb.js"
@@ -10044,7 +10077,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CCmlVJuD.js",
+    "file": "assets/System-DElA-GV2.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

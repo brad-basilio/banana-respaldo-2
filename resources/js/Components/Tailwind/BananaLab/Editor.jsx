@@ -321,9 +321,8 @@ import TextToolbar from "./components/Elements/TextToolbar";
 import WorkspaceControls from "./components/Elements/WorkspaceControls";
 import BookPreviewModal from "./components/Editor/BookPreview";
 import Global from "../../../Utils/Global";
-import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
-import { generateFastThumbnails, generateHybridThumbnails, clearThumbnailCaches, generateSingleThumbnail } from "./utils/fastThumbnailGenerator";
-import { generateThumbnailWithGuaranteedFilters } from "./utils/forceFilterRenderer";
+import { generateAccurateThumbnails, generatePageThumbnail, generateMultiplePageThumbnails, generateFallbackThumbnail } from "./utils/thumbnailGenerator";
+import { generateFastThumbnails, generateHybridThumbnails, clearThumbnailCaches, generateSingleThumbnail, generateThumbnailWithGuaranteedFilters } from "./utils/thumbnailGenerator";
 
 // 🔧 FUNCIÓN ESPECÍFICA PARA LAYOUTS COMPLEJOS
 const generateThumbnailForComplexLayout = async (pageData, workspaceDimensions, layout) => {
