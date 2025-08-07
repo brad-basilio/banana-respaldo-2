@@ -68,8 +68,8 @@ import domtoimage from 'dom-to-image-more';
 
 // Componente optimizado para miniaturas que evita re-renderizados innecesarios
 const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
+    console.trace(thumbnail)
     if (thumbnail) {
-        console.trace(thumbnail)
         return (
             <img
                 src={thumbnail}
