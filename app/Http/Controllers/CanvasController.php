@@ -258,16 +258,13 @@ class CanvasController extends Controller
             // Procesar thumbnails si están presentes
             $processedThumbnails = [];
             if ($request->has('thumbnails') && !empty($request->thumbnails)) {
-                Log::info("🖼️ [THUMBNAIL] Procesando thumbnails para proyecto {$projectId}", [
-                    'thumbnail_count' => count($request->thumbnails)
-                ]);
+             
                 
                 $processedThumbnails = ThumbnailService::processThumbnails(
                     $request->thumbnails, 
                     $projectId
                 );
                 
-                Log::info("✅ [THUMBNAIL] Thumbnails procesados: " . count($processedThumbnails));
             }
 
             // Limpiar thumbnails base64 de los datos del proyecto para optimizar almacenamiento
@@ -294,7 +291,6 @@ class CanvasController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("❌ [SAVE] Error guardando proyecto: " . $e->getMessage());
             return response()->json([
                 'error' => 'Error al guardar el proyecto: ' . $e->getMessage()
             ], 500);

@@ -22,7 +22,6 @@ class ProjectImageController extends Controller
             $fullPath = storage_path('app/' . $storagePath);
             if (!file_exists($fullPath)) {
                 mkdir($fullPath, $permissions, true);
-                Log::info("📁 [DIRECTORY] Directorio creado con permisos {$permissions}: {$storagePath}");
                 return true;
             }
         }
@@ -42,7 +41,6 @@ class ProjectImageController extends Controller
             $fullPath = storage_path('app/' . $path);
             if (file_exists($fullPath)) {
                 chmod($fullPath, $permissions);
-                Log::info("📄 [FILE PERMISSIONS] Permisos {$permissions} aplicados a: {$path}");
             }
         }
         
@@ -74,7 +72,6 @@ class ProjectImageController extends Controller
                     $imageContent = base64_decode($imageData['data']);
                     
                     if ($imageContent === false) {
-                        Log::error("❌ [IMAGE-UPLOAD] Error decodificando base64 para: {$imageData['elementId']}");
                         continue;
                     }
 
@@ -107,16 +104,15 @@ class ProjectImageController extends Controller
                             'type' => $imageData['type']
                         ];
 
-                        Log::info("✅ [IMAGE-UPLOAD] Imagen guardada: {$imageData['elementId']} -> {$uniqueFilename}");
                         if ($thumbnailResult['success']) {
-                            Log::info("✅ [THUMBNAIL] Miniatura generada: {$thumbnailResult['filename']}");
+                          //  Log::info("✅ [THUMBNAIL] Miniatura generada: {$thumbnailResult['filename']}");
                         }
                     } else {
-                        Log::error("❌ [IMAGE-UPLOAD] Error guardando imagen: {$imageData['elementId']}");
+                     //   Log::error("❌ [IMAGE-UPLOAD] Error guardando imagen: {$imageData['elementId']}");
                     }
 
                 } catch (\Exception $e) {
-                    Log::error("❌ [IMAGE-UPLOAD] Error procesando imagen {$imageData['elementId']}: " . $e->getMessage());
+                  //  Log::error("❌ [IMAGE-UPLOAD] Error procesando imagen {$imageData['elementId']}: " . $e->getMessage());
                     continue;
                 }
             }
@@ -134,7 +130,6 @@ class ProjectImageController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("❌ [IMAGE-UPLOAD] Error general: " . $e->getMessage());
             
             return response()->json([
                 'success' => false,
@@ -191,11 +186,10 @@ class ProjectImageController extends Controller
                 
                 foreach ($filesToDelete as $fileData) {
                     Storage::delete($fileData['file']);
-                    Log::info("🗑️ [IMAGE-CLEANUP] Imagen antigua eliminada: " . $fileData['file']);
                 }
             }
         } catch (\Exception $e) {
-            Log::warning("⚠️ [IMAGE-CLEANUP] Error en limpieza: " . $e->getMessage());
+            // Log::warning("⚠️ [IMAGE-CLEANUP] Error en limpieza: " . $e->getMessage());
         }
     }
 
@@ -255,7 +249,6 @@ class ProjectImageController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            Log::error("❌ [IMAGE-LIST] Error listando imágenes: " . $e->getMessage());
             
             return response()->json([
                 'success' => false,
@@ -296,7 +289,6 @@ class ProjectImageController extends Controller
                 if (!$isUsed) {
                     Storage::delete($file);
                     $deletedCount++;
-                    Log::info("🗑️ [IMAGE-CLEANUP] Imagen no utilizada eliminada: {$filename}");
                 }
             }
             
@@ -308,7 +300,6 @@ class ProjectImageController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            Log::error("❌ [IMAGE-CLEANUP] Error en limpieza: " . $e->getMessage());
             
             return response()->json([
                 'success' => false,
@@ -359,7 +350,6 @@ class ProjectImageController extends Controller
             }
                 
         } catch (\Exception $e) {
-            Log::error("❌ [IMAGE-SERVE] Error sirviendo imagen: " . $e->getMessage());
             return response()->json(['error' => 'Error sirviendo imagen'], 500);
         }
     }
@@ -416,7 +406,6 @@ class ProjectImageController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL] Error generando miniatura: " . $e->getMessage());
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
@@ -471,7 +460,6 @@ class ProjectImageController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error("❌ [EDITOR-UPLOAD] Error subiendo imagen: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error subiendo imagen: ' . $e->getMessage()

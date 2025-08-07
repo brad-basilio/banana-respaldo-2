@@ -30,11 +30,7 @@ class ThumbnailGeneratorService
         ];
         
         $config = array_merge($defaultConfig, $config);
-        
-        Log::info("🖼️ [THUMBNAIL-SERVICE] Generando thumbnails para {$project->id}", [
-            'total_pages' => count($pages),
-            'config' => $config
-        ]);
+       
 
         foreach ($pages as $pageIndex => $page) {
             try {
@@ -42,10 +38,8 @@ class ThumbnailGeneratorService
                 
                 if ($thumbnail) {
                     $thumbnails[] = $thumbnail;
-                    Log::info("✅ [THUMBNAIL-SERVICE] Thumbnail generado para página {$pageIndex}");
                 }
             } catch (\Exception $e) {
-                Log::error("❌ [THUMBNAIL-SERVICE] Error en página {$pageIndex}: " . $e->getMessage());
                 continue;
             }
         }
@@ -62,11 +56,7 @@ class ThumbnailGeneratorService
     public function generatePageThumbnail(CanvasProject $project, array $page, int $pageIndex, array $config = [])
     {
         try {
-            Log::info("🖼️ [THUMBNAIL-SERVICE] Procesando página {$pageIndex}", [
-                'page_id' => $page['id'] ?? 'unknown',
-                'cells' => count($page['cells'] ?? []),
-                'layout' => $page['layout'] ?? 'none'
-            ]);
+        
 
             // Obtener configuración del preset
             $presetConfig = $this->getPresetConfiguration($project);
@@ -148,7 +138,6 @@ class ThumbnailGeneratorService
             ];
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL-SERVICE] Error generando thumbnail: " . $e->getMessage());
             throw $e;
         }
     }
@@ -206,7 +195,6 @@ class ThumbnailGeneratorService
         try {
             $imagePath = $this->resolveImagePath($imageContent);
             if (!$imagePath || !file_exists($imagePath)) {
-                Log::warning("🖼️ [THUMBNAIL-SERVICE] Imagen no encontrada: {$imageContent}");
                 return;
             }
 
@@ -241,7 +229,7 @@ class ThumbnailGeneratorService
             imagedestroy($sourceImage);
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL-SERVICE] Error añadiendo imagen: " . $e->getMessage());
+            //
         }
     }
 
@@ -309,7 +297,6 @@ class ThumbnailGeneratorService
             $fullPath = storage_path('app/' . $projectPath);
             if (!file_exists($fullPath)) {
                 mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
-                Log::info("📁 [THUMBNAIL-GENERATOR] Directorio creado con permisos 775: {$projectPath}");
             }
         }
 
@@ -364,17 +351,14 @@ class ThumbnailGeneratorService
                 $fullPath = storage_path('app/' . $sidebarPath);
                 if (!file_exists($fullPath)) {
                     mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
-                    Log::info("📁 [THUMBNAIL-GENERATOR] Directorio sidebar creado con permisos 775: {$sidebarPath}");
                 }
             }
             
             // Guardar como PNG para sidebar usando Storage::put
             $image->save(storage_path("app/{$sidebarFullPath}"));
             
-            Log::info("✅ [THUMBNAIL-SERVICE] Thumbnail sidebar generado: {$filename}");
             
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL-SERVICE] Error generando thumbnail sidebar: " . $e->getMessage());
             // No lanzar excepción, solo log del error
         }
     }
@@ -454,7 +438,6 @@ class ThumbnailGeneratorService
             $this->tempFiles[] = $tempPath;
             return $tempPath;
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL-SERVICE] Error procesando base64: " . $e->getMessage());
             return null;
         }
     }
@@ -595,24 +578,20 @@ class ThumbnailGeneratorService
     public function saveBase64AsFile(CanvasProject $project, $pageId, $thumbnailData)
     {
         try {
-            Log::info("🖼️ [THUMBNAIL-SERVICE] Guardando thumbnail base64 como archivo para página: {$pageId}");
 
             // Validar formato base64
             if (!str_starts_with($thumbnailData, 'data:image/')) {
-                Log::error("❌ [THUMBNAIL-SERVICE] Datos no son base64 válidos");
                 return null;
             }
 
             // Extraer información del base64
             $parts = explode(';base64,', $thumbnailData);
             if (count($parts) !== 2) {
-                Log::error("❌ [THUMBNAIL-SERVICE] Formato base64 inválido");
                 return null;
             }
 
             $imageData = base64_decode($parts[1]);
             if ($imageData === false) {
-                Log::error("❌ [THUMBNAIL-SERVICE] Error decodificando base64");
                 return null;
             }
 
@@ -637,7 +616,6 @@ class ThumbnailGeneratorService
                 $fullPath = storage_path('app/' . $thumbnailsDir);
                 if (!file_exists($fullPath)) {
                     mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
-                    Log::info("📁 [THUMBNAIL-GENERATOR] Directorio de miniaturas creado con permisos 775: {$thumbnailsDir}");
                 }
             }
 
@@ -647,15 +625,12 @@ class ThumbnailGeneratorService
             if ($success) {
                 $encodedPath = base64_encode($filePath);
                 $thumbnailUrl = "/api/canvas/serve-image/{$encodedPath}";
-                Log::info("✅ [THUMBNAIL-SERVICE] Thumbnail guardado: {$thumbnailUrl}");
                 return $thumbnailUrl;
             } else {
-                Log::error("❌ [THUMBNAIL-SERVICE] Error guardando archivo");
                 return null;
             }
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL-SERVICE] Error guardando thumbnail: " . $e->getMessage());
             return null;
         }
     }

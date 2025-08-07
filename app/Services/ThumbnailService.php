@@ -15,7 +15,6 @@ class ThumbnailService
         try {
             // Validar que es base64 válido
             if (!preg_match('/^data:image\/(\w+);base64,/', $base64Data, $matches)) {
-                Log::warning("ThumbnailService: Base64 inválido para página {$pageId}");
                 return null;
             }
 
@@ -24,7 +23,6 @@ class ThumbnailService
             $decodedImage = base64_decode($base64String);
 
             if ($decodedImage === false) {
-                Log::warning("ThumbnailService: Error decodificando base64 para página {$pageId}");
                 return null;
             }
 
@@ -37,7 +35,6 @@ class ThumbnailService
                 $fullPath = storage_path('app/' . $projectPath);
                 if (!file_exists($fullPath)) {
                     mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
-                    Log::info("📁 [THUMBNAIL-SERVICE] Directorio creado con permisos 775: {$projectPath}");
                 }
             }
             
@@ -58,12 +55,11 @@ class ThumbnailService
                 $timestamp = time();
 
                 $url = "/api/canvas/serve-image/{$encodedPath}?v={$timestamp}";
-                Log::info("ThumbnailService: Thumbnail guardado exitosamente: {$pdfFilename}");
                   return "/storage/images/thumbnails/{$projectId}/{$thumbnailFilename}?v={$timestamp}";
             }
 
         } catch (\Exception $e) {
-            Log::error("ThumbnailService: Error guardando thumbnail: " . $e->getMessage());
+           // Log::error("ThumbnailService: Error guardando thumbnail: " . $e->getMessage());
         }
 
         return null;
@@ -85,10 +81,7 @@ class ThumbnailService
             $thumbnailsData = json_decode($thumbnailsData, true);
         }
 
-        Log::info("📸 [THUMBNAIL-SERVICE] Procesando thumbnails para proyecto {$projectId}", [
-            'thumbnails_recibidos' => array_keys($thumbnailsData ?? []),
-            'total_thumbnails' => count($thumbnailsData ?? [])
-        ]);
+      
 
         if (!is_array($thumbnailsData)) {
             return [];
@@ -124,10 +117,9 @@ class ThumbnailService
             $thumbnailPath = "images/thumbnails/{$projectId}";
             if (Storage::exists($thumbnailPath)) {
                 Storage::deleteDirectory($thumbnailPath);
-                Log::info("ThumbnailService: Thumbnails eliminados para proyecto {$projectId}");
             }
         } catch (\Exception $e) {
-            Log::error("ThumbnailService: Error eliminando thumbnails: " . $e->getMessage());
+           // Log::error("ThumbnailService: Error eliminando thumbnails: " . $e->getMessage());
         }
     }
 
@@ -211,17 +203,14 @@ class ThumbnailService
                 $fullPath = storage_path('app/' . $sidebarPath);
                 if (!file_exists($fullPath)) {
                     mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
-                    Log::info("📁 [THUMBNAIL-SERVICE] Directorio sidebar creado con permisos 775: {$sidebarPath}");
                 }
             }
             
             // Guardar como PNG para sidebar usando Storage::put
             $image->save(storage_path("app/{$sidebarFullPath}"));
             
-            Log::info("✅ [THUMBNAIL-SERVICE] Thumbnail sidebar generado: {$filename}");
             
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL-SERVICE] Error generando thumbnail sidebar: " . $e->getMessage());
             // No lanzar excepción, solo log del error
         }
     }
@@ -236,10 +225,7 @@ class ThumbnailService
         try {
             $projectPath = "images/thumbnails/{$projectId}";
             
-            Log::info("📸 [THUMBNAIL-SERVICE] Cargando thumbnails existentes para proyecto {$projectId}", [
-                'path' => $projectPath,
-                'pages_count' => count($pages)
-            ]);
+           
             
             if (Storage::exists($projectPath)) {
                 // Buscar archivos de thumbnail para cada página
@@ -248,13 +234,7 @@ class ThumbnailService
                     $thumbnailFilename = "page-{$index}-thumbnail.png";
                     $thumbnailPath = "{$projectPath}/{$thumbnailFilename}";
                     
-                    Log::info("📸 [THUMBNAIL-SERVICE] Verificando thumbnail", [
-                        'page_id' => $pageId,
-                        'index' => $index,
-                        'filename' => $thumbnailFilename,
-                        'path' => $thumbnailPath,
-                        'exists' => Storage::exists($thumbnailPath)
-                    ]);
+                  
                     
                     if (Storage::exists($thumbnailPath)) {
                         // Generar URL para el thumbnail con timestamp para evitar cache
@@ -262,20 +242,14 @@ class ThumbnailService
                         $timestamp = Storage::lastModified($thumbnailPath);
                         $thumbnails[$pageId] = "/storage/images/thumbnails/{$projectId}/{$thumbnailFilename}?v={$timestamp}";
                           
-                        Log::info("📸 [THUMBNAIL-SERVICE] Thumbnail encontrado", [
-                            'page_id' => $pageId,
-                            'url' => $thumbnails[$pageId]
-                        ]);
+                       
                     }
                 }
             }
             
-            Log::info("📸 [THUMBNAIL-SERVICE] Thumbnails cargados", [
-                'thumbnails_encontrados' => array_keys($thumbnails),
-                'total_thumbnails' => count($thumbnails)
-            ]);
+          
         } catch (\Exception $e) {
-            Log::error("ThumbnailService: Error cargando thumbnails existentes: " . $e->getMessage());
+           // Log::error("ThumbnailService: Error cargando thumbnails existentes: " . $e->getMessage());
         }
         
         return $thumbnails;

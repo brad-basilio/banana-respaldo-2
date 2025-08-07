@@ -52,11 +52,7 @@ class ProjectSaveController extends Controller
                 $jsonData = json_encode($compressedData);
                 $dataSize = strlen($jsonData);
 
-                Log::warning("Auto-save: Datos comprimidos para proyecto {$projectId}", [
-                    'original_size' => strlen(json_encode($optimizedData)),
-                    'compressed_size' => $dataSize,
-                    'max_safe_size' => $maxSafeSize
-                ]);
+               
 
                 // Si aún está muy grande, rechazar
                 if ($dataSize > $maxSafeSize) {
@@ -69,13 +65,10 @@ class ProjectSaveController extends Controller
             // Procesar thumbnails si están presentes
             $processedThumbnails = [];
             if (!empty($thumbnails)) {
-                Log::info("🖼️ [THUMBNAIL] Procesando thumbnails para proyecto {$projectId}", [
-                    'thumbnail_count' => count($thumbnails)
-                ]);
+                
                 
                 $processedThumbnails = ThumbnailService::processThumbnails($thumbnails, $projectId);
                 
-                Log::info("✅ [THUMBNAIL] Thumbnails procesados para auto-save: " . count($processedThumbnails));
             }
 
             // Usar el modelo Eloquent para encontrar el proyecto
@@ -94,12 +87,7 @@ class ProjectSaveController extends Controller
 
             $project->save();
 
-            Log::info("Auto-save exitoso para proyecto {$projectId}", [
-                'project_id' => $projectId,
-                'data_size_kb' => round($dataSize / 1024, 2),
-                'pages_count' => count($optimizedData['pages'] ?? []),
-                'optimization_applied' => $dataSize !== strlen(json_encode($designData))
-            ]);
+         
 
             return response()->json([
                 'success' => true,
@@ -113,12 +101,7 @@ class ProjectSaveController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error en auto-save para proyecto {$projectId}: " . $e->getMessage(), [
-                'project_id' => $projectId,
-                'error' => $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'trace' => $e->getTraceAsString()
-            ]);
+         
 
             return response()->json([
                 'success' => false,
@@ -157,13 +140,10 @@ class ProjectSaveController extends Controller
             // Procesar thumbnails si están presentes
             $processedThumbnails = [];
             if (!empty($thumbnails)) {
-                Log::info("🖼️ [THUMBNAIL] Procesando thumbnails para guardado manual proyecto {$projectId}", [
-                    'thumbnail_count' => count($thumbnails)
-                ]);
+             
                 
                 $processedThumbnails = ThumbnailService::processThumbnails($thumbnails, $projectId);
                 
-                Log::info("✅ [THUMBNAIL] Thumbnails procesados para guardado manual: " . count($processedThumbnails));
             }
 
             // Preparar datos para guardar
@@ -186,11 +166,7 @@ class ProjectSaveController extends Controller
                 ->where('id', $projectId)
                 ->update($saveData);
 
-            Log::info("Guardado manual exitoso para proyecto {$projectId}", [
-                'project_id' => $projectId,
-                'data_size' => strlen(json_encode($processedData)),
-                'pages_count' => count($processedData['pages'] ?? [])
-            ]);
+
 
             return response()->json([
                 'success' => true,
@@ -203,11 +179,7 @@ class ProjectSaveController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error en guardado manual para proyecto {$projectId}: " . $e->getMessage(), [
-                'project_id' => $projectId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+        
 
             return response()->json([
                 'success' => false,
@@ -254,7 +226,6 @@ class ProjectSaveController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error cargando progreso para proyecto {$projectId}: " . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -296,13 +267,7 @@ class ProjectSaveController extends Controller
                 chmod($fullPath, 0777);
             }
 
-            Log::info("Imagen subida exitosamente", [
-                'project_id' => $projectId,
-                'element_id' => $elementId,
-                'filename' => $filename,
-                'uuid' => $uuid,
-                'size' => $imageFile->getSize()
-            ]);
+          
 
             return response()->json([
                 'success' => true,
@@ -314,7 +279,6 @@ class ProjectSaveController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error subiendo imagen: " . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -357,17 +321,10 @@ class ProjectSaveController extends Controller
                             $element['content'] = "/api/canvas_project/media/{$filename}";
                             $element['is_uploaded'] = true;
                             
-                            Log::info("Imagen base64 procesada", [
-                                'element_id' => $element['id'],
-                                'project_id' => $projectId,
-                                'filename' => $filename
-                            ]);
+                          
                             
                         } catch (\Exception $e) {
-                            Log::warning("Error procesando imagen base64", [
-                                'element_id' => $element['id'],
-                                'error' => $e->getMessage()
-                            ]);
+                         
                             // Mantener base64 como fallback
                             $element['upload_error'] = $e->getMessage();
                         }
@@ -451,10 +408,7 @@ class ProjectSaveController extends Controller
                             $element['content'] = 'data:image/png;base64,placeholder'; // Placeholder pequeño
                             $element['needs_upload'] = true;
 
-                            Log::info("Auto-save: Imagen grande optimizada", [
-                                'element_id' => $element['id'] ?? 'unknown',
-                                'original_size' => $element['content_size']
-                            ]);
+                        
                         }
                     }
                 }

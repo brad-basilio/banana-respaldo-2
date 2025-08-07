@@ -25,7 +25,6 @@ class ThumbnailController extends Controller
     public function generateProjectThumbnails(Request $request, $projectId)
     {
         try {
-            Log::info("🖼️ [THUMBNAIL] Iniciando generación de thumbnails para proyecto: {$projectId}");
 
             $project = CanvasProject::findOrFail($projectId);
             
@@ -58,7 +57,6 @@ class ThumbnailController extends Controller
                 $config
             );
 
-            Log::info("✅ [THUMBNAIL] Generados " . count($thumbnails) . " thumbnails");
 
             return response()->json([
                 'success' => true,
@@ -69,7 +67,6 @@ class ThumbnailController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL] Error: " . $e->getMessage());
             return response()->json(['error' => 'Error generando thumbnails'], 500);
         }
     }
@@ -80,7 +77,6 @@ class ThumbnailController extends Controller
     public function generatePageThumbnail(Request $request, $projectId, $pageIndex)
     {
         try {
-            Log::info("🖼️ [THUMBNAIL] Generando thumbnail para página {$pageIndex}");
 
             $project = CanvasProject::findOrFail($projectId);
             
@@ -120,7 +116,6 @@ class ThumbnailController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL] Error: " . $e->getMessage());
             return response()->json(['error' => 'Error generando thumbnail'], 500);
         }
     }
@@ -142,7 +137,6 @@ class ThumbnailController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL] Error obteniendo thumbnails: " . $e->getMessage());
             return response()->json(['error' => 'Error obteniendo thumbnails'], 500);
         }
     }
@@ -153,7 +147,6 @@ class ThumbnailController extends Controller
     public function saveThumbnailsAsFiles(Request $request, $projectId)
     {
         try {
-            Log::info("🖼️ [THUMBNAIL] Guardando thumbnails como archivos para proyecto: {$projectId}");
 
             $project = CanvasProject::findOrFail($projectId);
             $thumbnails = $request->get('thumbnails', []);
@@ -174,7 +167,6 @@ class ThumbnailController extends Controller
                 
                 // Validar que sea base64
                 if (!str_starts_with($thumbnailData, 'data:image/')) {
-                    Log::warning("⚠️ [THUMBNAIL] Thumbnail no es base64 para página: {$pageId}");
                     continue;
                 }
                 
@@ -187,9 +179,8 @@ class ThumbnailController extends Controller
                         'thumbnail_url' => $thumbnailUrl,
                         'status' => 'saved'
                     ];
-                    Log::info("✅ [THUMBNAIL] Thumbnail guardado para página {$pageId}: {$thumbnailUrl}");
                 } else {
-                    Log::error("❌ [THUMBNAIL] Error guardando thumbnail para página: {$pageId}");
+                  //  Log::error("❌ [THUMBNAIL] Error guardando thumbnail para página: {$pageId}");
                 }
             }
 
@@ -201,7 +192,6 @@ class ThumbnailController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL] Error guardando thumbnails: " . $e->getMessage());
             return response()->json(['error' => 'Error guardando thumbnails como archivos'], 500);
         }
     }
@@ -223,7 +213,6 @@ class ThumbnailController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL] Error eliminando thumbnails: " . $e->getMessage());
             return response()->json(['error' => 'Error eliminando thumbnails'], 500);
         }
     }
@@ -239,14 +228,11 @@ class ThumbnailController extends Controller
             // Cargar thumbnails existentes usando ThumbnailService
             $existingThumbnails = ThumbnailService::loadExistingThumbnails($projectId, $pages);
             
-            Log::info("📸 [THUMBNAIL] Thumbnails existentes cargados para proyecto {$projectId}", [
-                'count' => count($existingThumbnails)
-            ]);
+          
             
             return response()->json($existingThumbnails);
             
         } catch (\Exception $e) {
-            Log::error("❌ [THUMBNAIL] Error cargando thumbnails existentes: " . $e->getMessage());
             return response()->json([], 500);
         }
     }
