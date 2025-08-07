@@ -222,7 +222,7 @@ class ProjectPDFController extends Controller
                 $fullPath = storage_path('app/' . $decodedPath);
 
                 if (file_exists($fullPath)) {
-                    return $this->imageService->processImageForPDF($fullPath);
+                    return $this->imageService->processImageForPDF($fullPath, 4800, 95); // Máxima calidad para PDF
                 }
             }
             
@@ -230,7 +230,7 @@ class ProjectPDFController extends Controller
             if (Str::startsWith($imagePath, '/storage/')) {
                 $fullPath = public_path($imagePath);
                 if (file_exists($fullPath)) {
-                    return $this->imageService->processImageForPDF($fullPath);
+                    return $this->imageService->processImageForPDF($fullPath, 4800, 95); // Máxima calidad para PDF
                 }
             }
             

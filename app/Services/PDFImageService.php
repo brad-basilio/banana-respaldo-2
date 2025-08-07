@@ -14,7 +14,7 @@ class PDFImageService
      * Soporte mejorado para WebP, JPEG, PNG y GIF
      * DEVUELVE LA RUTA DEL ARCHIVO, NO EL CONTENIDO BINARIO
      */
-    public function processImageForPDF($imagePath, $maxWidth = 2400, $quality = 85)
+    public function processImageForPDF($imagePath, $maxWidth = 4800, $quality = 95)
     {
         try {
             if (!file_exists($imagePath)) {
@@ -296,7 +296,7 @@ class PDFImageService
             
         } catch (\Exception $e) {
             Log::error("❌ [PDF-IMAGE-COVER] Error: " . $e->getMessage());
-            return $this->processImageForPDF($imagePath, 2400, $quality); // Fallback
+            return $this->processImageForPDF($imagePath, 4800, $quality); // Fallback con alta calidad
         }
     }
 }
