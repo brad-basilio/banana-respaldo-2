@@ -27,11 +27,13 @@ const HTML2CANVAS_CONFIG = {
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
-// ⚡ OPTIMIZACIÓN: Sistema de logging inteligente
+// ⚡ OPTIMIZACIÓN VPS: Sistema de logging inteligente y optimizado
 const isDev = process.env.NODE_ENV === 'development';
+const isVPS = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
 const log = isDev ? console.log : () => {};
 const warn = isDev ? console.warn : () => {};
 const error = console.error; // Errores siempre visibles
+const logVPS = isVPS ? () => {} : console.log; // Logs especiales que solo aparecen en desarrollo
 
 // Estilos personalizados para Driver.js con tema BananaLab
 const driverStyles = `
@@ -341,7 +343,7 @@ const calculateCellDimensions = (layout, cellIndex, workspaceDimensions) => {
     const cellWidth = Math.floor(availableWidth / cols);
     const cellHeight = Math.floor(availableHeight / rows);
 
-    console.log(`🔧 [CELL-DIMENSIONS] Layout: ${layout.id}, Celda: ${cellIndex}, Grid: ${cols}x${rows}, Dims: ${cellWidth}x${cellHeight}`);
+    logVPS(`🔧 [CELL-DIMENSIONS] Layout: ${layout.id}, Celda: ${cellIndex}, Grid: ${cols}x${rows}, Dims: ${cellWidth}x${cellHeight}`);
 
     return {
         width: cellWidth,
@@ -609,11 +611,11 @@ export default function EditorLibro() {
 
                 const data = await response.json();
 
-                console.log('📊 ===== DATOS DEL PROYECTO CARGADOS =====');
-                console.log('🔍 PROJECT ID desde URL:', projectId);
-                console.log('🔍 PROJECT DATA completo:', data);
-                console.log('🔍 PROJECT DATA ID:', data?.project?.id);
-                console.log('========================================');
+                log('📊 ===== DATOS DEL PROYECTO CARGADOS =====');
+                log('🔍 PROJECT ID desde URL:', projectId);
+                logVPS('🔍 PROJECT DATA completo:', data); // 🚀 Solo en desarrollo - puede ser objeto grande
+                log('🔍 PROJECT DATA ID:', data?.project?.id);
+                log('========================================');
 
                 // Establecer los datos en el estado
                 setProjectData(data.project);
@@ -667,19 +669,19 @@ export default function EditorLibro() {
 
     // ✅ MONITOREO: Sistema de filtros corregido
     useEffect(() => {
-        console.log('✅ [FILTERS] Tab actual:', activeTab);
+        logVPS('✅ [FILTERS] Tab actual:', activeTab);
     }, [activeTab]);
 
     // 🛡️ Función controlada para cambiar activeTab con logging
     const setActiveTabControlled = useCallback((newTab, reason = 'manual') => {
-        console.log(`🔄 [ACTIVE_TAB] Cambiando de "${activeTab}" a "${newTab}" - Razón: ${reason}`);
+        logVPS(`🔄 [ACTIVE_TAB] Cambiando de "${activeTab}" a "${newTab}" - Razón: ${reason}`);
         if (newTab === 'filters' && reason !== 'manual') {
             console.warn('🚨 [ACTIVE_TAB] Cambio automático a filters bloqueado!');
             return;
         }
         setActiveTab(newTab);
     }, [activeTab]);
-    console.log('🎉 [FILTERS FIX] Editor cargado - Fix del problema de filtros ACTIVADO');
+    log('🎉 [FILTERS FIX] Editor cargado - Fix del problema de filtros ACTIVADO');
     
     // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails
     window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
@@ -694,7 +696,7 @@ export default function EditorLibro() {
     useEffect(() => {
         // Exponer función de emergencia para forzar regeneración desde cualquier parte
         window.forceRegenerateAllThumbnails = () => {
-            console.log('💣 [EMERGENCIA-GLOBAL] Forzando regeneración de TODOS los thumbnails');
+            logVPS('💣 [EMERGENCIA-GLOBAL] Forzando regeneración de TODOS los thumbnails');
             // Limpiar caché completamente
             window.thumbnailCache = {};
             
@@ -709,16 +711,16 @@ export default function EditorLibro() {
             });
             
             // Regenerar el thumbnail actual
-            console.log('1️⃣ Regenerando página actual');
+            logVPS('1️⃣ Regenerando página actual');
             generateCurrentPageThumbnail(true).then(() => {
-                console.log('✅ Primera regeneración completa');
+                logVPS('✅ Primera regeneración completa');
                 
                 // Bloquear cualquier regeneración automática por 5 segundos
                 window.BLOCK_AUTO_REGENERATION = true;
                 
                 // Regeneración secundaria después de un breve retraso
                 setTimeout(() => {
-                    console.log('2️⃣ Ejecutando segunda regeneración forzada');
+                    logVPS('2️⃣ Ejecutando segunda regeneración forzada');
                     if (window.forceRegenerateThumbnail) {
                         window.forceRegenerateThumbnail();
                     }
@@ -729,7 +731,7 @@ export default function EditorLibro() {
                     // Desbloquear después de 5 segundos
                     setTimeout(() => {
                         window.BLOCK_AUTO_REGENERATION = false;
-                        console.log('🔓 Regeneración automática desbloqueada');
+                        logVPS('🔓 Regeneración automática desbloqueada');
                     }, 5000);
                 }, 200);
             }).catch(error => {
@@ -738,7 +740,7 @@ export default function EditorLibro() {
         };
         
         // Registrar método para uso desde consola
-        console.log('📢 Puedes forzar la regeneración de thumbnails usando window.forceRegenerateAllThumbnails()');
+        log('📢 Puedes forzar la regeneración de thumbnails usando window.forceRegenerateAllThumbnails()');
     }, [pages]);
 
     // �️ SISTEMA DE PROTECCIÓN DE THUMBNAILS CON FILTROS
@@ -746,19 +748,19 @@ export default function EditorLibro() {
         // Inicializar sistema de protección global
         if (!window._protectedThumbnails) {
             window._protectedThumbnails = new Set();
-            console.log('🛡️ [PROTECTION SYSTEM] Sistema de protección de thumbnails inicializado');
+            log('🛡️ [PROTECTION SYSTEM] Sistema de protección de thumbnails inicializado');
         }
         
         // Función para marcar thumbnail como protegido
         window.protectThumbnail = (pageId) => {
             window._protectedThumbnails.add(pageId);
-            console.log(`🛡️ [PROTECT] Thumbnail ${pageId} marcado como protegido`);
+            logVPS(`🛡️ [PROTECT] Thumbnail ${pageId} marcado como protegido`);
         };
         
         // Función para desproteger thumbnail
         window.unprotectThumbnail = (pageId) => {
             window._protectedThumbnails.delete(pageId);
-            console.log(`🔓 [UNPROTECT] Thumbnail ${pageId} desprotegido`);
+            logVPS(`🔓 [UNPROTECT] Thumbnail ${pageId} desprotegido`);
         };
         
         // Función para verificar si está protegido
@@ -769,12 +771,12 @@ export default function EditorLibro() {
         // 🚫 FUNCIÓN PARA BLOQUEAR REGENERACIONES AUTOMÁTICAS
         window.blockAutomaticRegeneration = () => {
             window._blockAutoRegeneration = true;
-            console.log('🚫 [BLOCK AUTO] Regeneraciones automáticas BLOQUEADAS');
+            logVPS('🚫 [BLOCK AUTO] Regeneraciones automáticas BLOQUEADAS');
         };
         
         window.unblockAutomaticRegeneration = () => {
             window._blockAutoRegeneration = false;
-            console.log('✅ [UNBLOCK AUTO] Regeneraciones automáticas DESBLOQUEADAS');
+            logVPS('✅ [UNBLOCK AUTO] Regeneraciones automáticas DESBLOQUEADAS');
         };
         
         window.isAutoRegenerationBlocked = () => {
@@ -2135,27 +2137,36 @@ export default function EditorLibro() {
             const hasLayoutCells = currentPageData?.cells && currentPageData.cells.length > 0;
             const isLayoutMode = hasLayoutCells && workspaceElement.classList.contains('grid');
             
-            console.log(`🔧 [CAPTURE-MODE] Página ${currentPage}: ${isLayoutMode ? 'LAYOUT' : 'LIBRE'}, Celdas: ${currentPageData?.cells?.length || 0}`);
+            logVPS(`🔧 [CAPTURE-MODE] Página ${currentPage}: ${isLayoutMode ? 'LAYOUT' : 'LIBRE'}, Celdas: ${currentPageData?.cells?.length || 0}`);
 
-            // 🛠️ LAYOUT MODE: Esperar renderizado del grid antes de capturar
+            // 🛠️ LAYOUT MODE: Esperar renderizado del grid antes de capturar (OPTIMIZADO)
             if (isLayoutMode) {
-                console.log('🔧 [LAYOUT-CAPTURE] Esperando renderizado completo del grid...');
+                // 🚀 OPTIMIZACIÓN VPS: Reducir logs y timing para producción
+                const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
                 
-                // Forzar un reflow del grid para asegurar que esté completamente renderizado
+                if (!isProduction) {
+                    console.log('🔧 [LAYOUT-CAPTURE] Esperando renderizado completo del grid...');
+                }
+                
+                // 🚀 OPTIMIZACIÓN: Un solo requestAnimationFrame en lugar de doble
                 await new Promise(resolve => {
                     requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            // Verificar que todas las celdas estén renderizadas
-                            const cells = workspaceElement.querySelectorAll('[data-cell-id]');
+                        // Verificación mínima en producción
+                        const cells = workspaceElement.querySelectorAll('[data-cell-id]');
+                        
+                        if (!isProduction) {
                             console.log(`🔧 [LAYOUT-CAPTURE] Celdas encontradas en DOM: ${cells.length}`);
                             
-                            cells.forEach((cell, idx) => {
-                                const rect = cell.getBoundingClientRect();
-                                console.log(`🔧 [LAYOUT-CAPTURE] Celda ${idx}: ${rect.width}x${rect.height} en posición (${rect.left}, ${rect.top})`);
-                            });
-                            
-                            resolve();
-                        });
+                            // Solo mostrar logs detallados en desarrollo
+                            if (cells.length <= 4) { // Limitar logs para layouts complejos
+                                cells.forEach((cell, idx) => {
+                                    const rect = cell.getBoundingClientRect();
+                                    console.log(`🔧 [LAYOUT-CAPTURE] Celda ${idx}: ${rect.width}x${rect.height}`);
+                                });
+                            }
+                        }
+                        
+                        resolve();
                     });
                 });
             }
@@ -2163,7 +2174,11 @@ export default function EditorLibro() {
             // Configuración según el tipo de captura (thumbnail vs PDF)
             const isPDF = options.type === 'pdf';
             // �️ IMPRESIÓN PROFESIONAL: Escalado optimizado para 300 DPI
-            const scaleFactor = isPDF ? 11.81 : 3; // 11.81x para 300 DPI exacto (300/25.4 ≈ 11.81), 3x para thumbnails
+            // 🚀 OPTIMIZACIÓN VPS: Factor de escala adaptivo según entorno
+            const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
+            const scaleFactor = isPDF ? 
+                11.81 : // 11.81x para PDF 300 DPI exacto (300/25.4 ≈ 11.81)
+                (isProduction ? 2 : 3); // 2x en VPS para ahorrar memoria, 3x en local
             const quality = 1.0; // Calidad máxima sin compresión
 
             // CORRECCIÓN THUMBNAIL: Obtener las dimensiones reales del workspace de la BD
@@ -2178,9 +2193,9 @@ export default function EditorLibro() {
             }
 
 
-            // 🖨️ OPCIONES PROFESIONALES: Configuración especial para PDF vs Thumbnails
+            // 🖨️ OPCIONES PROFESIONALES: Configuración especial para PDF vs Thumbnails (OPTIMIZADO VPS)
             const captureOptions = {
-                scale: scaleFactor, // 11.81x para PDF 300 DPI exacto, 3x para thumbnails
+                scale: scaleFactor,
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: workspaceBackground,
@@ -2190,14 +2205,16 @@ export default function EditorLibro() {
                 y: 0,
                 scrollX: 0,
                 scrollY: 0,
-                // 🔧 LAYOUT MODE: Configuración especial para layouts con grid CSS
+                // � OPTIMIZACIÓN VPS: Reducir opciones pesadas en producción
                 ...(isLayoutMode && {
                     windowWidth: workspaceDimensions.width,
                     windowHeight: workspaceDimensions.height,
                     ignoreElements: (el) => {
-                        // Preservar filtros si es necesario
+                        // 🚀 OPTIMIZACIÓN: Logs solo en desarrollo
                         if (el.style && el.style.filter && options.preserveFilters) {
-                            console.log('🎭 [PRESERVE-FILTER] Preservando elemento con filtro en layout:', el.id);
+                            if (!isProduction) {
+                                console.log('🎭 [PRESERVE-FILTER] Preservando filtro en layout:', el.id);
+                            }
                             return false;
                         }
                         return el.classList?.contains('exclude-from-capture');
@@ -2206,9 +2223,11 @@ export default function EditorLibro() {
                 // 🎭 MODO LIBRE: Configuración para elementos con posicionamiento absoluto
                 ...(!isLayoutMode && {
                     ignoreElements: (el) => {
-                        // Nunca ignorar elementos con filtros aplicados
+                        // 🚀 OPTIMIZACIÓN: Logs solo en desarrollo
                         if (el.style && el.style.filter && options.preserveFilters) {
-                            console.log('🎭 [PRESERVE-FILTER] Preservando elemento con filtro:', el.id);
+                            if (!isProduction) {
+                                console.log('🎭 [PRESERVE-FILTER] Preservando filtro:', el.id);
+                            }
                             return false;
                         }
                         return el.classList?.contains('exclude-from-capture');
@@ -2217,14 +2236,14 @@ export default function EditorLibro() {
                 // 🖨️ Configuración específica para PDF de impresión profesional
                 foreignObjectRendering: (isPDF || isLayoutMode) ? true : false, // Mejor renderizado para PDF y LAYOUTS
                 removeContainer: false,
-                logging: isLayoutMode ? true : false, // Activar logs para layouts para debug
-                imageTimeout: isPDF ? 60000 : (isLayoutMode ? 30000 : 15000), // Más tiempo para layouts complejos
-                pixelRatio: isPDF ? 3 : (window.devicePixelRatio || 1), // Triple pixel ratio para PDF
+                logging: isLayoutMode && !isProduction ? true : false, // 🚀 OPTIMIZACIÓN: Solo logs en desarrollo
+                imageTimeout: isPDF ? 60000 : (isLayoutMode ? (isProduction ? 15000 : 30000) : 15000), // 🚀 Timeouts más cortos en VPS
+                pixelRatio: isPDF ? 3 : (isProduction ? 1 : (window.devicePixelRatio || 1)), // 🚀 Reducir pixelRatio en VPS
                 // 🔧 LAYOUT MODE: Configuración especial para CSS Grid
                 ...(isLayoutMode && {
                     allowTaint: true,
                     useCORS: true,
-                    letterRendering: true, // Mejor renderizado de texto en grids
+                    letterRendering: !isProduction, // 🚀 Simplificar renderizado en VPS
                     ignoreElements: (el) => {
                         // En layouts, ser más permisivo con elementos
                         return el.classList?.contains('exclude-from-capture') || 
@@ -2318,13 +2337,19 @@ export default function EditorLibro() {
                                 clonedPageElement.style.gridTemplateRows = gridStyle.gridTemplateRows;
                                 clonedPageElement.style.gap = gridStyle.gap;
                                 
-                                console.log(`🔧 [THUMBNAIL-LAYOUT] Grid aplicado: cols=${gridStyle.gridTemplateColumns}, rows=${gridStyle.gridTemplateRows}, gap=${gridStyle.gap}`);
+                                if (!isProduction) {
+                                    console.log(`🔧 [THUMBNAIL-LAYOUT] Grid aplicado: cols=${gridStyle.gridTemplateColumns}, rows=${gridStyle.gridTemplateRows}, gap=${gridStyle.gap}`);
+                                }
                                 
                                 const cells = clonedPageElement.querySelectorAll('[data-cell-id]');
-                                console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando ${cells.length} celdas...`);
+                                if (!isProduction) {
+                                    console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando ${cells.length} celdas...`);
+                                }
                                 
                                 cells.forEach((cell, idx) => {
-                                    console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando celda ${idx}:`, cell.id);
+                                    if (!isProduction) {
+                                        console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando celda ${idx}:`, cell.id);
+                                    }
                                     
                                     // Asegurar posicionamiento correcto de la celda
                                     const originalCell = workspaceElement.querySelector(`[data-cell-id="${cell.getAttribute('data-cell-id')}"]`);
@@ -2338,7 +2363,9 @@ export default function EditorLibro() {
                                     // Procesar imágenes dentro de cada celda
                                     const images = cell.querySelectorAll('img, [data-element-type="image"]');
                                     images.forEach(img => {
-                                        console.log(`🔧 [THUMBNAIL-LAYOUT] Ajustando imagen en celda ${idx}:`, img);
+                                        if (!isProduction) {
+                                            console.log(`🔧 [THUMBNAIL-LAYOUT] Ajustando imagen en celda ${idx}:`, img);
+                                        }
                                         // Las imágenes en layouts deben respetar el contenedor de la celda
                                         if (img.style.position === 'absolute') {
                                             // Mantener posicionamiento absoluto pero relativo a la celda
@@ -2618,45 +2645,86 @@ export default function EditorLibro() {
             };
 
 
-            // 🖨️ CAPTURA PROFESIONAL: html2canvas con configuración optimizada
-            const canvas = await html2canvas(workspaceElement, captureOptions);
+            // 🖨️ CAPTURA PROFESIONAL: html2canvas con manejo de memoria optimizado
+            let canvas = null;
+            let dataUrl = '';
+            
+            try {
+                if (!isProduction) {
+                    console.log('🎨 [HTML2CANVAS] Iniciando captura:', captureOptions);
+                }
+                
+                canvas = await html2canvas(workspaceElement, captureOptions);
 
-            // 🖨️ POST-PROCESAMIENTO para PDF de impresión profesional
-            if (isPDF && canvas) {
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    // Mejorar el contraste y nitidez para impresión
-                    ctx.imageSmoothingEnabled = false; // Desactivar suavizado para máxima nitidez
-                    ctx.imageSmoothingQuality = 'high';
+                // 🖨️ POST-PROCESAMIENTO para PDF de impresión profesional
+                if (isPDF && canvas) {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        // Mejorar el contraste y nitidez para impresión
+                        ctx.imageSmoothingEnabled = false; // Desactivar suavizado para máxima nitidez
+                        ctx.imageSmoothingQuality = 'high';
 
-                    // Aplicar filtros de mejora de calidad si es necesario
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
+                        // Aplicar filtros de mejora de calidad si es necesario
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const data = imageData.data;
 
-                    // Ligero aumento de contraste para impresión
-                    for (let i = 0; i < data.length; i += 4) {
-                        // Ajuste sutil de contraste (factor 1.05)
-                        data[i] = Math.min(255, data[i] * 1.05);     // R
-                        data[i + 1] = Math.min(255, data[i + 1] * 1.05); // G
-                        data[i + 2] = Math.min(255, data[i + 2] * 1.05); // B
-                        // Alpha se mantiene igual (data[i + 3])
+                        // Ligero aumento de contraste para impresión
+                        for (let i = 0; i < data.length; i += 4) {
+                            // Ajuste sutil de contraste (factor 1.05)
+                            data[i] = Math.min(255, data[i] * 1.05);     // R
+                            data[i + 1] = Math.min(255, data[i + 1] * 1.05); // G
+                            data[i + 2] = Math.min(255, data[i + 2] * 1.05); // B
+                            // Alpha se mantiene igual (data[i + 3])
+                        }
+
+                        ctx.putImageData(imageData, 0, 0);
                     }
+                }
 
-                    ctx.putImageData(imageData, 0, 0);
+                if (!canvas) {
+                    throw new Error('html2canvas no devolvió un canvas válido para el elemento de página');
+                }
+
+                // CORRECCIÓN THUMBNAIL: Verificar que el canvas tenga las dimensiones correctas del workspace
+                if (canvas.width === 0 || canvas.height === 0) {
+                    throw new Error('Canvas del elemento de página tiene dimensiones inválidas');
+                }
+
+                // Convertir a dataURL con la calidad apropiada
+                dataUrl = canvas.toDataURL('image/png', quality);
+                
+                if (!isProduction) {
+                    console.log('✅ [CAPTURA-EXITOSA] Imagen generada:', {
+                        width: canvas.width,
+                        height: canvas.height,
+                        sizeKB: Math.round(dataUrl.length / 1024)
+                    });
+                }
+                
+            } catch (error) {
+                console.error('❌ [ERROR-CAPTURA]:', error);
+                throw error;
+            } finally {
+                // 🚀 LIMPIEZA CRÍTICA: Liberar memoria del canvas
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    canvas = null;
+                }
+                
+                // 🚀 FORZAR GARBAGE COLLECTION si está disponible  
+                if (isProduction && window.gc) {
+                    try {
+                        window.gc();
+                    } catch (e) {
+                        // Ignorar si gc no está disponible
+                    }
                 }
             }
-
-            if (!canvas) {
-                throw new Error('html2canvas no devolvió un canvas válido para el elemento de página');
-            }
-
-            // CORRECCIÓN THUMBNAIL: Verificar que el canvas tenga las dimensiones correctas del workspace
-            if (canvas.width === 0 || canvas.height === 0) {
-                throw new Error('Canvas del elemento de página tiene dimensiones inválidas');
-            }
-
-            // Convertir a dataURL con la calidad apropiada
-            const dataUrl = canvas.toDataURL('image/png', quality);
 
             if (!dataUrl || dataUrl === 'data:,') {
                 throw new Error('No se pudo generar dataURL del elemento de página');
