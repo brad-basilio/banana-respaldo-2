@@ -183,7 +183,7 @@ export default function EditableCell({
     return (
         <div
             ref={drop}
-//data-cell-id={id} // 🔧 Identificador para captura de layouts
+            data-cell-id={id} // 🔧 Identificador para captura de layouts
             className={`relative w-full h-full ${cellStyle || 'rounded-lg overflow-hidden'} ${
                 isOver ? "ring-2 ring-purple-500 bg-transparent" : ""
             } ${
