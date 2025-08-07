@@ -190,7 +190,6 @@ const BookPreviewModal = ({
                             width: cellWidth * colSpan + gap * (colSpan - 1),
                             height: cellHeight * rowSpan + gap * (rowSpan - 1)
                         };
-                        console.log(`[GRID-PLACEMENT] cellId:${cellId} col-span:${colSpan} row-span:${rowSpan} => x:${positions[cellId].x} y:${positions[cellId].y} w:${positions[cellId].width} h:${positions[cellId].height}`);
                         placed = true;
                     }
                 }
@@ -208,7 +207,6 @@ const BookPreviewModal = ({
     const generateHighQualityThumbnails = useCallback(async () => {
         if (!pages || pages.length === 0 || !isOpen) return;
 
-        console.log('🚀 Iniciando generación de thumbnails para BookPreview...');
         setIsGeneratingThumbnails(true);
         setGeneratedThumbnails({});
 
@@ -278,22 +276,14 @@ const BookPreviewModal = ({
         const thumbnails = await Promise.all(promises);
 
         // 🔧 DEBUG: Log para verificar estructura de thumbnails generados
-        console.log('🖼️ [THUMBNAIL-GEN] Thumbnails generados:', {
-            totalThumbnails: thumbnails.length,
-            thumbnailKeys: thumbnails.map(t => Object.keys(t)).flat(),
-            pageIds: pages.map(p => p.id),
-            pageTypes: pages.map(p => p.type)
-        });
+
 
         // Combinar todos los thumbnails
         thumbnails.forEach(thumb => {
             Object.assign(newThumbnails, thumb);
         });
 
-        console.log('🖼️ [THUMBNAIL-GEN] newThumbnails final:', {
-            keys: Object.keys(newThumbnails),
-            hasAllPages: pages.every(p => newThumbnails[p.id])
-        });
+      
 
         // Actualizar estado
         setGeneratedThumbnails(newThumbnails);
@@ -341,9 +331,7 @@ const BookPreviewModal = ({
 
         try {
             const pdfData = preparePDFData();
-            console.log('🔄 [AUTO-PDF] Iniciando generación automática de PDF');
-            console.log('📐 [AUTO-PDF] Dimensiones:', pdfData.workspace_dimensions);
-            
+        
             const response = await fetch(`/api/customer/projects/${projectData.id}/generate-pdf`, {
                 method: 'POST',
                 headers: {
@@ -354,7 +342,6 @@ const BookPreviewModal = ({
             });
 
             if (response.ok) {
-                console.log('✅ [AUTO-PDF] PDF generado exitosamente');
                 setPdfGenerated(true);
                 
                 // Verificar la URL del PDF generado para mostrar disponibilidad
@@ -362,7 +349,6 @@ const BookPreviewModal = ({
                     const pdfInfoResponse = await fetch(`/api/customer/projects/${projectData.id}/pdf-info`);
                     if (pdfInfoResponse.ok) {
                         const pdfInfo = await pdfInfoResponse.json();
-                        console.log('📄 [AUTO-PDF] Información del PDF:', pdfInfo);
                     }
                 } catch (infoError) {
                     console.warn('⚠️ [AUTO-PDF] No se pudo obtener info del PDF:', infoError.message);
@@ -386,7 +372,6 @@ const BookPreviewModal = ({
 
         try {
             const pdfData = preparePDFData();
-            console.log('📐 Enviando dimensiones exactas para PDF:', pdfData.workspace_dimensions);
             
             const response = await fetch(`/api/customer/projects/${projectData.id}/generate-pdf`, {
                 method: 'POST',
@@ -425,23 +410,18 @@ const BookPreviewModal = ({
     // Efectos de React
     useEffect(() => {
         if (isOpen) {
-            console.log('📖 [BOOK-MODAL] Modal abierto');
-            console.log('📊 [BOOK-MODAL] Thumbnails recibidos:', Object.keys(pageThumbnails).length, 'de', pages.length, 'páginas');
 
             // 🚀 SIEMPRE usar los thumbnails enviados desde Editor.jsx
             // NO generar nuevos thumbnails aquí para evitar problemas de rendimiento
             if (Object.keys(pageThumbnails).length > 0) {
-                console.log('✅ [BOOK-MODAL] Usando thumbnails del Editor');
                 setGeneratedThumbnails(pageThumbnails);
             } else {
-                console.log('ℹ️ [BOOK-MODAL] No se recibieron thumbnails, usando placeholders');
                 // Solo usar placeholders, no generar thumbnails
                 setGeneratedThumbnails({});
             }
             
             // 🚀 Generar PDF automáticamente cuando se abre el modal
             if (projectData?.id) {
-                console.log('🔄 [BOOK-MODAL] Iniciando generación automática de PDF...');
                 setTimeout(() => {
                     generatePDFSilently();
                 }, 1000); // Pequeño retraso para que el modal se cargue completamente primero
@@ -461,7 +441,6 @@ const BookPreviewModal = ({
 
     // Función para crear un placeholder elegante para una página específica
     const createElegantPlaceholderForPage = (page, workspaceDimensions) => {
-        console.log(`🎨 Creando placeholder para página ${page.id} (${page.type})`);
 
         // Calcular dimensiones del preview con la proporción exacta del workspace
         const workspaceAspectRatio = workspaceDimensions.width / workspaceDimensions.height;
@@ -661,43 +640,21 @@ const BookPreviewModal = ({
         const hasCover = itemData?.has_cover_image === true || itemData?.has_cover_image === 1;
         const hasBackCover = itemData?.has_back_cover_image === true || itemData?.has_back_cover_image === 1;
 
-        console.log('🔍 [FILTER-PAGES] Configuración de páginas:', {
-            has_cover_image: itemData?.has_cover_image,
-            has_back_cover_image: itemData?.has_back_cover_image,
-            hasCover,
-            hasBackCover,
-            totalPagesReceived: pages.length,
-            pagesReceived: pages.map(p => ({
-                id: p.id,
-                type: p.type,
-                pageNumber: p.pageNumber,
-                layoutId: p.layoutId
-            }))
-        });
+   
 
         // Filtrar páginas según configuración
         const enabledPages = pages.filter(page => {
             if (page.type === 'cover' && !hasCover) {
-                console.log('🚫 [FILTER-PAGES] Eliminando portada (deshabilitada)');
                 return false;
             }
             if (page.type === 'final' && !hasBackCover) {
-                console.log('🚫 [FILTER-PAGES] Eliminando contraportada (deshabilitada)');
                 return false;
             }
             // Siempre incluir páginas de contenido
             return true;
         });
 
-        console.log('✅ [FILTER-PAGES] Páginas habilitadas:', {
-            total: enabledPages.length,
-            types: enabledPages.map(p => p.type),
-            details: enabledPages.map(p => ({ 
-                id: p.id, 
-                type: p.type, 
-                pageNumber: p.pageNumber 
-            }))
-        });
+       
 
         return enabledPages;
     };
@@ -741,23 +698,7 @@ const BookPreviewModal = ({
             };
         });
 
-        console.log('🎯 [BOOK-PAGES] Páginas creadas para HTMLFlipBook:', {
-            totalPages: bookPages.length,
-            pageList: bookPages.map(p => ({ 
-                id: p.id, 
-                originalId: p.originalId,
-                type: p.pageType, 
-                title: p.pageTitle,
-                displayIndex: p.displayIndex,
-                originalPageNumber: p.originalPageNumber,
-                pageNumber: p.pageNumber
-            })),
-            contentOnlyPages: bookPages.filter(p => p.pageType === 'content').map(p => ({
-                title: p.pageTitle,
-                originalPageNumber: p.originalPageNumber,
-                pageNumber: p.pageNumber
-            }))
-        });
+    
 
         return bookPages;
     };
@@ -769,12 +710,7 @@ const BookPreviewModal = ({
     const contentOnlyMode = bookPages.length > 0 && !hasRealCover && 
                            !bookPages.some(p => p.pageType === 'final');
 
-    console.log('🎯 [FLIPBOOK-CONFIG] Configuración del libro:', {
-        totalPages: bookPages.length,
-        hasRealCover,
-        contentOnlyMode,
-        pageTypes: bookPages.map(p => p.pageType)
-    });
+
 
     // Si no hay páginas, mostrar mensaje
     if (bookPages.length === 0) {
@@ -905,14 +841,7 @@ const BookPreviewModal = ({
                             if (!currentPageData) return 'Cargando...';
 
                             // 🔍 DEBUG: Log datos de la página actual
-                            console.log('📊 [CURRENT-PAGE] Datos de página actual:', {
-                                currentPage,
-                                pageData: currentPageData,
-                                pageTitle: currentPageData.pageTitle,
-                                pageType: currentPageData.pageType,
-                                originalPageNumber: currentPageData.originalPageNumber,
-                                pageNumber: currentPageData.pageNumber
-                            });
+                           
 
                             // Usar el título generado
                             return currentPageData.pageTitle || `Página ${currentPage + 1}`;
@@ -973,15 +902,7 @@ const BookPreviewModal = ({
                             const thumbnailKey = page.originalId || page.id;
                             const hasThumbnail = !!activeThumbnails[thumbnailKey];
                             
-                            console.log(`🖼️ [PAGE-RENDER] Página ${pageIdx}:`, {
-                                pageId: page.id,
-                                originalId: page.originalId,
-                                thumbnailKey,
-                                hasThumbnail,
-                                pageType: page.pageType,
-                                pageTitle: page.pageTitle,
-                                availableThumbnailKeys: Object.keys(activeThumbnails)
-                            });
+                       
 
                             return (
                                 <div
@@ -1329,18 +1250,7 @@ const InlinePlaceholder = ({ page, pageIdx }) => {
             pageIcon = '📄';
     }
 
-    // 🔍 DEBUG: Log para entender qué está mostrando
-    console.log('🎨 [PLACEHOLDER] Creando placeholder:', {
-        pageTitle,
-        pageType,
-        pageData: {
-            pageTitle: page.pageTitle,
-            originalPageNumber: page.originalPageNumber,
-            pageNumber: page.pageNumber,
-            type: page.type,
-            pageType: page.pageType
-        }
-    });
+  
 
     return (
         <div
@@ -1565,15 +1475,7 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                                 const dx = cellX + elX;
                                 const dy = cellY + elY;
 
-                                console.log('📐 Renderizando elemento:', {
-                                    elementId: element.id,
-                                    cellId: cell.id,
-                                    cellPosition: { x: cellX, y: cellY, width: cellWidth, height: cellHeight },
-                                    elementPosition: { x: elX, y: elY, width: elW, height: elH },
-                                    finalPosition: { dx, dy },
-                                    isRelative: { x: isRelativeX, y: isRelativeY, w: isRelativeWidth, h: isRelativeHeight },
-                                    elementData: element
-                                });
+                            
 
                                 // Dibujar la imagen con las coordenadas y dimensiones calculadas
                                 drawImageCover(customCtx, img, dx, dy, elW, elH);

@@ -627,11 +627,8 @@ export default function EditorLibro() {
 
                 const data = await response.json();
 
-                log('📊 ===== DATOS DEL PROYECTO CARGADOS =====');
-                log('🔍 PROJECT ID desde URL:', projectId);
-                logVPS('🔍 PROJECT DATA completo:', data); // 🚀 Solo en desarrollo - puede ser objeto grande
-                log('🔍 PROJECT DATA ID:', data?.project?.id);
-                log('========================================');
+             
+               
 
                 // Establecer los datos en el estado
                 setProjectData(data.project);
@@ -697,8 +694,7 @@ export default function EditorLibro() {
         }
         setActiveTab(newTab);
     }, [activeTab]);
-    log('🎉 [FILTERS FIX] Editor cargado - Fix del problema de filtros ACTIVADO');
-    
+  
     // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails (SOLO CLIENTE)
     if (!isServer) {
         window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
@@ -761,7 +757,6 @@ export default function EditorLibro() {
         };
         
         // Registrar método para uso desde consola
-        log('📢 Puedes forzar la regeneración de thumbnails usando window.forceRegenerateAllThumbnails()');
     }, [pages]);
 
     // �️ SISTEMA DE PROTECCIÓN DE THUMBNAILS CON FILTROS
@@ -828,7 +823,6 @@ export default function EditorLibro() {
                 }
             }, 100); // Verificar cada 100ms
             
-            console.log('🚨 [WATCHDOG] Vigilante de thumbnails activado');
         }
         
         // 🔒 BLOQUEO TOTAL: Interceptar setPageThumbnails globalmente
@@ -872,7 +866,6 @@ export default function EditorLibro() {
         // Reemplazar la función globalmente
         if (!window._interceptorInstalled) {
             window._interceptorInstalled = true;
-            console.log('🔒 [GLOBAL INTERCEPTOR] Interceptor global de setPageThumbnails instalado');
         }
     }, []);
 
@@ -899,9 +892,9 @@ export default function EditorLibro() {
             const isOverwriting = oldThumbnail && oldThumbnail !== thumbnail;
             
             if (isOverwriting) {
-                console.log(`🔄 [THUMBNAIL UPDATE] Actualizando thumbnail ${pageId} desde: ${source}`);
+               // console.log(`🔄 [THUMBNAIL UPDATE] Actualizando thumbnail ${pageId} desde: ${source}`);
             } else {
-                console.log(`✅ [THUMBNAIL SET] Estableciendo thumbnail ${pageId} desde: ${source}`);
+                //console.log(`✅ [THUMBNAIL SET] Estableciendo thumbnail ${pageId} desde: ${source}`);
             }
             
             return {
@@ -1027,8 +1020,7 @@ export default function EditorLibro() {
             overlayColor: 'rgba(0, 0, 0, 0.75)',
             popoverClass: 'driver-popover-banana',
             onHighlightStarted: (element, step) => {
-                console.log('🎯 Mostrando paso:', step.popover?.title);
-
+               
                 // Si el paso requiere cambiar a una pestaña específica
                 const tabElement = element?.getAttribute?.('data-tab');
                 if (tabElement && activeTab !== tabElement) {
@@ -1036,7 +1028,7 @@ export default function EditorLibro() {
                 }
             },
             onDeselected: () => {
-                console.log('✅ Guía completada');
+              
                 // Opcional: mostrar mensaje de bienvenida final
                 toast.success('¡Guía completada! Ya puedes empezar a crear tu diseño.', {
                     duration: 3000
@@ -1047,7 +1039,7 @@ export default function EditorLibro() {
 
     // Función para iniciar la guía
     const startTour = useCallback(() => {
-        console.log('🚀 Iniciando tour guiado');
+      
         driverObj.drive();
     }, [driverObj]);
 
@@ -1091,12 +1083,11 @@ export default function EditorLibro() {
                                 ...filteredThumbnails // Solo añadir los no protegidos
                             };
                         });
-                        console.log('✅ Thumbnails cargados desde storage:', Object.keys(thumbnailsObject).length);
                     } else {
-                        console.log('ℹ️ No hay thumbnails guardados, usando generación local');
+                    //    console.log('ℹ️ No hay thumbnails guardados, usando generación local');
                     }
                 } else {
-                    console.log('ℹ️ No hay thumbnails guardados para este proyecto');
+                   // console.log('ℹ️ No hay thumbnails guardados para este proyecto');
                 }
             }
         } catch (error) {
@@ -1138,7 +1129,6 @@ export default function EditorLibro() {
                 }
             }
             
-            console.log('🧹 [MEMORY CLEANUP] Limpieza de memoria ejecutada');
         }, 300000); // Cada 5 minutos
         
         return () => {
@@ -1157,7 +1147,6 @@ export default function EditorLibro() {
     const generateCurrentPageThumbnail = useCallback(async (forceRegenerate = false) => {
         // Solo bloquear si hay regeneración temporal en curso
         if (window.BLOCK_AUTO_REGENERATION && !forceRegenerate) {
-            console.log('🛡️ [PROTECCIÓN TEMPORAL] Bloqueando regeneración mientras se completa otra operación');
             return;
         }
         
@@ -1187,7 +1176,6 @@ export default function EditorLibro() {
         if (!forceRegenerate && thumbnailCache.current.has(cacheKey)) {
             const cachedThumbnail = thumbnailCache.current.get(cacheKey);
             if (cachedThumbnail && Date.now() - cachedThumbnail.timestamp < 60000) { // Cache por 1 minuto
-                console.log(`⚡ [CACHE HIT] Usando thumbnail cacheado para ${pageId}`);
                 setPageThumbnails(prev => ({ ...prev, [pageId]: cachedThumbnail.data }));
                 return;
             }
@@ -1226,7 +1214,7 @@ export default function EditorLibro() {
                                 element._hasRealFilters = true;
                                 // ⚡ OPTIMIZACIÓN: Solo log esencial para filtros
                                 if (process.env.NODE_ENV === 'development') {
-                                    console.log(`🎨 [FILTRO] Elemento ${element.id}:`, element.filters);
+                                //    console.log(`🎨 [FILTRO] Elemento ${element.id}:`, element.filters);
                                 }
                             }
                         }
@@ -1237,7 +1225,7 @@ export default function EditorLibro() {
         
         // ⚡ OPTIMIZACIÓN: Logging reducido
         if (process.env.NODE_ENV === 'development') {
-            console.log(`🎯 [ANÁLISIS] Página ${pageId}: ${elementsWithFilters.length} elementos con filtros detectados`);
+           // console.log(`🎯 [ANÁLISIS] Página ${pageId}: ${elementsWithFilters.length} elementos con filtros detectados`);
         }
         
         // Solo evitar regeneración si no hay filtros y no se fuerza
@@ -1245,20 +1233,19 @@ export default function EditorLibro() {
             const lastGenTime = window._thumbnailGenTimes?.[pageId] || 0;
             const now = Date.now();
             if (now - lastGenTime < 300000) { // 5 minutos
-                console.log(`✅ Thumbnail reciente existe para página sin filtros: ${pageId}`);
                 return;
             }
         }
         
         if (thumbnailGenerating.current) {
-            console.log('⏳ Ya se está generando un thumbnail...');
+          //  console.log('⏳ Ya se está generando un thumbnail...');
             return;
         }
         
         thumbnailGenerating.current = true;
         
         try {
-            console.log(`🚀 [RADICAL GENERATOR] Generando thumbnail para página: ${pageId} (filtros: ${pageHasFilters})`);
+          //  console.log(`🚀 [RADICAL GENERATOR] Generando thumbnail para página: ${pageId} (filtros: ${pageHasFilters})`);
             
             // Exponer datos globalmente para el renderizador radical
             window._currentPageData = currentPageData;
@@ -1272,7 +1259,7 @@ export default function EditorLibro() {
                 }
                 
                 setPageThumbnails(prev => {
-                    console.log(`🔄 [UPDATE UI] Actualizando thumbnail ${id} via _updateThumbnailInUI`);
+                  //  console.log(`🔄 [UPDATE UI] Actualizando thumbnail ${id} via _updateThumbnailInUI`);
                     return {
                         ...prev,
                         [id]: thumbnail
@@ -1288,11 +1275,11 @@ export default function EditorLibro() {
             
             // Si la página tiene filtros, usar el sistema radical
             if (pageHasFilters || forceRegenerate) {
-                console.log('🔥 [MÉTODO RADICAL] Usando sistema de filtros garantizados');
+               // console.log('🔥 [MÉTODO RADICAL] Usando sistema de filtros garantizados');
                 
                 try {
                     thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
-                    console.log('✅ [MÉTODO RADICAL] Thumbnail generado con filtros garantizados');
+                 //   console.log('✅ [MÉTODO RADICAL] Thumbnail generado con filtros garantizados');
                 } catch (error) {
                     console.error('❌ [MÉTODO RADICAL] Error, usando fallback:', error);
                     // Fallback al método normal
@@ -1304,7 +1291,7 @@ export default function EditorLibro() {
                 }
             } else {
                 // Para páginas sin filtros, usar el método normal
-                console.log('📸 [MÉTODO NORMAL] Generando thumbnail sin filtros especiales');
+             //   console.log('📸 [MÉTODO NORMAL] Generando thumbnail sin filtros especiales');
                 thumbnail = await generateSingleThumbnail({
                     page: currentPageData,
                     workspaceDimensions,
@@ -1374,11 +1361,10 @@ export default function EditorLibro() {
                     }
                 
                 
-                console.log(`✅ [SUCCESS] Thumbnail generado exitosamente para página: ${pageId}`);
+              //  console.log(`✅ [SUCCESS] Thumbnail generado exitosamente para página: ${pageId}`);
                 
                 // 🔍 VERIFICACIÓN POST-GENERACIÓN: Confirmar que los filtros se aplicaron
                 if (pageHasFilters && !forceRegenerate) {
-                    console.log('🔍 [VERIFICACIÓN] Comprobando si los filtros se aplicaron correctamente...');
                     
                     // Marcar que esta verificación ya se hizo para evitar bucles
                     if (!window._filterVerificationDone) window._filterVerificationDone = new Set();
@@ -1390,19 +1376,9 @@ export default function EditorLibro() {
                         setTimeout(async () => {
                             try {
                                 // Si llegamos aquí y no se ven los filtros, usar método radical como último recurso
-                                console.log('🚀 [ÚLTIMO RECURSO] Intentando método radical para garantizar filtros...');
                                 
                                 // 🎯 VERIFICAR DATOS ANTES DE ENVIAR (ÚLTIMO RECURSO)
-                                console.log('📦 [ÚLTIMO RECURSO - DATOS] currentPageData:', {
-                                    pageId: currentPageData.id,
-                                    elementsWithFilters: currentPageData.elements?.filter(el => 
-                                        el.filters && Object.keys(el.filters).some(key => 
-                                            key === 'flipHorizontal' || key === 'flipVertical' ? el.filters[key] :
-                                            (key === 'brightness' || key === 'contrast' || key === 'saturation' || key === 'opacity' || key === 'scale') ? el.filters[key] !== 1 :
-                                            (key === 'tint' || key === 'hue' || key === 'blur' || key === 'rotate') ? el.filters[key] !== 0 : false
-                                        )
-                                    )?.map(el => ({ id: el.id, filters: el.filters })) || []
-                                });
+                          
                                 
                                 const radicalThumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
                                 
@@ -1411,13 +1387,11 @@ export default function EditorLibro() {
                                     window.protectThumbnail?.(pageId);
                                     
                                     setPageThumbnails(prev => {
-                                        console.log(`🚀 [RADICAL FORCE] Estableciendo thumbnail radical protegido para ${pageId}`);
                                         return {
                                             ...prev,
                                             [pageId]: radicalThumbnail
                                         };
                                     });
-                                    console.log('✅ [RADICAL SUCCESS] Filtros garantizados aplicados exitosamente');
                                 }
                             } catch (error) {
                                 console.warn('⚠️ [RADICAL FALLBACK] Error en método radical:', error);
@@ -1433,7 +1407,7 @@ export default function EditorLibro() {
                         window._protectedThumbnailIds.push(pageId);
                     }
                     if (process.env.NODE_ENV === 'development') {
-                        console.log(`🔒 [PROTECCIÓN] Thumbnail con filtros protegido: ${pageId}`);
+                     //   console.log(`🔒 [PROTECCIÓN] Thumbnail con filtros protegido: ${pageId}`);
                     }
                 }
                 
@@ -1467,13 +1441,12 @@ export default function EditorLibro() {
         debounce(async () => {
             // 🚨 PROTECCIÓN ANTI-RESET: Bloquear regeneraciones automáticas que puedan sobrescribir thumbnails con filtros
             if (window.BLOCK_AUTO_REGENERATION) {
-                console.log('🛡️ [PROTECCIÓN-GLOBAL] Bloqueando generación masiva mientras los filtros están protegidos');
+              //  console.log('🛡️ [PROTECCIÓN-GLOBAL] Bloqueando generación masiva mientras los filtros están protegidos');
                 return;
             }
             
             // 🚨 PROTECCIÓN SECUNDARIA: No regenerar si tenemos thumbnails protegidos
             if (window.THUMBNAIL_PROTECTED) {
-                console.log('🔒 [PROTECCIÓN-GLOBAL] Generación masiva bloqueada, thumbnails protegidos');
                 return;
             }
             
@@ -1481,7 +1454,6 @@ export default function EditorLibro() {
 
             // 🚀 OPTIMIZACIÓN: Evitar regeneración si ya están generando
             if (thumbnailGenerating.current) {
-                console.log('⏳ Thumbnails ya se están generando, saltando...');
                 return;
             }
 
@@ -1492,11 +1464,9 @@ export default function EditorLibro() {
                 const missingThumbnails = pages.filter(page => !pageThumbnails[page.id]);
 
                 if (missingThumbnails.length === 0) {
-                    console.log('✅ Todos los thumbnails ya existen');
                     return;
                 }
 
-                console.log(`📸 Generando ${missingThumbnails.length} thumbnails rápidos...`);
 
                 // ⚡ NUEVA OPTIMIZACIÓN: Usar generador rápido con progreso
                 // 🚫 VERIFICAR SI ESTÁ BLOQUEADO
@@ -1533,7 +1503,6 @@ export default function EditorLibro() {
                             ...filteredThumbnails // Solo añadir los no protegidos
                         };
                     });
-                    console.log('✅ Thumbnails rápidos generados:', Object.keys(thumbnailsObject).length);
                 }
             } catch (error) {
                 console.warn('⚠️ Error generando thumbnails rápidos:', error);
@@ -1559,7 +1528,6 @@ export default function EditorLibro() {
             if (priorityPageIds.length > 0) {
                 const priorityPages = pages.filter(p => priorityPageIds.includes(p.id));
                 if (priorityPages.length > 0) {
-                    console.log(`🎯 Generando ${priorityPages.length} thumbnails prioritarios...`);
 
                     // 🚫 VERIFICAR SI ESTÁ BLOQUEADO
                     if (window.isAutoRegenerationBlocked?.()) {
@@ -1699,13 +1667,11 @@ export default function EditorLibro() {
 
         // 🛡️ Evitar llamadas múltiples simultáneas
         if (isLoadingThumbnails) {
-            console.log('⏳ Ya hay una carga de thumbnails en progreso, omitiendo...');
             return;
         }
 
         try {
             setIsLoadingThumbnails(true);
-            console.log('🔄 Iniciando carga de thumbnails existentes...');
 
             // 🔄 NUEVA ESTRUCTURA: Cargar thumbnails existentes desde archivos
             const response = await fetch(`/api/thumbnails/${projectData.id}/existing`, {
@@ -1727,9 +1693,7 @@ export default function EditorLibro() {
                         ...prev,
                         ...existingThumbnails
                     }));
-                    console.log('✅ Thumbnails existentes cargados:', Object.keys(existingThumbnails).length);
                 } else {
-                    console.log('📸 No hay thumbnails existentes, generando para página actual...');
                     // Solo generar thumbnail de la página actual
                     setTimeout(() => generateCurrentPageThumbnail(), 200);
                 }
@@ -1784,7 +1748,6 @@ export default function EditorLibro() {
                         ...thumbnailsObject
                     }));
 
-                    console.log('✅ Thumbnail generado y guardado en storage para página actual:', data.thumbnails.length);
                 }
             }
         } catch (error) {
@@ -1829,7 +1792,7 @@ export default function EditorLibro() {
                         ...thumbnailsObject
                     }));
 
-                    console.log('✅ Todos los thumbnails generados y guardados en storage:', data.thumbnails.length);
+                    //console.log('✅ Todos los thumbnails generados y guardados en storage:', data.thumbnails.length);
                 }
             }
         } catch (error) {
@@ -1842,7 +1805,6 @@ export default function EditorLibro() {
         if (!projectData?.id || !pages?.length) return {};
 
         try {
-            console.log('📖 [ALBUM-MODAL] Cargando thumbnails PDF existentes...');
 
             // Crear objeto con las URLs de los thumbnails PDF que deberían existir
             const pdfThumbnails = {};
@@ -1910,17 +1872,7 @@ export default function EditorLibro() {
                 const pageId = page.id || `page-${index}`;
                 pdfThumbnails[pageId] = pdfUrl;
                 
-                console.log(`🔍 [THUMBNAIL-MAP] Página ${index}:`, {
-                    tipo: page.type,
-                    pageNumber: page.pageNumber,
-                    realPageNumber,
-                    url: pdfUrl,
-                    pageId: page.id,
-                    hasCover,
-                    hasBackCover,
-                    coverEnabled: hasCoverEnabled,
-                    backCoverEnabled: hasBackCoverEnabled
-                });
+          
                 
                 return verifyThumbnailExists(pdfUrl, pageId);
             });
@@ -1928,7 +1880,6 @@ export default function EditorLibro() {
             // Ejecutar todas las verificaciones en paralelo
             await Promise.all(verificationPromises);
 
-            console.log(`✅ [ALBUM-MODAL] Thumbnails verificados: ${Object.keys(verifiedThumbnails).length}/${pages.length}`);
 
             // Retornar todos los URLs (existentes y faltantes) para que el modal maneje los placeholders
             return pdfThumbnails;
@@ -1989,7 +1940,6 @@ export default function EditorLibro() {
                 setPages(prevPages => {
                     // Si ya hay páginas con contenido, no sobrescribir
                     if (prevPages.length > 0) {
-                        console.log('⚠️ Páginas ya existentes, preservando cambios del usuario');
                         // Mergear solo los backgrounds sin perder elementos del usuario
                         return prevPages.map((existingPage, index) => {
                             const newPageData = updatedPages[index];
@@ -2006,7 +1956,6 @@ export default function EditorLibro() {
                     }
 
                     // Primera carga: usar las páginas de la DB
-                    console.log('📄 Carga inicial de páginas desde la base de datos');
                     return updatedPages;
                 });
 
@@ -2191,7 +2140,7 @@ export default function EditorLibro() {
                 const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
                 
                 if (!isProduction) {
-                    console.log('🔧 [LAYOUT-CAPTURE] Esperando renderizado completo del grid...');
+                    //console.log('🔧 [LAYOUT-CAPTURE] Esperando renderizado completo del grid...');
                 }
                 
                 // 🚀 OPTIMIZACIÓN: Un solo requestAnimationFrame en lugar de doble
@@ -2201,13 +2150,11 @@ export default function EditorLibro() {
                         const cells = workspaceElement.querySelectorAll('[data-cell-id]');
                         
                         if (!isProduction) {
-                            console.log(`🔧 [LAYOUT-CAPTURE] Celdas encontradas en DOM: ${cells.length}`);
                             
                             // Solo mostrar logs detallados en desarrollo
                             if (cells.length <= 4) { // Limitar logs para layouts complejos
                                 cells.forEach((cell, idx) => {
                                     const rect = cell.getBoundingClientRect();
-                                    console.log(`🔧 [LAYOUT-CAPTURE] Celda ${idx}: ${rect.width}x${rect.height}`);
                                 });
                             }
                         }
@@ -2259,7 +2206,7 @@ export default function EditorLibro() {
                         // 🚀 OPTIMIZACIÓN: Logs solo en desarrollo
                         if (el.style && el.style.filter && options.preserveFilters) {
                             if (!isProduction) {
-                                console.log('🎭 [PRESERVE-FILTER] Preservando filtro en layout:', el.id);
+                                //console.log('🎭 [PRESERVE-FILTER] Preservando filtro en layout:', el.id);
                             }
                             return false;
                         }
@@ -2272,7 +2219,7 @@ export default function EditorLibro() {
                         // 🚀 OPTIMIZACIÓN: Logs solo en desarrollo
                         if (el.style && el.style.filter && options.preserveFilters) {
                             if (!isProduction) {
-                                console.log('🎭 [PRESERVE-FILTER] Preservando filtro:', el.id);
+                               // console.log('🎭 [PRESERVE-FILTER] Preservando filtro:', el.id);
                             }
                             return false;
                         }
@@ -2365,16 +2312,15 @@ export default function EditorLibro() {
                             // 🎭 PRESERVAR FILTROS: Asegurar que los elementos con filtros mantengan sus estilos
                             const elementosConFiltros = clonedPageElement.querySelectorAll('[style*="filter"]');
                             elementosConFiltros.forEach(el => {
-                                console.log('🎭 [THUMBNAIL] Preservando filtros en elemento:', el.id);
+                               // console.log('🎭 [THUMBNAIL] Preservando filtros en elemento:', el.id);
                             });
 
                             // 🔧 LAYOUT MODE: Ajustes especiales para celdas en grid
                             if (isLayoutMode) {
-                                console.log('🔧 [THUMBNAIL-LAYOUT] Aplicando correcciones para grid CSS...');
+                               // console.log('🔧 [THUMBNAIL-LAYOUT] Aplicando correcciones para grid CSS...');
                                 
                                 // Asegurar que el elemento principal mantenga sus clases de grid
                                 const gridClasses = clonedPageElement.className;
-                                console.log(`🔧 [THUMBNAIL-LAYOUT] Clases del grid: ${gridClasses}`);
                                 
                                 // Forzar aplicación de estilos de grid directamente
                                 const gridStyle = getComputedStyle(workspaceElement);
@@ -2384,17 +2330,17 @@ export default function EditorLibro() {
                                 clonedPageElement.style.gap = gridStyle.gap;
                                 
                                 if (!isProduction) {
-                                    console.log(`🔧 [THUMBNAIL-LAYOUT] Grid aplicado: cols=${gridStyle.gridTemplateColumns}, rows=${gridStyle.gridTemplateRows}, gap=${gridStyle.gap}`);
+                                    //console.log(`🔧 [THUMBNAIL-LAYOUT] Grid aplicado: cols=${gridStyle.gridTemplateColumns}, rows=${gridStyle.gridTemplateRows}, gap=${gridStyle.gap}`);
                                 }
                                 
                                 const cells = clonedPageElement.querySelectorAll('[data-cell-id]');
                                 if (!isProduction) {
-                                    console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando ${cells.length} celdas...`);
+                                    //console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando ${cells.length} celdas...`);
                                 }
                                 
                                 cells.forEach((cell, idx) => {
                                     if (!isProduction) {
-                                        console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando celda ${idx}:`, cell.id);
+                                       // console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando celda ${idx}:`, cell.id);
                                     }
                                     
                                     // Asegurar posicionamiento correcto de la celda
@@ -2410,7 +2356,7 @@ export default function EditorLibro() {
                                     const images = cell.querySelectorAll('img, [data-element-type="image"]');
                                     images.forEach(img => {
                                         if (!isProduction) {
-                                            console.log(`🔧 [THUMBNAIL-LAYOUT] Ajustando imagen en celda ${idx}:`, img);
+                                            //console.log(`🔧 [THUMBNAIL-LAYOUT] Ajustando imagen en celda ${idx}:`, img);
                                         }
                                         // Las imágenes en layouts deben respetar el contenedor de la celda
                                         if (img.style.position === 'absolute') {
@@ -2697,7 +2643,7 @@ export default function EditorLibro() {
             
             try {
                 if (!isProduction) {
-                    console.log('🎨 [HTML2CANVAS] Iniciando captura:', captureOptions);
+                   // console.log('🎨 [HTML2CANVAS] Iniciando captura:', captureOptions);
                 }
                 
                 canvas = await html2canvas(workspaceElement, captureOptions);
@@ -2740,11 +2686,7 @@ export default function EditorLibro() {
                 dataUrl = canvas.toDataURL('image/png', quality);
                 
                 if (!isProduction) {
-                    console.log('✅ [CAPTURA-EXITOSA] Imagen generada:', {
-                        width: canvas.width,
-                        height: canvas.height,
-                        sizeKB: Math.round(dataUrl.length / 1024)
-                    });
+                   //continue producction
                 }
                 
             } catch (error) {
@@ -3139,7 +3081,7 @@ export default function EditorLibro() {
             fetch(currentPageData.backgroundImage, { method: 'HEAD' })
                 .then(response => {
                     if (response.ok) {
-                        console.log('✅ [WORKSPACE] Imagen existe en el servidor');
+                        //console.log('✅ [WORKSPACE] Imagen existe en el servidor');
                     } else {
                         console.error('❌ [WORKSPACE] Imagen NO existe en el servidor. Status:', response.status);
                     }
@@ -3188,7 +3130,6 @@ export default function EditorLibro() {
             if (!hasUnsavedChanges) return;
 
             try {
-                console.log('🔄 [AUTO-SAVE] Iniciando guardado silencioso en segundo plano...');
 
                 // Actualizar estado de guardado
                 setAutoSave(prev => ({ ...prev, saveStatus: 'saving' }));
@@ -3218,7 +3159,6 @@ export default function EditorLibro() {
                         hasUnsavedChanges: false
                     }));
 
-                    console.log('✅ [AUTO-SAVE] Guardado silencioso completado');
                 } else {
                     throw new Error('Guardado falló');
                 }
@@ -3245,7 +3185,6 @@ export default function EditorLibro() {
                 if (hasUnsavedChanges &&
                     timeSinceLastActivity > 60000) {
 
-                    console.log('⏰ [AUTO-SAVE] Condiciones cumplidas para guardado automático');
                     performSilentAutoSave();
                 }
             }, 3 * 60 * 1000); // 3 minutos
@@ -3352,7 +3291,6 @@ export default function EditorLibro() {
             // 🚀 OPTIMIZACIÓN: Verificar cache primero
             const cachedImages = imageCache.get(projectData.id);
             if (!forceRefresh && cachedImages && cachedImages.length > 0) {
-                console.log('🔄 Usando imágenes desde cache');
                 if (projectImages.length === 0) {
                     setProjectImages(cachedImages);
                 }
@@ -3365,7 +3303,6 @@ export default function EditorLibro() {
             }
 
             if (projectImagesLoading && !forceRefresh) {
-                console.log('⏳ Carga de imágenes ya en progreso');
                 return;
             }
 
@@ -3579,7 +3516,6 @@ export default function EditorLibro() {
 
     // 🚀 Añadir elemento sin seleccionarlo automáticamente (para galería de imágenes)
     const addElementToCellWithoutSelection = (cellId, element) => {
-        console.log('🖼️ [ADD-IMAGE] Agregando imagen sin selección automática');
 
         // 🚀 PROTECCIÓN: Asegurar que tenemos páginas válidas
         if (!pages || pages.length === 0 || !pages[currentPage]) {
@@ -3596,7 +3532,6 @@ export default function EditorLibro() {
             if (updatedPages[currentPage].cells[i].id === cellId) {
                 updatedPages[currentPage].cells[i].elements.push(element);
                 cellFound = true;
-                console.log('✅ [ADD-IMAGE] Imagen agregada a la celda:', cellId);
                 break;
             }
         }
@@ -3609,13 +3544,11 @@ export default function EditorLibro() {
         // 🚀 PROTECCIÓN: Usar setTimeout para evitar conflictos de estado
         setTimeout(() => {
             updatePages(updatedPages);
-            console.log('✅ [ADD-IMAGE] Estado actualizado sin selección automática');
         }, 0);
     };
 
     // Función para añadir imagen desde la galería
     const addImageFromGallery = useCallback((imageUrl) => {
-        console.log('🖼️ [ADD-FROM-GALLERY] Iniciando proceso de agregar imagen:', imageUrl);
 
         // 🚀 PROTECCIÓN CRÍTICA: Bloquear temporalmente el sistema de recuperación
         const originalProgress = hasInitializedProgress;
@@ -3642,7 +3575,6 @@ export default function EditorLibro() {
 
         // 🚀 PROTECCIÓN: Crear una copia profunda de las páginas actuales ANTES de modificar
         const currentPagesSnapshot = JSON.parse(JSON.stringify(pages));
-        console.log('📸 [ADD-FROM-GALLERY] Snapshot del estado actual capturado');
 
         const newElement = {
             id: `image-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -3666,7 +3598,6 @@ export default function EditorLibro() {
             zIndex: (currentPagesSnapshot[currentPage].cells.find(cell => cell.id === targetCell)?.elements?.length || 0) + 1,
         };
 
-        console.log('📝 [ADD-FROM-GALLERY] Elemento creado:', newElement);
 
         // 🚀 PROTECCIÓN: Usar setTimeout múltiples para evitar conflictos de estado
         setTimeout(() => {
@@ -3677,14 +3608,12 @@ export default function EditorLibro() {
                 // Segundo paso: Restaurar tab si es necesario
                 if (wasInImagesTab) {
                     setActiveTab('images');
-                    console.log('🔄 [ADD-FROM-GALLERY] Tab restaurado a images');
                 }
 
                 setTimeout(() => {
                     // Tercer paso: Restaurar protección y mostrar éxito
                     setHasInitializedProgress(originalProgress);
                     toast.success('✅ Imagen añadida desde la galería');
-                    console.log('✅ [ADD-FROM-GALLERY] Proceso completado exitosamente');
                 }, 50);
             }, 50);
         }, 50);
@@ -3929,27 +3858,12 @@ export default function EditorLibro() {
 
     // 🚫 DESHABILITADO: Auto-save automático cuando cambian las páginas
     // Ahora solo guardado manual + respaldo cada 5 minutos
-    /*
-    const debouncedAutoSave = useCallback(
-        debounce(() => {
-            if (pages.length > 0 && projectData?.id) {
-                console.log('🔄 [AUTO-SAVE] Cambios detectados, guardando...');
-                autoSaveToDatabase(pages, false);
-            }
-        }, 3000), // 3 segundos después del último cambio
-        [autoSaveToDatabase, pages, projectData?.id]
-    );
-
-    useEffect(() => {
-        debouncedAutoSave();
-    }, [pages, debouncedAutoSave]);
-    */
+    
 
     // �️ Función para capturar thumbnails de todas las páginas
     const captureAllPageThumbnails = useCallback(async () => {
         if (!pages.length) return {};
 
-        console.log('📸 [THUMBNAILS] Capturando thumbnails de todas las páginas...');
         const thumbnails = {};
         const originalPage = currentPage;
 
@@ -3971,7 +3885,7 @@ export default function EditorLibro() {
                     const thumbnail = await captureCurrentWorkspace({ type: 'thumbnail' });
                     if (thumbnail) {
                         thumbnails[page.id] = thumbnail;
-                        console.log(`✅ [THUMBNAILS] Thumbnail capturado para página ${i + 1}: ${page.id}`);
+                        //console.log(`✅ [THUMBNAILS] Thumbnail capturado para página ${i + 1}: ${page.id}`);
                     }
                 } catch (error) {
                     console.warn(`⚠️ [THUMBNAILS] Error capturando thumbnail para página ${page.id}:`, error);
@@ -3987,7 +3901,6 @@ export default function EditorLibro() {
                 setCurrentPage(originalPage);
             }
 
-            console.log(`✅ [THUMBNAILS] Capturados ${Object.keys(thumbnails).length} thumbnails de ${pages.length} páginas`);
             return thumbnails;
 
         } catch (error) {
@@ -4009,7 +3922,6 @@ export default function EditorLibro() {
 
         try {
             // 🖼️ PASO 1: Asegurar que la página actual tenga thumbnail
-            console.log('📸 [SAVE] Generando thumbnail de página actual...');
             await generateCurrentPageThumbnail();
 
             // �️ PASO 2: Cargar thumbnails con nueva estructura
@@ -4035,13 +3947,7 @@ export default function EditorLibro() {
     // Función simplificada para guardado desde la cola (con menos dependencias)
     const saveFromQueue = useCallback(async (pagesToSave) => {
         // console.log('💾 [QUEUE-SAVE] Iniciando guardado desde cola...');
-        log('🔍 [QUEUE-SAVE] Datos disponibles:', {
-            projectId: projectData?.id,
-            pagesCount: pagesToSave?.length,
-            currentPage,
-            hasDimensions: !!workspaceDimensions,
-            hasThumbnails: !!pageThumbnails
-        });
+        
 
         if (!projectData?.id) {
             error('❌ [QUEUE-SAVE] No hay project ID');
@@ -4100,35 +4006,26 @@ export default function EditorLibro() {
 
     // Función para procesar la cola de guardado en segundo plano (versión corregida)
     const processSaveQueue = useCallback(async () => {
-        console.log('🔍 [SAVE-QUEUE] Verificando condiciones de procesamiento...', {
-            isProcessingQueue,
-            saveQueueLength: saveQueue.length
-        });
+      
 
         if (isProcessingQueue) {
-            console.log('⚠️ [SAVE-QUEUE] Ya se está procesando, saltando...');
             return;
         }
 
         if (saveQueue.length === 0) {
-            console.log('⚠️ [SAVE-QUEUE] Cola vacía, no hay nada que procesar');
             return;
         }
 
-        console.log('🚀 [SAVE-QUEUE] Iniciando procesamiento de cola...');
         setIsProcessingQueue(true);
 
         try {
             // Capturar la cola actual ANTES de limpiarla
             const currentQueue = saveQueue.slice();
-            console.log('� [SAVE-QUEUE] Cola capturada para procesamiento:', currentQueue.length, 'elementos');
 
             // Ahora sí limpiar la cola
             setSaveQueue([]);
-            console.log('🧹 [SAVE-QUEUE] Cola limpiada');
 
             for (const saveTask of currentQueue) {
-                console.log('💾 [SAVE-QUEUE] Guardando página:', saveTask.pageIndex);
 
                 const success = await saveFromQueue(saveTask.pages);
 
@@ -4139,7 +4036,6 @@ export default function EditorLibro() {
                         newMap.delete(saveTask.pageIndex);
                         return newMap;
                     });
-                    console.log('✅ [SAVE-QUEUE] Página guardada exitosamente:', saveTask.pageIndex);
                 } else {
                     console.error('❌ [SAVE-QUEUE] Error guardando página:', saveTask.pageIndex);
                     // En caso de error, re-agregar a la cola para reintentar
@@ -4147,26 +4043,18 @@ export default function EditorLibro() {
                 }
             }
 
-            console.log('✅ [SAVE-QUEUE] Cola de guardado procesada completamente');
         } catch (error) {
             console.error('❌ [SAVE-QUEUE] Error procesando cola:', error);
         } finally {
             setIsProcessingQueue(false);
-            console.log('🔓 [SAVE-QUEUE] Procesamiento finalizado, isProcessingQueue = false');
         }
     }, [isProcessingQueue, saveQueue, saveFromQueue]);
 
     // Sistema simplificado de procesamiento automático
     useEffect(() => {
-        // Solo procesar si hay elementos en la cola y no se está procesando
-        console.log('🔄 [SAVE-QUEUE] useEffect trigger:', {
-            saveQueueLength: saveQueue.length,
-            isProcessingQueue,
-            shouldProcess: saveQueue.length > 0 && !isProcessingQueue
-        });
+        
 
         if (saveQueue.length > 0 && !isProcessingQueue) {
-            console.log('⏰ [SAVE-QUEUE] Cola detectada, procesando inmediatamente...');
 
             // Pequeño delay para evitar condiciones de carrera
             setTimeout(() => {
@@ -4177,31 +4065,22 @@ export default function EditorLibro() {
 
     // Debug: Efecto para monitorear cambios en la cola
     useEffect(() => {
-        console.log('📊 [SAVE-QUEUE] Estado de cola actualizado:', {
-            longitud: saveQueue.length,
-            elementos: saveQueue.map(item => `página ${item.pageIndex}`),
-            procesando: isProcessingQueue
-        });
+       //save queue
     }, [saveQueue, isProcessingQueue]);
 
     // Función para agregar una página a la cola de guardado
     const addToSaveQueue = useCallback((pageIndex, pagesData) => {
-        console.log('🔍 [SAVE-QUEUE] Intentando agregar página a cola:', pageIndex);
 
         // Usar función de estado para verificar cambios sin dependencias
         setPageChanges(currentPageChanges => {
             const changedPages = Array.from(currentPageChanges.keys());
-            console.log('🔍 [SAVE-QUEUE] Cambios actuales:', changedPages.join(', ') || 'ninguno');
 
             if (!currentPageChanges.has(pageIndex)) {
-                console.log('⚠️ [SAVE-QUEUE] No hay cambios para la página:', pageIndex, '- No se agregará a cola');
                 return currentPageChanges; // Solo guardar si hay cambios
             }
 
-            console.log('✅ [SAVE-QUEUE] Página tiene cambios, agregando a cola:', pageIndex);
 
             setSaveQueue(prev => {
-                console.log('🔍 [SAVE-QUEUE] Cola actual antes de agregar:', prev.length, 'elementos');
 
                 // Evitar duplicados
                 const existingIndex = prev.findIndex(item => item.pageIndex === pageIndex);
@@ -4209,17 +4088,14 @@ export default function EditorLibro() {
                     // Actualizar el elemento existente
                     const newQueue = [...prev];
                     newQueue[existingIndex] = { pageIndex, pages: pagesData, timestamp: Date.now() };
-                    console.log('🔄 [SAVE-QUEUE] Actualizando elemento existente en cola');
                     return newQueue;
                 } else {
                     // Agregar nuevo elemento
                     const newQueue = [...prev, { pageIndex, pages: pagesData, timestamp: Date.now() }];
-                    console.log('➕ [SAVE-QUEUE] Agregando nuevo elemento a cola. Nueva longitud:', newQueue.length);
                     return newQueue;
                 }
             });
 
-            console.log('📤 [SAVE-QUEUE] Página agregada a cola:', pageIndex);
             return currentPageChanges; // Retornar sin cambios
         });
     }, []);
@@ -4276,7 +4152,6 @@ export default function EditorLibro() {
         );
 
         if (hasWorkspaceContent) {
-            console.log('⚠️ [RECOVERY] Ya hay contenido en el workspace, saltando recuperación automática');
             return;
         }
 
@@ -4325,12 +4200,12 @@ export default function EditorLibro() {
 
                 // Solo cargar si el progreso es de los últimos 30 minutos
                 if (timeDiff < 30 * 60 * 1000) {
-                    console.log('🔄 [AUTO-RECOVERY] Cargando automáticamente el progreso más reciente');
+                    //console.log('🔄 [AUTO-RECOVERY] Cargando automáticamente el progreso más reciente');
                     toast.info('🔄 Cargando progreso guardado automáticamente...');
                     // Cargar automáticamente sin mostrar modal
                     handleLoadProgress(progressToUse);
                 } else {
-                    console.log('📅 [RECOVERY] Progreso muy antiguo, ignorando automáticamente');
+                    //console.log('📅 [RECOVERY] Progreso muy antiguo, ignorando automáticamente');
                 }
             }
 
@@ -4580,16 +4455,10 @@ export default function EditorLibro() {
         const contentPages = pages.filter(p => p.type === 'content');
         const finalPages = pages.filter(p => p.type === 'final');
 
-        console.log('🎯 [BOOK-ORGANIZE] Organizando páginas del libro:', {
-            cover: coverPages.length,
-            content: contentPages.length, 
-            final: finalPages.length,
-            total: pages.length
-        });
+       
 
         // Si no hay tapa ni contratapa, devolver como está
         if (coverPages.length === 0 && finalPages.length === 0) {
-            console.log('📖 [BOOK-ORGANIZE] Sin tapas - orden normal');
             return pages;
         }
 
@@ -4598,7 +4467,6 @@ export default function EditorLibro() {
         // 1. Agregar TAPA si existe (siempre primera, página derecha)
         if (coverPages.length > 0) {
             organizedPages.push(...coverPages);
-            console.log('📕 [BOOK-ORGANIZE] Tapa agregada en posición 0 (derecha)');
             
             // 🎯 LÓGICA CLAVE: Después de la tapa, agregar reverso con logo
             // Esto hace que la página 1 del contenido aparezca en la siguiente página (izquierda)
@@ -4612,14 +4480,12 @@ export default function EditorLibro() {
                 backgroundColor: '#ffffff',
                 layout: layouts[0]?.id || 'layout1' // Layout básico
             });
-            console.log('📄 [BOOK-ORGANIZE] Reverso de tapa con logo agregado en posición 1 (izquierda)');
         }
 
         // 2. Agregar páginas de CONTENIDO
         if (contentPages.length > 0) {
             // 🎯 AHORA: La página 1 del contenido aparecerá en la posición correcta (izquierda si hay tapa)
             organizedPages.push(...contentPages);
-            console.log('📄 [BOOK-ORGANIZE] Contenido agregado:', contentPages.length + ' páginas, página 1 en posición', organizedPages.length - contentPages.length);
         }
 
         // 3. Agregar CONTRATAPA si existe (siempre última, página izquierda)
@@ -4640,27 +4506,12 @@ export default function EditorLibro() {
                     backgroundColor: '#ffffff',
                     layout: layouts[0]?.id || 'layout1' // Layout básico
                 });
-                console.log('📄 [BOOK-ORGANIZE] Página en blanco agregada para correcto posicionamiento de contratapa');
             }
             
             organizedPages.push(...finalPages);
-            console.log('📕 [BOOK-ORGANIZE] Contratapa agregada en posición', organizedPages.length - 1, '(izquierda)');
         }
 
-        console.log('✅ [BOOK-ORGANIZE] Organización final:', {
-            totalPages: organizedPages.length,
-            sequence: organizedPages.map((p, index) => ({
-                position: index,
-                type: p.type,
-                side: index === 0 ? 'Tapa (derecha)' : 
-                      index === 1 && p.type === 'blank' ? 'Reverso tapa (izquierda)' :
-                      index === organizedPages.length - 1 && p.type === 'final' ? 'Contratapa (izquierda)' :
-                      p.type === 'blank' ? 'Página en blanco' :
-                      index % 2 === 1 ? 'Izquierda' : 'Derecha',
-                id: p.id,
-                pageNumber: p.type === 'content' ? `Página ${contentPages.indexOf(p) + 1}` : ''
-            }))
-        });
+    
 
         return organizedPages;
     }, [layouts]);
@@ -4710,19 +4561,7 @@ export default function EditorLibro() {
         const hasBackCover = hasBackCoverEnabled && categorizedPages.final.length > 0;
         const contentPages = categorizedPages.content.length;
 
-        console.log('🎯 [CONTENT-TYPE] Análisis de contenido:', {
-            coverEnabled: hasCoverEnabled,
-            backCoverEnabled: hasBackCoverEnabled,
-            coverPagesExist: categorizedPages.cover.length > 0,
-            finalPagesExist: categorizedPages.final.length > 0,
-            hasCover,
-            hasBackCover,
-            contentPages,
-            itemConfig: {
-                has_cover_image: itemData.has_cover_image,
-                has_back_cover_image: itemData.has_back_cover_image
-            }
-        });
+    
 
         if (hasCover && hasBackCover) {
             return {
@@ -4816,13 +4655,12 @@ export default function EditorLibro() {
                 setSelectedImage(element);
                 // ✅ COMPLETAMENTE BLOQUEADO - NUNCA cambiar automáticamente a filtros
                 // ✅ Solo establecer la imagen seleccionada para que esté disponible cuando vaya a filtros
-                console.log('🖼️ Imagen seleccionada:', element.id, '- Tab actual mantenido:', activeTab);
 
                 // 🛡️ ASEGURAR que NO se cambie a filtros automáticamente
                 if (activeTab === 'filters') {
-                    console.log('✅ Usuario ya está en filtros, manteniendo');
+                    //console.log('✅ Usuario ya está en filtros, manteniendo');
                 } else {
-                    console.log('✅ Imagen seleccionada, pero manteniendo tab actual:', activeTab);
+                  //  console.log('✅ Imagen seleccionada, pero manteniendo tab actual:', activeTab);
                 }
             } else if (element?.type === "text") {
                 setTextToolbarVisible(true);
@@ -4904,11 +4742,9 @@ export default function EditorLibro() {
             const newPagesStr = JSON.stringify(newPages);
 
             if (prevPagesStr === newPagesStr) {
-                console.log('🔄 [UPDATE-PAGES] Sin cambios, evitando actualización');
                 return prevPages;
             }
 
-            console.log('📝 [UPDATE-PAGES] Aplicando cambios...');
 
             // 🚀 OPTIMIZACIÓN: Usar requestAnimationFrame para operaciones no críticas
             requestAnimationFrame(() => {
@@ -5659,13 +5495,7 @@ export default function EditorLibro() {
         updates,
         isDuplicate = false
     ) => {
-        console.log('🔄 [updateElementInCell] Actualizando elemento:', { cellId, elementId, updates, isDuplicate });
-        console.log('🔍 [updateElementInCell] Verificando si hay cambios en filtros/máscaras:', {
-            hasFilters: !!updates.filters,
-            hasMask: !!updates.mask,
-            filtersData: updates.filters,
-            maskData: updates.mask
-        });
+      
         
         // 🚀 OPTIMIZACIÓN: Usar función de callback para evitar re-renders innecesarios
         setPages(prevPages => {
@@ -5712,7 +5542,6 @@ export default function EditorLibro() {
                 });
 
                 if (!hasChanges) {
-                    console.log('🚫 [updateElementInCell] No hay cambios reales, saltando actualización');
                     return prevPages; // No hay cambios reales
                 }
 
@@ -5721,29 +5550,23 @@ export default function EditorLibro() {
                     ...updates,
                 };
                 
-                console.log('✅ [updateElementInCell] Elemento actualizado:', updatedElement);
                 
                 updatedPages[currentPage].cells[cellIndex].elements[elementIndex] = updatedElement;
                 
                 // 🎨 REGENERACIÓN AUTOMÁTICA DE THUMBNAILS CUANDO CAMBIAN FILTROS O MÁSCARAS
                 if (updates.filters || updates.mask) {
-                    console.log('🔄 [AUTO-REGEN] Cambios en filtros/máscaras detectados, regenerando thumbnail...');
-                    console.log('🔄 [AUTO-REGEN] Datos de cambios:', { filters: updates.filters, mask: updates.mask });
-                    
+                  
                     // 🚨 SOLUCIÓN CRÍTICA: Limpiar caché cuando se detectan cambios de filtros/máscaras
                     if (window.FORCE_THUMBNAIL_REGENERATION) {
-                        console.log('💥 [FORZADO-EMERGENCIA] Limpiando caché de thumbnails completamente');
                         window.thumbnailCache = {};
                     }
                     
                     // Regeneración inmediata sin delay
                     generateCurrentPageThumbnail(true).then(() => {
-                        console.log('✅ [AUTO-REGEN] Thumbnail regenerado exitosamente');
                         
                         // 🚨 SOLUCIÓN CRÍTICA: Forzar regeneración secundaria para garantizar actualización
                         if (window.FORCE_THUMBNAIL_REGENERATION && window.forceRegenerateThumbnail) {
                             setTimeout(() => {
-                                console.log('🔄 [FORZADO-EMERGENCIA] Ejecutando regeneración forzada secundaria');
                                 try {
                                     window.forceRegenerateThumbnail();
                                 } catch (error) {
@@ -5755,7 +5578,7 @@ export default function EditorLibro() {
                         console.error('❌ [AUTO-REGEN] Error regenerando thumbnail:', error);
                     });
                 } else {
-                    console.log('🚫 [AUTO-REGEN] No hay cambios en filtros/máscaras, saltando regeneración');
+                  //  console.log('🚫 [AUTO-REGEN] No hay cambios en filtros/máscaras, saltando regeneración');
                 }
             }
 
@@ -5788,7 +5611,6 @@ export default function EditorLibro() {
             return;
         }
         
-        console.log('🚨 [FORCE-REGEN] Iniciando regeneración forzada...');
         
         // Limpiar completamente la caché de thumbnails
         if (window.thumbnailCache) window.thumbnailCache = {};
@@ -5814,13 +5636,11 @@ export default function EditorLibro() {
         // Mantener protección por 10 segundos para evitar que otras regeneraciones la sobreescriban
         setTimeout(() => {
             window.BLOCK_AUTO_REGENERATION = false;
-            console.log('🔓 Regeneración automática desbloqueada después de protección');
         }, 10000);
     }, [generateCurrentPageThumbnail]);
 
     const testFilterApplication = useCallback(() => {
         if (selectedElement && selectedCell) {
-            console.log('🧪 [TEST] Aplicando filtro grayscale de prueba...');
             updateElementInCell(selectedCell, selectedElement, {
                 filters: {
                     brightness: 100,
@@ -5830,13 +5650,12 @@ export default function EditorLibro() {
                 }
             });
         } else {
-            console.log('⚠️ [TEST] No hay elemento seleccionado');
+           // console.log('⚠️ [TEST] No hay elemento seleccionado');
         }
     }, [selectedElement, selectedCell, updateElementInCell]);
 
     // Función avanzada para bloquear permanentemente cualquier regeneración no autorizada
     const lockThumbnailsForever = useCallback(() => {
-        console.log('🔒 [BLOQUEO-SELECTIVO] Activando protección para thumbnails con filtros');
         
         // Activar solo los bloqueadores necesarios
         window.THUMBNAIL_PROTECTED = true; 
@@ -5852,11 +5671,9 @@ export default function EditorLibro() {
         // Reemplazar con versión que verifica si ya está protegido
         window.forceRegenerateThumbnail = (...args) => {
             if (window._userInitiated) {
-                console.log('✅ [REGENERACIÓN AUTORIZADA] Permitiendo regeneración solicitada por usuario');
                 window._userInitiated = false;
                 return originalGenerateCurrentPageThumbnail(...args);
             }
-            console.log('🛑 [REGENERACIÓN BLOQUEADA] Intento de regeneración no autorizado bloqueado');
             return false;
         };
         
@@ -5877,14 +5694,10 @@ export default function EditorLibro() {
         // Mostrar mensaje informativo para el usuario
         alert('🔒 Miniaturas protegidas exitosamente!\n\nSi necesitas regenerar una miniatura específica, usa window.safeRegenerateThumbnail() en la consola.');
         
-        console.log('🔒 [BLOQUEO-PERMANENTE] Thumbnails protegidos:', window._protectedThumbnailIds);
-        console.log('🔒 [BLOQUEO-PERMANENTE] No se permitirán más regeneraciones automáticas');
-        console.log('📢 [INSTRUCCIONES] Para regenerar manualmente una miniatura, ejecuta window.safeRegenerateThumbnail() en la consola');
     }, [pageThumbnails]);
 
     // 🚀 NUEVA FUNCIÓN: Forzar regeneración garantizando filtros
     const forceRegenerateWithFilters = useCallback(() => {
-        console.log('🌈 [FILTROS-FORZADOS] Iniciando regeneración con filtros garantizados...');
         
         // Activar todos los mecanismos para garantizar filtros
         window.FORCE_FILTER_APPLICATION = true;
@@ -5901,7 +5714,6 @@ export default function EditorLibro() {
                 if (cell.elements) {
                     cell.elements.forEach(element => {
                         if (element.filters) {
-                            console.log(`🔍 [FILTROS-FORZADOS] Marcando elemento ${element.id} para filtros forzados`);
                             element._hasRealFilters = true;
                             element.pageId = currentPageData.id;
                         }
@@ -5913,342 +5725,9 @@ export default function EditorLibro() {
         // Forzar regeneración
         generateCurrentPageThumbnail(true);
         
-        console.log('🎉 [FILTROS-FORZADOS] Regeneración completada');
     }, [pages, currentPage, generateCurrentPageThumbnail]);
 
-    // Exponer funciones globalmente para testing
-    {/*useEffect(() => {
-        window.forceRegenerateThumbnail = forceRegenerateThumbnail;
-        window.testFilterApplication = testFilterApplication;
-        window.lockThumbnailsForever = lockThumbnailsForever;
-        window.forceRegenerateWithFilters = forceRegenerateWithFilters;
-        
-        // Añadir mensaje en consola para el usuario
-        console.log('📢 [AYUDA] Funciones disponibles:');
-        console.log('- window.forceRegenerateThumbnail(): Regenera la miniatura actual con filtros');
-        console.log('- window.forceRegenerateAllThumbnails(): Regenera todas las miniaturas');
-        console.log('- window.lockThumbnailsForever(): Bloquea permanentemente las regeneraciones automáticas');
-        console.log('- window.regenerateCurrentThumbnailNow(): 🔥 NUEVO: Regenera inmediatamente la miniatura actual');
-        
-        // 🚨 SOLUCIÓN DE EMERGENCIA: Agregar botón flotante para regenerar miniaturas
-        const addEmergencyButton = () => {
-            if (document.getElementById('emergency-thumbnail-button')) return;
-            
-            const button = document.createElement('button');
-            button.id = 'emergency-thumbnail-button';
-            button.innerText = '🔄 Regenerar miniatura';
-            button.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #af5cb8 0%, #9333ea 100%);
-                color: white;
-                border: none;
-                padding: 10px 15px;
-                border-radius: 8px;
-                font-weight: bold;
-                z-index: 9999;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                cursor: pointer;
-                transition: all 0.2s ease;
-            `;
-            
-            button.onmouseover = () => {
-                button.style.transform = 'translateY(-2px)';
-                button.style.boxShadow = '0 6px 16px rgba(0,0,0,0.25)';
-            };
-            
-            button.onmouseout = () => {
-                button.style.transform = 'translateY(0)';
-                button.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-            };
-            
-            button.onclick = () => {
-                // Agregar efecto de clic
-                button.style.transform = 'scale(0.95)';
-                setTimeout(() => button.style.transform = 'scale(1)', 150);
-                
-                // Cambiar texto temporalmente
-                const originalText = button.innerText;
-                button.innerText = '🔥 Aplicando filtros...';
-                
-                console.log('🚨 [EMERGENCY BUTTON] Usando sistema radical de filtros garantizados');
-                
-                try {
-                    // Ejecutar con pequeño retraso para permitir cambios visuales
-                    setTimeout(async () => {
-                        let success = false;
-                        
-                        // MÉTODO 1: Intentar con el sistema radical
-                        if (window.forceRegenerateWithGuaranteedFilters) {
-                            console.log('🔥 [MÉTODO 1] Intentando sistema radical...');
-                            success = await window.forceRegenerateWithGuaranteedFilters();
-                        }
-                        
-                        // MÉTODO 2: Fallback con función segura
-                        if (!success && window.safeRegenerateThumbnail) {
-                            console.log('�️ [MÉTODO 2] Fallback con función segura...');
-                            window.safeRegenerateThumbnail();
-                            success = true;
-                        }
-                        
-                        // MÉTODO 3: Fallback con función mejorada
-                        if (!success && window.generateThumbnailWithFilters) {
-                            console.log('🔄 [MÉTODO 3] Fallback con función mejorada...');
-                            window.generateThumbnailWithFilters();
-                            success = true;
-                        }
-                        
-                        // Actualizar UI según resultado
-                        if (success) {
-                            button.innerText = '✅ ¡Filtros aplicados!';
-                            button.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                        } else {
-                            button.innerText = '❌ Error aplicando filtros';
-                            button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-                        }
-                        
-                        // Restaurar después de 3 segundos
-                        setTimeout(() => {
-                            button.innerText = originalText;
-                            button.style.background = 'linear-gradient(135deg, #af5cb8 0%, #9333ea 100%)';
-                        }, 3000);
-                    }, 200);
-                } catch (error) {
-                    console.error('❌ [EMERGENCY] Error crítico:', error);
-                    button.innerText = '❌ Error crítico';
-                    button.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-                    setTimeout(() => {
-                        button.innerText = originalText;
-                        button.style.background = 'linear-gradient(135deg, #af5cb8 0%, #9333ea 100%)';
-                    }, 3000);
-                }
-            };
-            
-            document.body.appendChild(button);
-            
-            // 🛡️ BOTÓN ADICIONAL: Control de protección
-            const protectionButton = document.createElement('button');
-            protectionButton.id = 'protection-control-button';
-            protectionButton.innerText = '🛡️ Estado protección';
-            protectionButton.style.cssText = `
-                position: fixed;
-                bottom: 80px;
-                right: 20px;
-                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 9999;
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            `;
-            
-            protectionButton.onclick = () => {
-                const protectedCount = window._protectedThumbnails?.size || 0;
-                const isBlocked = window.isAutoRegenerationBlocked?.();
-                
-                alert(`🛡️ ESTADO DEL SISTEMA DE PROTECCIÓN:
-                
-• Thumbnails protegidos: ${protectedCount}
-• Regeneración automática: ${isBlocked ? '🚫 BLOQUEADA' : '✅ ACTIVA'}
-• IDs protegidos: ${Array.from(window._protectedThumbnails || []).join(', ') || 'Ninguno'}
-
-Funciones disponibles:
-• window.protectThumbnail(pageId)
-• window.unprotectThumbnail(pageId)
-• window.blockAutomaticRegeneration()
-• window.unblockAutomaticRegeneration()`);
-            };
-            
-            document.body.appendChild(protectionButton);
-            
-            // 🚨 BOTÓN DE EMERGENCIA ANTI-PARPADEO
-            const antiFlickerButton = document.createElement('button');
-            antiFlickerButton.id = 'anti-flicker-button';
-            antiFlickerButton.innerText = '🚨 DETENER PARPADEO';
-            antiFlickerButton.style.cssText = `
-                position: fixed;
-                bottom: 140px;
-                right: 20px;
-                background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 9999;
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            `;
-            
-            antiFlickerButton.onclick = async () => {
-                console.log('🚨 [ANTI-FLICKER] Modo agresivo activado');
-                
-                // 1. Bloquear TODAS las regeneraciones
-                window.blockAutomaticRegeneration?.();
-                
-                // 2. Generar thumbnail con filtros
-                if (window.forceRegenerateWithGuaranteedFilters) {
-                    const success = await window.forceRegenerateWithGuaranteedFilters();
-                    
-                    if (success) {
-                        // 3. Proteger agresivamente
-                        const currentPageId = window._currentPageData?.id;
-                        if (currentPageId) {
-                            window.protectThumbnail?.(currentPageId);
-                            
-                            // 4. Monitoreo continuo por 10 segundos
-                            let monitorCount = 0;
-                            const aggressiveMonitor = setInterval(() => {
-                                const protectedThumbnail = window._protectedThumbnailData?.[currentPageId];
-                                if (protectedThumbnail) {
-                                    setPageThumbnails(prev => {
-                                        if (prev[currentPageId] !== protectedThumbnail) {
-                                            console.error(`🚨 [AGGRESSIVE RESTORE] Forzando thumbnail ${monitorCount++}`);
-                                            return {
-                                                ...prev,
-                                                [currentPageId]: protectedThumbnail
-                                            };
-                                        }
-                                        return prev;
-                                    });
-                                }
-                                
-                                if (monitorCount > 100) { // 10 segundos
-                                    clearInterval(aggressiveMonitor);
-                                }
-                            }, 100);
-                            
-                            antiFlickerButton.innerText = '✅ PARPADEO DETENIDO';
-                            antiFlickerButton.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-                            
-                            setTimeout(() => {
-                                antiFlickerButton.innerText = '🚨 DETENER PARPADEO';
-                                antiFlickerButton.style.background = 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)';
-                            }, 5000);
-                        }
-                    }
-                }
-            };
-            
-            document.body.appendChild(antiFlickerButton);
-            
-            // 🎯 BOTÓN DE PRUEBA PARA FILTROS PREDEFINIDOS
-            const testPredefButton = document.createElement('button');
-            testPredefButton.id = 'test-predefined-button';
-            testPredefButton.innerText = '🎯 TEST PREDEFINIDOS';
-            testPredefButton.style.cssText = `
-                position: fixed;
-                bottom: 200px;
-                right: 20px;
-                background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: bold;
-                z-index: 9999;
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            `;
-            
-            testPredefButton.onclick = () => {
-                console.log('🎯 [TEST PREDEFINIDOS] Analizando página actual...');
-                
-                const currentPageData = window._currentPageData;
-                if (!currentPageData) {
-                    alert('No hay página actual disponible');
-                    return;
-                }
-                
-                // Buscar elementos con filtros
-                let elementsWithFilters = [];
-                if (currentPageData.elements) {
-                    currentPageData.elements.forEach(element => {
-                        if (element.filters && Object.keys(element.filters).length > 0) {
-                            elementsWithFilters.push({
-                                id: element.id,
-                                type: element.type,
-                                filters: element.filters,
-                                hasFilters: 
-                                    (element.filters.brightness !== undefined && 
-                                     element.filters.brightness !== 100 && element.filters.brightness !== 1) ||
-                                    (element.filters.contrast !== undefined && 
-                                     element.filters.contrast !== 100 && element.filters.contrast !== 1) ||
-                                    (element.filters.saturation !== undefined && 
-                                     element.filters.saturation !== 100 && element.filters.saturation !== 1)
-                            });
-                        }
-                    });
-                }
-                
-                const report = `🎯 REPORTE DE FILTROS PREDEFINIDOS:
-
-Página actual: ${currentPageData.id}
-Elementos con filtros: ${elementsWithFilters.length}
-
-${elementsWithFilters.map(el => `
-• ${el.id} (${el.type}):
-  - Brightness: ${el.filters.brightness} 
-  - Contrast: ${el.filters.contrast}
-  - Saturation: ${el.filters.saturation}
-  - Detectado como filtro: ${el.hasFilters ? '✅ SÍ' : '❌ NO'}
-`).join('')}
-
-${elementsWithFilters.length === 0 ? '⚠️ No se encontraron elementos con filtros en la página actual' : ''}`;
-                
-                alert(report);
-                console.log('🎯 [TEST PREDEFINIDOS] Reporte completo:', elementsWithFilters);
-            };
-            
-            document.body.appendChild(testPredefButton);
-        };
-        
-        // Agregar botón de emergencia después de cargar
-        setTimeout(addEmergencyButton, 2000);
-        
-        // 🔥 INFORMACIÓN DEL SISTEMA RADICAL
-        setTimeout(() => {
-            console.log(`
-🔥 ========== SISTEMA RADICAL DE FILTROS ACTIVADO ==========
-
-Este sistema garantiza al 100% que los filtros se apliquen en las miniaturas.
-
-FUNCIONES DISPONIBLES:
-• window.forceRegenerateWithGuaranteedFilters() - Sistema radical con manipulación de píxeles
-• window.safeRegenerateThumbnail() - Regeneración segura sin bucles
-• window.generateThumbnailWithFilters() - Regeneración mejorada con filtros
-• window.regenerateCurrentThumbnailNow() - Regeneración estándar con detección de filtros
-
-CONTROLES:
-• Botón "🔄 Regenerar miniatura" - Regeneración automática con múltiples métodos
-• El sistema detecta automáticamente elementos con filtros
-• Usa verificación post-generación para garantizar filtros
-• Protección anti-bucle incorporada
-
-¡Los filtros ahora se aplicarán SIEMPRE en las miniaturas SIN bucles infinitos!
-============================================================
-            `);
-        }, 3000);
-        
-        return () => {
-            delete window.forceRegenerateThumbnail;
-            delete window.testFilterApplication;
-            delete window.lockThumbnailsForever;
-            
-            // Remover botón de emergencia
-            if (document.getElementById('emergency-thumbnail-button')) {
-                document.getElementById('emergency-thumbnail-button').remove();
-            }
-        };
-    }, [forceRegenerateThumbnail, testFilterApplication, lockThumbnailsForever]);
- */}
+  
     // Eliminar un elemento de una celda
     const deleteElementFromCell = (cellId, elementId) => {
         const updatedPages = [...pages];
@@ -6397,7 +5876,6 @@ CONTROLES:
             addElementToCell(selectedCell, newElement);
         } else {
             // Si no hay celda seleccionada, no hacer nada o mostrar un mensaje
-            console.log("Selecciona una celda primero");
         }
     };
 
@@ -6467,7 +5945,6 @@ CONTROLES:
         
         // Permitir regeneración siempre, pero registrar si tiene filtros para mejor manejo
         if (pageHasFilters) {
-            console.log('🎭 [FILTROS DETECTADOS] Esta página tiene filtros aplicados');
             // Registrar como página con filtros para protección futura
             if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
             if (!window._protectedThumbnailIds.includes(pageId)) {
@@ -6475,7 +5952,6 @@ CONTROLES:
             }
         }
         
-        console.log('✅ [THUMBNAIL] Generando miniatura ' + (pageHasFilters ? 'CON filtros aplicados' : 'sin filtros') + '...');
 
         if (pages.length === 0 || isLoading || !thumbnailGenerationKey) {
             return;
@@ -6484,16 +5960,13 @@ CONTROLES:
         let isCancelled = false;
 
         const generateThumbnailForCurrentPage = async () => {
-            console.log("INCIO GENERATE")
             // 🚨 BLOQUEO SECUNDARIO: Verificar de nuevo por si la protección se activó mientras esperábamos
             if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED) {
-                console.log('🛡️ [PROTECCIÓN ACTIVA] Regeneración cancelada');
                 return;
             }
             
             try {
                 const currentPageData = pages[currentPage];
-                console.log("AQUI MOSTRAMOS EL CURRENT ",currentPageData)
                 if (!currentPageData || !currentPageData.id) {
                     return;
                 }
@@ -6513,7 +5986,7 @@ CONTROLES:
                 // Esperar un poco para que el DOM se estabilice y el thumbnail se elimine
                 await new Promise(resolve => setTimeout(resolve, 100));
 
-                console.log("ANTES DEL CANCELED")
+              
                 if (isCancelled) {
                     return;
                 }
@@ -6530,18 +6003,16 @@ CONTROLES:
                 
                 // Opciones especiales para capturar filtros si es necesario
                 const captureOptions = hasFilters ? { type: 'thumbnail', preserveFilters: true } : { type: 'thumbnail' };
-                console.log(`🎭 [CAPTURE] Generando miniatura ${hasFilters ? 'CON filtros' : 'estándar'}`);
-                
+               
                 const thumbnail = await captureCurrentWorkspace(captureOptions);
-                console.log("ESTA ES THUMBANIL"+thumbnail);
+               
 
                 if (thumbnail && !isCancelled) {
                     setPageThumbnails(prev => ({
                         ...prev,
                         [pageId]: thumbnail
                     }));
-                    console.log("ESTA ES UNA NUEVA CONSOLA"+hasFilters);
-                    
+                  
                     // 🎭 PRESERVAR FILTROS: Si tiene filtros, marcarla como protegida
                     if (hasFilters) {
                         if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
@@ -6574,7 +6045,6 @@ CONTROLES:
     useEffect(() => {
         // 🚨 BLOQUEO SELECTIVO: Permitir generación automática pero proteger miniaturas con filtros
         if (window.BLOCK_AUTO_REGENERATION) {
-            console.log('🛡️ [PROTECCIÓN PARCIAL] Bloqueando generación temporal en segundo plano');
             return;
         }
 
@@ -6583,7 +6053,6 @@ CONTROLES:
         const generateBackgroundThumbnails = async () => {
             // 🚨 BLOQUEO SELECTIVO: Verificar solo las páginas con filtros
             if (window.BLOCK_AUTO_REGENERATION) {
-                console.log('🛡️ [PROTECCIÓN TEMPORAL] Generación en segundo plano pausada');
                 return;
             }
             
@@ -6690,7 +6159,7 @@ CONTROLES:
     useEffect(() => {
         return () => {
             // Solo limpiar al desmontar, sin setState que cause bucles
-            console.log('🧹 [CLEANUP] Componente desmontado');
+            //console.log('🧹 [CLEANUP] Componente desmontado');
         };
     }, []);
 
@@ -6699,12 +6168,7 @@ CONTROLES:
 
         try {
 
-            console.log('🚀 ===== INICIANDO addAlbumToCart =====');
-            console.log('📦 itemData:', itemData);
-            console.log('🎨 presetData:', presetData);
-            console.log('📋 projectData:', projectData);
-            console.log('🆔 projectData?.id:', projectData?.id);
-            console.log('=====================================');
+          
 
             if (!itemData || !presetData || !projectData?.id) {
 
@@ -6819,12 +6283,7 @@ CONTROLES:
                 }
             };
 
-            console.log("📦 PRODUCTO ÁLBUM CREADO:", albumProduct);
-            console.log("🎯 PROJECT IDS:", {
-                project_id: cartProjectId,
-                canvas_project_id: projectData.id,
-                item_id: itemData?.id
-            });
+           
 
 
             // Paso 5: Agregar al carrito usando el patrón correcto
@@ -7290,7 +6749,6 @@ CONTROLES:
     
     // 🚨 SOLUCIÓN DE EMERGENCIA: Función global para regenerar la miniatura actual con un clic
     window.regenerateCurrentThumbnailNow = () => {
-        console.log('🚀 [REGENERACIÓN FORZADA] Regenerando miniatura de página actual...');
         
         // Limpiar caché para esta página
         const pageId = pages[currentPage]?.id;
@@ -7316,7 +6774,6 @@ CONTROLES:
                                 element.filters.flipHorizontal ||
                                 element.filters.flipVertical)) {
                                     hasFilters = true;
-                                    console.log(`🎨 [FILTRO DETECTADO] Elemento ${element.id} tiene filtros aplicados`);
                                     element._hasRealFilters = true;
                             }
                         });
@@ -7326,7 +6783,6 @@ CONTROLES:
             
             // Forzar aplicación de filtros si se detectan
             if (hasFilters) {
-                console.log('🎭 [FILTROS DETECTADOS] Activando modo de preservación de filtros');
                 window.PRESERVE_FILTERS_FOR_PAGE = pageId;
                 window.FORCE_FILTER_APPLICATION = true;
             }
@@ -7341,13 +6797,10 @@ CONTROLES:
         
         // Forzar regeneración inmediata
         setTimeout(() => {
-            console.log('⚡ [REGENERACIÓN] Iniciando generación con preservación de filtros');
             generateCurrentPageThumbnail(true);
-            console.log('✅ Regeneración forzada completada. La miniatura debería ser visible ahora.');
             
             // Resetear flags después de un tiempo
             setTimeout(() => {
-                console.log('🔄 [CLEANUP] Limpiando flags después de regeneración');
                 window.PRESERVE_FILTERS_FOR_PAGE = null;
             }, 1000);
         }, 100);
@@ -7357,7 +6810,6 @@ CONTROLES:
     
     // 🔥 NUEVA FUNCIÓN: Regenerar miniatura con filtros garantizados
     window.generateThumbnailWithFilters = () => {
-        console.log('🎨 [FUNCIÓN GLOBAL] Regenerando miniatura con filtros garantizados');
         window.FORCE_FILTER_APPLICATION = true;
         
         // Añadir timestamp para evitar caché del navegador
@@ -7377,7 +6829,6 @@ CONTROLES:
     
     // 🚀 FUNCIÓN RADICAL: Usar el sistema de filtros garantizados
     window.forceRegenerateWithGuaranteedFilters = async () => {
-        console.log('🔥 [RADICAL] Usando sistema de filtros garantizados');
         
         const currentPageData = pages[currentPage];
         if (!currentPageData || !workspaceDimensions) {
@@ -7401,42 +6852,7 @@ CONTROLES:
                 }));
             };
             
-            // 🎯 VERIFICAR DATOS ANTES DE GENERAR (FUNCIÓN GLOBAL)
-            console.log('📦 [FUNCIÓN GLOBAL - DATOS] currentPageData antes de generar:', {
-                pageId: currentPageData.id,
-                elementsCount: currentPageData.elements?.length || 0,
-                elementsWithRealFilters: currentPageData.elements?.filter(el => {
-                    if (!el.filters) return false;
-                    return (
-                        (el.filters.brightness !== undefined && el.filters.brightness !== 1) ||
-                        (el.filters.contrast !== undefined && el.filters.contrast !== 1) ||
-                        (el.filters.saturation !== undefined && el.filters.saturation !== 1) ||
-                        (el.filters.tint !== undefined && el.filters.tint !== 0) ||
-                        (el.filters.hue !== undefined && el.filters.hue !== 0) ||
-                        (el.filters.opacity !== undefined && el.filters.opacity !== 1) ||
-                        (el.filters.blur !== undefined && el.filters.blur !== 0) ||
-                        (el.filters.scale !== undefined && el.filters.scale !== 1) ||
-                        (el.filters.rotate !== undefined && el.filters.rotate !== 0) ||
-                        el.filters.flipHorizontal || el.filters.flipVertical
-                    );
-                })?.map(el => ({
-                    id: el.id,
-                    type: el.type,
-                    filtersDetailed: {
-                        brightness: el.filters.brightness + ' (should be applied as: ' + el.filters.brightness + ')',
-                        contrast: el.filters.contrast + ' (should be applied as: ' + el.filters.contrast + ')',
-                        saturation: el.filters.saturation + ' (should be applied as: ' + el.filters.saturation + ')',
-                        tint: el.filters.tint + ' (should be applied as: ' + el.filters.tint + ')',
-                        hue: el.filters.hue + ' (should be applied as: ' + el.filters.hue + ')',
-                        opacity: el.filters.opacity + ' (should be applied as: ' + el.filters.opacity + ')',
-                        blur: el.filters.blur + ' (should be applied as: ' + el.filters.blur + ')',
-                        scale: el.filters.scale + ' (should be applied as: ' + el.filters.scale + ')',
-                        rotate: el.filters.rotate + ' (should be applied as: ' + el.filters.rotate + ')',
-                        flipHorizontal: el.filters.flipHorizontal,
-                        flipVertical: el.filters.flipVertical
-                    }
-                })) || []
-            });
+          
             
             // Generar con sistema radical
             const thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
@@ -7454,17 +6870,14 @@ CONTROLES:
                 
                 if (pageHasFilters) {
                     window.protectThumbnail?.(currentPageData.id);
-                    console.log(`🛡️ [GLOBAL PROTECTION] Thumbnail ${currentPageData.id} protegido en función global`);
                 }
                 
                 setPageThumbnails(prev => {
-                    console.log(`🌍 [GLOBAL SET] Estableciendo thumbnail desde función global para ${currentPageData.id}`);
                     return {
                         ...prev,
                         [currentPageData.id]: thumbnail
                     };
                 });
-                console.log('✅ [RADICAL] Thumbnail generado exitosamente');
                 return true;
             }
             
@@ -7477,7 +6890,6 @@ CONTROLES:
     
     // 🎯 FUNCIÓN SEGURA: Regenerar thumbnail con protección anti-bucle
     window.safeRegenerateThumbnail = () => {
-        console.log('🛡️ [SAFE] Regeneración segura iniciada');
         
         // Limpiar verificaciones para permitir nueva verificación
         if (window._filterVerificationDone) {
@@ -7614,14 +7026,7 @@ CONTROLES:
                                 enabledPages = enabledPages.concat(categorizedPages.final);
                             }
                             
-                            console.log('📤 [EDITOR-TO-MODAL] Enviando páginas filtradas:', {
-                                total: enabledPages.length,
-                                types: enabledPages.map(p => p.type),
-                                itemConfig: {
-                                    has_cover_image: itemData.has_cover_image,
-                                    has_back_cover_image: itemData.has_back_cover_image
-                                }
-                            });
+                           
                             
                             const pagesWithLayout = enabledPages.map((page) => ({
                                 ...page,
@@ -7661,12 +7066,7 @@ CONTROLES:
                                 }
                             });
                             
-                            console.log('🖼️ [EDITOR-TO-MODAL] Enviando thumbnails filtrados:', {
-                                totalThumbnails: Object.keys(filteredThumbnails).length,
-                                availableThumbnails: Object.keys(pageThumbnails).length,
-                                enabledPageIds,
-                                filteredThumbnailIds: Object.keys(filteredThumbnails)
-                            });
+                           
                             
                             return filteredThumbnails;
                         })()}
@@ -7863,7 +7263,6 @@ CONTROLES:
                                 {saveQueue.length > 0 && (
                                     <button
                                         onClick={() => {
-                                            console.log('🔧 [DEBUG] Procesando cola manualmente');
                                             processSaveQueue();
                                         }}
                                         className="flex items-center gap-2 text-xs text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors"
@@ -7872,26 +7271,7 @@ CONTROLES:
                                         Procesar Cola
                                     </button>
                                 )}
-                                {/*
-                              
-                                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                    P{currentPage}: {(pageChanges instanceof Map && pageChanges.has(currentPage)) ? '🔴' : '🟢'}
-                                </div>
-
-                            
-                                <button
-                                    onClick={() => {
-                                        console.log('🔧 [DEBUG] Marcando página actual como modificada');
-                                        setPageChanges(prev => {
-                                            const newMap = new Map(prev);
-                                            newMap.set(currentPage, Date.now());
-                                            return newMap;
-                                        });
-                                    }}
-                                    className="text-xs text-white bg-green-500 hover:bg-green-600 px-2 py-1 rounded"
-                                >
-                                    Marcar Modificada
-                                </button> */}
+                               
 
                                 <Button
                                     id="preview-button"
@@ -7903,10 +7283,8 @@ CONTROLES:
                                         e.stopPropagation();
 
                                         try {
-                                            console.log(`🎭 [${contentType.type.toUpperCase()}-EXPERIENCE] Iniciando experiencia de ${contentType.name.toLowerCase()}...`);
 
                                             // 💾 NUEVA FASE 0: Guardar automáticamente antes de continuar
-                                            console.log('💾 [AUTO-SAVE] Guardando cambios antes de abrir preview...');
                                             
                                             // Mostrar modal de preparación inicial
                                             setAlbumPreparationModal({
@@ -7920,7 +7298,6 @@ CONTROLES:
                                             // Ejecutar guardado manual
                                             try {
                                                 await saveProgressManually();
-                                                console.log('✅ [AUTO-SAVE] Guardado completado exitosamente');
                                                 
                                                 // Actualizar progreso del guardado
                                                 setAlbumPreparationModal(prev => ({
@@ -8056,7 +7433,6 @@ CONTROLES:
                                             // Pequeño delay para transición suave
                                             setTimeout(() => {
                                                 setIsBookPreviewOpen(true);
-                                                console.log(`✅ [${contentType.type.toUpperCase()}-EXPERIENCE] Experiencia de ${contentType.name.toLowerCase()} completada`);
                                             }, 300);
 
                                         } catch (error) {
@@ -8972,7 +8348,6 @@ CONTROLES:
                                                             <FilterControls
                                                                 filters={currentElement.filters || {}}
                                                                 onFilterChange={(newFilters) => {
-                                                                    console.log('🔥 [FILTER-CHANGE-IMMEDIATE] APLICANDO FILTROS Y REGENERANDO AHORA!');
                                                                     
                                                                     // 1. Actualizar elemento inmediatamente
                                                                     updateElementInCell(
@@ -8983,17 +8358,14 @@ CONTROLES:
                                                                     
                                                                     // 2. FORZAR regeneración inmediata con múltiples intentos
                                                                     setTimeout(() => {
-                                                                        console.log('🔥 [IMMEDIATE-REGEN] Intento 1 de regeneración...');
                                                                         generateCurrentPageThumbnail(true);
                                                                     }, 50);
                                                                     
                                                                     setTimeout(() => {
-                                                                        console.log('🔥 [IMMEDIATE-REGEN] Intento 2 de regeneración...');
                                                                         generateCurrentPageThumbnail(true);
                                                                     }, 200);
                                                                     
                                                                     setTimeout(() => {
-                                                                        console.log('🔥 [IMMEDIATE-REGEN] Intento 3 de regeneración...');
                                                                         generateCurrentPageThumbnail(true);
                                                                     }, 500);
                                                                 }}
