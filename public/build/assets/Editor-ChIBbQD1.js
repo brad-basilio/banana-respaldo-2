@@ -94,7 +94,7 @@ import{_ as ia}from"./preload-helper-BfFHrpNk.js";import{j as e}from"./AboutSimp
                     transition-all duration-200 cursor-pointer
                     ${_.bg} ${_.color}
                     hover:shadow-md
-                `,onClick:()=>o!=="saving"&&(T==null?void 0:T()),children:[_.icon,e.jsx("span",{className:"text-sm font-medium",children:_.text}),e.jsx("div",{className:"flex items-center",children:i?e.jsx(Ma,{className:"w-3 h-3 text-green-500"}):e.jsx(gn,{className:"w-3 h-3 text-orange-500"})})]}),o==="saving"&&e.jsx("div",{className:"absolute bottom-0 left-0 w-full h-1 bg-blue-200 rounded-b-lg overflow-hidden",children:e.jsx("div",{className:"h-full bg-blue-500 animate-pulse"})})]})},pr=!ke&&!0,ke=typeof window>"u",bt=()=>{},En=console.error,Ee=pr?()=>{}:console.log,fr=`
+                `,onClick:()=>o!=="saving"&&(T==null?void 0:T()),children:[_.icon,e.jsx("span",{className:"text-sm font-medium",children:_.text}),e.jsx("div",{className:"flex items-center",children:i?e.jsx(Ma,{className:"w-3 h-3 text-green-500"}):e.jsx(gn,{className:"w-3 h-3 text-orange-500"})})]}),o==="saving"&&e.jsx("div",{className:"absolute bottom-0 left-0 w-full h-1 bg-blue-200 rounded-b-lg overflow-hidden",children:e.jsx("div",{className:"h-full bg-blue-500 animate-pulse"})})]})},ke=typeof window>"u",pr=!ke&&!0,bt=()=>{},En=console.error,Ee=pr?()=>{}:console.log,fr=`
     .driver-popover-banana {
         background: linear-gradient(135deg, #ffffff 0%, #faf7fb 100%);
         border: 2px solid #af5cb8;

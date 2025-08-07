@@ -28,9 +28,9 @@ import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
 // ⚡ OPTIMIZACIÓN VPS: Sistema de logging inteligente y optimizado
+const isServer = typeof window === 'undefined'; // 🚀 CRÍTICO: Detectar entorno servidor PRIMERO
 const isDev = process.env.NODE_ENV === 'development';
 const isVPS = !isServer && (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost');
-const isServer = typeof window === 'undefined'; // 🚀 CRÍTICO: Detectar entorno servidor
 const log = isDev ? console.log : () => {};
 const warn = isDev ? console.warn : () => {};
 const error = console.error; // Errores siempre visibles
