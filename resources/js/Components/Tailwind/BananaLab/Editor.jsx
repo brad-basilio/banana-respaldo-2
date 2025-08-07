@@ -18,13 +18,13 @@ const HTML2CANVAS_CONFIG = {
         // ⚡ OPTIMIZACIÓN: Remover elementos costosos en el clone
         const scripts = clonedDoc.querySelectorAll('script');
         scripts.forEach(script => script.remove());
-        
+
         const videos = clonedDoc.querySelectorAll('video');
         videos.forEach(video => video.remove());
-        
+
         const iframes = clonedDoc.querySelectorAll('iframe');
         iframes.forEach(iframe => iframe.remove());
-        
+
         // ⚡ MEMORIA: Simplificar estilos complejos que consumen memoria
         const allElements = clonedDoc.querySelectorAll('*');
         allElements.forEach(el => {
@@ -46,8 +46,8 @@ import 'driver.js/dist/driver.css';
 // ⚡ OPTIMIZACIÓN: Sistema de logging inteligente
 const isServer = typeof window === 'undefined';
 const isDev = process.env.NODE_ENV === 'development';
-const log = isDev ? console.log : () => {};
-const warn = isDev ? console.warn : () => {};
+const log = isDev ? console.log : () => { };
+const warn = isDev ? console.warn : () => { };
 const error = console.error; // Errores siempre visibles
 const logVPS = console.log; // Logs normales habilitados
 
@@ -324,6 +324,91 @@ import Global from "../../../Utils/Global";
 import { generateAccurateThumbnails } from "./utils/thumbnailGenerator";
 import { generateFastThumbnails, generateHybridThumbnails, clearThumbnailCaches, generateSingleThumbnail } from "./utils/fastThumbnailGenerator";
 import { generateThumbnailWithGuaranteedFilters } from "./utils/forceFilterRenderer";
+
+// 🔧 FUNCIÓN ESPECÍFICA PARA LAYOUTS COMPLEJOS
+const generateThumbnailForComplexLayout = async (pageData, workspaceDimensions, layout) => {
+    try {
+        // Buscar el elemento de la página en el DOM
+        const workspaceElement = document.querySelector(`#page-${pageData.id}`);
+        if (!workspaceElement) {
+            console.warn(`❌ [COMPLEX-LAYOUT] No se encontró elemento para página: ${pageData.id}`);
+            return null;
+        }
+
+        // Verificar si es un layout complejo (con col-span o row-span)
+        const isComplexLayout = layout.cellStyles && Object.values(layout.cellStyles).some(style =>
+            style.includes('col-span-') || style.includes('row-span-')
+        );
+
+        if (!isComplexLayout) {
+            // Para layouts simples, usar el método normal
+            return await generateSingleThumbnail({
+                page: pageData,
+                workspaceDimensions,
+                preserveFilters: true
+            });
+        }
+
+        // Para layouts complejos, usar html2canvas directamente con configuración especial
+        const { default: html2canvas } = await import('html2canvas');
+
+        const canvas = await html2canvas(workspaceElement, {
+            scale: 2, // Alta calidad para layouts complejos
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: pageData.backgroundColor || '#ffffff',
+            width: workspaceDimensions.width,
+            height: workspaceDimensions.height,
+            logging: false,
+            onclone: (clonedDoc) => {
+                // Asegurar que el grid se renderice correctamente
+                const clonedWorkspace = clonedDoc.querySelector(`#page-${pageData.id}`);
+                if (clonedWorkspace) {
+                    // Forzar estilos de grid
+                    clonedWorkspace.style.display = 'grid';
+                    clonedWorkspace.style.gridTemplateColumns = layout.template.match(/grid-cols-(\d+)/)?.[0] || 'repeat(1, 1fr)';
+                    clonedWorkspace.style.gridTemplateRows = layout.template.match(/grid-rows-(\d+)/)?.[0] || 'repeat(1, 1fr)';
+
+                    // Aplicar gap
+                    const gapMatch = layout.template.match(/gap-(\d+)/);
+                    if (gapMatch) {
+                        clonedWorkspace.style.gap = `${parseInt(gapMatch[1]) * 4}px`;
+                    } else if (layout.style?.gap) {
+                        clonedWorkspace.style.gap = layout.style.gap;
+                    }
+
+                    // Aplicar estilos específicos de celda
+                    const cells = clonedWorkspace.querySelectorAll('[data-cell-id]');
+                    cells.forEach((cell, index) => {
+                        if (layout.cellStyles && layout.cellStyles[index]) {
+                            const cellStyle = layout.cellStyles[index];
+
+                            // Aplicar col-span y row-span
+                            const colSpanMatch = cellStyle.match(/col-span-(\d+)/);
+                            const rowSpanMatch = cellStyle.match(/row-span-(\d+)/);
+
+                            if (colSpanMatch) {
+                                cell.style.gridColumn = `span ${colSpanMatch[1]}`;
+                            }
+                            if (rowSpanMatch) {
+                                cell.style.gridRow = `span ${rowSpanMatch[1]}`;
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        if (canvas) {
+            return canvas.toDataURL('image/png', 0.9);
+        }
+
+        return null;
+    } catch (error) {
+        console.error('❌ [COMPLEX-LAYOUT] Error generando thumbnail:', error);
+        return null;
+    }
+};
 import { useSaveProject } from "./utils/useSaveProject";
 import { useAutoSave } from "./utils/useAutoSave";
 import { saveThumbnailsAsFiles } from "./utils/saveSystem";
@@ -331,7 +416,7 @@ import SaveIndicator from "./components/UI/SaveIndicator";
 import ProgressRecoveryModal from "./components/UI/ProgressRecoveryModal";
 import domtoimage from 'dom-to-image-more';
 
-// � FUNCIÓN PARA CALCULAR DIMENSIONES DE CELDAS EN LAYOUTS
+// 🔧 FUNCIÓN MEJORADA PARA CALCULAR DIMENSIONES DE CELDAS EN LAYOUTS
 const calculateCellDimensions = (layout, cellIndex, workspaceDimensions) => {
     if (!layout || !layout.template) {
         return workspaceDimensions; // Fallback a workspace completo
@@ -341,25 +426,56 @@ const calculateCellDimensions = (layout, cellIndex, workspaceDimensions) => {
     const template = layout.template;
     let cols = 1, rows = 1;
 
-    // Parsear grid-cols-N y grid-rows-N
+    // 🔧 MEJORADO: Parsear diferentes formatos de grid
     const colsMatch = template.match(/grid-cols-(\d+)/);
     const rowsMatch = template.match(/grid-rows-(\d+)/);
-    
+
     if (colsMatch) cols = parseInt(colsMatch[1]);
     if (rowsMatch) rows = parseInt(rowsMatch[1]);
 
-    // Calcular gap (defaultear a 24px como en el CSS)
-    const gapValue = layout.style?.gap ? parseInt(layout.style.gap) : 24;
-    
-    // Calcular dimensiones disponibles después de gaps
-    const availableWidth = workspaceDimensions.width - (gapValue * (cols - 1));
-    const availableHeight = workspaceDimensions.height - (gapValue * (rows - 1));
-    
-    // Dimensiones por celda
-    const cellWidth = Math.floor(availableWidth / cols);
-    const cellHeight = Math.floor(availableHeight / rows);
+    // 🔧 MEJORADO: Extraer gap del template si existe
+    let gapValue = 16; // Default
+    const gapMatch = template.match(/gap-(\d+)/);
+    if (gapMatch) {
+        gapValue = parseInt(gapMatch[1]) * 4; // Tailwind: gap-1 = 4px, gap-2 = 8px, etc.
+    } else if (layout.style?.gap) {
+        gapValue = parseInt(layout.style.gap);
+    }
 
-    logVPS(`🔧 [CELL-DIMENSIONS] Layout: ${layout.id}, Celda: ${cellIndex}, Grid: ${cols}x${rows}, Dims: ${cellWidth}x${cellHeight}`);
+    // 🔧 MEJORADO: Calcular padding del layout
+    let paddingValue = 0;
+    if (layout.style?.padding) {
+        paddingValue = parseInt(layout.style.padding) * 2; // Top + bottom, left + right
+    }
+
+    // Calcular dimensiones disponibles después de gaps y padding
+    const availableWidth = workspaceDimensions.width - paddingValue - (gapValue * (cols - 1));
+    const availableHeight = workspaceDimensions.height - paddingValue - (gapValue * (rows - 1));
+
+    // 🔧 MEJORADO: Manejar layouts con celdas que ocupan múltiples columnas/filas
+    let cellWidth = Math.floor(availableWidth / cols);
+    let cellHeight = Math.floor(availableHeight / rows);
+
+    // Para layouts complejos como magazine-asymmetric, usar cellStyles si existe
+    if (layout.cellStyles && layout.cellStyles[cellIndex]) {
+        const cellStyle = layout.cellStyles[cellIndex];
+
+        // Detectar col-span y row-span
+        const colSpanMatch = cellStyle.match(/col-span-(\d+)/);
+        const rowSpanMatch = cellStyle.match(/row-span-(\d+)/);
+
+        if (colSpanMatch) {
+            const colSpan = parseInt(colSpanMatch[1]);
+            cellWidth = Math.floor((availableWidth + (gapValue * (colSpan - 1))) / cols * colSpan);
+        }
+
+        if (rowSpanMatch) {
+            const rowSpan = parseInt(rowSpanMatch[1]);
+            cellHeight = Math.floor((availableHeight + (gapValue * (rowSpan - 1))) / rows * rowSpan);
+        }
+    }
+
+    logVPS(`🔧 [CELL-DIMENSIONS] Layout: ${layout.id}, Celda: ${cellIndex}, Grid: ${cols}x${rows}, Gap: ${gapValue}px, Dims: ${cellWidth}x${cellHeight}`);
 
     return {
         width: cellWidth,
@@ -627,8 +743,8 @@ export default function EditorLibro() {
 
                 const data = await response.json();
 
-             
-               
+
+
 
                 // Establecer los datos en el estado
                 setProjectData(data.project);
@@ -694,29 +810,29 @@ export default function EditorLibro() {
         }
         setActiveTab(newTab);
     }, [activeTab]);
-  
+
     // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails (SOLO CLIENTE)
     if (!isServer) {
         window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
         window.PREVENT_THUMBNAIL_RESET = false; // Permitir generación automática de thumbnails normales
         window._protectedThumbnailIds = []; // Resetear lista de thumbnails protegidos
         window.THUMBNAIL_PROTECTED = false; // Desactivar protección global al inicio
-        
+
         // 🎭 PRESERVAR FILTROS: Asegurarse que se apliquen todos los filtros correctamente
         window.PRESERVE_FILTERS = true; // Flag global para indicar que queremos mantener los filtros
     }
-    
+
     // Crear una función global para forzar la regeneración desde cualquier lugar
     useEffect(() => {
         // 🚀 CRÍTICO VPS: Solo en cliente
         if (isServer) return;
-        
+
         // Exponer función de emergencia para forzar regeneración desde cualquier parte
         window.forceRegenerateAllThumbnails = () => {
             logVPS('💣 [EMERGENCIA-GLOBAL] Forzando regeneración de TODOS los thumbnails');
             // Limpiar caché completamente
             window.thumbnailCache = {};
-            
+
             // Marcar todas las páginas como necesitando regeneración
             setPageChanges(prev => {
                 const newMap = new Map(prev);
@@ -726,25 +842,25 @@ export default function EditorLibro() {
                 });
                 return newMap;
             });
-            
+
             // Regenerar el thumbnail actual
             logVPS('1️⃣ Regenerando página actual');
             generateCurrentPageThumbnail(true).then(() => {
                 logVPS('✅ Primera regeneración completa');
-                
+
                 // Bloquear cualquier regeneración automática por 5 segundos
                 window.BLOCK_AUTO_REGENERATION = true;
-                
+
                 // Regeneración secundaria después de un breve retraso
                 setTimeout(() => {
                     logVPS('2️⃣ Ejecutando segunda regeneración forzada');
                     if (window.forceRegenerateThumbnail) {
                         window.forceRegenerateThumbnail();
                     }
-                    
+
                     // Configurar protección contra resets posteriores
                     window.THUMBNAIL_PROTECTED = true;
-                    
+
                     // Desbloquear después de 5 segundos
                     setTimeout(() => {
                         window.BLOCK_AUTO_REGENERATION = false;
@@ -755,7 +871,7 @@ export default function EditorLibro() {
                 console.error('❌ Error en regeneración de emergencia:', error);
             });
         };
-        
+
         // Registrar método para uso desde consola
     }, [pages]);
 
@@ -766,39 +882,39 @@ export default function EditorLibro() {
             window._protectedThumbnails = new Set();
             log('🛡️ [PROTECTION SYSTEM] Sistema de protección de thumbnails inicializado');
         }
-        
+
         // Función para marcar thumbnail como protegido
         window.protectThumbnail = (pageId) => {
             window._protectedThumbnails.add(pageId);
             logVPS(`🛡️ [PROTECT] Thumbnail ${pageId} marcado como protegido`);
         };
-        
+
         // Función para desproteger thumbnail
         window.unprotectThumbnail = (pageId) => {
             window._protectedThumbnails.delete(pageId);
             logVPS(`🔓 [UNPROTECT] Thumbnail ${pageId} desprotegido`);
         };
-        
+
         // Función para verificar si está protegido
         window.isThumbnailProtected = (pageId) => {
             return window._protectedThumbnails?.has(pageId) || false;
         };
-        
+
         // 🚫 FUNCIÓN PARA BLOQUEAR REGENERACIONES AUTOMÁTICAS
         window.blockAutomaticRegeneration = () => {
             window._blockAutoRegeneration = true;
             logVPS('🚫 [BLOCK AUTO] Regeneraciones automáticas BLOQUEADAS');
         };
-        
+
         window.unblockAutomaticRegeneration = () => {
             window._blockAutoRegeneration = false;
             logVPS('✅ [UNBLOCK AUTO] Regeneraciones automáticas DESBLOQUEADAS');
         };
-        
+
         window.isAutoRegenerationBlocked = () => {
             return window._blockAutoRegeneration || false;
         };
-        
+
         // 🚨 VIGILANTE PERMANENTE: Detecta y previene sobrescrituras
         if (!window._thumbnailWatchdog) {
             window._thumbnailWatchdog = setInterval(() => {
@@ -822,47 +938,47 @@ export default function EditorLibro() {
                     });
                 }
             }, 100); // Verificar cada 100ms
-            
+
         }
-        
+
         // 🔒 BLOQUEO TOTAL: Interceptar setPageThumbnails globalmente
         const originalSetPageThumbnails = setPageThumbnails;
         const interceptedSetPageThumbnails = (updater) => {
             if (typeof updater === 'function') {
                 return originalSetPageThumbnails(prev => {
                     const newState = updater(prev);
-                    
+
                     // Verificar si algún thumbnail protegido está siendo modificado
                     if (window._protectedThumbnails && window._protectedThumbnailData) {
                         const protectedIds = Array.from(window._protectedThumbnails);
                         const restoredState = { ...newState };
                         let wasRestored = false;
-                        
+
                         protectedIds.forEach(pageId => {
                             const currentThumbnail = newState[pageId];
                             const protectedThumbnail = window._protectedThumbnailData[pageId];
-                            
+
                             if (protectedThumbnail && currentThumbnail !== protectedThumbnail) {
                                 console.error(`🚨 [GLOBAL INTERCEPT] Sobrescritura bloqueada para ${pageId}`);
                                 restoredState[pageId] = protectedThumbnail;
                                 wasRestored = true;
                             }
                         });
-                        
+
                         if (wasRestored) {
                             console.error(`🔒 [GLOBAL RESTORE] Thumbnails protegidos restaurados`);
                         }
-                        
+
                         return restoredState;
                     }
-                    
+
                     return newState;
                 });
             } else {
                 return originalSetPageThumbnails(updater);
             }
         };
-        
+
         // Reemplazar la función globalmente
         if (!window._interceptorInstalled) {
             window._interceptorInstalled = true;
@@ -886,23 +1002,23 @@ export default function EditorLibro() {
             console.error(`🚨 [PROTECTION BLOCK] Stack trace:`, new Error().stack);
             return false; // No permitir la sobrescritura
         }
-        
+
         setPageThumbnails(prev => {
             const oldThumbnail = prev[pageId];
             const isOverwriting = oldThumbnail && oldThumbnail !== thumbnail;
-            
+
             if (isOverwriting) {
-               // console.log(`🔄 [THUMBNAIL UPDATE] Actualizando thumbnail ${pageId} desde: ${source}`);
+                // console.log(`🔄 [THUMBNAIL UPDATE] Actualizando thumbnail ${pageId} desde: ${source}`);
             } else {
                 //console.log(`✅ [THUMBNAIL SET] Estableciendo thumbnail ${pageId} desde: ${source}`);
             }
-            
+
             return {
                 ...prev,
                 [pageId]: thumbnail
             };
         });
-        
+
         return true; // Éxito
     }, []);
 
@@ -1020,7 +1136,7 @@ export default function EditorLibro() {
             overlayColor: 'rgba(0, 0, 0, 0.75)',
             popoverClass: 'driver-popover-banana',
             onHighlightStarted: (element, step) => {
-               
+
                 // Si el paso requiere cambiar a una pestaña específica
                 const tabElement = element?.getAttribute?.('data-tab');
                 if (tabElement && activeTab !== tabElement) {
@@ -1028,7 +1144,7 @@ export default function EditorLibro() {
                 }
             },
             onDeselected: () => {
-              
+
                 // Opcional: mostrar mensaje de bienvenida final
                 toast.success('¡Guía completada! Ya puedes empezar a crear tu diseño.', {
                     duration: 3000
@@ -1039,7 +1155,7 @@ export default function EditorLibro() {
 
     // Función para iniciar la guía
     const startTour = useCallback(() => {
-      
+
         driverObj.drive();
     }, [driverObj]);
 
@@ -1067,7 +1183,7 @@ export default function EditorLibro() {
                             console.warn(`🚨 [STORAGE LOAD] ¡ALERTA! Cargando thumbnails desde storage - POSIBLE CULPABLE DE SOBRESCRITURA`);
                             console.warn(`🚨 [STORAGE LOAD] Thumbnails protegidos:`, Array.from(window._protectedThumbnails || []));
                             console.warn(`🚨 [STORAGE LOAD] Stack trace:`, new Error().stack);
-                            
+
                             // Filtrar thumbnails protegidos para no sobrescribirlos
                             const filteredThumbnails = {};
                             for (const [pageId, thumbnail] of Object.entries(thumbnailsObject)) {
@@ -1077,17 +1193,17 @@ export default function EditorLibro() {
                                     filteredThumbnails[pageId] = thumbnail;
                                 }
                             }
-                            
+
                             return {
                                 ...prev, // Mantener thumbnails locales existentes
                                 ...filteredThumbnails // Solo añadir los no protegidos
                             };
                         });
                     } else {
-                    //    console.log('ℹ️ No hay thumbnails guardados, usando generación local');
+                        //    console.log('ℹ️ No hay thumbnails guardados, usando generación local');
                     }
                 } else {
-                   // console.log('ℹ️ No hay thumbnails guardados para este proyecto');
+                    // console.log('ℹ️ No hay thumbnails guardados para este proyecto');
                 }
             }
         } catch (error) {
@@ -1098,23 +1214,23 @@ export default function EditorLibro() {
     // ⚡ OPTIMIZACIÓN: Referencias adicionales para debounce y cache
     const thumbnailDebounceTimers = useRef(new Map());
     const thumbnailCache = useRef(new Map());
-    
+
     // ⚡ OPTIMIZACIÓN: Limpieza de memoria cada 5 minutos
     const memoryCleanupInterval = useRef(null);
-    
+
     useEffect(() => {
         // Limpieza automática cada 5 minutos
         memoryCleanupInterval.current = setInterval(() => {
             // Limpiar caché de thumbnails antiguo (más de 10 minutos)
             const now = Date.now();
             const CACHE_MAX_AGE = 10 * 60 * 1000; // 10 minutos
-            
+
             for (const [key, value] of thumbnailCache.current.entries()) {
                 if (now - value.timestamp > CACHE_MAX_AGE) {
                     thumbnailCache.current.delete(key);
                 }
             }
-            
+
             // Limpiar caché global de thumbnails si es muy grande
             if (window.thumbnailCache && typeof window.thumbnailCache === 'object') {
                 const keys = Object.keys(window.thumbnailCache);
@@ -1128,28 +1244,28 @@ export default function EditorLibro() {
                     window.thumbnailCache = newCache;
                 }
             }
-            
+
         }, 300000); // Cada 5 minutos
-        
+
         return () => {
             if (memoryCleanupInterval.current) {
                 clearInterval(memoryCleanupInterval.current);
             }
         };
     }, []);
-    
+
     // ⚡ OPTIMIZACIÓN: Memoizar cache key para evitar recálculos
-    const workspaceCacheKey = useMemo(() => 
+    const workspaceCacheKey = useMemo(() =>
         JSON.stringify(workspaceDimensions), [workspaceDimensions]
     );
-    
+
     // ⚡ FUNCIÓN OPTIMIZADA: Generar thumbnail con debounce mejorado
     const generateCurrentPageThumbnail = useCallback(async (forceRegenerate = false) => {
         // Solo bloquear si hay regeneración temporal en curso
         if (window.BLOCK_AUTO_REGENERATION && !forceRegenerate) {
             return;
         }
-        
+
         // Verificar la página actual
         const currentPageData = pages[currentPage];
         if (!currentPageData || !workspaceDimensions) return;
@@ -1157,66 +1273,66 @@ export default function EditorLibro() {
 
         console.log("pagina current actual", currentPageData);
         const pageId = currentPageData.id;
-        
+
         // ⚡ OPTIMIZACIÓN: Debounce para evitar regeneraciones múltiples
         if (!forceRegenerate) {
             if (thumbnailDebounceTimers.current.has(pageId)) {
                 clearTimeout(thumbnailDebounceTimers.current.get(pageId));
             }
-            
+
             const timer = setTimeout(() => {
                 thumbnailDebounceTimers.current.delete(pageId);
                 generateCurrentPageThumbnail(true); // Llamada real después del debounce
             }, 300); // 300ms de debounce
-            
+
             thumbnailDebounceTimers.current.set(pageId, timer);
             return;
         }
-        
+
         // ⚡ OPTIMIZACIÓN: Cache rápido de thumbnails
         const cacheKey = `${pageId}-${workspaceCacheKey}`;
         if (!forceRegenerate && thumbnailCache.current.has(cacheKey)) {
             const cachedThumbnail = thumbnailCache.current.get(cacheKey);
             if (cachedThumbnail && Date.now() - cachedThumbnail.timestamp < 60000) { // Cache por 1 minuto
-             //   setPageThumbnails(prev => ({ ...prev, [pageId]: cachedThumbnail.data }));
+                //setPageThumbnails(prev => ({ ...prev, [pageId]: cachedThumbnail.data }));
                 return;
             }
         }
-        
+
         // ANÁLISIS OPTIMIZADO DE FILTROS (reducir logging)
         let pageHasFilters = false;
         let elementsWithFilters = [];
-        
+
         if (currentPageData.cells) {
             currentPageData.cells.forEach(cell => {
                 if (cell.elements) {
                     cell.elements.forEach(element => {
                         if (element.filters) {
                             // ⚡ OPTIMIZACIÓN: Detección rápida de filtros sin logging excesivo
-                            const hasRealFilters = 
-                                (element.filters.brightness !== undefined && 
-                                 element.filters.brightness !== 100 && element.filters.brightness !== 1) ||
-                                (element.filters.contrast !== undefined && 
-                                 element.filters.contrast !== 100 && element.filters.contrast !== 1) ||
-                                (element.filters.saturation !== undefined && 
-                                 element.filters.saturation !== 100 && element.filters.saturation !== 1) ||
+                            const hasRealFilters =
+                                (element.filters.brightness !== undefined &&
+                                    element.filters.brightness !== 100 && element.filters.brightness !== 1) ||
+                                (element.filters.contrast !== undefined &&
+                                    element.filters.contrast !== 100 && element.filters.contrast !== 1) ||
+                                (element.filters.saturation !== undefined &&
+                                    element.filters.saturation !== 100 && element.filters.saturation !== 1) ||
                                 (element.filters.tint !== undefined && element.filters.tint !== 0) ||
                                 (element.filters.hue !== undefined && element.filters.hue !== 0) ||
                                 (element.filters.blur !== undefined && element.filters.blur > 0) ||
-                                (element.filters.opacity !== undefined && 
-                                 element.filters.opacity !== 100 && element.filters.opacity !== 1) ||
+                                (element.filters.opacity !== undefined &&
+                                    element.filters.opacity !== 100 && element.filters.opacity !== 1) ||
                                 (element.filters.scale !== undefined && element.filters.scale !== 1) ||
                                 (element.filters.rotate !== undefined && element.filters.rotate !== 0) ||
-                                element.filters.flipHorizontal || 
+                                element.filters.flipHorizontal ||
                                 element.filters.flipVertical;
-                            
+
                             if (hasRealFilters) {
                                 pageHasFilters = true;
                                 elementsWithFilters.push(element);
                                 element._hasRealFilters = true;
                                 // ⚡ OPTIMIZACIÓN: Solo log esencial para filtros
                                 if (process.env.NODE_ENV === 'development') {
-                                //    console.log(`🎨 [FILTRO] Elemento ${element.id}:`, element.filters);
+                                    //    console.log(`🎨 [FILTRO] Elemento ${element.id}:`, element.filters);
                                 }
                             }
                         }
@@ -1224,12 +1340,12 @@ export default function EditorLibro() {
                 }
             });
         }
-        
+
         // ⚡ OPTIMIZACIÓN: Logging reducido
         if (process.env.NODE_ENV === 'development') {
-           // console.log(`🎯 [ANÁLISIS] Página ${pageId}: ${elementsWithFilters.length} elementos con filtros detectados`);
+            // console.log(`🎯 [ANÁLISIS] Página ${pageId}: ${elementsWithFilters.length} elementos con filtros detectados`);
         }
-        
+
         // Solo evitar regeneración si no hay filtros y no se fuerza
         if (!forceRegenerate && !pageHasFilters && pageThumbnails[pageId]) {
             const lastGenTime = window._thumbnailGenTimes?.[pageId] || 0;
@@ -1238,17 +1354,17 @@ export default function EditorLibro() {
                 return;
             }
         }
-        
+
         if (thumbnailGenerating.current) {
-          //  console.log('⏳ Ya se está generando un thumbnail...');
+            //  console.log('⏳ Ya se está generando un thumbnail...');
             return;
         }
-        
+
         thumbnailGenerating.current = true;
-        
+
         try {
-          //  console.log(`🚀 [RADICAL GENERATOR] Generando thumbnail para página: ${pageId} (filtros: ${pageHasFilters})`);
-            
+            //  console.log(`🚀 [RADICAL GENERATOR] Generando thumbnail para página: ${pageId} (filtros: ${pageHasFilters})`);
+
             // Exponer datos globalmente para el renderizador radical
             window._currentPageData = currentPageData;
             window._workspaceDimensions = workspaceDimensions;
@@ -1259,29 +1375,47 @@ export default function EditorLibro() {
                     console.error(`🚨 [UPDATE BLOCKED] Stack trace:`, new Error().stack);
                     return; // No actualizar si está protegido
                 }
-                
+
                 setPageThumbnails(prev => {
-                  //  console.log(`🔄 [UPDATE UI] Actualizando thumbnail ${id} via _updateThumbnailInUI`);
+                    //  console.log(`🔄 [UPDATE UI] Actualizando thumbnail ${id} via _updateThumbnailInUI`);
                     return {
                         ...prev,
                         [id]: thumbnail
                     };
                 });
             };
-            
+
             // Registrar tiempo de generación
             if (!window._thumbnailGenTimes) window._thumbnailGenTimes = {};
             window._thumbnailGenTimes[pageId] = Date.now();
-            
+
             let thumbnail = null;
-            
-            // Si la página tiene filtros, usar el sistema radical
-            if (pageHasFilters || forceRegenerate) {
-               // console.log('🔥 [MÉTODO RADICAL] Usando sistema de filtros garantizados');
-                
+
+            // 🔧 NUEVO: Obtener el layout actual para determinar el método de generación
+            const currentLayout = layouts.find(l => l.id === currentPageData.layout) || layouts[0];
+            const isComplexLayout = currentLayout.cellStyles && Object.values(currentLayout.cellStyles).some(style =>
+                style.includes('col-span-') || style.includes('row-span-')
+            );
+
+            // 🔧 PRIORIDAD 1: Layouts complejos (magazine-asymmetric, etc.)
+            if (isComplexLayout) {
+                console.log('🏗️ [LAYOUT COMPLEJO] Usando generador especializado para layout:', currentLayout.id);
+                try {
+                    thumbnail = await generateThumbnailForComplexLayout(currentPageData, workspaceDimensions, currentLayout);
+                    console.log('✅ [LAYOUT COMPLEJO] Thumbnail generado exitosamente');
+                } catch (error) {
+                    console.error('❌ [LAYOUT COMPLEJO] Error, usando fallback:', error);
+                    // Fallback al método con filtros garantizados
+                    thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
+                }
+            }
+            // 🔧 PRIORIDAD 2: Páginas con filtros
+            else if (pageHasFilters || forceRegenerate) {
+                // console.log('🔥 [MÉTODO RADICAL] Usando sistema de filtros garantizados');
+
                 try {
                     thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
-                 //   console.log('✅ [MÉTODO RADICAL] Thumbnail generado con filtros garantizados');
+                    //   console.log('✅ [MÉTODO RADICAL] Thumbnail generado con filtros garantizados');
                 } catch (error) {
                     console.error('❌ [MÉTODO RADICAL] Error, usando fallback:', error);
                     // Fallback al método normal
@@ -1291,103 +1425,105 @@ export default function EditorLibro() {
                         preserveFilters: true
                     });
                 }
-            } else {
+            }
+            // 🔧 PRIORIDAD 3: Páginas simples sin filtros
+            else {
                 // Para páginas sin filtros, usar el método normal
-             //   console.log('📸 [MÉTODO NORMAL] Generando thumbnail sin filtros especiales');
+                //   console.log('📸 [MÉTODO NORMAL] Generando thumbnail sin filtros especiales');
                 thumbnail = await generateSingleThumbnail({
                     page: currentPageData,
                     workspaceDimensions,
                     preserveFilters: false
                 });
             }
-            
+
             if (thumbnail) {
-                
-                    // �🛡️ PROTEGER THUMBNAIL SI TIENE FILTROS ANTES DE ESTABLECERLO (solo en local)
-                    if (pageHasFilters) {
-                        window.protectThumbnail?.(pageId);
-                        window.blockAutomaticRegeneration?.(); // 🚫 BLOQUEAR REGENERACIONES AUTOMÁTICAS
-                        // console.log(`🛡️ [FILTER PROTECTION] Thumbnail ${pageId} protegido porque tiene filtros aplicados`);
-                        // console.log(`🚫 [AUTO BLOCK] Regeneraciones automáticas BLOQUEADAS para preservar filtros`);
-                        
-                        // Establecer con máxima prioridad y marcar como protegido
-                        setPageThumbnails(prev => {
-                            // console.log(`🔥 [FORCE SET] Estableciendo thumbnail con filtros para ${pageId} (PROTEGIDO)`);
-                            return {
-                                ...prev,
-                                [pageId]: thumbnail
-                            };
-                        });
-                        
-                        // Programar verificación para asegurar que no se sobrescriba
-                        setTimeout(() => {
-                            setPageThumbnails(prev => {
-                                if (prev[pageId] !== thumbnail) {
-                                    warn(`🚨 [PROTECTION RESTORE] Restaurando thumbnail protegido para ${pageId}`);
-                                    return {
-                                        ...prev,
-                                        [pageId]: thumbnail
-                                    };
-                                }
-                                return prev;
-                            });
-                        }, 100);
-                        
-                        // 🚨 SISTEMA DE EMERGENCIA: Solo en desarrollo
-                        const emergencyRestore = () => {
-                            setPageThumbnails(prev => {
-                                if (prev[pageId] !== thumbnail) {
-                                    error(`🚨 [EMERGENCY RESTORE] ¡PARPADEO DETECTADO! Restaurando thumbnail para ${pageId}`);
-                                    return {
-                                        ...prev,
-                                        [pageId]: thumbnail
-                                    };
-                                }
-                                return prev;
-                            });
+
+                // �🛡️ PROTEGER THUMBNAIL SI TIENE FILTROS ANTES DE ESTABLECERLO (solo en local)
+                if (pageHasFilters) {
+                    window.protectThumbnail?.(pageId);
+                    window.blockAutomaticRegeneration?.(); // 🚫 BLOQUEAR REGENERACIONES AUTOMÁTICAS
+                    // console.log(`🛡️ [FILTER PROTECTION] Thumbnail ${pageId} protegido porque tiene filtros aplicados`);
+                    // console.log(`🚫 [AUTO BLOCK] Regeneraciones automáticas BLOQUEADAS para preservar filtros`);
+
+                    // Establecer con máxima prioridad y marcar como protegido
+                    setPageThumbnails(prev => {
+                        // console.log(`🔥 [FORCE SET] Estableciendo thumbnail con filtros para ${pageId} (PROTEGIDO)`);
+                        return {
+                            ...prev,
+                            [pageId]: thumbnail
                         };
-                        
-                        // Verificaciones múltiples en diferentes intervalos
-                        setTimeout(emergencyRestore, 200);
-                        setTimeout(emergencyRestore, 500);
-                        setTimeout(emergencyRestore, 1000);
-                        setTimeout(emergencyRestore, 2000);
-                        
-                        // 🔒 BLOQUEO PERMANENTE: Guardar referencia para restauraciones futuras
-                        if (!window._protectedThumbnailData) window._protectedThumbnailData = {};
-                        window._protectedThumbnailData[pageId] = thumbnail;
-                        
-                    } else {
-                        // Thumbnail sin filtros, usar método normal
-                        setPageThumbnailsSafely(pageId, thumbnail, 'generateCurrentPageThumbnail');
-                    }
-                
-                
-              //  console.log(`✅ [SUCCESS] Thumbnail generado exitosamente para página: ${pageId}`);
-                
+                    });
+
+                    // Programar verificación para asegurar que no se sobrescriba
+                    setTimeout(() => {
+                        setPageThumbnails(prev => {
+                            if (prev[pageId] !== thumbnail) {
+                                warn(`🚨 [PROTECTION RESTORE] Restaurando thumbnail protegido para ${pageId}`);
+                                return {
+                                    ...prev,
+                                    [pageId]: thumbnail
+                                };
+                            }
+                            return prev;
+                        });
+                    }, 100);
+
+                    // 🚨 SISTEMA DE EMERGENCIA: Solo en desarrollo
+                    const emergencyRestore = () => {
+                        setPageThumbnails(prev => {
+                            if (prev[pageId] !== thumbnail) {
+                                error(`🚨 [EMERGENCY RESTORE] ¡PARPADEO DETECTADO! Restaurando thumbnail para ${pageId}`);
+                                return {
+                                    ...prev,
+                                    [pageId]: thumbnail
+                                };
+                            }
+                            return prev;
+                        });
+                    };
+
+                    // Verificaciones múltiples en diferentes intervalos
+                    setTimeout(emergencyRestore, 200);
+                    setTimeout(emergencyRestore, 500);
+                    setTimeout(emergencyRestore, 1000);
+                    setTimeout(emergencyRestore, 2000);
+
+                    // 🔒 BLOQUEO PERMANENTE: Guardar referencia para restauraciones futuras
+                    if (!window._protectedThumbnailData) window._protectedThumbnailData = {};
+                    window._protectedThumbnailData[pageId] = thumbnail;
+
+                } else {
+                    // Thumbnail sin filtros, usar método normal
+                    setPageThumbnailsSafely(pageId, thumbnail, 'generateCurrentPageThumbnail');
+                }
+
+
+                //  console.log(`✅ [SUCCESS] Thumbnail generado exitosamente para página: ${pageId}`);
+
                 // 🔍 VERIFICACIÓN POST-GENERACIÓN: Confirmar que los filtros se aplicaron
                 if (pageHasFilters && !forceRegenerate) {
-                    
+
                     // Marcar que esta verificación ya se hizo para evitar bucles
                     if (!window._filterVerificationDone) window._filterVerificationDone = new Set();
-                    
+
                     if (!window._filterVerificationDone.has(pageId)) {
                         window._filterVerificationDone.add(pageId);
-                        
+
                         // Verificar en el próximo tick si el thumbnail parece tener filtros aplicados
                         setTimeout(async () => {
                             try {
                                 // Si llegamos aquí y no se ven los filtros, usar método radical como último recurso
-                                
+
                                 // 🎯 VERIFICAR DATOS ANTES DE ENVIAR (ÚLTIMO RECURSO)
-                          
-                                
+
+
                                 const radicalThumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
-                                
+
                                 if (radicalThumbnail) {
                                     // 🛡️ PROTEGER EL THUMBNAIL RADICAL
                                     window.protectThumbnail?.(pageId);
-                                    
+
                                     setPageThumbnails(prev => {
                                         return {
                                             ...prev,
@@ -1401,7 +1537,7 @@ export default function EditorLibro() {
                         }, 1000); // Solo una vez, después de 1 segundo
                     }
                 }
-                
+
                 // Marcar como protegido si tiene filtros
                 if (pageHasFilters) {
                     if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
@@ -1409,10 +1545,10 @@ export default function EditorLibro() {
                         window._protectedThumbnailIds.push(pageId);
                     }
                     if (process.env.NODE_ENV === 'development') {
-                     //   console.log(`🔒 [PROTECCIÓN] Thumbnail con filtros protegido: ${pageId}`);
+                        //   console.log(`🔒 [PROTECCIÓN] Thumbnail con filtros protegido: ${pageId}`);
                     }
                 }
-                
+
                 // ⚡ OPTIMIZACIÓN: Guardar en cache todos los thumbnails exitosos
                 const cacheKey = `${pageId}-${workspaceCacheKey}`;
                 thumbnailCache.current.set(cacheKey, {
@@ -1420,17 +1556,17 @@ export default function EditorLibro() {
                     timestamp: Date.now(),
                     hasFilters: pageHasFilters
                 });
-                
+
                 // ⚡ OPTIMIZACIÓN: Limpiar cache viejo (máximo 50 entradas)
                 if (thumbnailCache.current.size > 50) {
                     const oldestKey = thumbnailCache.current.keys().next().value;
                     thumbnailCache.current.delete(oldestKey);
                 }
-                
+
             } else {
                 console.error(`❌ [ERROR] No se pudo generar thumbnail para página: ${pageId}`);
             }
-            
+
         } catch (error) {
             console.error(`❌ [CRITICAL ERROR] Error generando thumbnail para página ${pageId}:`, error);
         } finally {
@@ -1443,15 +1579,15 @@ export default function EditorLibro() {
         debounce(async () => {
             // 🚨 PROTECCIÓN ANTI-RESET: Bloquear regeneraciones automáticas que puedan sobrescribir thumbnails con filtros
             if (window.BLOCK_AUTO_REGENERATION) {
-              //  console.log('🛡️ [PROTECCIÓN-GLOBAL] Bloqueando generación masiva mientras los filtros están protegidos');
+                //  console.log('🛡️ [PROTECCIÓN-GLOBAL] Bloqueando generación masiva mientras los filtros están protegidos');
                 return;
             }
-            
+
             // 🚨 PROTECCIÓN SECUNDARIA: No regenerar si tenemos thumbnails protegidos
             if (window.THUMBNAIL_PROTECTED) {
                 return;
             }
-            
+
             if (!pages?.length || !workspaceDimensions) return;
 
             // 🚀 OPTIMIZACIÓN: Evitar regeneración si ya están generando
@@ -1476,7 +1612,7 @@ export default function EditorLibro() {
                     console.warn(`🚫 [BLOCKED] Regeneración automática bloqueada, saltando generateFastThumbnails`);
                     return; // Salir sin generar
                 }
-                
+
                 const thumbnailsObject = await generateFastThumbnails({
                     pages: missingThumbnails,
                     workspaceDimensions,
@@ -1489,7 +1625,7 @@ export default function EditorLibro() {
                     setPageThumbnails(prev => {
                         console.warn(`🚨 [FAST THUMBNAILS] ¡ALERTA! generateFastThumbnails sobrescribiendo thumbnails - POSIBLE CULPABLE`);
                         console.warn(`🚨 [FAST THUMBNAILS] Stack trace:`, new Error().stack);
-                        
+
                         // Filtrar thumbnails protegidos
                         const filteredThumbnails = {};
                         for (const [pageId, thumbnail] of Object.entries(thumbnailsObject)) {
@@ -1499,7 +1635,7 @@ export default function EditorLibro() {
                                 filteredThumbnails[pageId] = thumbnail;
                             }
                         }
-                        
+
                         return {
                             ...prev,
                             ...filteredThumbnails // Solo añadir los no protegidos
@@ -1540,27 +1676,27 @@ export default function EditorLibro() {
                             workspaceDimensions
                         });
 
-                    if (priorityThumbnails && Object.keys(priorityThumbnails).length > 0) {
-                        setPageThumbnails(prev => {
-                            console.warn(`🚨 [PRIORITY THUMBNAILS] ¡ALERTA! generateFastThumbnails de prioridad sobrescribiendo - POSIBLE CULPABLE`);
-                            console.warn(`🚨 [PRIORITY THUMBNAILS] Stack trace:`, new Error().stack);
-                            
-                            // Filtrar thumbnails protegidos
-                            const filteredThumbnails = {};
-                            for (const [pageId, thumbnail] of Object.entries(priorityThumbnails)) {
-                                if (window.isThumbnailProtected?.(pageId)) {
-                                    console.warn(`🛡️ [PRIORITY PROTECTION] NO sobrescribiendo thumbnail protegido: ${pageId}`);
-                                } else {
-                                    filteredThumbnails[pageId] = thumbnail;
+                        if (priorityThumbnails && Object.keys(priorityThumbnails).length > 0) {
+                            setPageThumbnails(prev => {
+                                console.warn(`🚨 [PRIORITY THUMBNAILS] ¡ALERTA! generateFastThumbnails de prioridad sobrescribiendo - POSIBLE CULPABLE`);
+                                console.warn(`🚨 [PRIORITY THUMBNAILS] Stack trace:`, new Error().stack);
+
+                                // Filtrar thumbnails protegidos
+                                const filteredThumbnails = {};
+                                for (const [pageId, thumbnail] of Object.entries(priorityThumbnails)) {
+                                    if (window.isThumbnailProtected?.(pageId)) {
+                                        console.warn(`🛡️ [PRIORITY PROTECTION] NO sobrescribiendo thumbnail protegido: ${pageId}`);
+                                    } else {
+                                        filteredThumbnails[pageId] = thumbnail;
+                                    }
                                 }
-                            }
-                            
-                            return {
-                                ...prev,
-                                ...filteredThumbnails // Solo añadir los no protegidos
-                            };
-                        });
-                    }
+
+                                return {
+                                    ...prev,
+                                    ...filteredThumbnails // Solo añadir los no protegidos
+                                };
+                            });
+                        }
                     } // 🚫 Cerrar el else del bloque de verificación de bloqueo automático
                 }
             }
@@ -1837,13 +1973,13 @@ export default function EditorLibro() {
             const verificationPromises = pages.map(async (page, index) => {
                 // 🔧 FIX DEFINITIVO: Mapear correctamente según configuración y presencia de páginas
                 let realPageNumber;
-                
+
                 // ✅ VALIDACIÓN DE SEGURIDAD: Verificar que itemData existe
                 const hasCoverEnabled = itemData && (itemData.has_cover_image === true || itemData.has_cover_image === 1);
                 const hasBackCoverEnabled = itemData && (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1);
                 const hasCover = hasCoverEnabled && pages.some(p => p.type === 'cover');
                 const hasBackCover = hasBackCoverEnabled && pages.some(p => p.type === 'final');
-                
+
                 if (page.type === 'cover') {
                     // Portada siempre es página 0 cuando está habilitada
                     realPageNumber = 0;
@@ -1869,13 +2005,13 @@ export default function EditorLibro() {
                     // Fallback al índice actual
                     realPageNumber = index;
                 }
-                
+
                 const pdfUrl = `/storage/images/thumbnails/${projectData.id}/page-${realPageNumber}-pdf.png`;
                 const pageId = page.id || `page-${index}`;
                 pdfThumbnails[pageId] = pdfUrl;
-                
-          
-                
+
+
+
                 return verifyThumbnailExists(pdfUrl, pageId);
             });
 
@@ -2113,7 +2249,7 @@ export default function EditorLibro() {
             error('🚫 [VPS-PROTECTION] captureCurrentWorkspace bloqueado en servidor');
             return null;
         }
-        
+
         if (!pages[currentPage]) return null;
 
         try {
@@ -2133,26 +2269,26 @@ export default function EditorLibro() {
             // 🔧 DETECTAR MODO LAYOUT: Verificar si estamos en modo layout con celdas
             const hasLayoutCells = currentPageData?.cells && currentPageData.cells.length > 0;
             const isLayoutMode = hasLayoutCells && workspaceElement.classList.contains('grid');
-            
+
             logVPS(`🔧 [CAPTURE-MODE] Página ${currentPage}: ${isLayoutMode ? 'LAYOUT' : 'LIBRE'}, Celdas: ${currentPageData?.cells?.length || 0}`);
 
             // 🛠️ LAYOUT MODE: Esperar renderizado del grid antes de capturar (OPTIMIZADO)
             if (isLayoutMode) {
                 // 🚀 OPTIMIZACIÓN VPS: Reducir logs y timing para producción
                 const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
-                
+
                 if (!isProduction) {
                     //console.log('🔧 [LAYOUT-CAPTURE] Esperando renderizado completo del grid...');
                 }
-                
+
                 // 🚀 OPTIMIZACIÓN: Un solo requestAnimationFrame en lugar de doble
                 await new Promise(resolve => {
                     requestAnimationFrame(() => {
                         // Verificación mínima en producción
                         const cells = workspaceElement.querySelectorAll('[data-cell-id]');
-                        
+
                         if (!isProduction) {
-                            
+
                             // Solo mostrar logs detallados en desarrollo
                             if (cells.length <= 4) { // Limitar logs para layouts complejos
                                 cells.forEach((cell, idx) => {
@@ -2160,7 +2296,7 @@ export default function EditorLibro() {
                                 });
                             }
                         }
-                        
+
                         resolve();
                     });
                 });
@@ -2171,7 +2307,7 @@ export default function EditorLibro() {
             // �️ IMPRESIÓN PROFESIONAL: Escalado optimizado para 300 DPI
             // 🚀 OPTIMIZACIÓN VPS: Factor de escala adaptivo según entorno
             const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
-            const scaleFactor = isPDF ? 
+            const scaleFactor = isPDF ?
                 11.81 : // 11.81x para PDF 300 DPI exacto (300/25.4 ≈ 11.81)
                 (isProduction ? 2 : 3); // 2x en VPS para ahorrar memoria, 3x en local
             const quality = 1.0; // Calidad máxima sin compresión
@@ -2221,7 +2357,7 @@ export default function EditorLibro() {
                         // 🚀 OPTIMIZACIÓN: Logs solo en desarrollo
                         if (el.style && el.style.filter && options.preserveFilters) {
                             if (!isProduction) {
-                               // console.log('🎭 [PRESERVE-FILTER] Preservando filtro:', el.id);
+                                // console.log('🎭 [PRESERVE-FILTER] Preservando filtro:', el.id);
                             }
                             return false;
                         }
@@ -2241,8 +2377,8 @@ export default function EditorLibro() {
                     letterRendering: !isProduction, // 🚀 Simplificar renderizado en VPS
                     ignoreElements: (el) => {
                         // En layouts, ser más permisivo con elementos
-                        return el.classList?.contains('exclude-from-capture') || 
-                               el.classList?.contains('ui-element');
+                        return el.classList?.contains('exclude-from-capture') ||
+                            el.classList?.contains('ui-element');
                     }
                 }),
                 // 🖨️ CONFIGURACIÓN CRÍTICA para impresión profesional
@@ -2295,12 +2431,12 @@ export default function EditorLibro() {
                             // CORRECCIÓN THUMBNAIL: Asegurar dimensiones exactas del workspace de la BD
                             clonedPageElement.style.width = workspaceDimensions.width + 'px';
                             clonedPageElement.style.height = workspaceDimensions.height + 'px';
-                            
+
                             // 🔧 LAYOUT MODE: No cambiar position si es un grid (preservar layout)
                             if (!isLayoutMode) {
                                 clonedPageElement.style.position = 'relative';
                             }
-                            
+
                             clonedPageElement.style.overflow = 'hidden';
 
                             // Aplicar backgrounds de la página si existen
@@ -2310,41 +2446,41 @@ export default function EditorLibro() {
                                 clonedPageElement.style.backgroundPosition = 'center';
                                 clonedPageElement.style.backgroundRepeat = 'no-repeat';
                             }
-                            
+
                             // 🎭 PRESERVAR FILTROS: Asegurar que los elementos con filtros mantengan sus estilos
                             const elementosConFiltros = clonedPageElement.querySelectorAll('[style*="filter"]');
                             elementosConFiltros.forEach(el => {
-                               // console.log('🎭 [THUMBNAIL] Preservando filtros en elemento:', el.id);
+                                // console.log('🎭 [THUMBNAIL] Preservando filtros en elemento:', el.id);
                             });
 
                             // 🔧 LAYOUT MODE: Ajustes especiales para celdas en grid
                             if (isLayoutMode) {
-                               // console.log('🔧 [THUMBNAIL-LAYOUT] Aplicando correcciones para grid CSS...');
-                                
+                                // console.log('🔧 [THUMBNAIL-LAYOUT] Aplicando correcciones para grid CSS...');
+
                                 // Asegurar que el elemento principal mantenga sus clases de grid
                                 const gridClasses = clonedPageElement.className;
-                                
+
                                 // Forzar aplicación de estilos de grid directamente
                                 const gridStyle = getComputedStyle(workspaceElement);
                                 clonedPageElement.style.display = 'grid';
                                 clonedPageElement.style.gridTemplateColumns = gridStyle.gridTemplateColumns;
                                 clonedPageElement.style.gridTemplateRows = gridStyle.gridTemplateRows;
                                 clonedPageElement.style.gap = gridStyle.gap;
-                                
+
                                 if (!isProduction) {
                                     //console.log(`🔧 [THUMBNAIL-LAYOUT] Grid aplicado: cols=${gridStyle.gridTemplateColumns}, rows=${gridStyle.gridTemplateRows}, gap=${gridStyle.gap}`);
                                 }
-                                
+
                                 const cells = clonedPageElement.querySelectorAll('[data-cell-id]');
                                 if (!isProduction) {
                                     //console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando ${cells.length} celdas...`);
                                 }
-                                
+
                                 cells.forEach((cell, idx) => {
                                     if (!isProduction) {
-                                       // console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando celda ${idx}:`, cell.id);
+                                        // console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando celda ${idx}:`, cell.id);
                                     }
-                                    
+
                                     // Asegurar posicionamiento correcto de la celda
                                     const originalCell = workspaceElement.querySelector(`[data-cell-id="${cell.getAttribute('data-cell-id')}"]`);
                                     if (originalCell) {
@@ -2353,7 +2489,7 @@ export default function EditorLibro() {
                                         cell.style.gridRow = originalStyle.gridRow;
                                         cell.style.position = 'relative'; // Importante para contenido interno
                                     }
-                                    
+
                                     // Procesar imágenes dentro de cada celda
                                     const images = cell.querySelectorAll('img, [data-element-type="image"]');
                                     images.forEach(img => {
@@ -2642,12 +2778,12 @@ export default function EditorLibro() {
             // 🖨️ CAPTURA PROFESIONAL: html2canvas con manejo de memoria optimizado
             let canvas = null;
             let dataUrl = '';
-            
+
             try {
                 if (!isProduction) {
-                   // console.log('🎨 [HTML2CANVAS] Iniciando captura:', captureOptions);
+                    // console.log('🎨 [HTML2CANVAS] Iniciando captura:', captureOptions);
                 }
-                
+
                 canvas = await html2canvas(workspaceElement, captureOptions);
 
                 // 🖨️ POST-PROCESAMIENTO para PDF de impresión profesional
@@ -2686,11 +2822,11 @@ export default function EditorLibro() {
 
                 // Convertir a dataURL con la calidad apropiada
                 dataUrl = canvas.toDataURL('image/png', quality);
-                
+
                 if (!isProduction) {
-                   //continue producction
+                    //continue producction
                 }
-                
+
             } catch (error) {
                 console.error('❌ [ERROR-CAPTURA]:', error);
                 throw error;
@@ -2705,7 +2841,7 @@ export default function EditorLibro() {
                     canvas.height = 0;
                     canvas = null;
                 }
-                
+
                 // 🚀 FORZAR GARBAGE COLLECTION si está disponible  
                 if (isProduction && window.gc) {
                     try {
@@ -3063,7 +3199,7 @@ export default function EditorLibro() {
     useEffect(() => {
         // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor
         if (isServer) return;
-        
+
         if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
             // Generar thumbnail solo de la página actual con delay para estabilidad
             const timeoutId = setTimeout(() => {
@@ -3860,7 +3996,7 @@ export default function EditorLibro() {
 
     // 🚫 DESHABILITADO: Auto-save automático cuando cambian las páginas
     // Ahora solo guardado manual + respaldo cada 5 minutos
-    
+
 
     // �️ Función para capturar thumbnails de todas las páginas
     const captureAllPageThumbnails = useCallback(async () => {
@@ -3949,7 +4085,7 @@ export default function EditorLibro() {
     // Función simplificada para guardado desde la cola (con menos dependencias)
     const saveFromQueue = useCallback(async (pagesToSave) => {
         // console.log('💾 [QUEUE-SAVE] Iniciando guardado desde cola...');
-        
+
 
         if (!projectData?.id) {
             error('❌ [QUEUE-SAVE] No hay project ID');
@@ -4008,7 +4144,7 @@ export default function EditorLibro() {
 
     // Función para procesar la cola de guardado en segundo plano (versión corregida)
     const processSaveQueue = useCallback(async () => {
-      
+
 
         if (isProcessingQueue) {
             return;
@@ -4054,7 +4190,7 @@ export default function EditorLibro() {
 
     // Sistema simplificado de procesamiento automático
     useEffect(() => {
-        
+
 
         if (saveQueue.length > 0 && !isProcessingQueue) {
 
@@ -4067,7 +4203,7 @@ export default function EditorLibro() {
 
     // Debug: Efecto para monitorear cambios en la cola
     useEffect(() => {
-       //save queue
+        //save queue
     }, [saveQueue, isProcessingQueue]);
 
     // Función para agregar una página a la cola de guardado
@@ -4111,7 +4247,7 @@ export default function EditorLibro() {
             return; // No hacer nada si es la misma página
         }
 
-       
+
 
         // Comportamiento original para local (más detallado)
         // Verificar si la página actual tiene cambios sin guardar usando función de estado
@@ -4457,7 +4593,7 @@ export default function EditorLibro() {
         const contentPages = pages.filter(p => p.type === 'content');
         const finalPages = pages.filter(p => p.type === 'final');
 
-       
+
 
         // Si no hay tapa ni contratapa, devolver como está
         if (coverPages.length === 0 && finalPages.length === 0) {
@@ -4469,7 +4605,7 @@ export default function EditorLibro() {
         // 1. Agregar TAPA si existe (siempre primera, página derecha)
         if (coverPages.length > 0) {
             organizedPages.push(...coverPages);
-            
+
             // 🎯 LÓGICA CLAVE: Después de la tapa, agregar reverso con logo
             // Esto hace que la página 1 del contenido aparezca en la siguiente página (izquierda)
             organizedPages.push({
@@ -4495,7 +4631,7 @@ export default function EditorLibro() {
             // 🎯 LÓGICA CLAVE: La contratapa debe estar en la página izquierda
             // Si tenemos un número impar de páginas antes, necesitamos agregar una página en blanco
             const totalBeforeBackCover = organizedPages.length;
-            
+
             // Si el total es impar, la contratapa estará en la derecha (incorrecto)
             // Necesitamos agregar una página en blanco para que esté en la izquierda
             if (totalBeforeBackCover % 2 === 1) {
@@ -4509,11 +4645,11 @@ export default function EditorLibro() {
                     layout: layouts[0]?.id || 'layout1' // Layout básico
                 });
             }
-            
+
             organizedPages.push(...finalPages);
         }
 
-    
+
 
         return organizedPages;
     }, [layouts]);
@@ -4530,13 +4666,13 @@ export default function EditorLibro() {
         }
 
         return {
-            cover: pages.filter(page => 
-                page.type === "cover" && 
+            cover: pages.filter(page =>
+                page.type === "cover" &&
                 (itemData.has_cover_image === true || itemData.has_cover_image === 1)
             ),
             content: pages.filter(page => page.type === "content"),
-            final: pages.filter(page => 
-                page.type === "final" && 
+            final: pages.filter(page =>
+                page.type === "final" &&
                 (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1)
             )
         };
@@ -4563,7 +4699,7 @@ export default function EditorLibro() {
         const hasBackCover = hasBackCoverEnabled && categorizedPages.final.length > 0;
         const contentPages = categorizedPages.content.length;
 
-    
+
 
         if (hasCover && hasBackCover) {
             return {
@@ -4662,7 +4798,7 @@ export default function EditorLibro() {
                 if (activeTab === 'filters') {
                     //console.log('✅ Usuario ya está en filtros, manteniendo');
                 } else {
-                  //  console.log('✅ Imagen seleccionada, pero manteniendo tab actual:', activeTab);
+                    //  console.log('✅ Imagen seleccionada, pero manteniendo tab actual:', activeTab);
                 }
             } else if (element?.type === "text") {
                 setTextToolbarVisible(true);
@@ -4683,17 +4819,25 @@ export default function EditorLibro() {
         }
     };
 
-    // Obtener el layout actual
+    // 🔧 MEJORADO: Obtener el layout actual con información adicional
     const getCurrentLayout = () => {
         if (pages.length === 0) return layouts[0];
 
         const currentPageData = pages[currentPage];
         if (!currentPageData) return layouts[0];
 
-        return (
-            layouts.find((layout) => layout.id === currentPageData.layout) ||
-            layouts[0]
+        const layout = layouts.find((layout) => layout.id === currentPageData.layout) || layouts[0];
+
+        // 🔧 AÑADIR: Información adicional sobre complejidad del layout
+        const isComplexLayout = layout.cellStyles && Object.values(layout.cellStyles).some(style =>
+            style.includes('col-span-') || style.includes('row-span-')
         );
+
+        return {
+            ...layout,
+            isComplex: isComplexLayout,
+            pageId: currentPageData.id
+        };
     };
 
     // 🚀 OPTIMIZACIÓN: Función debounced para localStorage
@@ -5497,8 +5641,8 @@ export default function EditorLibro() {
         updates,
         isDuplicate = false
     ) => {
-      
-        
+
+
         // 🚀 OPTIMIZACIÓN: Usar función de callback para evitar re-renders innecesarios
         setPages(prevPages => {
             const updatedPages = [...prevPages];
@@ -5551,21 +5695,21 @@ export default function EditorLibro() {
                     ...currentElement,
                     ...updates,
                 };
-                
-                
+
+
                 updatedPages[currentPage].cells[cellIndex].elements[elementIndex] = updatedElement;
-                
+
                 // 🎨 REGENERACIÓN AUTOMÁTICA DE THUMBNAILS CUANDO CAMBIAN FILTROS O MÁSCARAS
                 if (updates.filters || updates.mask) {
-                  
+
                     // 🚨 SOLUCIÓN CRÍTICA: Limpiar caché cuando se detectan cambios de filtros/máscaras
                     if (window.FORCE_THUMBNAIL_REGENERATION) {
                         window.thumbnailCache = {};
                     }
-                    
+
                     // Regeneración inmediata sin delay
                     generateCurrentPageThumbnail(true).then(() => {
-                        
+
                         // 🚨 SOLUCIÓN CRÍTICA: Forzar regeneración secundaria para garantizar actualización
                         if (window.FORCE_THUMBNAIL_REGENERATION && window.forceRegenerateThumbnail) {
                             setTimeout(() => {
@@ -5580,7 +5724,7 @@ export default function EditorLibro() {
                         console.error('❌ [AUTO-REGEN] Error regenerando thumbnail:', error);
                     });
                 } else {
-                  //  console.log('🚫 [AUTO-REGEN] No hay cambios en filtros/máscaras, saltando regeneración');
+                    //  console.log('🚫 [AUTO-REGEN] No hay cambios en filtros/máscaras, saltando regeneración');
                 }
             }
 
@@ -5605,6 +5749,22 @@ export default function EditorLibro() {
         }
     }, [currentPage, debouncedUpdatePages]);
 
+    // � FFUNCIÓN DE TESTING PARA LAYOUTS COMPLEJOS
+    const testComplexLayoutThumbnail = useCallback(() => {
+        const currentLayout = getCurrentLayout();
+        console.log('🧪 [TEST] Layout actual:', currentLayout);
+        console.log('🧪 [TEST] Es complejo:', currentLayout.isComplex);
+        console.log('🧪 [TEST] CellStyles:', currentLayout.cellStyles);
+
+        // Forzar regeneración con el nuevo método
+        generateCurrentPageThumbnail(true);
+
+        return `✅ Test ejecutado para layout: ${currentLayout.id} (complejo: ${currentLayout.isComplex})`;
+    }, [getCurrentLayout, generateCurrentPageThumbnail]);
+
+    // Exponer función de test globalmente
+    window.testComplexLayoutThumbnail = testComplexLayoutThumbnail;
+
     // 🚨 FUNCIONES DE DEBUG PARA TESTING DE THUMBNAILS CON FILTROS (DESPUÉS DE updateElementInCell)
     const forceRegenerateThumbnail = useCallback(() => {
         // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor
@@ -5612,29 +5772,29 @@ export default function EditorLibro() {
             error('🚫 [VPS-PROTECTION] forceRegenerateThumbnail bloqueado en servidor');
             return;
         }
-        
-        
+
+
         // Limpiar completamente la caché de thumbnails
         if (window.thumbnailCache) window.thumbnailCache = {};
-        
+
         // Marcar los thumbnails como protegidos para evitar regeneración automática posterior
         window.THUMBNAIL_PROTECTED = true;
-        
+
         // Inicializar lista de páginas protegidas si no existe
         if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
-        
+
         // Agregar la página actual a la lista de páginas protegidas
         const currentPageId = pages[currentPage]?.id;
         if (currentPageId && !window._protectedThumbnailIds.includes(currentPageId)) {
             window._protectedThumbnailIds.push(currentPageId);
         }
-        
+
         // Forzar bloqueador temporal de regeneración automática
         window.BLOCK_AUTO_REGENERATION = true;
-        
+
         // Ejecutar regeneración forzada
         generateCurrentPageThumbnail(true);
-        
+
         // Mantener protección por 10 segundos para evitar que otras regeneraciones la sobreescriban
         setTimeout(() => {
             window.BLOCK_AUTO_REGENERATION = false;
@@ -5652,24 +5812,24 @@ export default function EditorLibro() {
                 }
             });
         } else {
-           // console.log('⚠️ [TEST] No hay elemento seleccionado');
+            // console.log('⚠️ [TEST] No hay elemento seleccionado');
         }
     }, [selectedElement, selectedCell, updateElementInCell]);
 
     // Función avanzada para bloquear permanentemente cualquier regeneración no autorizada
     const lockThumbnailsForever = useCallback(() => {
-        
+
         // Activar solo los bloqueadores necesarios
-        window.THUMBNAIL_PROTECTED = true; 
+        window.THUMBNAIL_PROTECTED = true;
         window.PERMANENT_THUMBNAIL_LOCK = true;
         window.BLOCK_AUTO_REGENERATION = false; // Permitir regeneración automática para thumbnails normales
-        
+
         // Guardar IDs actuales de miniaturas con filtros aplicados
         window._protectedThumbnailIds = Object.keys(pageThumbnails);
-        
+
         // 🔒 Sobrescribir la función de regeneración para bloquear cualquier intento
         const originalGenerateCurrentPageThumbnail = window.forceRegenerateThumbnail;
-        
+
         // Reemplazar con versión que verifica si ya está protegido
         window.forceRegenerateThumbnail = (...args) => {
             if (window._userInitiated) {
@@ -5678,37 +5838,37 @@ export default function EditorLibro() {
             }
             return false;
         };
-        
+
         // Método para permitir regeneración manual explícita
         window._allowNextRegeneration = () => {
             window._userInitiated = true;
         };
-        
+
         // Crear método seguro para regenerar manualmente
         window.safeRegenerateThumbnail = () => {
             window._allowNextRegeneration();
             window.forceRegenerateThumbnail();
         };
-        
+
         // Tomar un snapshot de las miniaturas actuales para evitar pérdida
-        window._thumbnailBackup = {...pageThumbnails};
-        
+        window._thumbnailBackup = { ...pageThumbnails };
+
         // Mostrar mensaje informativo para el usuario
         alert('🔒 Miniaturas protegidas exitosamente!\n\nSi necesitas regenerar una miniatura específica, usa window.safeRegenerateThumbnail() en la consola.');
-        
+
     }, [pageThumbnails]);
 
     // 🚀 NUEVA FUNCIÓN: Forzar regeneración garantizando filtros
     const forceRegenerateWithFilters = useCallback(() => {
-        
+
         // Activar todos los mecanismos para garantizar filtros
         window.FORCE_FILTER_APPLICATION = true;
         window.ENABLE_ADVANCED_FILTER_RENDERING = true;
-        
+
         // Limpiar caches para asegurar regeneración desde cero
         if (window.thumbnailCache) window.thumbnailCache.clear();
         if (clearThumbnailCaches) clearThumbnailCaches();
-        
+
         // Marcar todos los elementos con filtros explícitamente
         const currentPageData = pages[currentPage];
         if (currentPageData && currentPageData.cells) {
@@ -5723,13 +5883,13 @@ export default function EditorLibro() {
                 }
             });
         }
-        
+
         // Forzar regeneración
         generateCurrentPageThumbnail(true);
-        
+
     }, [pages, currentPage, generateCurrentPageThumbnail]);
 
-  
+
     // Eliminar un elemento de una celda
     const deleteElementFromCell = (cellId, elementId) => {
         const updatedPages = [...pages];
@@ -5928,23 +6088,23 @@ export default function EditorLibro() {
     useEffect(() => {
         // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor
         if (isServer) return;
-        
+
         // Verificar si hay alguna miniatura de página actual
         const currentPageData = pages[currentPage];
         if (!currentPageData) return;
-        
+
         const pageId = currentPageData.id;
-        
+
         // 🎭 PRESERVAR FILTROS: Solo comprobar si esta página específica tiene filtros aplicados
-        const pageHasFilters = currentPageData?.cells?.some(cell => 
-            cell.elements?.some(element => element.filters && 
-                (element.filters.brightness !== 100 || 
-                 element.filters.contrast !== 100 ||
-                 element.filters.saturation !== 100 ||
-                 element.filters.tint !== 0 ||
-                 element.filters.hue !== 0))
+        const pageHasFilters = currentPageData?.cells?.some(cell =>
+            cell.elements?.some(element => element.filters &&
+                (element.filters.brightness !== 100 ||
+                    element.filters.contrast !== 100 ||
+                    element.filters.saturation !== 100 ||
+                    element.filters.tint !== 0 ||
+                    element.filters.hue !== 0))
         );
-        
+
         // Permitir regeneración siempre, pero registrar si tiene filtros para mejor manejo
         if (pageHasFilters) {
             // Registrar como página con filtros para protección futura
@@ -5953,7 +6113,7 @@ export default function EditorLibro() {
                 window._protectedThumbnailIds.push(pageId);
             }
         }
-        
+
 
         if (pages.length === 0 || isLoading || !thumbnailGenerationKey) {
             return;
@@ -5966,7 +6126,7 @@ export default function EditorLibro() {
             if (window.PREVENT_THUMBNAIL_RESET || window.THUMBNAIL_PROTECTED) {
                 return;
             }
-            
+
             try {
                 const currentPageData = pages[currentPage];
                 if (!currentPageData || !currentPageData.id) {
@@ -5988,33 +6148,33 @@ export default function EditorLibro() {
                 // Esperar un poco para que el DOM se estabilice y el thumbnail se elimine
                 await new Promise(resolve => setTimeout(resolve, 100));
 
-              
+
                 if (isCancelled) {
                     return;
                 }
 
                 // 🎭 PRESERVAR FILTROS: Asegurar que se usan las opciones correctas para capturar filtros
-                const hasFilters = currentPageData?.cells?.some(cell => 
-                    cell.elements?.some(element => element.filters && 
-                        (element.filters.brightness !== 100 || 
-                         element.filters.contrast !== 100 ||
-                         element.filters.saturation !== 100 ||
-                         element.filters.tint !== 0 ||
-                         element.filters.hue !== 0))
+                const hasFilters = currentPageData?.cells?.some(cell =>
+                    cell.elements?.some(element => element.filters &&
+                        (element.filters.brightness !== 100 ||
+                            element.filters.contrast !== 100 ||
+                            element.filters.saturation !== 100 ||
+                            element.filters.tint !== 0 ||
+                            element.filters.hue !== 0))
                 );
-                
+
                 // Opciones especiales para capturar filtros si es necesario
                 const captureOptions = hasFilters ? { type: 'thumbnail', preserveFilters: true } : { type: 'thumbnail' };
-               
+
                 const thumbnail = await captureCurrentWorkspace(captureOptions);
-               
+
 
                 if (thumbnail && !isCancelled) {
                     setPageThumbnails(prev => ({
                         ...prev,
                         [pageId]: thumbnail
                     }));
-                  
+
                     // 🎭 PRESERVAR FILTROS: Si tiene filtros, marcarla como protegida
                     if (hasFilters) {
                         if (!window._protectedThumbnailIds) window._protectedThumbnailIds = [];
@@ -6057,7 +6217,7 @@ export default function EditorLibro() {
             if (window.BLOCK_AUTO_REGENERATION) {
                 return;
             }
-            
+
             // Encontrar páginas sin miniatura
             const pagesWithoutThumbnails = pages.filter(page => !pageThumbnails[page.id]);
 
@@ -6170,7 +6330,7 @@ export default function EditorLibro() {
 
         try {
 
-          
+
 
             if (!itemData || !presetData || !projectData?.id) {
 
@@ -6285,7 +6445,7 @@ export default function EditorLibro() {
                 }
             };
 
-           
+
 
 
             // Paso 5: Agregar al carrito usando el patrón correcto
@@ -6748,102 +6908,102 @@ export default function EditorLibro() {
     window.generateAlbumPDF = generateAlbumPDF;
     window.generateHighQualityThumbnail = generateHighQualityThumbnail;
     window.captureCurrentWorkspace = captureCurrentWorkspace;
-    
+
     // 🚨 SOLUCIÓN DE EMERGENCIA: Función global para regenerar la miniatura actual con un clic
     window.regenerateCurrentThumbnailNow = () => {
-        
+
         // Limpiar caché para esta página
         const pageId = pages[currentPage]?.id;
         if (pageId) {
             // Registrar para preservar filtros si existen
             const pageData = pages[currentPage];
             let hasFilters = false;
-            
+
             if (pageData && pageData.cells) {
                 pageData.cells.forEach(cell => {
                     if (cell.elements) {
                         cell.elements.forEach(element => {
-                            if (element.filters && 
-                               (element.filters.brightness !== 100 || 
-                                element.filters.contrast !== 100 ||
-                                element.filters.saturation !== 100 ||
-                                element.filters.tint !== 0 ||
-                                element.filters.hue !== 0 ||
-                                element.filters.blur > 0 ||
-                                element.filters.opacity !== 100 ||
-                                element.filters.scale !== 1 ||
-                                element.filters.rotate !== 0 ||
-                                element.filters.flipHorizontal ||
-                                element.filters.flipVertical)) {
-                                    hasFilters = true;
-                                    element._hasRealFilters = true;
+                            if (element.filters &&
+                                (element.filters.brightness !== 100 ||
+                                    element.filters.contrast !== 100 ||
+                                    element.filters.saturation !== 100 ||
+                                    element.filters.tint !== 0 ||
+                                    element.filters.hue !== 0 ||
+                                    element.filters.blur > 0 ||
+                                    element.filters.opacity !== 100 ||
+                                    element.filters.scale !== 1 ||
+                                    element.filters.rotate !== 0 ||
+                                    element.filters.flipHorizontal ||
+                                    element.filters.flipVertical)) {
+                                hasFilters = true;
+                                element._hasRealFilters = true;
                             }
                         });
                     }
                 });
             }
-            
+
             // Forzar aplicación de filtros si se detectan
             if (hasFilters) {
                 window.PRESERVE_FILTERS_FOR_PAGE = pageId;
                 window.FORCE_FILTER_APPLICATION = true;
             }
-            
+
             // Limpiar caché
             setPageThumbnails(prev => {
-                const updated = {...prev};
+                const updated = { ...prev };
                 delete updated[pageId];
                 return updated;
             });
         }
-        
+
         // Forzar regeneración inmediata
         setTimeout(() => {
             generateCurrentPageThumbnail(true);
-            
+
             // Resetear flags después de un tiempo
             setTimeout(() => {
                 window.PRESERVE_FILTERS_FOR_PAGE = null;
             }, 1000);
         }, 100);
-        
+
         return '✅ Miniatura regenerada con éxito!';
     };
-    
+
     // 🔥 NUEVA FUNCIÓN: Regenerar miniatura con filtros garantizados
     window.generateThumbnailWithFilters = () => {
         window.FORCE_FILTER_APPLICATION = true;
-        
+
         // Añadir timestamp para evitar caché del navegador
         const cacheBreaker = Date.now();
         window._filterCacheBreaker = cacheBreaker;
-        
+
         // Regenerar
         window.regenerateCurrentThumbnailNow();
-        
+
         // Limpiar flag después de un tiempo
         setTimeout(() => {
             window.FORCE_FILTER_APPLICATION = false;
         }, 1000);
-        
+
         return '✅ Miniatura con filtros regenerada exitosamente';
     };
-    
+
     // 🚀 FUNCIÓN RADICAL: Usar el sistema de filtros garantizados
     window.forceRegenerateWithGuaranteedFilters = async () => {
-        
+
         const currentPageData = pages[currentPage];
         if (!currentPageData || !workspaceDimensions) {
             console.error('❌ [RADICAL] Datos no disponibles');
             return false;
         }
-        
+
         try {
             // 🛑 IMPORTANTE: Limpiar verificaciones previas para evitar bucles
             if (window._filterVerificationDone) {
                 window._filterVerificationDone.clear();
             }
-            
+
             // Exponer datos para el sistema radical
             window._currentPageData = currentPageData;
             window._workspaceDimensions = workspaceDimensions;
@@ -6853,27 +7013,27 @@ export default function EditorLibro() {
                     [id]: thumbnail
                 }));
             };
-            
-          
-            
+
+
+
             // Generar con sistema radical
             const thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
-            
+
             if (thumbnail) {
                 // 🛡️ PROTEGER THUMBNAIL GLOBAL CON FILTROS
                 const pageHasFilters = currentPageData.elements?.some(element => {
                     if (!element.filters) return false;
-                    return Object.keys(element.filters).some(key => 
+                    return Object.keys(element.filters).some(key =>
                         key === 'flipHorizontal' || key === 'flipVertical' ? element.filters[key] :
-                        (key === 'brightness' || key === 'contrast' || key === 'saturation' || key === 'opacity' || key === 'scale') ? element.filters[key] !== 1 :
-                        (key === 'tint' || key === 'hue' || key === 'blur' || key === 'rotate') ? element.filters[key] !== 0 : false
+                            (key === 'brightness' || key === 'contrast' || key === 'saturation' || key === 'opacity' || key === 'scale') ? element.filters[key] !== 1 :
+                                (key === 'tint' || key === 'hue' || key === 'blur' || key === 'rotate') ? element.filters[key] !== 0 : false
                     );
                 });
-                
+
                 if (pageHasFilters) {
                     window.protectThumbnail?.(currentPageData.id);
                 }
-                
+
                 setPageThumbnails(prev => {
                     return {
                         ...prev,
@@ -6882,25 +7042,25 @@ export default function EditorLibro() {
                 });
                 return true;
             }
-            
+
             return false;
         } catch (error) {
             console.error('❌ [RADICAL] Error:', error);
             return false;
         }
     };
-    
+
     // 🎯 FUNCIÓN SEGURA: Regenerar thumbnail con protección anti-bucle
     window.safeRegenerateThumbnail = () => {
-        
+
         // Limpiar verificaciones para permitir nueva verificación
         if (window._filterVerificationDone) {
             window._filterVerificationDone.clear();
         }
-        
+
         // Regenerar de forma segura
         generateCurrentPageThumbnail(true);
-        
+
         return '✅ Regeneración segura completada';
     };
 
@@ -6979,7 +7139,7 @@ export default function EditorLibro() {
                             overflow: hidden !important;
                         }
                     `}</style>
-                    
+
                     {/* Book Preview Modal */}
                     <BookPreviewModal
                         isOpen={isBookPreviewOpen}
@@ -7014,27 +7174,27 @@ export default function EditorLibro() {
 
                             // ✅ FILTRAR PÁGINAS SEGÚN CONFIGURACIÓN DE CHECKBOXES
                             let enabledPages = [];
-                            
+
                             // Solo incluir portada si está habilitada
                             if (itemData.has_cover_image === true || itemData.has_cover_image === 1) {
                                 enabledPages = enabledPages.concat(categorizedPages.cover);
                             }
-                            
+
                             // Siempre incluir páginas de contenido
                             enabledPages = enabledPages.concat(categorizedPages.content);
-                            
+
                             // Solo incluir contraportada si está habilitada
                             if (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1) {
                                 enabledPages = enabledPages.concat(categorizedPages.final);
                             }
-                            
-                           
-                            
+
+
+
                             const pagesWithLayout = enabledPages.map((page) => ({
                                 ...page,
                                 layout: layouts.find((l) => l.id === page.layout) || layouts[0],
                             }));
-                            
+
                             // 🎯 ORGANIZAR PÁGINAS CON LÓGICA CORRECTA DE LIBRO
                             return organizeBookPages(pagesWithLayout);
                         })()}
@@ -7047,29 +7207,29 @@ export default function EditorLibro() {
 
                             // ✅ FILTRAR THUMBNAILS SEGÚN PÁGINAS HABILITADAS
                             const filteredThumbnails = {};
-                            
+
                             // Obtener IDs de páginas habilitadas
                             let enabledPageIds = [];
-                            
+
                             if (itemData.has_cover_image === true || itemData.has_cover_image === 1) {
                                 enabledPageIds = enabledPageIds.concat(categorizedPages.cover.map(p => p.id));
                             }
-                            
+
                             enabledPageIds = enabledPageIds.concat(categorizedPages.content.map(p => p.id));
-                            
+
                             if (itemData.has_back_cover_image === true || itemData.has_back_cover_image === 1) {
                                 enabledPageIds = enabledPageIds.concat(categorizedPages.final.map(p => p.id));
                             }
-                            
+
                             // Filtrar thumbnails solo para páginas habilitadas
                             enabledPageIds.forEach(pageId => {
                                 if (pageThumbnails[pageId]) {
                                     filteredThumbnails[pageId] = pageThumbnails[pageId];
                                 }
                             });
-                            
-                           
-                            
+
+
+
                             return filteredThumbnails;
                         })()}
                         workspaceDimensions={workspaceDimensions}
@@ -7273,7 +7433,7 @@ export default function EditorLibro() {
                                         Procesar Cola
                                     </button>
                                 )}
-                               
+
 
                                 <Button
                                     id="preview-button"
@@ -7287,7 +7447,7 @@ export default function EditorLibro() {
                                         try {
 
                                             // 💾 NUEVA FASE 0: Guardar automáticamente antes de continuar
-                                            
+
                                             // Mostrar modal de preparación inicial
                                             setAlbumPreparationModal({
                                                 isOpen: true,
@@ -7300,7 +7460,7 @@ export default function EditorLibro() {
                                             // Ejecutar guardado manual
                                             try {
                                                 await saveProgressManually();
-                                                
+
                                                 // Actualizar progreso del guardado
                                                 setAlbumPreparationModal(prev => ({
                                                     ...prev,
@@ -7308,10 +7468,10 @@ export default function EditorLibro() {
                                                     message: '✅ Cambios guardados',
                                                     subMessage: 'Preparando vista previa...'
                                                 }));
-                                                
+
                                                 // Pequeña pausa para mostrar el éxito
                                                 await new Promise(resolve => setTimeout(resolve, 500));
-                                                
+
                                             } catch (saveError) {
                                                 console.error('❌ [AUTO-SAVE] Error al guardar:', saveError);
                                                 // Continuar de todas formas, pero mostrar advertencia
@@ -7330,23 +7490,23 @@ export default function EditorLibro() {
                                                 phase: 'preparing',
                                                 progress: 15,
                                                 message: `${contentType.icon} Creando tu ${contentType.name.toLowerCase()}`,
-                                                subMessage: contentType.type === 'album' 
+                                                subMessage: contentType.type === 'album'
                                                     ? 'Preparando la experiencia completa de tu álbum...'
                                                     : contentType.type === 'catalog'
-                                                    ? 'Organizando tu catálogo de contenido...'
-                                                    : contentType.type === 'booklet'
-                                                    ? 'Preparando tu folleto personalizado...'
-                                                    : 'Optimizando tu diseño único...'
+                                                        ? 'Organizando tu catálogo de contenido...'
+                                                        : contentType.type === 'booklet'
+                                                            ? 'Preparando tu folleto personalizado...'
+                                                            : 'Optimizando tu diseño único...'
                                             }));
 
                                             // 🎭 FASE 2: Simular preparación específica (15-30%)
-                                            const preparationSteps = contentType.type === 'album' 
+                                            const preparationSteps = contentType.type === 'album'
                                                 ? ['🔧 Encuadernando páginas', '📖 Ajustando tapas', '✨ Puliendo detalles']
                                                 : contentType.type === 'catalog'
-                                                ? ['📑 Organizando contenido', '🎨 Optimizando diseño', '⚡ Finalizando catálogo']
-                                                : contentType.type === 'booklet' 
-                                                ? ['📋 Preparando folleto', '🖼️ Ajustando formato', '✨ Aplicando estilo']
-                                                : ['🎨 Procesando diseño', '⚡ Optimizando calidad', '✨ Finalizando vista'];
+                                                    ? ['📑 Organizando contenido', '🎨 Optimizando diseño', '⚡ Finalizando catálogo']
+                                                    : contentType.type === 'booklet'
+                                                        ? ['📋 Preparando folleto', '🖼️ Ajustando formato', '✨ Aplicando estilo']
+                                                        : ['🎨 Procesando diseño', '⚡ Optimizando calidad', '✨ Finalizando vista'];
 
                                             for (let i = 15; i <= 30; i += 3) {
                                                 await new Promise(resolve => setTimeout(resolve, contentType.type === 'card' ? 50 : 100));
@@ -7534,7 +7694,7 @@ export default function EditorLibro() {
                                     <span className="text-xs font-medium">Textos</span>
                                 </button>
 
-                              {/*  <button
+                                {/*  <button
                                     data-tab="filters"
                                     onClick={() => setActiveTab('filters')}
                                     className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all w-16 h-16 ${activeTab === 'filters'
@@ -8350,23 +8510,23 @@ export default function EditorLibro() {
                                                             <FilterControls
                                                                 filters={currentElement.filters || {}}
                                                                 onFilterChange={(newFilters) => {
-                                                                    
+
                                                                     // 1. Actualizar elemento inmediatamente
                                                                     updateElementInCell(
                                                                         selectedCell,
                                                                         selectedElement,
                                                                         { filters: newFilters }
                                                                     );
-                                                                    
+
                                                                     // 2. FORZAR regeneración inmediata con múltiples intentos
                                                                     setTimeout(() => {
                                                                         generateCurrentPageThumbnail(true);
                                                                     }, 50);
-                                                                    
+
                                                                     setTimeout(() => {
                                                                         generateCurrentPageThumbnail(true);
                                                                     }, 200);
-                                                                    
+
                                                                     setTimeout(() => {
                                                                         generateCurrentPageThumbnail(true);
                                                                     }, 500);
@@ -8531,7 +8691,7 @@ export default function EditorLibro() {
                                                     // 🔧 CORRECCIÓN LAYOUT: Calcular dimensiones reales de la celda
                                                     const layout = getCurrentLayout();
                                                     const cellDimensions = calculateCellDimensions(layout, idx, workspaceDimensions);
-                                                    
+
                                                     return (
                                                         <EditableCell
                                                             key={cell.id}
