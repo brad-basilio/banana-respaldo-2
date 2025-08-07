@@ -279,7 +279,7 @@
             // document.body.removeChild(document.getElementById('page-loader'))
         });
     </script>
-
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js" type="text/javascript"></script>
     <!-- Configuración para dom-to-image: suprimir errores de CORS en CSS -->
     <script>
         // Suprimir errores específicos de dom-to-image relacionados con CORS CSS
