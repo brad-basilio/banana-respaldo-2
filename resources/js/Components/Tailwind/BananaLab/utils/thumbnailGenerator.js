@@ -110,6 +110,183 @@ const restoreElementStyles = (element, originalStyles) => {
 };
 
 /**
+ * Procesa imágenes para simular object-fit: cover correctamente
+ * html2canvas no siempre respeta object-fit, así que lo simulamos manualmente
+ */
+const processImagesWithCover = async (clonedDoc, originalElement) => {
+    const originalImages = originalElement.querySelectorAll('img');
+    const clonedImages = clonedDoc.querySelectorAll('img');
+    
+    console.log(`🖼️ [COVER-FIX] Procesando ${clonedImages.length} imágenes para simular object-fit: cover`);
+    
+    if (originalImages.length !== clonedImages.length) {
+        console.warn(`⚠️ [COVER-FIX] Mismatch: ${originalImages.length} originales vs ${clonedImages.length} clonadas`);
+    }
+    
+    // Crear un mapa de imágenes originales para obtener sus estilos computados
+    const imageStylesMap = new Map();
+    originalImages.forEach((img, index) => {
+        const computedStyle = getComputedStyle(img);
+        const container = img.parentElement;
+        const containerRect = container.getBoundingClientRect();
+        
+        imageStylesMap.set(index, {
+            objectFit: computedStyle.objectFit,
+            objectPosition: computedStyle.objectPosition,
+            containerWidth: containerRect.width,
+            containerHeight: containerRect.height,
+            naturalWidth: img.naturalWidth,
+            naturalHeight: img.naturalHeight,
+            src: img.src
+        });
+    });
+    
+    // Procesar cada imagen clonada
+    for (let i = 0; i < clonedImages.length; i++) {
+        const clonedImg = clonedImages[i];
+        const originalData = imageStylesMap.get(i);
+        
+        if (!originalData) continue;
+        
+        try {
+            // Detectar si la imagen necesita tratamiento cover
+            const needsCoverTreatment = 
+                originalData.objectFit === 'cover' || 
+                clonedImg.classList.contains('object-cover') ||
+                clonedImg.className.includes('object-cover') ||
+                clonedImg.style.objectFit === 'cover' ||
+                // Detectar imágenes dentro de elementos con clases específicas
+                clonedImg.closest('[data-element-type="image"]') ||
+                clonedImg.closest('.workspace-image') ||
+                clonedImg.closest('.element-image');
+            
+            if (needsCoverTreatment) {
+                console.log(`🔧 [COVER-FIX] Procesando imagen ${i} con object-fit: cover`);
+                
+                await simulateObjectFitCover(clonedImg, originalData, clonedDoc);
+            } else {
+                // Para otras imágenes, asegurar que tengan estilos básicos
+                clonedImg.style.imageRendering = 'optimizeQuality';
+                clonedImg.style.width = '100%';
+                clonedImg.style.height = '100%';
+                
+                if (originalData.objectFit && originalData.objectFit !== 'fill') {
+                    clonedImg.style.objectFit = originalData.objectFit;
+                }
+                if (originalData.objectPosition) {
+                    clonedImg.style.objectPosition = originalData.objectPosition;
+                }
+            }
+        } catch (error) {
+            console.warn(`⚠️ [COVER-FIX] Error procesando imagen ${i}:`, error);
+            // Fallback: aplicar estilos básicos
+            clonedImg.style.imageRendering = 'optimizeQuality';
+            clonedImg.style.objectFit = 'cover';
+            clonedImg.style.width = '100%';
+            clonedImg.style.height = '100%';
+        }
+    }
+};
+
+/**
+ * Simula object-fit: cover creando un canvas con la imagen recortada correctamente
+ */
+const simulateObjectFitCover = async (img, originalData, clonedDoc) => {
+    return new Promise((resolve) => {
+        try {
+            const { containerWidth, containerHeight, naturalWidth, naturalHeight } = originalData;
+            
+            // Validar dimensiones
+            if (!containerWidth || !containerHeight || !naturalWidth || !naturalHeight) {
+                console.warn('⚠️ [COVER-FIX] Dimensiones inválidas:', originalData);
+                img.style.objectFit = 'cover';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                resolve();
+                return;
+            }
+            
+            // Calcular las dimensiones para simular cover
+            const containerAspect = containerWidth / containerHeight;
+            const imageAspect = naturalWidth / naturalHeight;
+            
+            let sourceX = 0, sourceY = 0, sourceWidth = naturalWidth, sourceHeight = naturalHeight;
+            
+            if (imageAspect > containerAspect) {
+                // Imagen más ancha - recortar por los lados
+                sourceWidth = naturalHeight * containerAspect;
+                sourceX = (naturalWidth - sourceWidth) / 2;
+            } else {
+                // Imagen más alta - recortar por arriba/abajo  
+                sourceHeight = naturalWidth / containerAspect;
+                sourceY = (naturalHeight - sourceHeight) / 2;
+            }
+            
+            // Crear canvas temporal para el recorte
+            const canvas = clonedDoc.createElement('canvas');
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // Crear imagen temporal para el canvas
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
+            
+            tempImg.onload = () => {
+                try {
+                    // Dibujar la imagen recortada simulando object-fit: cover
+                    ctx.drawImage(
+                        tempImg,
+                        sourceX, sourceY, sourceWidth, sourceHeight,  // Source rectangle (crop)
+                        0, 0, containerWidth, containerHeight         // Destination rectangle
+                    );
+                    
+                    // Convertir a data URL y reemplazar la imagen original
+                    const dataUrl = canvas.toDataURL('image/png', 1.0);
+                    img.src = dataUrl;
+                    
+                    // Aplicar estilos para que se muestre correctamente
+                    img.style.objectFit = 'fill'; // Cambiar a fill porque ya está recortada
+                    img.style.objectPosition = 'center';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.imageRendering = 'optimizeQuality';
+                    
+                    console.log(`✅ [COVER-FIX] Imagen simulada con object-fit: cover exitosamente`);
+                    resolve();
+                } catch (canvasError) {
+                    console.warn('⚠️ [COVER-FIX] Error en canvas processing:', canvasError);
+                    // Fallback: usar object-fit normal
+                    img.style.objectFit = 'cover';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    resolve();
+                }
+            };
+            
+            tempImg.onerror = () => {
+                console.warn('⚠️ [COVER-FIX] Error cargando imagen temporal');
+                // Fallback: usar object-fit normal
+                img.style.objectFit = 'cover';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                resolve();
+            };
+            
+            tempImg.src = img.src;
+            
+        } catch (error) {
+            console.warn('⚠️ [COVER-FIX] Error en simulateObjectFitCover:', error);
+            // Fallback: usar object-fit normal
+            img.style.objectFit = 'cover';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            resolve();
+        }
+    });
+};
+
+/**
  * Genera thumbnail de una página específica
  */
 export const generatePageThumbnail = async (pageId, layout, options = {}) => {
@@ -142,7 +319,7 @@ export const generatePageThumbnail = async (pageId, layout, options = {}) => {
             logging: false,
             imageTimeout: 15000,
             removeContainer: true,
-            onclone: (clonedDoc) => {
+            onclone: async (clonedDoc) => {
                 // Optimizar el documento clonado
                 const clonedElement = clonedDoc.querySelector(`#page-${pageId}`);
                 if (clonedElement && layout) {
@@ -171,12 +348,39 @@ export const generatePageThumbnail = async (pageId, layout, options = {}) => {
                 const problematicElements = clonedDoc.querySelectorAll('script, iframe, video, audio');
                 problematicElements.forEach(el => el.remove());
                 
-                // Optimizar imágenes para mejor renderizado
-                const images = clonedDoc.querySelectorAll('img');
-                images.forEach(img => {
-                    img.style.imageRendering = 'optimizeQuality';
-                    img.style.objectFit = img.style.objectFit || 'cover';
-                });
+                // 🖼️ SOLUCIÓN AVANZADA: Simular object-fit: cover manualmente
+                await processImagesWithCover(clonedDoc, pageElement);
+                
+                // Agregar CSS adicional para asegurar que las imágenes se muestren correctamente
+                const style = clonedDoc.createElement('style');
+                style.textContent = `
+                    /* Asegurar que las imágenes mantengan sus proporciones */
+                    img {
+                        image-rendering: optimizeQuality !important;
+                        image-rendering: -webkit-optimize-contrast !important;
+                        image-rendering: crisp-edges !important;
+                    }
+                    
+                    /* Contenedores de imagen */
+                    [data-element-type="image"] {
+                        overflow: hidden !important;
+                        position: relative !important;
+                    }
+                    
+                    [data-element-type="image"] img,
+                    .workspace-image,
+                    .element-image {
+                        width: 100% !important;
+                        height: 100% !important;
+                        display: block !important;
+                    }
+                    
+                    /* Grid layout específico */
+                    .grid {
+                        display: grid !important;
+                    }
+                `;
+                clonedDoc.head.appendChild(style);
             }
         };
         
@@ -399,3 +603,45 @@ export const generateThumbnailWithGuaranteedFilters = async (pageId, layout, opt
     console.log(`🎨 [STUB] generateThumbnailWithGuaranteedFilters llamada para página ${pageId}`);
     return generatePageThumbnail(pageId, layout, { ...options, type: 'high_quality' });
 };
+
+// 🔍 FUNCION DE DEBUGGING PARA VERIFICAR OBJECT-FIT COVER
+export const debugImageCover = (pageId) => {
+    console.log(`🔍 [DEBUG] Analizando imágenes en página ${pageId}...`);
+    
+    const pageElement = document.querySelector(`#page-${pageId}`);
+    if (!pageElement) {
+        console.error(`❌ [DEBUG] No se encontró página ${pageId}`);
+        return;
+    }
+    
+    const images = pageElement.querySelectorAll('img');
+    console.log(`📊 [DEBUG] Encontradas ${images.length} imágenes en página ${pageId}`);
+    
+    images.forEach((img, index) => {
+        const computedStyle = getComputedStyle(img);
+        const container = img.parentElement;
+        const containerRect = container ? container.getBoundingClientRect() : null;
+        
+        console.log(`🖼️ [DEBUG] Imagen ${index}:`, {
+            src: img.src.substring(0, 50) + '...',
+            objectFit: computedStyle.objectFit,
+            objectPosition: computedStyle.objectPosition,
+            naturalWidth: img.naturalWidth,
+            naturalHeight: img.naturalHeight,
+            displayWidth: img.offsetWidth,
+            displayHeight: img.offsetHeight,
+            containerWidth: containerRect?.width,
+            containerHeight: containerRect?.height,
+            classes: img.className,
+            parentClasses: container?.className,
+            hasObjectCover: img.classList.contains('object-cover') || img.className.includes('object-cover'),
+            computedObjectFit: computedStyle.objectFit,
+            inlineObjectFit: img.style.objectFit
+        });
+    });
+};
+
+// Exponer función de debug globalmente
+if (typeof window !== 'undefined') {
+    window.debugImageCover = debugImageCover;
+}
