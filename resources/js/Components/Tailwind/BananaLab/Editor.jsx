@@ -1400,7 +1400,7 @@ export default function EditorLibro() {
             if (isComplexLayout) {
                 console.log('🏗️ [LAYOUT COMPLEJO] Usando generador especializado para layout:', currentLayout.id);
                 try {
-                    thumbnail = await generateThumbnailForComplexLayout(currentPageData, workspaceDimensions, currentLayout);
+                   // thumbnail = await generateThumbnailForComplexLayout(currentPageData, workspaceDimensions, currentLayout);
                     console.log('✅ [LAYOUT COMPLEJO] Thumbnail generado exitosamente');
                 } catch (error) {
                     console.error('❌ [LAYOUT COMPLEJO] Error, usando fallback:', error);
