@@ -1,28 +1,52 @@
 /**
- * GENERADOR DE THUMBNAILS OPTIMIZADO PARA VELOCIDAD
- * Version ultra-rápida con técnicas de optimización avanzadas
+ * GENERADOR DE THUMBNAILS OPTIMIZADO PARA VPS Y VELOCIDAD
+ * Version ultra-rápida con técnicas de optimización avanzadas y bajo consumo de memoria
  * 
- * MEJORAS:
- * - Sistema de detección y preservación de filtros automatizado
- * - Renderizado garantizado de filtros con técnica de doble canvas
- * - Botones de emergencia por página para forzar regeneración con filtros
- * - Sistema de cacheo mejorado con protección para miniaturas con filtros
+ * MEJORAS VPS:
+ * - Sistema de detección y preservación de filtros automatizado con logging reducido
+ * - Renderizado garantizado de filtros con técnica de doble canvas optimizada
+ * - Cache limitado para evitar leaks de memoria
+ * - Sistema de limpieza automática de recursos
  */
 
-// Cache global de imágenes para evitar recargas
+// 🚀 VPS OPTIMIZATION: Cache limitado para evitar memory leaks
 const imageCache = new Map();
 const thumbnailCache = new Map();
+const isVPS = typeof window !== 'undefined' && 
+    (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost');
+const log = isVPS ? () => {} : console.log;
+const warn = isVPS ? () => {} : console.warn;
+const error = console.error;
+
+// 🚀 VPS: Limpieza automática de cache cada 5 minutos
+if (isVPS && typeof setInterval !== 'undefined') {
+    setInterval(() => {
+        if (imageCache.size > 20) {
+            const entries = Array.from(imageCache.entries());
+            entries.slice(0, entries.length - 10).forEach(([key]) => {
+                imageCache.delete(key);
+            });
+        }
+        if (thumbnailCache.size > 30) {
+            const entries = Array.from(thumbnailCache.entries());
+            entries.slice(0, entries.length - 15).forEach(([key]) => {
+                thumbnailCache.delete(key);
+            });
+        }
+    }, 300000); // 5 minutos
+}
 
 /**
- * Crea un botón de emergencia específico para una página con filtros
+ * Crea un botón de emergencia específico para una página con filtros (solo en desarrollo)
  * @param {string} pageId - ID de la página que necesita regeneración de filtros
  */
 function createEmergencyFilterButton(pageId) {
-    if (typeof document === 'undefined' || document.getElementById('filter-emergency-button-' + pageId)) {
+    // 🚀 VPS: No crear botones de emergencia en producción para ahorrar memoria
+    if (isVPS || typeof document === 'undefined' || document.getElementById('filter-emergency-button-' + pageId)) {
         return;
     }
     
-    console.log(`🚨 [EMERGENCIA] Creando botón específico para página ${pageId}`);
+    log(`🚨 [EMERGENCIA] Creando botón específico para página ${pageId}`);
     
     const button = document.createElement('button');
     button.id = 'filter-emergency-button-' + pageId;

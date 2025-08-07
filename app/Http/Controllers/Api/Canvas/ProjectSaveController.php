@@ -19,10 +19,10 @@ use SoDe\Extend\Crypto;
  */
 class ProjectSaveController extends Controller
 {
-    // Límites de seguridad para evitar errores de MySQL
-    const MAX_MYSQL_PACKET_SIZE = 1048576; // 1MB por defecto en MySQL
-    const SAFE_PACKET_RATIO = 0.7; // Usar solo 70% del límite para seguridad
-    const MAX_BASE64_IMAGE_SIZE = 500000; // 500KB max para imágenes base64 en auto-save
+    // 🚀 VPS OPTIMIZATION: Límites más conservadores para VPS con poca memoria
+    const MAX_MYSQL_PACKET_SIZE = 524288; // 512KB en lugar de 1MB (más conservador para VPS)
+    const SAFE_PACKET_RATIO = 0.6; // Usar solo 60% del límite (más conservador)
+    const MAX_BASE64_IMAGE_SIZE = 300000; // 300KB max para imágenes base64 (reducido de 500KB)
 
     /**
      * Guardar progreso automáticamente (optimizado para velocidad y tamaño)

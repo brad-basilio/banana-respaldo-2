@@ -367,9 +367,22 @@ class ProjectImageController extends Controller
                 return ['success' => false, 'error' => 'No se pudo leer la imagen original'];
             }
 
+            // 🚀 VPS OPTIMIZATION: Verificar tamaño de archivo para evitar memory exhaustion
+            $imageSize = strlen($imageContent);
+            $maxImageSize = 5 * 1024 * 1024; // 5MB máximo
+            
+            if ($imageSize > $maxImageSize) {
+                Log::warning("⚠️ [VPS-MEMORY] Imagen muy grande para thumbnail: " . number_format($imageSize / 1024 / 1024, 2) . "MB");
+                // Intentar procesar con configuración más conservadora
+                ini_set('memory_limit', '256M');
+            }
+
             // Crear instancia de Intervention Image Manager
             $manager = new ImageManager(new Driver());
             $image = $manager->read($imageContent);
+            
+            // 🚀 VPS OPTIMIZATION: Liberar memoria de contenido original inmediatamente
+            unset($imageContent);
             
             // Generar nombre personalizado para la miniatura
             $pathInfo = pathinfo($originalFilename);
@@ -381,14 +394,22 @@ class ProjectImageController extends Controller
             $thumbnailDir = $projectPath . '/thumbnails';
             $this->createDirectoryWithPermissions($thumbnailDir, 0777);
 
-            // Redimensionar imagen manteniendo proporción (150x150 máximo)
-            $image->cover(150, 150);
+            // 🚀 VPS OPTIMIZATION: Redimensionar más agresivo para ahorrar memoria (100x100 en lugar de 150x150)
+            $thumbnailSize = app()->environment('production') ? 100 : 150;
+            $image->cover($thumbnailSize, $thumbnailSize);
 
-            // Convertir a JPG con 85% calidad para reducir tamaño
-            $encodedImage = $image->toJpeg(85);
+            // 🚀 VPS OPTIMIZATION: Calidad más baja en producción para ahorrar memoria y espacio
+            $quality = app()->environment('production') ? 70 : 85;
+            $encodedImage = $image->toJpeg($quality);
+            
+            // 🚀 VPS OPTIMIZATION: Liberar memoria de imagen inmediatamente
+            unset($image);
 
             // Guardar la miniatura con permisos 777
             $thumbnailSaved = $this->saveFileWithPermissions($thumbnailPath, $encodedImage, 0777);
+            
+            // 🚀 VPS OPTIMIZATION: Liberar memoria de imagen codificada
+            unset($encodedImage);
 
             if ($thumbnailSaved) {
                 // Generar URL usando el servicio de imágenes (no Storage::url)
@@ -406,7 +427,16 @@ class ProjectImageController extends Controller
             }
 
         } catch (\Exception $e) {
+            // 🚀 VPS OPTIMIZATION: Log detallado de errores de memoria
+            if (strpos($e->getMessage(), 'memory') !== false) {
+                Log::error("❌ [VPS-MEMORY-ERROR] Error de memoria en thumbnail: " . $e->getMessage());
+            }
             return ['success' => false, 'error' => $e->getMessage()];
+        } finally {
+            // 🚀 VPS OPTIMIZATION: Forzar garbage collection si está disponible
+            if (function_exists('gc_collect_cycles')) {
+                gc_collect_cycles();
+            }
         }
     }
 
