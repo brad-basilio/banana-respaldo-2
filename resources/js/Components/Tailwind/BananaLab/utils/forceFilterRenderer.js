@@ -3,7 +3,6 @@
  * Este sistema garantiza al 100% que los filtros se apliquen usando técnicas extremas
  */
 
-console.log('🔥 [FORCE FILTER RENDERER] Sistema radical cargado');
 
 /**
  * Aplica filtros usando manipulación directa de píxeles (método infalible)
@@ -13,15 +12,7 @@ function applyFiltersDirectly(canvas, filters) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
     
-    console.log('🎨 [PIXEL MANIPULATION] Aplicando filtros directamente a píxeles:', filters);
-    console.log('🔍 [DEBUGGING] Valores exactos recibidos:', {
-        brightness: filters.brightness,
-        contrast: filters.contrast,
-        saturation: filters.saturation,
-        hue: filters.hue,
-        tint: filters.tint,
-        opacity: filters.opacity
-    });
+    
     
     // Convertir filtros a valores normalizados CON VALIDACIÓN
     const brightness = Math.max(0, Math.min(10, (filters.brightness ?? 100) / 100)); // 0-10 range
@@ -31,15 +22,7 @@ function applyFiltersDirectly(canvas, filters) {
     const tint = Math.max(0, Math.min(1, (filters.tint ?? 0) / 100));               // 0-1 range
     const opacity = Math.max(0, Math.min(1, (filters.opacity ?? 100) / 100));       // 0-1 range
     
-    console.log('⚙️ [NORMALIZED VALUES] Valores normalizados para aplicar:', {
-        brightness: brightness,
-        contrast: contrast,
-        saturation: saturation,
-        hue: hue + ' rad (' + ((filters.hue ?? 0)) + '°)',
-        tint: tint,
-        opacity: opacity
-    });
-    
+ 
     // Función para convertir RGB a HSL
     function rgbToHsl(r, g, b) {
         r /= 255;
@@ -141,32 +124,22 @@ function applyFiltersDirectly(canvas, filters) {
     }
     
     ctx.putImageData(imageData, 0, 0);
-    console.log('✅ [PIXEL MANIPULATION] Filtros aplicados directamente a píxeles');
 }
 
 /**
  * Renderiza un elemento con filtros garantizados usando múltiples técnicas
  */
 export function renderElementWithForcedFilters(ctx, element, bounds) {
-    console.log('🚀 [FORCE RENDERER] Renderizando elemento con filtros forzados:', element.id);
-    console.log('🔍 [ELEMENT DEBUG] Datos completos del elemento:', {
-        id: element.id,
-        type: element.type,
-        filters: element.filters,
-        position: element.position,
-        size: element.size
-    });
+   
     
     const { x, y, width, height } = bounds;
     
     if (element.type !== 'image' || !element.content) {
-        console.log('⏩ [FORCE RENDERER] Elemento no es imagen, saltando');
         return Promise.resolve(false);
     }
     
     // Verificar si hay filtros reales con logging detallado
     const filters = element.filters || {};
-    console.log('🎛️ [FILTER ANALYSIS] Analizando filtros del elemento:', filters);
     
     // 🔍 DETECCIÓN MEJORADA: Soporte para valores normalizados (0-1) y porcentaje (0-100)
     const hasFilters = 
@@ -182,23 +155,12 @@ export function renderElementWithForcedFilters(ctx, element, bounds) {
         filters.flipHorizontal || 
         filters.flipVertical;
     
-    console.log('🔍 [FILTER CHECK] ¿Tiene filtros reales?', hasFilters);
-    console.log('🔍 [FILTER DETAILS] Detalles de cada filtro (predefinidos compatible):', {
-        brightness: `${filters.brightness} (¿≠100&≠1? ${filters.brightness !== 100 && filters.brightness !== 1})`,
-        contrast: `${filters.contrast} (¿≠100&≠1? ${filters.contrast !== 100 && filters.contrast !== 1})`,
-        saturation: `${filters.saturation} (¿≠100&≠1? ${filters.saturation !== 100 && filters.saturation !== 1})`,
-        tint: `${filters.tint} (¿≠0? ${filters.tint !== 0})`,
-        hue: `${filters.hue} (¿≠0? ${filters.hue !== 0})`,
-        opacity: `${filters.opacity} (¿≠100&≠1? ${filters.opacity !== 100 && filters.opacity !== 1})`,
-        detectedFormat: filters.brightness > 2 ? 'percentage (0-100)' : 'normalized (0-1)'
-    });
+  
     
     if (!hasFilters) {
-        console.log('⏩ [FORCE RENDERER] Sin filtros reales que aplicar');
         return Promise.resolve(false);
     }
     
-    console.log('🎯 [FORCE RENDERER] Filtros detectados, aplicando método radical con valores:', filters);
     
     // Obtener la imagen
     const img = new Image();
@@ -262,23 +224,19 @@ export function renderElementWithForcedFilters(ctx, element, bounds) {
                     ctx.drawImage(tempCanvas, x, y);
                 }
                 
-                console.log('✅ [FORCE RENDERER] Filtros aplicados exitosamente con manipulación de píxeles');
                 resolve(true);
                 
             } catch (error) {
-                console.error('❌ [FORCE RENDERER] Error aplicando filtros:', error);
                 resolve(false);
             }
         };
         
         img.onerror = () => {
-            console.error('❌ [FORCE RENDERER] Error cargando imagen:', element.content);
             resolve(false);
         };
         
         // Timeout para evitar cuelgues
         setTimeout(() => {
-            console.warn('⏰ [FORCE RENDERER] Timeout cargando imagen');
             resolve(false);
         }, 5000);
         
@@ -290,14 +248,7 @@ export function renderElementWithForcedFilters(ctx, element, bounds) {
  * Genera un thumbnail con filtros garantizados al 100%
  */
 export async function generateThumbnailWithGuaranteedFilters(page, workspaceDimensions) {
-    console.log('🔥 [GUARANTEED FILTERS] Generando thumbnail con filtros garantizados');
-    
-    // 🎯 DEBUGGING INICIAL: Capturar exactamente qué datos recibimos
-    console.log('📥 [DATOS RECIBIDOS] Page data completa:', {
-        pageId: page.id,
-        totalElements: page.elements?.length || 0,
-        backgroundColor: page.backgroundColor
-    });
+  
     
     // 🔍 ANÁLISIS DETALLADO: Elementos con filtros
     const elementsWithFilters = page.elements?.filter(element => {
@@ -316,23 +267,7 @@ export async function generateThumbnailWithGuaranteedFilters(page, workspaceDime
         );
     }) || [];
     
-    console.log('🎨 [FILTROS ENCONTRADOS] Elementos con filtros reales:', elementsWithFilters.map(el => ({
-        id: el.id,
-        type: el.type,
-        exactFilters: {
-            brightness: `${el.filters.brightness} (tipo: ${typeof el.filters.brightness})`,
-            contrast: `${el.filters.contrast} (tipo: ${typeof el.filters.contrast})`,
-            saturation: `${el.filters.saturation} (tipo: ${typeof el.filters.saturation})`,
-            tint: `${el.filters.tint} (tipo: ${typeof el.filters.tint})`,
-            hue: `${el.filters.hue} (tipo: ${typeof el.filters.hue})`,
-            opacity: `${el.filters.opacity} (tipo: ${typeof el.filters.opacity})`,
-            blur: `${el.filters.blur} (tipo: ${typeof el.filters.blur})`,
-            scale: `${el.filters.scale} (tipo: ${typeof el.filters.scale})`,
-            rotate: `${el.filters.rotate} (tipo: ${typeof el.filters.rotate})`,
-            flipHorizontal: el.filters.flipHorizontal,
-            flipVertical: el.filters.flipVertical
-        }
-    })));
+  
     
     const THUMBNAIL_SIZE = 300;
     const scale = THUMBNAIL_SIZE / Math.max(workspaceDimensions.width, workspaceDimensions.height);
@@ -363,7 +298,7 @@ export async function generateThumbnailWithGuaranteedFilters(page, workspaceDime
                 bgImg.src = page.backgroundImage;
             });
         } catch (e) {
-            console.warn('⚠️ Error cargando imagen de fondo:', e);
+           // console.warn('⚠️ Error cargando imagen de fondo:', e);
         }
     }
     
@@ -399,7 +334,6 @@ export async function generateThumbnailWithGuaranteedFilters(page, workspaceDime
                     
                     if (!rendered) {
                         // Fallback para elementos sin filtros especiales
-                        console.log('🔄 [FALLBACK] Usando método estándar para imagen sin filtros especiales');
                         try {
                             const img = new Image();
                             img.crossOrigin = 'anonymous';
@@ -426,7 +360,7 @@ export async function generateThumbnailWithGuaranteedFilters(page, workspaceDime
                                 img.src = element.content;
                             });
                         } catch (e) {
-                            console.warn('⚠️ Error renderizando imagen fallback:', e);
+                           // console.warn('⚠️ Error renderizando imagen fallback:', e);
                         }
                     }
                 }
@@ -455,7 +389,7 @@ export async function generateThumbnailWithGuaranteedFilters(page, workspaceDime
                         ctx.fillText(text, textX, textY);
                         ctx.restore();
                     } catch (e) {
-                        console.warn('⚠️ Error renderizando texto:', e);
+                     //   console.warn('⚠️ Error renderizando texto:', e);
                     }
                 }
             }
@@ -464,14 +398,12 @@ export async function generateThumbnailWithGuaranteedFilters(page, workspaceDime
     
     // Generar resultado
     const dataURL = canvas.toDataURL('image/jpeg', 0.85);
-    console.log('✅ [GUARANTEED FILTERS] Thumbnail generado con filtros garantizados');
     
     return dataURL;
 }
 
 // Función global para uso desde el editor
 window.forceRegenerateWithGuaranteedFilters = async function() {
-    console.log('🚀 [GLOBAL FORCE] Regenerando con filtros garantizados');
     
     try {
         // Obtener datos de la página actual
@@ -479,7 +411,6 @@ window.forceRegenerateWithGuaranteedFilters = async function() {
         const workspaceDims = window._workspaceDimensions;
         
         if (!currentPageData || !workspaceDims) {
-            console.error('❌ [GLOBAL FORCE] Datos de página no disponibles');
             return false;
         }
         
@@ -490,13 +421,10 @@ window.forceRegenerateWithGuaranteedFilters = async function() {
             window._updateThumbnailInUI(currentPageData.id, thumbnail);
         }
         
-        console.log('✅ [GLOBAL FORCE] Thumbnail regenerado con éxito');
         return true;
         
     } catch (error) {
-        console.error('❌ [GLOBAL FORCE] Error:', error);
         return false;
     }
 };
 
-console.log('🔥 [FORCE FILTER RENDERER] Sistema listo - Usa window.forceRegenerateWithGuaranteedFilters()');

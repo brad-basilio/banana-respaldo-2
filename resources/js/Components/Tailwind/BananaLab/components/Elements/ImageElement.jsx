@@ -67,7 +67,6 @@ export default function ImageElement({
 
     // Effect para forzar re-render cuando cambian los filtros
     useEffect(() => {
-        console.log('🖼️ [ImageElement] Filtros actualizados:', element.filters);
         if (imageRef.current && element.filters) {
             // Forzar repaint aplicando los estilos directamente
             const img = imageRef.current;
@@ -89,12 +88,7 @@ export default function ImageElement({
             img.style.mixBlendMode = element.filters?.blendMode ?? "normal";
             img.style.opacity = (element.filters?.opacity ?? 100) / 100;
             
-            console.log('🎨 [ImageElement] Estilos aplicados:', {
-                filter: img.style.filter,
-                transform: img.style.transform,
-                mixBlendMode: img.style.mixBlendMode,
-                opacity: img.style.opacity
-            });
+           
             
             // Forzar repaint
             img.style.willChange = 'filter, transform, opacity';
@@ -120,21 +114,19 @@ export default function ImageElement({
             }
             
             // Clic fuera del elemento - deseleccionar
-            console.log('🔄 [ImageElement] Clic fuera detectado - deseleccionando elemento');
             onSelect?.(null); // Deseleccionar el elemento
         };
 
         // Solo agregar el listener si el elemento está seleccionado
         if (isSelected) {
             document.addEventListener('mousedown', handleClickOutside);
-            console.log('👂 [ImageElement] Listener de clic fuera agregado');
         }
 
         // Cleanup: remover el listener al desmontar o cuando cambie isSelected
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
             if (isSelected) {
-                console.log('🧹 [ImageElement] Listener de clic fuera removido');
+               // console.log('🧹 [ImageElement] Listener de clic fuera removido');
             }
         };
     }, [isSelected, onSelect]);
