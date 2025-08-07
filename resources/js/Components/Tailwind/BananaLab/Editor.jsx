@@ -2131,6 +2131,34 @@ export default function EditorLibro() {
             // Debug adicional para la página actual
             const currentPageData = pages[currentPage];
 
+            // 🔧 DETECTAR MODO LAYOUT: Verificar si estamos en modo layout con celdas
+            const hasLayoutCells = currentPageData?.cells && currentPageData.cells.length > 0;
+            const isLayoutMode = hasLayoutCells && workspaceElement.classList.contains('grid');
+            
+            console.log(`🔧 [CAPTURE-MODE] Página ${currentPage}: ${isLayoutMode ? 'LAYOUT' : 'LIBRE'}, Celdas: ${currentPageData?.cells?.length || 0}`);
+
+            // 🛠️ LAYOUT MODE: Esperar renderizado del grid antes de capturar
+            if (isLayoutMode) {
+                console.log('🔧 [LAYOUT-CAPTURE] Esperando renderizado completo del grid...');
+                
+                // Forzar un reflow del grid para asegurar que esté completamente renderizado
+                await new Promise(resolve => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            // Verificar que todas las celdas estén renderizadas
+                            const cells = workspaceElement.querySelectorAll('[data-cell-id]');
+                            console.log(`🔧 [LAYOUT-CAPTURE] Celdas encontradas en DOM: ${cells.length}`);
+                            
+                            cells.forEach((cell, idx) => {
+                                const rect = cell.getBoundingClientRect();
+                                console.log(`🔧 [LAYOUT-CAPTURE] Celda ${idx}: ${rect.width}x${rect.height} en posición (${rect.left}, ${rect.top})`);
+                            });
+                            
+                            resolve();
+                        });
+                    });
+                });
+            }
 
             // Configuración según el tipo de captura (thumbnail vs PDF)
             const isPDF = options.type === 'pdf';
@@ -2160,23 +2188,49 @@ export default function EditorLibro() {
                 height: workspaceDimensions.height,
                 x: 0,
                 y: 0,
-                // 🎭 PRESERVAR FILTROS: Opción especial para capturar elementos con filtros
-                ignoreElements: (el) => {
-                    // Nunca ignorar elementos con filtros aplicados
-                    if (el.style && el.style.filter && options.preserveFilters) {
-                        console.log('🎭 [PRESERVE-FILTER] Preservando elemento con filtro:', el.id);
-                        return false;
-                    }
-                    return el.classList?.contains('exclude-from-capture');
-                },
                 scrollX: 0,
                 scrollY: 0,
+                // 🔧 LAYOUT MODE: Configuración especial para layouts con grid CSS
+                ...(isLayoutMode && {
+                    windowWidth: workspaceDimensions.width,
+                    windowHeight: workspaceDimensions.height,
+                    ignoreElements: (el) => {
+                        // Preservar filtros si es necesario
+                        if (el.style && el.style.filter && options.preserveFilters) {
+                            console.log('🎭 [PRESERVE-FILTER] Preservando elemento con filtro en layout:', el.id);
+                            return false;
+                        }
+                        return el.classList?.contains('exclude-from-capture');
+                    }
+                }),
+                // 🎭 MODO LIBRE: Configuración para elementos con posicionamiento absoluto
+                ...(!isLayoutMode && {
+                    ignoreElements: (el) => {
+                        // Nunca ignorar elementos con filtros aplicados
+                        if (el.style && el.style.filter && options.preserveFilters) {
+                            console.log('🎭 [PRESERVE-FILTER] Preservando elemento con filtro:', el.id);
+                            return false;
+                        }
+                        return el.classList?.contains('exclude-from-capture');
+                    }
+                }),
                 // 🖨️ Configuración específica para PDF de impresión profesional
-                foreignObjectRendering: isPDF ? true : false, // Mejor renderizado para PDF
+                foreignObjectRendering: (isPDF || isLayoutMode) ? true : false, // Mejor renderizado para PDF y LAYOUTS
                 removeContainer: false,
-                logging: false,
-                imageTimeout: isPDF ? 60000 : 15000, // 60s para PDF de alta calidad
+                logging: isLayoutMode ? true : false, // Activar logs para layouts para debug
+                imageTimeout: isPDF ? 60000 : (isLayoutMode ? 30000 : 15000), // Más tiempo para layouts complejos
                 pixelRatio: isPDF ? 3 : (window.devicePixelRatio || 1), // Triple pixel ratio para PDF
+                // 🔧 LAYOUT MODE: Configuración especial para CSS Grid
+                ...(isLayoutMode && {
+                    allowTaint: true,
+                    useCORS: true,
+                    letterRendering: true, // Mejor renderizado de texto en grids
+                    ignoreElements: (el) => {
+                        // En layouts, ser más permisivo con elementos
+                        return el.classList?.contains('exclude-from-capture') || 
+                               el.classList?.contains('ui-element');
+                    }
+                }),
                 // 🖨️ CONFIGURACIÓN CRÍTICA para impresión profesional
                 canvas: isPDF ? document.createElement('canvas') : null,
                 windowWidth: isPDF ? workspaceDimensions.width * scaleFactor : null,
@@ -2227,7 +2281,12 @@ export default function EditorLibro() {
                             // CORRECCIÓN THUMBNAIL: Asegurar dimensiones exactas del workspace de la BD
                             clonedPageElement.style.width = workspaceDimensions.width + 'px';
                             clonedPageElement.style.height = workspaceDimensions.height + 'px';
-                            clonedPageElement.style.position = 'relative';
+                            
+                            // 🔧 LAYOUT MODE: No cambiar position si es un grid (preservar layout)
+                            if (!isLayoutMode) {
+                                clonedPageElement.style.position = 'relative';
+                            }
+                            
                             clonedPageElement.style.overflow = 'hidden';
 
                             // Aplicar backgrounds de la página si existen
@@ -2243,6 +2302,51 @@ export default function EditorLibro() {
                             elementosConFiltros.forEach(el => {
                                 console.log('🎭 [THUMBNAIL] Preservando filtros en elemento:', el.id);
                             });
+
+                            // 🔧 LAYOUT MODE: Ajustes especiales para celdas en grid
+                            if (isLayoutMode) {
+                                console.log('🔧 [THUMBNAIL-LAYOUT] Aplicando correcciones para grid CSS...');
+                                
+                                // Asegurar que el elemento principal mantenga sus clases de grid
+                                const gridClasses = clonedPageElement.className;
+                                console.log(`🔧 [THUMBNAIL-LAYOUT] Clases del grid: ${gridClasses}`);
+                                
+                                // Forzar aplicación de estilos de grid directamente
+                                const gridStyle = getComputedStyle(workspaceElement);
+                                clonedPageElement.style.display = 'grid';
+                                clonedPageElement.style.gridTemplateColumns = gridStyle.gridTemplateColumns;
+                                clonedPageElement.style.gridTemplateRows = gridStyle.gridTemplateRows;
+                                clonedPageElement.style.gap = gridStyle.gap;
+                                
+                                console.log(`🔧 [THUMBNAIL-LAYOUT] Grid aplicado: cols=${gridStyle.gridTemplateColumns}, rows=${gridStyle.gridTemplateRows}, gap=${gridStyle.gap}`);
+                                
+                                const cells = clonedPageElement.querySelectorAll('[data-cell-id]');
+                                console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando ${cells.length} celdas...`);
+                                
+                                cells.forEach((cell, idx) => {
+                                    console.log(`🔧 [THUMBNAIL-LAYOUT] Procesando celda ${idx}:`, cell.id);
+                                    
+                                    // Asegurar posicionamiento correcto de la celda
+                                    const originalCell = workspaceElement.querySelector(`[data-cell-id="${cell.getAttribute('data-cell-id')}"]`);
+                                    if (originalCell) {
+                                        const originalStyle = getComputedStyle(originalCell);
+                                        cell.style.gridColumn = originalStyle.gridColumn;
+                                        cell.style.gridRow = originalStyle.gridRow;
+                                        cell.style.position = 'relative'; // Importante para contenido interno
+                                    }
+                                    
+                                    // Procesar imágenes dentro de cada celda
+                                    const images = cell.querySelectorAll('img, [data-element-type="image"]');
+                                    images.forEach(img => {
+                                        console.log(`🔧 [THUMBNAIL-LAYOUT] Ajustando imagen en celda ${idx}:`, img);
+                                        // Las imágenes en layouts deben respetar el contenedor de la celda
+                                        if (img.style.position === 'absolute') {
+                                            // Mantener posicionamiento absoluto pero relativo a la celda
+                                            img.style.position = 'absolute';
+                                        }
+                                    });
+                                });
+                            }
 
                             if (currentPageData?.backgroundColor) {
                                 clonedPageElement.style.backgroundColor = currentPageData.backgroundColor;
