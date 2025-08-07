@@ -313,7 +313,43 @@ import SaveIndicator from "./components/UI/SaveIndicator";
 import ProgressRecoveryModal from "./components/UI/ProgressRecoveryModal";
 import domtoimage from 'dom-to-image-more';
 
-// 🚀 OPTIMIZACIÓN: Componente ThumbnailImage mejorado con lazy loading y cache
+// � FUNCIÓN PARA CALCULAR DIMENSIONES DE CELDAS EN LAYOUTS
+const calculateCellDimensions = (layout, cellIndex, workspaceDimensions) => {
+    if (!layout || !layout.template) {
+        return workspaceDimensions; // Fallback a workspace completo
+    }
+
+    // Extraer información del template CSS Grid
+    const template = layout.template;
+    let cols = 1, rows = 1;
+
+    // Parsear grid-cols-N y grid-rows-N
+    const colsMatch = template.match(/grid-cols-(\d+)/);
+    const rowsMatch = template.match(/grid-rows-(\d+)/);
+    
+    if (colsMatch) cols = parseInt(colsMatch[1]);
+    if (rowsMatch) rows = parseInt(rowsMatch[1]);
+
+    // Calcular gap (defaultear a 24px como en el CSS)
+    const gapValue = layout.style?.gap ? parseInt(layout.style.gap) : 24;
+    
+    // Calcular dimensiones disponibles después de gaps
+    const availableWidth = workspaceDimensions.width - (gapValue * (cols - 1));
+    const availableHeight = workspaceDimensions.height - (gapValue * (rows - 1));
+    
+    // Dimensiones por celda
+    const cellWidth = Math.floor(availableWidth / cols);
+    const cellHeight = Math.floor(availableHeight / rows);
+
+    console.log(`🔧 [CELL-DIMENSIONS] Layout: ${layout.id}, Celda: ${cellIndex}, Grid: ${cols}x${rows}, Dims: ${cellWidth}x${cellHeight}`);
+
+    return {
+        width: cellWidth,
+        height: cellHeight
+    };
+};
+
+// �🚀 OPTIMIZACIÓN: Componente ThumbnailImage mejorado con lazy loading y cache
 const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -8885,12 +8921,16 @@ CONTROLES:
                                                 style={{ width: '100%', height: '100%' }}
                                             >
                                                 {pages[currentPage].cells.map((cell, idx) => {
+                                                    // 🔧 CORRECCIÓN LAYOUT: Calcular dimensiones reales de la celda
+                                                    const layout = getCurrentLayout();
+                                                    const cellDimensions = calculateCellDimensions(layout, idx, workspaceDimensions);
+                                                    
                                                     return (
                                                         <EditableCell
                                                             key={cell.id}
                                                             id={cell.id}
                                                             elements={cell.elements.filter(el => !el.locked)}
-                                                            workspaceSize={workspaceDimensions}
+                                                            workspaceSize={cellDimensions} // 🎯 Usar dimensiones de celda, no workspace
                                                             cellStyle={getCurrentLayout().cellStyles?.[pages[currentPage].cells.indexOf(cell)]}
                                                             selectedElement={selectedCell === cell.id ? selectedElement : null}
                                                             onSelectElement={handleSelectElement}
