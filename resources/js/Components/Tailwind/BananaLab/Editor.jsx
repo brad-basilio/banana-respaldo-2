@@ -1153,7 +1153,9 @@ export default function EditorLibro() {
         // Verificar la página actual
         const currentPageData = pages[currentPage];
         if (!currentPageData || !workspaceDimensions) return;
-        
+
+
+        console.log("pagina current actual", currentPageData);
         const pageId = currentPageData.id;
         
         // ⚡ OPTIMIZACIÓN: Debounce para evitar regeneraciones múltiples
@@ -1176,7 +1178,7 @@ export default function EditorLibro() {
         if (!forceRegenerate && thumbnailCache.current.has(cacheKey)) {
             const cachedThumbnail = thumbnailCache.current.get(cacheKey);
             if (cachedThumbnail && Date.now() - cachedThumbnail.timestamp < 60000) { // Cache por 1 minuto
-                setPageThumbnails(prev => ({ ...prev, [pageId]: cachedThumbnail.data }));
+             //   setPageThumbnails(prev => ({ ...prev, [pageId]: cachedThumbnail.data }));
                 return;
             }
         }

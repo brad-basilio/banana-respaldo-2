@@ -1403,6 +1403,7 @@ async function generateHighQualityThumbnails({ pages, workspaceDimensions, prese
                 customCtx.fillStyle = '#ffffff';
                 customCtx.fillRect(0, 0, workspaceDimensions.width, workspaceDimensions.height);
             }
+            console.log("AQUI LA PAGINA", page)
             // --- Fin background layer ---
             if (page.cells && Array.isArray(page.cells)) {
                 // Ordenar celdas por posición (Y, luego X) para renderizado consistente
