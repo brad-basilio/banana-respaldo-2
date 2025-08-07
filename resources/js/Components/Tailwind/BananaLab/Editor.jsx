@@ -1389,63 +1389,78 @@ export default function EditorLibro() {
             }
             
             if (thumbnail) {
-                // 🛡️ PROTEGER THUMBNAIL SI TIENE FILTROS ANTES DE ESTABLECERLO
-                if (pageHasFilters) {
-                    window.protectThumbnail?.(pageId);
-                    window.blockAutomaticRegeneration?.(); // 🚫 BLOQUEAR REGENERACIONES AUTOMÁTICAS
-                    console.log(`🛡️ [FILTER PROTECTION] Thumbnail ${pageId} protegido porque tiene filtros aplicados`);
-                    console.log(`🚫 [AUTO BLOCK] Regeneraciones automáticas BLOQUEADAS para preservar filtros`);
+                // � VPS FIX: Optimización para evitar parpadeo en VPS
+                if (isVPS) {
+                    // En VPS, usar una sola actualización sin verificaciones múltiples
+                    setPageThumbnails(prev => ({
+                        ...prev,
+                        [pageId]: thumbnail
+                    }));
                     
-                    // Establecer con máxima prioridad y marcar como protegido
-                    setPageThumbnails(prev => {
-                        console.log(`🔥 [FORCE SET] Estableciendo thumbnail con filtros para ${pageId} (PROTEGIDO)`);
-                        return {
-                            ...prev,
-                            [pageId]: thumbnail
-                        };
-                    });
-                    
-                    // Programar verificación para asegurar que no se sobrescriba
-                    setTimeout(() => {
-                        setPageThumbnails(prev => {
-                            if (prev[pageId] !== thumbnail) {
-                                console.warn(`🚨 [PROTECTION RESTORE] Restaurando thumbnail protegido para ${pageId}`);
-                                return {
-                                    ...prev,
-                                    [pageId]: thumbnail
-                                };
-                            }
-                            return prev;
-                        });
-                    }, 100);
-                    
-                    // 🚨 SISTEMA DE EMERGENCIA: Verificaciones múltiples para evitar el "parpadeo"
-                    const emergencyRestore = () => {
-                        setPageThumbnails(prev => {
-                            if (prev[pageId] !== thumbnail) {
-                                console.error(`🚨 [EMERGENCY RESTORE] ¡PARPADEO DETECTADO! Restaurando thumbnail para ${pageId}`);
-                                return {
-                                    ...prev,
-                                    [pageId]: thumbnail
-                                };
-                            }
-                            return prev;
-                        });
-                    };
-                    
-                    // Verificaciones múltiples en diferentes intervalos
-                    setTimeout(emergencyRestore, 200);
-                    setTimeout(emergencyRestore, 500);
-                    setTimeout(emergencyRestore, 1000);
-                    setTimeout(emergencyRestore, 2000);
-                    
-                    // 🔒 BLOQUEO PERMANENTE: Guardar referencia para restauraciones futuras
-                    if (!window._protectedThumbnailData) window._protectedThumbnailData = {};
-                    window._protectedThumbnailData[pageId] = thumbnail;
-                    
+                    // Solo proteger si tiene filtros, sin verificaciones múltiples
+                    if (pageHasFilters) {
+                        window.protectThumbnail?.(pageId);
+                        // console.log(`🛡️ [VPS FILTER PROTECTION] Thumbnail ${pageId} protegido`);
+                    }
                 } else {
-                    // Thumbnail sin filtros, usar método normal
-                    setPageThumbnailsSafely(pageId, thumbnail, 'generateCurrentPageThumbnail');
+                    // �🛡️ PROTEGER THUMBNAIL SI TIENE FILTROS ANTES DE ESTABLECERLO (solo en local)
+                    if (pageHasFilters) {
+                        window.protectThumbnail?.(pageId);
+                        window.blockAutomaticRegeneration?.(); // 🚫 BLOQUEAR REGENERACIONES AUTOMÁTICAS
+                        // console.log(`🛡️ [FILTER PROTECTION] Thumbnail ${pageId} protegido porque tiene filtros aplicados`);
+                        // console.log(`🚫 [AUTO BLOCK] Regeneraciones automáticas BLOQUEADAS para preservar filtros`);
+                        
+                        // Establecer con máxima prioridad y marcar como protegido
+                        setPageThumbnails(prev => {
+                            // console.log(`🔥 [FORCE SET] Estableciendo thumbnail con filtros para ${pageId} (PROTEGIDO)`);
+                            return {
+                                ...prev,
+                                [pageId]: thumbnail
+                            };
+                        });
+                        
+                        // Programar verificación para asegurar que no se sobrescriba
+                        setTimeout(() => {
+                            setPageThumbnails(prev => {
+                                if (prev[pageId] !== thumbnail) {
+                                    warn(`🚨 [PROTECTION RESTORE] Restaurando thumbnail protegido para ${pageId}`);
+                                    return {
+                                        ...prev,
+                                        [pageId]: thumbnail
+                                    };
+                                }
+                                return prev;
+                            });
+                        }, 100);
+                        
+                        // 🚨 SISTEMA DE EMERGENCIA: Solo en desarrollo
+                        const emergencyRestore = () => {
+                            setPageThumbnails(prev => {
+                                if (prev[pageId] !== thumbnail) {
+                                    error(`🚨 [EMERGENCY RESTORE] ¡PARPADEO DETECTADO! Restaurando thumbnail para ${pageId}`);
+                                    return {
+                                        ...prev,
+                                        [pageId]: thumbnail
+                                    };
+                                }
+                                return prev;
+                            });
+                        };
+                        
+                        // Verificaciones múltiples en diferentes intervalos
+                        setTimeout(emergencyRestore, 200);
+                        setTimeout(emergencyRestore, 500);
+                        setTimeout(emergencyRestore, 1000);
+                        setTimeout(emergencyRestore, 2000);
+                        
+                        // 🔒 BLOQUEO PERMANENTE: Guardar referencia para restauraciones futuras
+                        if (!window._protectedThumbnailData) window._protectedThumbnailData = {};
+                        window._protectedThumbnailData[pageId] = thumbnail;
+                        
+                    } else {
+                        // Thumbnail sin filtros, usar método normal
+                        setPageThumbnailsSafely(pageId, thumbnail, 'generateCurrentPageThumbnail');
+                    }
                 }
                 
                 console.log(`✅ [SUCCESS] Thumbnail generado exitosamente para página: ${pageId}`);
@@ -4108,8 +4123,8 @@ export default function EditorLibro() {
 
     // Función simplificada para guardado desde la cola (con menos dependencias)
     const saveFromQueue = useCallback(async (pagesToSave) => {
-        console.log('💾 [QUEUE-SAVE] Iniciando guardado desde cola...');
-        console.log('🔍 [QUEUE-SAVE] Datos disponibles:', {
+        // console.log('💾 [QUEUE-SAVE] Iniciando guardado desde cola...');
+        log('🔍 [QUEUE-SAVE] Datos disponibles:', {
             projectId: projectData?.id,
             pagesCount: pagesToSave?.length,
             currentPage,
@@ -4118,12 +4133,12 @@ export default function EditorLibro() {
         });
 
         if (!projectData?.id) {
-            console.error('❌ [QUEUE-SAVE] No hay project ID');
+            error('❌ [QUEUE-SAVE] No hay project ID');
             return false;
         }
 
         if (!pagesToSave || pagesToSave.length === 0) {
-            console.error('❌ [QUEUE-SAVE] No hay páginas para guardar');
+            error('❌ [QUEUE-SAVE] No hay páginas para guardar');
             return false;
         }
 
@@ -4137,12 +4152,25 @@ export default function EditorLibro() {
                 version: '2.0'
             };
 
+            // 🚀 VPS OPTIMIZATION: Solo enviar thumbnails mínimos para ahorrar ancho de banda
+            let thumbnailsToSend = {};
+            if (isVPS) {
+                // En VPS, solo enviar thumbnail de la página actual si existe
+                if (pageThumbnails[currentPage]) {
+                    thumbnailsToSend[currentPage] = pageThumbnails[currentPage];
+                }
+                log('🚀 [VPS-SAVE] Enviando solo thumbnail actual para ahorrar ancho de banda');
+            } else {
+                // En local, enviar todos los thumbnails como antes
+                thumbnailsToSend = pageThumbnails;
+            }
+
             const requestData = {
                 design_data: designData,
-                thumbnails: pageThumbnails
+                thumbnails: thumbnailsToSend
             };
 
-            console.log('📤 [QUEUE-SAVE] Enviando petición al servidor...');
+            log('📤 [QUEUE-SAVE] Enviando petición al servidor...');
 
             const response = await fetch(`/api/canvas/projects/${projectData.id}/save-progress`, {
                 method: 'POST',
@@ -4155,19 +4183,19 @@ export default function EditorLibro() {
                 body: JSON.stringify(requestData)
             });
 
-            console.log('📥 [QUEUE-SAVE] Respuesta del servidor:', response.status, response.statusText);
+            log('📥 [QUEUE-SAVE] Respuesta del servidor:', response.status, response.statusText);
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('✅ [QUEUE-SAVE] Guardado exitoso desde cola:', result);
+                log('✅ [QUEUE-SAVE] Guardado exitoso desde cola:', result);
                 return true;
             } else {
                 const errorText = await response.text();
-                console.error('❌ [QUEUE-SAVE] Error en respuesta del servidor:', response.status, errorText);
+                error('❌ [QUEUE-SAVE] Error en respuesta del servidor:', response.status, errorText);
                 return false;
             }
         } catch (error) {
-            console.error('❌ [QUEUE-SAVE] Error guardando desde cola:', error);
+            error('❌ [QUEUE-SAVE] Error guardando desde cola:', error);
             return false;
         }
     }, [projectData?.id, currentPage, workspaceDimensions, pageThumbnails]);
@@ -4298,37 +4326,58 @@ export default function EditorLibro() {
         });
     }, []);
 
-    // Función para cambiar de página con guardado automático
+    // Función para cambiar de página con guardado automático (optimizada para VPS)
     const handlePageChange = useCallback(async (newPageIndex) => {
-        console.log('🔄 [PAGE-CHANGE] Iniciando cambio de página de', currentPage, 'a', newPageIndex);
+        log('🔄 [PAGE-CHANGE] Iniciando cambio de página de', currentPage, 'a', newPageIndex);
 
         if (newPageIndex === currentPage) {
-            console.log('⚠️ [PAGE-CHANGE] Misma página, no se hace nada');
+            log('⚠️ [PAGE-CHANGE] Misma página, no se hace nada');
             return; // No hacer nada si es la misma página
         }
 
+        // 🚀 VPS OPTIMIZATION: En VPS, cambiar página más rápido sin esperar guardado
+        if (isVPS) {
+            // Cambiar directamente a la nueva página sin bloquear
+            setCurrentPage(newPageIndex);
+            log('📄 [VPS-PAGE-CHANGE] ✅ Página cambiada rápidamente a:', newPageIndex);
+            
+            // Verificar si hay cambios sin bloquear el cambio de página
+            setPageChanges(currentPageChanges => {
+                if (currentPageChanges.has(currentPage)) {
+                    // Agregar la página actual a la cola de guardado en background
+                    setTimeout(() => {
+                        addToSaveQueue(currentPage, pages);
+                    }, 0); // Ejecutar en el siguiente tick sin bloquear
+                }
+                return currentPageChanges;
+            });
+            
+            return; // Salir temprano en VPS
+        }
+
+        // Comportamiento original para local (más detallado)
         // Verificar si la página actual tiene cambios sin guardar usando función de estado
         setPageChanges(currentPageChanges => {
-            console.log('🔍 [PAGE-CHANGE] Verificando cambios en página actual:', currentPage);
+            log('🔍 [PAGE-CHANGE] Verificando cambios en página actual:', currentPage);
             const changedPages = Array.from(currentPageChanges.keys());
-            console.log('🔍 [PAGE-CHANGE] Páginas con cambios:', changedPages.join(', ') || 'ninguna');
+            log('🔍 [PAGE-CHANGE] Páginas con cambios:', changedPages.join(', ') || 'ninguna');
 
             if (currentPageChanges.has(currentPage)) {
-                console.log('💾 [PAGE-CHANGE] ✅ Página actual tiene cambios, guardando antes del cambio:', currentPage);
+                log('💾 [PAGE-CHANGE] ✅ Página actual tiene cambios, guardando antes del cambio:', currentPage);
 
                 // Agregar la página actual a la cola de guardado
                 addToSaveQueue(currentPage, pages);
             } else {
-                console.log('ℹ️ [PAGE-CHANGE] No hay cambios en la página actual:', currentPage);
+                log('ℹ️ [PAGE-CHANGE] No hay cambios en la página actual:', currentPage);
             }
             return currentPageChanges; // Retornar sin cambios
         });
 
         // Cambiar directamente a la nueva página
         setCurrentPage(newPageIndex);
-        console.log('📄 [PAGE-CHANGE] ✅ Página cambiada a:', newPageIndex);
+        log('📄 [PAGE-CHANGE] ✅ Página cambiada a:', newPageIndex);
 
-    }, [currentPage, pages, addToSaveQueue]);
+    }, [currentPage, pages, addToSaveQueue, isVPS]);
 
     // Función para obtener el storage key único basado en el proyecto
     const getStorageKey = () => {
