@@ -3,26 +3,19 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import html2canvas from 'html2canvas'; // Para captura de alta calidad
 
-// ⚡ OPTIMIZACIÓN VPS: Configuración ultra-optimizada para VPS con memoria limitada
+// ⚡ OPTIMIZACIÓN: Configuración optimizada para html2canvas
 const HTML2CANVAS_CONFIG = {
     allowTaint: true,
     useCORS: true,
-    scale: 0.4, // 🚀 CRÍTICO VPS: Escala mucho más baja para ahorrar memoria
+    scale: 0.75, // ⚡ Escala reducida para mejor rendimiento
     logging: false, // ⚡ Desactivar logs para mejor rendimiento
-    height: 100, // 🚀 CRÍTICO VPS: Altura reducida para VPS
-    width: 133,  // 🚀 CRÍTICO VPS: Ancho reducido para VPS (ratio 4:3)
+    height: 150, // ⚡ Altura fija para thumbnails
+    width: 200,  // ⚡ Ancho fijo para thumbnails
     backgroundColor: '#ffffff',
-    imageTimeout: 10000, // 🚀 TIMEOUT: Evitar bloqueos de memoria
-    removeContainer: true, // 🚀 LIMPIEZA: Remover contenedor automáticamente
-    ignoreElements: (element) => {
-        // 🚀 CRÍTICO VPS: Ignorar elementos que consumen mucha memoria
-        return element.classList.contains('filter-preview') ||
-               element.classList.contains('layout-complex') ||
-               element.tagName === 'VIDEO' ||
-               element.tagName === 'IFRAME';
-    },
+    imageTimeout: 10000, // ⚡ TIMEOUT: Evitar bloqueos de memoria
+    removeContainer: true, // ⚡ LIMPIEZA: Remover contenedor automáticamente
     onclone: (clonedDoc) => {
-        // 🚀 OPTIMIZACIÓN VPS: Limpieza agresiva de memoria
+        // ⚡ OPTIMIZACIÓN: Remover elementos costosos en el clone
         const scripts = clonedDoc.querySelectorAll('script');
         scripts.forEach(script => script.remove());
         
@@ -32,20 +25,17 @@ const HTML2CANVAS_CONFIG = {
         const iframes = clonedDoc.querySelectorAll('iframe');
         iframes.forEach(iframe => iframe.remove());
         
-        // 🚀 CRÍTICO VPS: Remover elementos complejos adicionales
-        const complexElements = clonedDoc.querySelectorAll('.filter-complex, .layout-heavy, .animation-element');
-        complexElements.forEach(el => el.remove());
-        
-        // 🚀 MEMORIA VPS: Simplificar estilos complejos que consumen memoria
+        // ⚡ MEMORIA: Simplificar estilos complejos que consumen memoria
         const allElements = clonedDoc.querySelectorAll('*');
         allElements.forEach(el => {
             if (el.style) {
-                // Remover propiedades costosas en memoria
-                el.style.removeProperty('filter');
-                el.style.removeProperty('backdrop-filter'); 
-                el.style.removeProperty('box-shadow');
-                el.style.removeProperty('transform');
-                el.style.removeProperty('transition');
+                // Remover propiedades costosas en memoria solo si es necesario
+                if (el.style.filter && el.style.filter.includes('blur(')) {
+                    el.style.removeProperty('filter');
+                }
+                if (el.style.backdropFilter) {
+                    el.style.removeProperty('backdrop-filter');
+                }
             }
         });
     }
@@ -53,14 +43,13 @@ const HTML2CANVAS_CONFIG = {
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
-// ⚡ OPTIMIZACIÓN VPS: Sistema de logging inteligente y optimizado
-const isServer = typeof window === 'undefined'; // 🚀 CRÍTICO: Detectar entorno servidor PRIMERO
+// ⚡ OPTIMIZACIÓN: Sistema de logging inteligente
+const isServer = typeof window === 'undefined';
 const isDev = process.env.NODE_ENV === 'development';
-const isVPS = !isServer && (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost');
 const log = isDev ? console.log : () => {};
 const warn = isDev ? console.warn : () => {};
 const error = console.error; // Errores siempre visibles
-const logVPS = isVPS ? () => {} : console.log; // Logs especiales que solo aparecen en desarrollo
+const logVPS = console.log; // Logs normales habilitados
 
 // Estilos personalizados para Driver.js con tema BananaLab
 const driverStyles = `
@@ -1119,52 +1108,45 @@ export default function EditorLibro() {
     const thumbnailDebounceTimers = useRef(new Map());
     const thumbnailCache = useRef(new Map());
     
-    // 🚀 CRÍTICO VPS: Sistema de limpieza agresiva de memoria
+    // ⚡ OPTIMIZACIÓN: Limpieza de memoria cada 5 minutos
     const memoryCleanupInterval = useRef(null);
     
     useEffect(() => {
-        // 🚀 MEMORIA VPS: Limpieza automática cada 2 minutos en VPS
-        if (isVPS) {
-            memoryCleanupInterval.current = setInterval(() => {
-                // Limpiar caché de thumbnails antiguo (más de 5 minutos)
-                const now = Date.now();
-                const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutos
-                
-                for (const [key, value] of thumbnailCache.current.entries()) {
-                    if (now - value.timestamp > CACHE_MAX_AGE) {
-                        thumbnailCache.current.delete(key);
-                    }
+        // Limpieza automática cada 5 minutos
+        memoryCleanupInterval.current = setInterval(() => {
+            // Limpiar caché de thumbnails antiguo (más de 10 minutos)
+            const now = Date.now();
+            const CACHE_MAX_AGE = 10 * 60 * 1000; // 10 minutos
+            
+            for (const [key, value] of thumbnailCache.current.entries()) {
+                if (now - value.timestamp > CACHE_MAX_AGE) {
+                    thumbnailCache.current.delete(key);
                 }
-                
-                // Forzar garbage collection si está disponible
-                if (window.gc) {
-                    window.gc();
+            }
+            
+            // Limpiar caché global de thumbnails si es muy grande
+            if (window.thumbnailCache && typeof window.thumbnailCache === 'object') {
+                const keys = Object.keys(window.thumbnailCache);
+                if (keys.length > 100) { // Máximo 100 thumbnails en caché
+                    // Mantener solo los 60 más recientes
+                    const sortedKeys = keys.sort().slice(-60);
+                    const newCache = {};
+                    sortedKeys.forEach(key => {
+                        newCache[key] = window.thumbnailCache[key];
+                    });
+                    window.thumbnailCache = newCache;
                 }
-                
-                // Limpiar caché global de thumbnails
-                if (window.thumbnailCache && typeof window.thumbnailCache === 'object') {
-                    const keys = Object.keys(window.thumbnailCache);
-                    if (keys.length > 50) { // Máximo 50 thumbnails en caché
-                        // Mantener solo los 30 más recientes
-                        const sortedKeys = keys.sort().slice(-30);
-                        const newCache = {};
-                        sortedKeys.forEach(key => {
-                            newCache[key] = window.thumbnailCache[key];
-                        });
-                        window.thumbnailCache = newCache;
-                    }
-                }
-                
-                error('🧹 [VPS CLEANUP] Limpieza de memoria ejecutada');
-            }, 120000); // Cada 2 minutos
-        }
+            }
+            
+            console.log('🧹 [MEMORY CLEANUP] Limpieza de memoria ejecutada');
+        }, 300000); // Cada 5 minutos
         
         return () => {
             if (memoryCleanupInterval.current) {
                 clearInterval(memoryCleanupInterval.current);
             }
         };
-    }, [isVPS]);
+    }, []);
     
     // ⚡ OPTIMIZACIÓN: Memoizar cache key para evitar recálculos
     const workspaceCacheKey = useMemo(() => 
@@ -1200,19 +1182,14 @@ export default function EditorLibro() {
             return;
         }
         
-        // 🚀 OPTIMIZACIÓN VPS: Cache más agresivo para ahorrar memoria
+        // ⚡ OPTIMIZACIÓN: Cache rápido de thumbnails
         const cacheKey = `${pageId}-${workspaceCacheKey}`;
-        const cacheTime = isVPS ? 180000 : 60000; // 3 minutos en VPS, 1 minuto local
-        
         if (!forceRegenerate && thumbnailCache.current.has(cacheKey)) {
             const cachedThumbnail = thumbnailCache.current.get(cacheKey);
-            if (cachedThumbnail && Date.now() - cachedThumbnail.timestamp < cacheTime) {
-                // console.log(`⚡ [CACHE HIT] Usando thumbnail cacheado para ${pageId}`);
+            if (cachedThumbnail && Date.now() - cachedThumbnail.timestamp < 60000) { // Cache por 1 minuto
+                console.log(`⚡ [CACHE HIT] Usando thumbnail cacheado para ${pageId}`);
                 setPageThumbnails(prev => ({ ...prev, [pageId]: cachedThumbnail.data }));
                 return;
-            } else if (cachedThumbnail) {
-                // 🚀 VPS: Limpiar caché expirado inmediatamente
-                thumbnailCache.current.delete(cacheKey);
             }
         }
         
@@ -1309,68 +1286,15 @@ export default function EditorLibro() {
             
             let thumbnail = null;
             
-            // 🚀 VPS OPTIMIZATION: Si la página tiene filtros, usar el sistema optimizado para VPS
+            // Si la página tiene filtros, usar el sistema radical
             if (pageHasFilters || forceRegenerate) {
-                // console.log('🔥 [MÉTODO RADICAL] Usando sistema de filtros garantizados');
-                
-                // 🚀 VPS: Simplificar datos antes de enviar para ahorrar memoria
-                const simplifiedPageData = isVPS ? {
-                    id: currentPageData.id,
-                    cells: currentPageData.cells?.map(cell => ({
-                        id: cell.id,
-                        elements: cell.elements?.filter(el => el.filters && Object.keys(el.filters).length > 0)
-                            .map(el => ({
-                                id: el.id,
-                                type: el.type,
-                                content: el.content?.length > 100 ? el.content.substring(0, 100) + '...' : el.content,
-                                position: el.position,
-                                size: el.size,
-                                filters: el.filters
-                            })) || []
-                    })) || []
-                } : currentPageData;
-                
-                // 🚀 VPS: Log reducido para ahorrar memoria
-                if (!isVPS) {
-                    // console.log('📦 [DATOS ENVIADOS] currentPageData antes de enviar a forceFilterRenderer:', {
-                    //     pageId: currentPageData.id,
-                    //     elementsCount: currentPageData.elements?.length || 0,
-                    //     elementsWithFilters: currentPageData.elements?.filter(el => 
-                    //         el.filters && (
-                    //             (el.filters.brightness !== undefined && el.filters.brightness !== 1) ||
-                    //             (el.filters.contrast !== undefined && el.filters.contrast !== 1) ||
-                    //             (el.filters.saturation !== undefined && el.filters.saturation !== 1) ||
-                    //             (el.filters.tint !== undefined && el.filters.tint !== 0) ||
-                    //             (el.filters.hue !== undefined && el.filters.hue !== 0) ||
-                    //             (el.filters.opacity !== undefined && el.filters.opacity !== 1) ||
-                    //             (el.filters.blur !== undefined && el.filters.blur !== 0) ||
-                    //             (el.filters.scale !== undefined && el.filters.scale !== 1) ||
-                    //             (el.filters.rotate !== undefined && el.filters.rotate !== 0) ||
-                    //             el.filters.flipHorizontal || el.filters.flipVertical
-                    //         )
-                    //     )?.map(el => ({
-                    //         id: el.id,
-                    //         filters: el.filters
-                    //     })) || []
-                    // });
-                }
+                console.log('🔥 [MÉTODO RADICAL] Usando sistema de filtros garantizados');
                 
                 try {
-                    thumbnail = await generateThumbnailWithGuaranteedFilters(
-                        isVPS ? simplifiedPageData : currentPageData, 
-                        workspaceDimensions
-                    );
-                    // console.log('✅ [MÉTODO RADICAL] Thumbnail generado con filtros garantizados');
-                    
-                    // 🚀 VPS: Limpiar datos simplificados de memoria inmediatamente
-                    if (isVPS && simplifiedPageData) {
-                        // Limpiar referencias para ayudar al garbage collector
-                        Object.keys(simplifiedPageData).forEach(key => {
-                            delete simplifiedPageData[key];
-                        });
-                    }
+                    thumbnail = await generateThumbnailWithGuaranteedFilters(currentPageData, workspaceDimensions);
+                    console.log('✅ [MÉTODO RADICAL] Thumbnail generado con filtros garantizados');
                 } catch (error) {
-                    error('❌ [MÉTODO RADICAL] Error, usando fallback:', error);
+                    console.error('❌ [MÉTODO RADICAL] Error, usando fallback:', error);
                     // Fallback al método normal
                     thumbnail = await generateSingleThumbnail({
                         page: currentPageData,
@@ -1389,20 +1313,7 @@ export default function EditorLibro() {
             }
             
             if (thumbnail) {
-                // � VPS FIX: Optimización para evitar parpadeo en VPS
-                if (isVPS) {
-                    // En VPS, usar una sola actualización sin verificaciones múltiples
-                    setPageThumbnails(prev => ({
-                        ...prev,
-                        [pageId]: thumbnail
-                    }));
-                    
-                    // Solo proteger si tiene filtros, sin verificaciones múltiples
-                    if (pageHasFilters) {
-                        window.protectThumbnail?.(pageId);
-                        // console.log(`🛡️ [VPS FILTER PROTECTION] Thumbnail ${pageId} protegido`);
-                    }
-                } else {
+                
                     // �🛡️ PROTEGER THUMBNAIL SI TIENE FILTROS ANTES DE ESTABLECERLO (solo en local)
                     if (pageHasFilters) {
                         window.protectThumbnail?.(pageId);
@@ -1461,7 +1372,7 @@ export default function EditorLibro() {
                         // Thumbnail sin filtros, usar método normal
                         setPageThumbnailsSafely(pageId, thumbnail, 'generateCurrentPageThumbnail');
                     }
-                }
+                
                 
                 console.log(`✅ [SUCCESS] Thumbnail generado exitosamente para página: ${pageId}`);
                 
@@ -4152,22 +4063,9 @@ export default function EditorLibro() {
                 version: '2.0'
             };
 
-            // 🚀 VPS OPTIMIZATION: Solo enviar thumbnails mínimos para ahorrar ancho de banda
-            let thumbnailsToSend = {};
-            if (isVPS) {
-                // En VPS, solo enviar thumbnail de la página actual si existe
-                if (pageThumbnails[currentPage]) {
-                    thumbnailsToSend[currentPage] = pageThumbnails[currentPage];
-                }
-                log('🚀 [VPS-SAVE] Enviando solo thumbnail actual para ahorrar ancho de banda');
-            } else {
-                // En local, enviar todos los thumbnails como antes
-                thumbnailsToSend = pageThumbnails;
-            }
-
             const requestData = {
                 design_data: designData,
-                thumbnails: thumbnailsToSend
+                thumbnails: pageThumbnails
             };
 
             log('📤 [QUEUE-SAVE] Enviando petición al servidor...');
@@ -4335,25 +4233,7 @@ export default function EditorLibro() {
             return; // No hacer nada si es la misma página
         }
 
-        // 🚀 VPS OPTIMIZATION: En VPS, cambiar página más rápido sin esperar guardado
-        if (isVPS) {
-            // Cambiar directamente a la nueva página sin bloquear
-            setCurrentPage(newPageIndex);
-            log('📄 [VPS-PAGE-CHANGE] ✅ Página cambiada rápidamente a:', newPageIndex);
-            
-            // Verificar si hay cambios sin bloquear el cambio de página
-            setPageChanges(currentPageChanges => {
-                if (currentPageChanges.has(currentPage)) {
-                    // Agregar la página actual a la cola de guardado en background
-                    setTimeout(() => {
-                        addToSaveQueue(currentPage, pages);
-                    }, 0); // Ejecutar en el siguiente tick sin bloquear
-                }
-                return currentPageChanges;
-            });
-            
-            return; // Salir temprano en VPS
-        }
+       
 
         // Comportamiento original para local (más detallado)
         // Verificar si la página actual tiene cambios sin guardar usando función de estado
@@ -4377,7 +4257,7 @@ export default function EditorLibro() {
         setCurrentPage(newPageIndex);
         log('📄 [PAGE-CHANGE] ✅ Página cambiada a:', newPageIndex);
 
-    }, [currentPage, pages, addToSaveQueue, isVPS]);
+    }, [currentPage, pages, addToSaveQueue]);
 
     // Función para obtener el storage key único basado en el proyecto
     const getStorageKey = () => {

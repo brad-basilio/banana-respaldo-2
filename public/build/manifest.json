@@ -756,8 +756,8 @@
     "file": "dom-to-image-more.css",
     "src": "_dom-to-image-more.css"
   },
-  "_dom-to-image-more.min-BDwmsQ8h.js": {
-    "file": "assets/dom-to-image-more.min-BDwmsQ8h.js",
+  "_dom-to-image-more.min-BXf88tF_.js": {
+    "file": "assets/dom-to-image-more.min-BXf88tF_.js",
     "name": "dom-to-image-more.min",
     "imports": [
       "_createLucideIcon-Cy5Ya80P.js"
@@ -4146,7 +4146,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-uT5o0i8C.js",
+    "file": "assets/BananaLab-CaWIkIPl.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4205,7 +4205,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-C7RAGjtz.js",
+    "file": "assets/Editor-CwArEgzJ.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4215,7 +4215,7 @@
       "_index-BH53Isel.js",
       "_EditableCell-DczCXCx2.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
-      "_dom-to-image-more.min-BDwmsQ8h.js",
+      "_dom-to-image-more.min-BXf88tF_.js",
       "_layers-6oegOx-p.js",
       "_chevron-down-DS-mdh9v.js",
       "_chevron-right-Ckt5D2ka.js",
@@ -9834,7 +9834,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-DZtyVAxm.js",
+    "file": "assets/Editor-Bt5GynbN.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9865,7 +9865,7 @@
       "resources/js/Components/Tailwind/BananaLab/components/Elements/TextElement.jsx",
       "_upload-qgEr5bIl.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
-      "_dom-to-image-more.min-BDwmsQ8h.js",
+      "_dom-to-image-more.min-BXf88tF_.js",
       "_layers-6oegOx-p.js",
       "_chevron-right-Ckt5D2ka.js",
       "_eye-CKCH9ORv.js",
@@ -10043,7 +10043,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-DWvcUsrn.js",
+    "file": "assets/System-BxTtWKsC.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

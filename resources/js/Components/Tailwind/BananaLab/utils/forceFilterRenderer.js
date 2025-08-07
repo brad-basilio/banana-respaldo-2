@@ -1,27 +1,20 @@
 /**
- * SISTEMA OPTIMIZADO VPS DE FORZADO DE FILTROS EN THUMBNAILS
- * Versión optimizada para VPS con menor consumo de memoria
+ * SISTEMA RADICAL DE FORZADO DE FILTROS EN THUMBNAILS
+ * Este sistema garantiza al 100% que los filtros se apliquen usando técnicas extremas
  */
 
-// 🚀 VPS OPTIMIZATION: Detectar ambiente y optimizar logging
-const isVPS = typeof window !== 'undefined' && 
-    (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost');
-const log = isVPS ? () => {} : console.log;
-const warn = isVPS ? () => {} : console.warn;
-const error = console.error; // Errores siempre visibles
-
-log('🔥 [FORCE FILTER RENDERER] Sistema radical cargado' + (isVPS ? ' (VPS mode)' : ''));
+console.log('🔥 [FORCE FILTER RENDERER] Sistema radical cargado');
 
 /**
- * Aplica filtros usando manipulación directa de píxeles (método infalible optimizado VPS)
+ * Aplica filtros usando manipulación directa de píxeles (método infalible)
  */
 function applyFiltersDirectly(canvas, filters) {
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
     
-    log('🎨 [PIXEL MANIPULATION] Aplicando filtros directamente a píxeles:', filters);
-    log('🔍 [DEBUGGING] Valores exactos recibidos:', {
+    console.log('🎨 [PIXEL MANIPULATION] Aplicando filtros directamente a píxeles:', filters);
+    console.log('🔍 [DEBUGGING] Valores exactos recibidos:', {
         brightness: filters.brightness,
         contrast: filters.contrast,
         saturation: filters.saturation,
@@ -38,7 +31,7 @@ function applyFiltersDirectly(canvas, filters) {
     const tint = Math.max(0, Math.min(1, (filters.tint ?? 0) / 100));               // 0-1 range
     const opacity = Math.max(0, Math.min(1, (filters.opacity ?? 100) / 100));       // 0-1 range
     
-    log('⚙️ [NORMALIZED VALUES] Valores normalizados para aplicar:', {
+    console.log('⚙️ [NORMALIZED VALUES] Valores normalizados para aplicar:', {
         brightness: brightness,
         contrast: contrast,
         saturation: saturation,
