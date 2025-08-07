@@ -110,6 +110,275 @@ const restoreElementStyles = (element, originalStyles) => {
 };
 
 /**
+ * Remueve todos los elementos de UI del editor que no deben aparecer en thumbnails
+ */
+const removeEditorUIElements = async (clonedDoc) => {
+    console.log('🧹 [UI-CLEANUP] Removiendo elementos de UI del editor...');
+    
+    // Lista completa de selectores de elementos de UI a remover
+    const uiSelectors = [
+        // Elementos básicos problemáticos
+        'script', 'iframe', 'video', 'audio',
+        
+        // 🎯 PUNTOS DE REDIMENSIONAMIENTO Y CONTROLES
+        '.resize-handle',
+        '.resize-control-handle', 
+        '.resize-manipulation-indicator',
+        '.resize-corner',
+        '.resize-edge',
+        '.resize-point',
+        '.resize-dot',
+        '.resize-grip',
+        '.resizer',
+        '.handle',
+        '.drag-handle',
+        '.corner-handle',
+        '.edge-handle',
+        
+        // 🎯 CONTROLES DE ELEMENTOS
+        '.element-controls',
+        '.element-selector',
+        '.element-border',
+        '.element-outline',
+        '.element-highlight',
+        '.selection-box',
+        '.selection-outline',
+        '.selection-border',
+        '.selected-element',
+        '.element-overlay',
+        
+        // 🎯 TOOLBARS Y MENÚS
+        '.toolbar',
+        '.text-toolbar',
+        '.image-toolbar',
+        '.element-toolbar',
+        '.floating-toolbar',
+        '.context-menu',
+        '.dropdown',
+        '.popover',
+        '.tooltip',
+        '.menu',
+        '.submenu',
+        
+        // 🎯 OVERLAYS Y MODALES
+        '.overlay',
+        '.modal',
+        '.dialog',
+        '.popup',
+        '.floating',
+        '.floating-panel',
+        '.ui-overlay',
+        '.editor-overlay',
+        
+        // 🎯 PANELES Y SIDEBARS
+        '.sidebar',
+        '.panel',
+        '.side-panel',
+        '.control-panel',
+        '.properties-panel',
+        '.layers-panel',
+        
+        // 🎯 BOTONES Y CONTROLES
+        '.btn',
+        '.button',
+        '.control',
+        '.ui-control',
+        '.editor-control',
+        '.action-button',
+        '.icon-button',
+        
+        // 🎯 INDICADORES Y BADGES
+        '.indicator',
+        '.badge',
+        '.label',
+        '.tag',
+        '.status',
+        '.loading',
+        '.spinner',
+        
+        // 🎯 ELEMENTOS ESPECÍFICOS DEL EDITOR
+        '.editor-ui',
+        '.ui-element',
+        '.workspace-ui',
+        '.canvas-ui',
+        '.edit-mode',
+        '.editor-only',
+        '.ui-only',
+        
+        // 🎯 ELEMENTOS CON ATRIBUTOS ESPECÍFICOS
+        '[data-ui="true"]',
+        '[data-editor-ui="true"]',
+        '[data-exclude-thumbnail="true"]',
+        '[data-no-capture="true"]',
+        '[data-ui-element="true"]',
+        
+        // 🎯 ELEMENTOS CON CLASES DE ESTADO
+        '.dragging',
+        '.resizing',
+        '.editing',
+        '.selected',
+        '.active',
+        '.hover',
+        '.focus',
+        
+        // 🎯 ELEMENTOS DE REACT/FRAMEWORK
+        '.react-draggable',
+        '.react-resizable',
+        '.react-grid-item',
+        
+        // 🎯 ELEMENTOS DE POSICIONAMIENTO ABSOLUTO QUE PUEDEN SER UI
+        '.absolute.top-0',
+        '.absolute.bottom-0',
+        '.absolute.left-0',
+        '.absolute.right-0',
+        '.fixed',
+        '.sticky'
+    ];
+    
+    let removedCount = 0;
+    
+    // Remover elementos por selector
+    uiSelectors.forEach(selector => {
+        try {
+            const elements = clonedDoc.querySelectorAll(selector);
+            elements.forEach(el => {
+                // Verificar que no sea un elemento de contenido importante
+                if (!isImportantContentElement(el)) {
+                    el.remove();
+                    removedCount++;
+                }
+            });
+        } catch (error) {
+            console.warn(`⚠️ [UI-CLEANUP] Error con selector ${selector}:`, error);
+        }
+    });
+    
+    // 🎯 LIMPIEZA ESPECÍFICA: Remover elementos con estilos inline de UI
+    const allElements = clonedDoc.querySelectorAll('*');
+    allElements.forEach(el => {
+        try {
+            const style = el.style;
+            const computedStyle = getComputedStyle ? getComputedStyle(el) : null;
+            
+            // Remover elementos con cursor pointer que no sean imágenes o texto
+            if (computedStyle && computedStyle.cursor === 'pointer' && 
+                !['IMG', 'A', 'BUTTON'].includes(el.tagName) &&
+                !el.closest('[data-element-type]')) {
+                el.remove();
+                removedCount++;
+                return;
+            }
+            
+            // Remover elementos con z-index muy alto (probablemente UI)
+            if (style.zIndex && parseInt(style.zIndex) > 1000) {
+                el.remove();
+                removedCount++;
+                return;
+            }
+            
+            // Remover elementos con position fixed o sticky
+            if (computedStyle && ['fixed', 'sticky'].includes(computedStyle.position)) {
+                el.remove();
+                removedCount++;
+                return;
+            }
+            
+        } catch (error) {
+            // Ignorar errores de elementos que ya fueron removidos
+        }
+    });
+    
+    // 🎯 LIMPIEZA DE ATRIBUTOS: Remover atributos que pueden causar problemas
+    const remainingElements = clonedDoc.querySelectorAll('*');
+    remainingElements.forEach(el => {
+        try {
+            // Remover event listeners y atributos de eventos
+            const eventAttributes = ['onclick', 'onmouseover', 'onmouseout', 'onmousedown', 'onmouseup', 'ondrag', 'ondrop'];
+            eventAttributes.forEach(attr => {
+                if (el.hasAttribute(attr)) {
+                    el.removeAttribute(attr);
+                }
+            });
+            
+            // Remover atributos de React/framework
+            const frameworkAttributes = ['data-reactid', 'data-react-checksum', 'data-reactroot'];
+            frameworkAttributes.forEach(attr => {
+                if (el.hasAttribute(attr)) {
+                    el.removeAttribute(attr);
+                }
+            });
+            
+            // Limpiar clases de estado que pueden afectar el renderizado
+            const stateClasses = ['hover', 'focus', 'active', 'selected', 'dragging', 'resizing'];
+            stateClasses.forEach(className => {
+                el.classList.remove(className);
+            });
+            
+        } catch (error) {
+            // Ignorar errores
+        }
+    });
+    
+    // 🎯 LIMPIEZA FINAL: Verificar elementos con dimensiones sospechosas (probablemente controles)
+    const suspiciousElements = clonedDoc.querySelectorAll('*');
+    suspiciousElements.forEach(el => {
+        try {
+            const rect = el.getBoundingClientRect();
+            const style = getComputedStyle(el);
+            
+            // Remover elementos muy pequeños que probablemente sean controles (< 10px)
+            if (rect.width > 0 && rect.height > 0 && 
+                (rect.width < 10 || rect.height < 10) &&
+                !['IMG', 'SVG', 'PATH', 'CIRCLE'].includes(el.tagName) &&
+                !el.closest('[data-element-type]')) {
+                el.remove();
+                removedCount++;
+            }
+            
+            // Remover elementos con border-radius muy alto (probablemente botones circulares)
+            if (style.borderRadius && 
+                (style.borderRadius.includes('50%') || parseInt(style.borderRadius) > 20) &&
+                rect.width < 50 && rect.height < 50 &&
+                !el.closest('[data-element-type]')) {
+                el.remove();
+                removedCount++;
+            }
+            
+        } catch (error) {
+            // Ignorar errores
+        }
+    });
+    
+    console.log(`✅ [UI-CLEANUP] Removidos ${removedCount} elementos de UI del editor`);
+};
+
+/**
+ * Verifica si un elemento es contenido importante que no debe ser removido
+ */
+const isImportantContentElement = (element) => {
+    // No remover elementos que son parte del contenido real
+    const importantSelectors = [
+        '[data-element-type="image"]',
+        '[data-element-type="text"]',
+        '[data-element-type="shape"]',
+        '.workspace-content',
+        '.page-content',
+        '.cell-content',
+        'img[src]', // Imágenes con src
+        '[contenteditable]', // Texto editable
+        'p', 'span', 'div[data-text]', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' // Elementos de texto
+    ];
+    
+    return importantSelectors.some(selector => {
+        try {
+            return element.matches(selector) || element.closest(selector);
+        } catch (error) {
+            return false;
+        }
+    });
+};
+
+/**
  * Procesa imágenes para simular object-fit: cover correctamente
  * html2canvas no siempre respeta object-fit, así que lo simulamos manualmente
  */
@@ -319,6 +588,30 @@ export const generatePageThumbnail = async (pageId, layout, options = {}) => {
             logging: false,
             imageTimeout: 15000,
             removeContainer: true,
+            ignoreElements: (element) => {
+                // 🚫 IGNORAR ELEMENTOS DE UI ESPECÍFICOS
+                const uiClasses = [
+                    'resize-handle', 'resize-control-handle', 'resize-manipulation-indicator',
+                    'element-controls', 'element-selector', 'toolbar', 'ui-element',
+                    'editor-ui', 'floating', 'overlay', 'modal', 'popup'
+                ];
+                
+                // Verificar si el elemento tiene clases de UI
+                const hasUIClass = uiClasses.some(className => 
+                    element.classList?.contains(className)
+                );
+                
+                // Verificar atributos de UI
+                const hasUIAttribute = element.hasAttribute?.('data-ui') || 
+                                     element.hasAttribute?.('data-exclude-thumbnail') ||
+                                     element.hasAttribute?.('data-editor-ui');
+                
+                // Verificar si es un elemento muy pequeño (probablemente control)
+                const rect = element.getBoundingClientRect?.();
+                const isVerySmall = rect && (rect.width < 5 || rect.height < 5);
+                
+                return hasUIClass || hasUIAttribute || isVerySmall;
+            },
             onclone: async (clonedDoc) => {
                 // Optimizar el documento clonado
                 const clonedElement = clonedDoc.querySelector(`#page-${pageId}`);
@@ -344,24 +637,41 @@ export const generatePageThumbnail = async (pageId, layout, options = {}) => {
                     }
                 }
                 
-                // Remover elementos que pueden causar problemas
-                const problematicElements = clonedDoc.querySelectorAll('script, iframe, video, audio');
-                problematicElements.forEach(el => el.remove());
+                // 🧹 LIMPIEZA COMPLETA: Remover todos los elementos de UI del editor
+                await removeEditorUIElements(clonedDoc);
                 
                 // 🖼️ SOLUCIÓN AVANZADA: Simular object-fit: cover manualmente
                 await processImagesWithCover(clonedDoc, pageElement);
                 
-                // Agregar CSS adicional para asegurar que las imágenes se muestren correctamente
+                // 🎨 CSS OPTIMIZADO: Estilos para thumbnail limpio sin elementos de UI
                 const style = clonedDoc.createElement('style');
                 style.textContent = `
-                    /* Asegurar que las imágenes mantengan sus proporciones */
+                    /* 🧹 OCULTAR ELEMENTOS DE UI RESTANTES */
+                    .resize-handle,
+                    .resize-control-handle,
+                    .resize-manipulation-indicator,
+                    .element-controls,
+                    .element-selector,
+                    .toolbar,
+                    .ui-element,
+                    .editor-ui,
+                    [data-ui="true"],
+                    [data-exclude-thumbnail="true"] {
+                        display: none !important;
+                        visibility: hidden !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                    }
+                    
+                    /* 🖼️ OPTIMIZACIÓN DE IMÁGENES */
                     img {
                         image-rendering: optimizeQuality !important;
                         image-rendering: -webkit-optimize-contrast !important;
                         image-rendering: crisp-edges !important;
+                        pointer-events: none !important;
                     }
                     
-                    /* Contenedores de imagen */
+                    /* 📦 CONTENEDORES DE IMAGEN */
                     [data-element-type="image"] {
                         overflow: hidden !important;
                         position: relative !important;
@@ -373,16 +683,59 @@ export const generatePageThumbnail = async (pageId, layout, options = {}) => {
                         width: 100% !important;
                         height: 100% !important;
                         display: block !important;
+                        pointer-events: none !important;
                     }
                     
-                    /* Grid layout específico */
+                    /* 🎯 ELEMENTOS DE TEXTO */
+                    [data-element-type="text"],
+                    [contenteditable],
+                    .text-element {
+                        pointer-events: none !important;
+                        user-select: none !important;
+                        -webkit-user-select: none !important;
+                        -moz-user-select: none !important;
+                        -ms-user-select: none !important;
+                    }
+                    
+                    /* 📐 GRID LAYOUT ESPECÍFICO */
                     .grid {
                         display: grid !important;
+                    }
+                    
+                    /* 🚫 FORZAR OCULTACIÓN DE ELEMENTOS PROBLEMÁTICOS */
+                    * {
+                        outline: none !important;
+                        box-shadow: none !important;
+                    }
+                    
+                    *:hover,
+                    *:focus,
+                    *:active {
+                        outline: none !important;
+                        box-shadow: none !important;
+                    }
+                    
+                    /* 🎨 ASEGURAR CALIDAD VISUAL */
+                    * {
+                        -webkit-font-smoothing: antialiased !important;
+                        -moz-osx-font-smoothing: grayscale !important;
+                        text-rendering: optimizeLegibility !important;
                     }
                 `;
                 clonedDoc.head.appendChild(style);
             }
         };
+        
+        // 🔍 VERIFICACIÓN FINAL: Asegurar que no hay elementos de UI visibles
+        const finalCheck = pageElement.querySelectorAll('.resize-handle, .element-controls, .toolbar, .ui-element');
+        if (finalCheck.length > 0) {
+            console.warn(`⚠️ [FINAL-CHECK] Encontrados ${finalCheck.length} elementos de UI que podrían aparecer en thumbnail`);
+            finalCheck.forEach(el => {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+                el.style.opacity = '0';
+            });
+        }
         
         // Capturar con html2canvas
         const canvas = await html2canvas(pageElement, html2canvasOptions);
@@ -644,4 +997,94 @@ export const debugImageCover = (pageId) => {
 // Exponer función de debug globalmente
 if (typeof window !== 'undefined') {
     window.debugImageCover = debugImageCover;
+}
+
+// 🔍 FUNCION DE DEBUG PARA VERIFICAR LIMPIEZA DE UI
+export const debugUICleanup = (pageId) => {
+    console.log(`🔍 [DEBUG-UI] Analizando elementos de UI en página ${pageId}...`);
+    
+    const pageElement = document.querySelector(`#page-${pageId}`);
+    if (!pageElement) {
+        console.error(`❌ [DEBUG-UI] No se encontró página ${pageId}`);
+        return;
+    }
+    
+    // Buscar elementos de UI que podrían aparecer en thumbnails
+    const uiElements = {
+        resizeHandles: pageElement.querySelectorAll('.resize-handle, .resize-control-handle, .resize-manipulation-indicator'),
+        controls: pageElement.querySelectorAll('.element-controls, .element-selector, .toolbar'),
+        overlays: pageElement.querySelectorAll('.overlay, .modal, .popup, .floating'),
+        buttons: pageElement.querySelectorAll('.btn, .button, .control'),
+        uiElements: pageElement.querySelectorAll('.ui-element, .editor-ui, [data-ui="true"]')
+    };
+    
+    console.log(`📊 [DEBUG-UI] Elementos de UI encontrados:`, {
+        resizeHandles: uiElements.resizeHandles.length,
+        controls: uiElements.controls.length,
+        overlays: uiElements.overlays.length,
+        buttons: uiElements.buttons.length,
+        uiElements: uiElements.uiElements.length
+    });
+    
+    // Mostrar detalles de elementos problemáticos
+    Object.entries(uiElements).forEach(([type, elements]) => {
+        if (elements.length > 0) {
+            console.log(`⚠️ [DEBUG-UI] ${type}:`, Array.from(elements).map(el => ({
+                tagName: el.tagName,
+                className: el.className,
+                id: el.id,
+                visible: getComputedStyle(el).display !== 'none'
+            })));
+        }
+    });
+    
+    return uiElements;
+};
+
+// Exponer función de debug globalmente
+if (typeof window !== 'undefined') {
+    window.debugUICleanup = debugUICleanup;
+}
+
+// 🧪 FUNCION DE PRUEBA PARA VERIFICAR LIMPIEZA DE THUMBNAILS
+export const testThumbnailCleanup = async (pageId) => {
+    console.log(`🧪 [TEST] Probando limpieza de thumbnail para página ${pageId}...`);
+    
+    try {
+        // Verificar elementos de UI antes de la captura
+        const beforeCleanup = debugUICleanup(pageId);
+        
+        // Generar thumbnail de prueba
+        const layout = { id: 'layout-1', template: 'grid-cols-1 grid-rows-1' };
+        const thumbnail = await generatePageThumbnail(pageId, layout, { type: 'preview' });
+        
+        if (thumbnail) {
+            console.log('✅ [TEST] Thumbnail generado exitosamente');
+            console.log('📊 [TEST] Elementos de UI encontrados antes de limpieza:', {
+                resizeHandles: beforeCleanup.resizeHandles.length,
+                controls: beforeCleanup.controls.length,
+                overlays: beforeCleanup.overlays.length,
+                buttons: beforeCleanup.buttons.length,
+                uiElements: beforeCleanup.uiElements.length
+            });
+            
+            return {
+                success: true,
+                thumbnail,
+                uiElementsFound: Object.values(beforeCleanup).reduce((sum, arr) => sum + arr.length, 0)
+            };
+        } else {
+            console.error('❌ [TEST] Error generando thumbnail');
+            return { success: false, error: 'No se pudo generar thumbnail' };
+        }
+        
+    } catch (error) {
+        console.error('❌ [TEST] Error en prueba:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// Exponer función de prueba globalmente
+if (typeof window !== 'undefined') {
+    window.testThumbnailCleanup = testThumbnailCleanup;
 }
