@@ -29,7 +29,8 @@ import 'driver.js/dist/driver.css';
 
 // ⚡ OPTIMIZACIÓN VPS: Sistema de logging inteligente y optimizado
 const isDev = process.env.NODE_ENV === 'development';
-const isVPS = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
+const isVPS = !isServer && (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost');
+const isServer = typeof window === 'undefined'; // 🚀 CRÍTICO: Detectar entorno servidor
 const log = isDev ? console.log : () => {};
 const warn = isDev ? console.warn : () => {};
 const error = console.error; // Errores siempre visibles
@@ -683,17 +684,22 @@ export default function EditorLibro() {
     }, [activeTab]);
     log('🎉 [FILTERS FIX] Editor cargado - Fix del problema de filtros ACTIVADO');
     
-    // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails
-    window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
-    window.PREVENT_THUMBNAIL_RESET = false; // Permitir generación automática de thumbnails normales
-    window._protectedThumbnailIds = []; // Resetear lista de thumbnails protegidos
-    window.THUMBNAIL_PROTECTED = false; // Desactivar protección global al inicio
-    
-    // 🎭 PRESERVAR FILTROS: Asegurarse que se apliquen todos los filtros correctamente
-    window.PRESERVE_FILTERS = true; // Flag global para indicar que queremos mantener los filtros
+    // 🚨 SOLUCIÓN DE EMERGENCIA: Sistema global para forzar regeneración de thumbnails (SOLO CLIENTE)
+    if (!isServer) {
+        window.FORCE_THUMBNAIL_REGENERATION = true; // Habilitado globalmente
+        window.PREVENT_THUMBNAIL_RESET = false; // Permitir generación automática de thumbnails normales
+        window._protectedThumbnailIds = []; // Resetear lista de thumbnails protegidos
+        window.THUMBNAIL_PROTECTED = false; // Desactivar protección global al inicio
+        
+        // 🎭 PRESERVAR FILTROS: Asegurarse que se apliquen todos los filtros correctamente
+        window.PRESERVE_FILTERS = true; // Flag global para indicar que queremos mantener los filtros
+    }
     
     // Crear una función global para forzar la regeneración desde cualquier lugar
     useEffect(() => {
+        // 🚀 CRÍTICO VPS: Solo en cliente
+        if (isServer) return;
+        
         // Exponer función de emergencia para forzar regeneración desde cualquier parte
         window.forceRegenerateAllThumbnails = () => {
             logVPS('💣 [EMERGENCIA-GLOBAL] Forzando regeneración de TODOS los thumbnails');
@@ -2098,8 +2104,8 @@ export default function EditorLibro() {
         const size = predefinedSizes[workspaceSize] || predefinedSizes.preset;
 
         // Aplicar escalado también a tamaños predefinidos
-        const maxScreenWidth = window.innerWidth * 0.6;
-        const maxScreenHeight = window.innerHeight * 0.7;
+        const maxScreenWidth = isServer ? 1200 : window.innerWidth * 0.6;
+        const maxScreenHeight = isServer ? 800 : window.innerHeight * 0.7;
 
         const scaleX = maxScreenWidth / size.width;
         const scaleY = maxScreenHeight / size.height;
@@ -2117,6 +2123,12 @@ export default function EditorLibro() {
 
     // Función para capturar el workspace actual con alta calidad y sin bordes
     const captureCurrentWorkspace = useCallback(async (options = { type: 'thumbnail' }) => {
+        // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor para evitar consumo masivo
+        if (isServer) {
+            error('🚫 [VPS-PROTECTION] captureCurrentWorkspace bloqueado en servidor');
+            return null;
+        }
+        
         if (!pages[currentPage]) return null;
 
         try {
@@ -2238,7 +2250,7 @@ export default function EditorLibro() {
                 removeContainer: false,
                 logging: isLayoutMode && !isProduction ? true : false, // 🚀 OPTIMIZACIÓN: Solo logs en desarrollo
                 imageTimeout: isPDF ? 60000 : (isLayoutMode ? (isProduction ? 15000 : 30000) : 15000), // 🚀 Timeouts más cortos en VPS
-                pixelRatio: isPDF ? 3 : (isProduction ? 1 : (window.devicePixelRatio || 1)), // 🚀 Reducir pixelRatio en VPS
+                pixelRatio: isPDF ? 3 : (isProduction ? 1 : (isServer ? 1 : (window.devicePixelRatio || 1))), // 🚀 Reducir pixelRatio en VPS y servidor
                 // 🔧 LAYOUT MODE: Configuración especial para CSS Grid
                 ...(isLayoutMode && {
                     allowTaint: true,
@@ -3071,6 +3083,9 @@ export default function EditorLibro() {
 
     // ⚡ useEffect optimizado para generar thumbnail de página actual
     useEffect(() => {
+        // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor
+        if (isServer) return;
+        
         if (pages[currentPage] && !pageThumbnails[pages[currentPage].id]) {
             // Generar thumbnail solo de la página actual con delay para estabilidad
             const timeoutId = setTimeout(() => {
@@ -5730,6 +5745,12 @@ export default function EditorLibro() {
 
     // 🚨 FUNCIONES DE DEBUG PARA TESTING DE THUMBNAILS CON FILTROS (DESPUÉS DE updateElementInCell)
     const forceRegenerateThumbnail = useCallback(() => {
+        // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor
+        if (isServer) {
+            error('🚫 [VPS-PROTECTION] forceRegenerateThumbnail bloqueado en servidor');
+            return;
+        }
+        
         console.log('🚨 [FORCE-REGEN] Iniciando regeneración forzada...');
         
         // Limpiar completamente la caché de thumbnails
@@ -6388,6 +6409,9 @@ CONTROLES:
 
     // useEffect optimizado que regenera thumbnails cuando cambia el contenido
     useEffect(() => {
+        // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor
+        if (isServer) return;
+        
         // Verificar si hay alguna miniatura de página actual
         const currentPageData = pages[currentPage];
         if (!currentPageData) return;
