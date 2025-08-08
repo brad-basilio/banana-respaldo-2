@@ -1,1 +1,0 @@
-import"./AboutSimple-Cf8x2fCZ.js";import"./index-BZYhE2TF.js";import"./index-BH53Isel.js";import"./TextElement-_pvTHO57.js";import"./index-yBjzXJbu.js";import"./index-rimy3MAc.js";import"./index-fNjTmf9T.js";
