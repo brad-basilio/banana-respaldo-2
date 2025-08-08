@@ -20,20 +20,26 @@ class ProjectPDFController extends Controller
         try {
             Log::info("📄 [PDF-GENERATOR] Iniciando generación de PDF para proyecto: {$projectId}");
 
+            // Verificar que DOMPDF esté disponible
+            if (!class_exists('Dompdf\Dompdf')) {
+                Log::error("❌ [PDF-GENERATOR] DOMPDF no está disponible");
+                return response()->json(['error' => 'Generador de PDF no disponible'], 500);
+            }
+
             // Obtener el proyecto y sus relaciones importantes para dimensiones
             $project = CanvasProject::with(['item', 'canvasPreset'])->findOrFail($projectId);
             // Obtener páginas del request
             $pages = $request->get('pages', []);
             $workspaceDimensions = $request->get('workspace_dimensions', ['width' => 800, 'height' => 600]);
-            
+
             // Extraer dimensiones originales en mm si existen
             $originalWidthMm = $workspaceDimensions['originalWidth'] ?? null;
             $originalHeightMm = $workspaceDimensions['originalHeight'] ?? null;
-            
+
             $quality = $request->get('quality', 'high');
             $format = $request->get('format', 'album');
             $usePdfThumbnails = $request->get('use_pdf_thumbnails', true);
-            
+
             // Obtener dimensiones del preset asociado al proyecto
             $presetDimensions = null;
             if ($project->canvasPreset) {
@@ -54,7 +60,7 @@ class ProjectPDFController extends Controller
                 // Si no hay páginas, intentar generarlas automáticamente
                 Log::warning("⚠️ [PDF-GENERATOR] No se recibieron páginas, generando array automático");
                 $pagesCount = $request->get('pages_count', 0);
-                
+
                 if ($pagesCount > 0) {
                     $pages = [];
                     for ($i = 0; $i < $pagesCount; $i++) {
@@ -80,31 +86,30 @@ class ProjectPDFController extends Controller
             // Verificar que existen los thumbnails PDF - SOLO EN STORAGE/APP/IMAGES
             $thumbnailPaths = [];
             $localBaseDir = "images/thumbnails/{$projectId}";  // En storage/app/images
-            
+
             // Log para debugging
             Log::info("🔍 [PDF-GENERATOR] Buscando thumbnails en storage/app/{$localBaseDir} para el proyecto {$projectId}");
-            
+
             // Recorrer todas las páginas
             if (is_array($pages)) {
                 foreach ($pages as $index => $page) {
                     // El índice puede ser un valor numérico o el índice podría estar en el objeto page
                     $pageIndex = is_array($page) && isset($page['index']) ? $page['index'] : $index;
-                    
+
                     // Intentar primero con el thumbnail PDF
                     $thumbnailFileName = "page-{$pageIndex}-pdf.png";
                     $localThumbnailPath = "{$localBaseDir}/{$thumbnailFileName}";
-                    
+
                     // Buscar en storage/app
                     if (Storage::exists($localThumbnailPath)) {
                         $thumbnailPaths[$pageIndex] = storage_path("app/{$localThumbnailPath}");
                         Log::info("✅ [PDF-GENERATOR] Thumbnail encontrado: {$localThumbnailPath}");
-                    } 
-                    else {
+                    } else {
                         Log::warning("⚠️ [PDF-GENERATOR] Thumbnail PDF no encontrado, intentando alternativas...");
-                        
+
                         // Alternativa 1: Thumbnail normal
                         $localNormalPath = "{$localBaseDir}/page-{$pageIndex}.png";
-                        
+
                         if (Storage::exists($localNormalPath)) {
                             $thumbnailPaths[$pageIndex] = storage_path("app/{$localNormalPath}");
                             Log::info("✅ [PDF-GENERATOR] Usando thumbnail normal: {$localNormalPath}");
@@ -120,10 +125,11 @@ class ProjectPDFController extends Controller
                                 }
                             }
                         }
-                        
-                        // Si no se encontró ningún archivo, registrar error
+
+                        // Si no se encontró ningún archivo, registrar warning pero continuar
                         if (!isset($thumbnailPaths[$pageIndex])) {
-                            Log::error("❌ [PDF-GENERATOR] No se encontró ningún archivo para la página {$pageIndex}");
+                            Log::warning("⚠️ [PDF-GENERATOR] No se encontró archivo para la página {$pageIndex}, se omitirá");
+                            // No agregar esta página al array, simplemente continuar
                         }
                     }
                 }
@@ -132,27 +138,35 @@ class ProjectPDFController extends Controller
             }
 
             if (empty($thumbnailPaths)) {
+                Log::error("❌ [PDF-GENERATOR] No se encontraron thumbnails para generar el PDF");
                 return response()->json(['error' => 'No se encontraron thumbnails para generar el PDF'], 400);
             }
 
+            Log::info("✅ [PDF-GENERATOR] Se encontraron " . count($thumbnailPaths) . " thumbnails para procesar");
+
             // 🚀 OPTIMIZACIÓN: Usar TCPDF directamente (sin HTML, sin base64)
             Log::info("🚀 [PDF-OPTIMIZED] Usando TCPDF directo para máximo rendimiento");
-            
-            // Configurar límites para VPS
-            ini_set('memory_limit', '256M');
-            set_time_limit(30);
+
+            // Configurar límites para VPS - más generosos para PDFs grandes
+            $currentMemoryLimit = ini_get('memory_limit');
+            $currentTimeLimit = ini_get('max_execution_time');
+
+            ini_set('memory_limit', '512M'); // Más memoria para PDFs grandes
+            set_time_limit(60); // Más tiempo para procesar
+
+            Log::info("⚙️ [PDF-GENERATOR] Límites configurados - Memoria: 512M, Tiempo: 60s (anteriores: {$currentMemoryLimit}, {$currentTimeLimit}s)");
 
             // Calcular dimensiones del PDF basado en las dimensiones disponibles
             $pageWidth = $workspaceDimensions['width'] ?? 800;
             $pageHeight = $workspaceDimensions['height'] ?? 600;
-            
+
             // Jerarquía para obtener dimensiones:
             // 1. Primero: Usar dimensiones originales en mm del frontend (prioridad máxima) 
             // 2. Segundo: Usar dimensiones del Preset si están disponibles
             // 3. Tercero: Usar dimensiones del workspace si están disponibles
             // 4. Cuarto: Usar dimensiones basadas en el formato (A4, album, etc.)
             // 5. Quinto: Usar dimensiones por defecto (fallback)
-            
+
             // Verificar si tenemos dimensiones originales del frontend en mm (prioridad máxima)
             if ($originalWidthMm && $originalHeightMm) {
                 $pageWidthMm = $originalWidthMm;
@@ -176,7 +190,7 @@ class ProjectPDFController extends Controller
                     $pageHeightMm = ($pageHeight / 96) * 25.4;
                     Log::info("📐 [PDF-GENERATOR] Usando dimensiones del preset convertidas a mm: {$pageWidthMm}mm x {$pageHeightMm}mm");
                 }
-            } 
+            }
             // Usar dimensiones basadas en formato conocido
             else if ($format !== 'custom') {
                 // Definiciones de formatos estándar en mm
@@ -192,7 +206,7 @@ class ProjectPDFController extends Controller
                     'square_small' => ['width' => 150, 'height' => 150], // Album cuadrado pequeño
                     'landscape_large' => ['width' => 330, 'height' => 250], // Apaisado grande
                 ];
-                
+
                 // Si el formato existe en nuestra lista, usar esas dimensiones
                 if (isset($formatDimensions[$format])) {
                     $pageWidthMm = $formatDimensions[$format]['width'];
@@ -211,64 +225,47 @@ class ProjectPDFController extends Controller
                 Log::info("📐 [PDF-GENERATOR] Usando dimensiones personalizadas: {$pageWidthMm}mm x {$pageHeightMm}mm");
             }
 
-            // 🚀 OPTIMIZACIÓN CRÍTICA: Usar TCPDF directamente (sin HTML, sin base64)
-            require_once(base_path('vendor/tecnickcom/tcpdf/tcpdf.php'));
-            
-            // Determinar orientación
-            $orientation = $pageWidthMm > $pageHeightMm ? 'L' : 'P';
-            
-            Log::info("📐 [PDF-OPTIMIZED] Dimensiones: {$pageWidthMm}mm x {$pageHeightMm}mm, orientación: {$orientation}");
+            // 🚀 OPTIMIZACIÓN: Usar DOMPDF con HTML optimizado
+            Log::info("🚀 [PDF-OPTIMIZED] Usando DOMPDF con HTML optimizado para máximo rendimiento");
 
-            // Crear PDF con TCPDF (mucho más eficiente que DOMPDF)
-            $pdf = new \TCPDF($orientation, 'mm', [$pageWidthMm, $pageHeightMm], true, 'UTF-8', false);
+            // Configurar DOMPDF con opciones optimizadas
+            $options = new Options();
+            $options->set('defaultFont', 'Arial');
+            $options->set('isRemoteEnabled', false); // Deshabilitar recursos remotos para seguridad
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isPhpEnabled', false); // Deshabilitar PHP por seguridad
+            $options->set('isFontSubsettingEnabled', false); // Deshabilitar subsetting para velocidad
+            $options->set('defaultPaperSize', 'custom');
+            $options->set('defaultPaperOrientation', $pageWidthMm > $pageHeightMm ? 'landscape' : 'portrait');
 
-            // Configuración mínima para máximo rendimiento
-            $pdf->SetCreator('BananaLab');
-            $pdf->SetTitle('Álbum - ' . ($project->name ?? 'Proyecto'));
-            $pdf->SetMargins(0, 0, 0);
-            $pdf->SetAutoPageBreak(false, 0);
-            $pdf->setPrintHeader(false);
-            $pdf->setPrintFooter(false);
+            $dompdf = new Dompdf($options);
 
-            // 🚀 PROCESAR IMÁGENES DIRECTAMENTE (la clave del rendimiento)
-            foreach ($thumbnailPaths as $pageIndex => $imagePath) {
-                try {
-                    Log::info("🖼️ [PDF-OPTIMIZED] Procesando imagen {$pageIndex}: {$imagePath}");
+            // Generar HTML optimizado para las imágenes
+            $html = $this->generateOptimizedPDFHtml($thumbnailPaths, $pageWidthMm, $pageHeightMm, $project);
 
-                    // Agregar página
-                    $pdf->AddPage();
+            Log::info("📐 [PDF-OPTIMIZED] Dimensiones: {$pageWidthMm}mm x {$pageHeightMm}mm");
+            Log::info("📄 [PDF-OPTIMIZED] HTML generado con " . count($thumbnailPaths) . " páginas");
 
-                    // 🚀 INSERTAR IMAGEN DIRECTAMENTE (sin base64, sin HTML)
-                    $pdf->Image(
-                        $imagePath,           // Ruta directa al archivo (¡sin base64!)
-                        0,                    // X position
-                        0,                    // Y position  
-                        $pageWidthMm,         // Width
-                        $pageHeightMm,        // Height
-                        '',                   // Type (auto-detect)
-                        '',                   // Link
-                        '',                   // Align
-                        false,                // Resize
-                        300,                  // DPI
-                        '',                   // Palign
-                        false,                // Ismask
-                        false,                // Imgmask
-                        0,                    // Border
-                        false,                // Fitbox
-                        false,                // Hidden
-                        true                  // Fitonpage
-                    );
+            // Cargar HTML y configurar papel
+            try {
+                Log::info("📄 [PDF-GENERATOR] Cargando HTML en DOMPDF...");
+                $dompdf->loadHtml($html);
 
-                    Log::info("✅ [PDF-OPTIMIZED] Imagen {$pageIndex} insertada directamente");
+                Log::info("📐 [PDF-GENERATOR] Configurando papel: {$pageWidthMm}mm x {$pageHeightMm}mm");
+                $dompdf->setPaper([0, 0, $pageWidthMm * 2.83465, $pageHeightMm * 2.83465], $pageWidthMm > $pageHeightMm ? 'landscape' : 'portrait');
 
-                } catch (\Exception $e) {
-                    Log::error("❌ [PDF-OPTIMIZED] Error procesando imagen {$pageIndex}: " . $e->getMessage());
-                }
+                Log::info("🔄 [PDF-GENERATOR] Renderizando PDF...");
+                $dompdf->render();
+
+                Log::info("✅ [PDF-GENERATOR] PDF renderizado exitosamente");
+            } catch (\Exception $e) {
+                Log::error("❌ [PDF-GENERATOR] Error durante el renderizado: " . $e->getMessage());
+                throw new \Exception("Error renderizando PDF: " . $e->getMessage());
             }
 
             // Crear directorio para PDFs solo en storage/app/images
             $pdfDir = "images/pdf/{$projectId}";
-            
+
             // Crear el directorio en local storage con permisos correctos
             if (!Storage::exists($pdfDir)) {
                 $fullPath = storage_path('app/' . $pdfDir);
@@ -282,16 +279,16 @@ class ProjectPDFController extends Controller
             $pdfFileName = "{$projectId}.pdf";
             $pdfPath = "{$pdfDir}/{$pdfFileName}";
             $pdfContent = $dompdf->output();
-            
+
             // Guardar en local storage
             Storage::put($pdfPath, $pdfContent);
-            
+
             // ✅ FIJO: Establecer permisos 777
             $fullPath = storage_path('app/' . $pdfPath);
             if (file_exists($fullPath)) {
                 chmod($fullPath, 0777);
             }
-            
+
             // Generar la URL para acceso
             $pdfUrl = "/api/customer/projects/{$projectId}/download-pdf"; // URL para descargar mediante API
             $pdfSize = strlen($pdfContent);
@@ -318,11 +315,10 @@ class ProjectPDFController extends Controller
                 'quality' => $quality,
                 'format' => $format
             ]);
-
         } catch (\Exception $e) {
             Log::error("❌ [PDF-GENERATOR] Error: " . $e->getMessage());
             Log::error("❌ [PDF-GENERATOR] Stack trace: " . $e->getTraceAsString());
-            
+
             return response()->json([
                 'error' => 'Error generando PDF: ' . $e->getMessage()
             ], 500);
@@ -330,16 +326,106 @@ class ProjectPDFController extends Controller
     }
 
     /**
-     * Generar HTML para el PDF usando las imágenes thumbnail
+     * Generar HTML optimizado para el PDF usando las imágenes thumbnail
+     */
+    private function generateOptimizedPDFHtml($thumbnailPaths, $pageWidthMm, $pageHeightMm, $project)
+    {
+        Log::info("📄 [PDF-HTML-OPTIMIZED] Generando HTML optimizado con dimensiones: {$pageWidthMm}mm x {$pageHeightMm}mm");
+
+        $html = '<!DOCTYPE html>';
+        $html .= '<html><head>';
+        $html .= '<meta charset="utf-8">';
+        $html .= '<title>Álbum - ' . htmlspecialchars($project->name ?? 'Proyecto') . '</title>';
+        $html .= '<style>';
+        $html .= 'body { margin: 0; padding: 0; font-family: Arial, sans-serif; }';
+        $html .= '@page { ';
+        $html .= '  size: ' . $pageWidthMm . 'mm ' . $pageHeightMm . 'mm; ';
+        $html .= '  margin: 0; ';
+        $html .= '}';
+        $html .= '.page { ';
+        $html .= '  width: ' . $pageWidthMm . 'mm; ';
+        $html .= '  height: ' . $pageHeightMm . 'mm; ';
+        $html .= '  margin: 0; ';
+        $html .= '  padding: 0; ';
+        $html .= '  page-break-after: always; ';
+        $html .= '  overflow: hidden; ';
+        $html .= '  position: relative; ';
+        $html .= '  display: block; ';
+        $html .= '}';
+        $html .= '.page:last-child { page-break-after: avoid; }';
+        $html .= '.page img { ';
+        $html .= '  width: 100%; ';
+        $html .= '  height: 100%; ';
+        $html .= '  object-fit: cover; ';
+        $html .= '  display: block; ';
+        $html .= '  margin: 0; ';
+        $html .= '  padding: 0; ';
+        $html .= '  border: none; ';
+        $html .= '}';
+        $html .= '</style>';
+        $html .= '</head><body>';
+
+        foreach ($thumbnailPaths as $index => $imagePath) {
+            try {
+                Log::info("🖼️ [PDF-HTML-OPTIMIZED] Procesando imagen {$index}: {$imagePath}");
+
+                // Verificar que el archivo existe
+                if (!file_exists($imagePath)) {
+                    Log::error("❌ [PDF-HTML-OPTIMIZED] Archivo no encontrado: {$imagePath}");
+                    continue;
+                }
+
+                // Obtener información de la imagen
+                $imageInfo = @getimagesize($imagePath);
+                if (!$imageInfo) {
+                    Log::error("❌ [PDF-HTML-OPTIMIZED] No se pudo obtener info de imagen: {$imagePath}");
+                    continue;
+                }
+
+                $mimeType = $imageInfo['mime'] ?? 'image/png';
+
+                // Leer y convertir imagen a base64 de forma optimizada
+                $imageData = @file_get_contents($imagePath);
+                if ($imageData === false) {
+                    Log::error("❌ [PDF-HTML-OPTIMIZED] No se pudo leer imagen: {$imagePath}");
+                    continue;
+                }
+
+                $base64Data = base64_encode($imageData);
+
+                $html .= '<div class="page">';
+                $html .= '<img src="data:' . $mimeType . ';base64,' . $base64Data . '" alt="Página ' . ($index + 1) . '">';
+                $html .= '</div>';
+
+                Log::info("✅ [PDF-HTML-OPTIMIZED] Imagen {$index} procesada correctamente");
+            } catch (\Exception $e) {
+                Log::error("❌ [PDF-HTML-OPTIMIZED] Error procesando imagen {$index}: " . $e->getMessage());
+
+                // Página de error
+                $html .= '<div class="page" style="text-align: center; padding: 20mm; background: #f5f5f5;">';
+                $html .= '<h1 style="color: #666;">Error en la página ' . ($index + 1) . '</h1>';
+                $html .= '<p style="color: #999;">No se pudo procesar la imagen.</p>';
+                $html .= '</div>';
+            }
+        }
+
+        $html .= '</body></html>';
+
+        Log::info("✅ [PDF-HTML-OPTIMIZED] HTML generado con " . count($thumbnailPaths) . " páginas");
+        return $html;
+    }
+
+    /**
+     * Generar HTML para el PDF usando las imágenes thumbnail (método original como fallback)
      */
     private function generatePDFHtml($thumbnailPaths, $pageWidthMm, $pageHeightMm, $project)
     {
         // Determinar orientación
         $orientation = $pageWidthMm > $pageHeightMm ? 'landscape' : 'portrait';
         $aspectRatio = $pageWidthMm / $pageHeightMm;
-        
+
         Log::info("📄 [PDF-HTML] Generando HTML con dimensiones: {$pageWidthMm}mm x {$pageHeightMm}mm, orientación: {$orientation}, ratio: {$aspectRatio}");
-        
+
         $html = '<!DOCTYPE html>';
         $html .= '<html><head>';
         $html .= '<meta charset="utf-8">';
@@ -373,7 +459,7 @@ class ProjectPDFController extends Controller
         $html .= '}';
         $html .= '</style>';
         $html .= '</head><body>';
-        
+
         // Log para depuración
         Log::info("📝 [PDF-GENERATOR] Configurando CSS para imágenes: object-fit: cover, ancho y alto 100%, sin márgenes");
 
@@ -384,9 +470,9 @@ class ProjectPDFController extends Controller
                 $imgWidth = $imageInfo[0];
                 $imgHeight = $imageInfo[1];
                 $imgRatio = $imgWidth / $imgHeight;
-                
+
                 Log::info("🖼️ [PDF-HTML] Imagen {$index}: {$imgWidth}x{$imgHeight}, ratio: {$imgRatio}");
-                
+
                 // Convertir la imagen a base64 para embeberla en el PDF
                 $imageData = base64_encode(file_get_contents($imagePath));
                 $mimeType = $imageInfo['mime'] ?? 'image/png';
@@ -394,17 +480,17 @@ class ProjectPDFController extends Controller
                 // Determinar estilos específicos para que la imagen llene completamente el espacio
                 // Siempre usar object-fit: cover para asegurar que la imagen llena toda la página
                 $imgStyle = 'width: 100%; height: 100%; object-fit: cover; display: block; margin: 0; padding: 0;';
-                
+
                 Log::info("🖼️ [PDF-HTML] Aplicando estilo a imagen {$index}: {$imgStyle}");
 
                 $html .= '<div class="page">';
                 $html .= '<img src="data:' . $mimeType . ';base64,' . $imageData . '" ' .
-                         'alt="Página ' . ($index + 1) . '" ' .
-                         ($imgStyle ? 'style="' . $imgStyle . '"' : '') . '>';
+                    'alt="Página ' . ($index + 1) . '" ' .
+                    ($imgStyle ? 'style="' . $imgStyle . '"' : '') . '>';
                 $html .= '</div>';
             } catch (\Exception $e) {
                 Log::error("❌ [PDF-HTML] Error procesando imagen {$index}: " . $e->getMessage());
-                
+
                 // En caso de error, agregar página con mensaje de error
                 $html .= '<div class="page" style="text-align: center; padding: 20mm;">';
                 $html .= '<h1>Error en la página ' . ($index + 1) . '</h1>';
@@ -427,12 +513,12 @@ class ProjectPDFController extends Controller
             $pdfDir = "images/pdf/{$projectId}";
             $pdfFileName = "{$projectId}.pdf";
             $pdfPath = "{$pdfDir}/{$pdfFileName}";
-            
+
             // Verificar solo en storage/app/images
             if (Storage::exists($pdfPath)) {
                 $pdfSize = Storage::size($pdfPath);
                 $pdfUrl = "/api/customer/projects/{$projectId}/download-pdf"; // URL para descarga directa
-                
+
                 Log::info("✅ [PDF-INFO] PDF encontrado: {$pdfPath}");
 
                 return response()->json([
@@ -467,7 +553,7 @@ class ProjectPDFController extends Controller
                 Log::info("📥 [PDF-DOWNLOAD] Descargando PDF: {$pdfPath}");
                 return response()->file(storage_path("app/{$pdfPath}"), [
                     'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'attachment; filename="album-'.$projectId.'.pdf"'
+                    'Content-Disposition' => 'attachment; filename="album-' . $projectId . '.pdf"'
                 ]);
             } else {
                 Log::warning("⚠️ [PDF-DOWNLOAD] PDF no encontrado para proyecto: {$projectId}");
