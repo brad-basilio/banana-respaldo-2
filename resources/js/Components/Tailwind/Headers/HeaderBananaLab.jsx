@@ -263,15 +263,26 @@ const HeaderBananaLab = ({
     }, [search]);
 
     useEffect(() => {
+        let scrollTimer = null;
         const handleScroll = () => {
-            if (window.scrollY > 0) {
-                setIsFixed(true);
-            } else {
-                setIsFixed(false);
+            if (scrollTimer !== null) {
+                clearTimeout(scrollTimer);
             }
+            scrollTimer = setTimeout(() => {
+                if (window.scrollY > 10) {
+                    setIsFixed(true);
+                } else {
+                    setIsFixed(false);
+                }
+            }, 10); // Pequeño debounce para suavizar la transición
         };
         window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            if (scrollTimer !== null) {
+                clearTimeout(scrollTimer);
+            }
+        };
     }, []);
 
     // useEffect para manejar el escape en la búsqueda móvil
@@ -474,12 +485,14 @@ const HeaderBananaLab = ({
     };
 
     return (
-        <motion.nav
-            className={`bg-[#F8F9FA] shadow-md fonts-paragraph w-full top-0 left-0 z-50 transition-all duration-300 ${isFixed ? "fixed shadow-lg" : "relative"}`}
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.4 }}
-        >
+        <>
+            {isFixed && <div className="h-20 lg:h-16 w-full"></div>}
+            <motion.nav
+                className={`bg-[#F8F9FA] shadow-md fonts-paragraph w-full top-0 left-0 z-50 transition-all duration-300 ${isFixed ? "fixed shadow-lg" : "relative"}`}
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.4 }}
+            >
             {/* Desktop HeaderBananaLab */}
             <div className="max-w-7xl mx-auto px-primary lg:px-0">
                 <div className="flex w-full items-center justify-between h-20 lg:h-16">
@@ -920,6 +933,7 @@ const HeaderBananaLab = ({
                 </div>
             )}
         </motion.nav>
+        </>
     );
 };
 

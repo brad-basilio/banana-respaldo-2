@@ -178,7 +178,7 @@ const SliderBananaLab = ({ items, data }) => {
 
             {/* Paginacion personalizada */}
             <motion.div 
-                className="absolute bottom-4 z-50 left-1/2 -translate-x-1/2 flex justify-center gap-2 mt-10 lg:hidden"
+                className="absolute z-10 bottom-4  left-1/2 -translate-x-1/2 flex justify-center gap-2 mt-10 lg:hidden"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1 }}
