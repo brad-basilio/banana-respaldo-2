@@ -52,7 +52,8 @@ class MessageController extends BasicController
             ]);
 
             // Enviar notificación al cliente y al administrador
-            NotificationHelper::sendToClientAndAdmin($jpa, new MessageContactNotification($jpa));
+            //COMENTANDO MAIL
+            //NotificationHelper::sendToClientAndAdmin($jpa, new MessageContactNotification($jpa));
             
             Log::info('MessageController - Notificaciones enviadas exitosamente', [
                 'message_id' => $jpa->id

@@ -470,7 +470,8 @@ class SaleController extends BasicController
         // Enviar notificación de resumen de compra
         $saleJpa = Sale::with('details')->find($jpa->id);
         $details = $saleJpa->details ?? SaleDetail::where('sale_id', $saleJpa->id)->get();
-        $saleJpa->notify(new PurchaseSummaryNotification($saleJpa, $details));
+       //COMENTANDO MAIL
+        // $saleJpa->notify(new PurchaseSummaryNotification($saleJpa, $details));
 
         return $jpa;
     }

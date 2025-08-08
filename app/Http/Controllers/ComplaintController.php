@@ -121,7 +121,8 @@ class ComplaintController extends BasicController
                 ]);
 
                 // Enviar notificación al cliente y al administrador usando NotificationHelper
-                NotificationHelper::sendToClientAndAdmin($complaint, new ClaimNotification($complaint), new AdminClaimNotification($complaint));
+                //COMENTANDO MAIL
+                //NotificationHelper::sendToClientAndAdmin($complaint, new ClaimNotification($complaint), new AdminClaimNotification($complaint));
                 
                 Log::info('ComplaintController - Notificaciones de reclamo enviadas exitosamente', [
                     'complaint_id' => $complaint->id

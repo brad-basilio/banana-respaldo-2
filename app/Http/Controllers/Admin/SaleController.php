@@ -40,9 +40,10 @@ class SaleController extends BasicController
         }
 
         $saleJpa = Sale::with(array_merge($this->with4get, ['tracking']))->find($jpa->id);
-        if ($request->notify_client) {
+       //COMENTANDO MAIL
+       /* if ($request->notify_client) {
             $saleJpa->notify(new OrderStatusChangedNotification($saleJpa));
-        }
+        } */
         return $saleJpa;
     }
 }

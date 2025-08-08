@@ -62,11 +62,12 @@ class PostController extends BasicController
 
         // Notificar a los suscriptores si es nuevo blog (usando colas)
         //Crear un jobs
-        if ($isNew) {
+        //COMENTANDO MAIL
+        /*if ($isNew) {
            SendPostEmailsJob::dispatchAfterResponse(
                 $jpa
             );
 
-        }
+        } */
     }
 }
