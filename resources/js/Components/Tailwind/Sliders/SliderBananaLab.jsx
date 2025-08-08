@@ -149,7 +149,7 @@ const SliderBananaLab = ({ items, data }) => {
                                     <motion.a
                                         href={item.button_link}
                                         ref={(el) => (buttonsRef.current[index] = el)}
-                                        className="bg-primary z-50 my-1 w-7/12 h-11 flex items-center justify-center rounded-full text-white text-sm font-semibold lg:w-max lg:px-10"
+                                        className="bg-primary z-50 my-1 min-w-max px-4 h-11 flex items-center justify-center rounded-full text-white text-sm font-semibold lg:w-max lg:px-10"
                                         variants={buttonVariants}
                                         whileHover="hover"
                                         whileTap="tap"
