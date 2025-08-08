@@ -488,7 +488,7 @@ const HeaderBananaLab = ({
         <>
             {isFixed && <div className="h-20 lg:h-16 w-full"></div>}
             <motion.nav
-                className={`bg-[#F8F9FA] shadow-md fonts-paragraph w-full top-0 left-0 z-50 transition-all duration-300 ${isFixed ? "fixed shadow-lg" : "relative"}`}
+                className={`bg-[#F8F9FA] shadow-md fonts-paragraph w-full top-0 left-0 z-[99] transition-all duration-300 ${isFixed ? "fixed shadow-lg" : "relative"}`}
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4 }}
