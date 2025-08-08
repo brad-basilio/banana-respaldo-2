@@ -8088,7 +8088,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-BKmSpq1R.js",
+    "file": "assets/ProductDetail-BCkaJwhg.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -8214,7 +8214,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx": {
-    "file": "assets/ProductDetailBananaLab-CVimvbZb.js",
+    "file": "assets/ProductDetailBananaLab-DQyVDFur.js",
     "name": "ProductDetailBananaLab",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx",
     "isDynamicEntry": true,
@@ -10162,7 +10162,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CAA9ix9O.js",
+    "file": "assets/System-D2j4jeRW.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

@@ -241,19 +241,74 @@ export default function ProductDetailBananaLab({
 
         setFavorites(newFavorites);
     };
-  console.log('Creating canvas project for item:', item);
+    // Función para detectar si es dispositivo móvil
+    const isMobileDevice = () => {
+        return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    };
+
     const handleCreateCanvasProject = async () => {
+        // Verificar si es dispositivo móvil
+        if (isMobileDevice()) {
+            Swal.fire({
+                title: "",
+                html: `
+                    <div class="text-center">
+                        <div class="text-5xl mb-3">🎨</div>
+                        <p class="text-base text-gray-700 mb-3">Para crear tu regalo personalizado necesitas usar una <strong>laptop</strong> o <strong>PC</strong></p>
+                        <p class="text-sm text-gray-500">El editor funciona mejor en pantallas grandes</p>
+                    </div>
+                `,
+                confirmButtonText: "Entendido",
+                confirmButtonColor: "#af5cb8",
+                showCancelButton: false,
+                customClass: {
+                    popup: 'swal2-mobile-modal',
+                    title: 'text-lg font-semibold',
+                    htmlContainer: 'text-center'
+                },
+                width: '85%',
+                padding: '1.5rem'
+            });
+            return;
+        }
+
+        // Si no es móvil, proceder normalmente
+        proceedWithCanvasCreation();
+    };
+
+    const proceedWithCanvasCreation = async () => {
         // Verificar si el usuario está logueado
         if (!isUser) {
             Swal.fire({
-                title: "Iniciar sesión requerido",
-                text: "Debes iniciar sesión para crear y editar tu regalo personalizado",
-                icon: "warning",
+                title: "Inicia sesión para continuar",
+                html: `
+                    <div class="text-center">
+                        <div class="text-5xl mb-4">🎨</div>
+                        <p class="text-lg font-medium text-gray-700 mb-3">Para crear tu regalo personalizado</p>
+                        <p class="text-base text-gray-600 mb-4">Necesitas tener una cuenta para acceder al editor de diseño</p>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="text-sm customtext-primary">
+                                <strong>✨ Beneficios:</strong> Guarda tus proyectos, accede desde cualquier lugar y crea diseños únicos
+                            </p>
+                        </div>
+                    </div>
+                `,
                 showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Iniciar sesión",
-                cancelButtonText: "Cancelar"
+                confirmButtonColor: "#af5cb8",
+                cancelButtonColor: "#6b7280",
+                confirmButtonText: "🚀 Iniciar sesión",
+                cancelButtonText: "Cancelar",
+                customClass: {
+                    popup: 'swal2-login-modal',
+                    title: 'text-xl font-bold text-gray-800',
+                    htmlContainer: 'text-center',
+                    confirmButton: 'px-6 py-3 text-base font-semibold',
+                    cancelButton: 'px-6 py-3 text-base'
+                },
+                width: '450px',
+                padding: '2rem',
+                backdrop: 'rgba(0,0,0,0.4)',
+                allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Redirigir al login
@@ -275,8 +330,6 @@ export default function ProductDetailBananaLab({
                 }
             });
 
-          
-
             // Crear el proyecto
             const projectRequest = {
                 item_id: item?.id,
@@ -294,7 +347,7 @@ export default function ProductDetailBananaLab({
 
             if (newProject && newProject.id) {
                 Swal.close();
-                
+
                 // Mostrar éxito y redirigir
                 toast.success("Proyecto creado", {
                     description: "Tu proyecto ha sido creado exitosamente. Serás redirigido al editor.",
@@ -314,7 +367,7 @@ export default function ProductDetailBananaLab({
         } catch (error) {
             Swal.close();
             console.error('Error creating canvas project:', error);
-            
+
             Swal.fire({
                 title: "Error",
                 text: error.message || "Ocurrió un error al crear el proyecto. Por favor intenta nuevamente.",
@@ -327,7 +380,7 @@ export default function ProductDetailBananaLab({
     //console.log(item);
     return (
         <>
-            <div className="bg-sections-color py-2 text-sm">
+            <div className="hidden lg:block bg-sections-color py-2 text-sm">
                 <motion.div
                     initial="hidden"
                     animate="visible"
@@ -373,6 +426,17 @@ export default function ProductDetailBananaLab({
             >
                 <motion.div variants={slideUp} className="bg-white rounded-xl ">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-20 2xl:gap-32">
+                        <motion.div
+                            variants={slideUp}
+                            className="font-font-general lg:hidden"
+                        >
+                            <motion.h1
+                                className="customtext-primary text-center text-4xl  lg:text-start lg:text-4xl 2xl:text-5xl font-bold mt-2"
+                                whileHover={{ x: 5 }}
+                            >
+                                {item?.name}
+                            </motion.h1>
+                        </motion.div>
                         {/* Left Column - Images and Delivery Options */}
                         <div className="space-y-6">
                             {/* Product Images */}
@@ -392,8 +456,8 @@ export default function ProductDetailBananaLab({
                                                 : `/storage/images/item/${selectedImage.url}`
                                         }
                                         onError={(e) =>
-                                            (e.target.src =
-                                                "/api/cover/thumbnail/null")
+                                        (e.target.src =
+                                            "/api/cover/thumbnail/null")
                                         }
                                         alt="Product main"
                                         className="w-full object-cover aspect-square rounded-3xl"
@@ -420,19 +484,18 @@ export default function ProductDetailBananaLab({
                                         }
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
-                                        className={`w-16 h-16  rounded-xl object-cover overflow-hidden ${
-                                            selectedImage.url === item?.image
-                                                ? "shadow-2xl w-20 h-20"
-                                                : "shadow"
-                                        }`}
+                                        className={`w-16 h-16  rounded-xl object-cover overflow-hidden ${selectedImage.url === item?.image
+                                            ? "shadow-2xl w-20 h-20"
+                                            : "shadow"
+                                            }`}
                                     >
                                         <img
                                             src={`/storage/images/item/${item?.image}`}
                                             alt="Main Thumbnail"
                                             className="w-full h-full object-cover"
                                             onError={(e) =>
-                                                (e.target.src =
-                                                    "/api/cover/thumbnail/null")
+                                            (e.target.src =
+                                                "/api/cover/thumbnail/null")
                                             }
                                         />
                                     </motion.button>
@@ -447,11 +510,10 @@ export default function ProductDetailBananaLab({
                                             }
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
-                                            className={`w-16 h-16  rounded-xl object-cover overflow-hidden ${
-                                                selectedImage.url === image.url
-                                                    ? "shadow-2xl w-20 h-20"
-                                                    : "shadow"
-                                            }`}
+                                            className={`w-16 h-16  rounded-xl object-cover overflow-hidden ${selectedImage.url === image.url
+                                                ? "shadow-2xl w-20 h-20"
+                                                : "shadow"
+                                                }`}
                                         >
                                             <img
                                                 src={
@@ -461,8 +523,8 @@ export default function ProductDetailBananaLab({
                                                 alt={`Thumbnail ${index + 1}`}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) =>
-                                                    (e.target.src =
-                                                        "/api/cover/thumbnail/null")
+                                                (e.target.src =
+                                                    "/api/cover/thumbnail/null")
                                                 }
                                             />
                                         </motion.button>
@@ -479,10 +541,10 @@ export default function ProductDetailBananaLab({
                             {/* Brand and Title */}
                             <motion.div
                                 variants={slideUp}
-                                className="font-font-general"
+                                className="font-font-general hidden lg:block"
                             >
                                 <motion.h1
-                                    className="customtext-neutral-dark text-3xl lg:text-4xl 2xl:text-5xl font-bold mt-2"
+                                    className="customtext-neutral-dark text-3xl  lg:text-start lg:text-4xl 2xl:text-5xl font-bold mt-2"
                                     whileHover={{ x: 5 }}
                                 >
                                     {item?.name}
@@ -492,7 +554,7 @@ export default function ProductDetailBananaLab({
                             {/* SKU and Availability */}
                             <motion.div
                                 variants={slideUp}
-                                className="flex flex-wrap customtext-neutral-light items-center gap-y-2 gap-x-8 text-sm font-font-general"
+                                className=" hidden lg:flex flex-wrap customtext-neutral-light items-center gap-y-2 gap-x-8 text-sm font-font-general"
                             >
                                 <span className="customtext-neutral-light text-sm 2xl:text-base">
                                     SKU:{" "}
@@ -513,14 +575,16 @@ export default function ProductDetailBananaLab({
                             {/* Price Section */}
                             <motion.div
                                 variants={slideUp}
-                                className="flex flex-col w-full xl:w-1/2 !font-font-general max-w-xl mt-5"
+                                className="flex flex-col w-full xl:w-1/2 !font-font-general max-w-xl lg:mt-5"
                             >
-                                <p className="text-sm 2xl:text-base customtext-neutral-light">
-                                    Precio:{" "}
-                                    <span className="line-through">
-                                        S/ {item?.price}
-                                    </span>
-                                </p>
+                                {item?.discount && item?.discount < item?.price && item?.discount > 0 && (
+                                    <p className="text-sm 2xl:text-base customtext-neutral-light">
+                                        Precio:{" "}
+                                        <span className="line-through">
+                                            S/ {item?.price}
+                                        </span>
+                                    </p>
+                                )}
                                 <div className="flex flex-row items-center gap-4 relative">
                                     <motion.span
                                         className="text-[40px] font-bold customtext-neutral-dark"
@@ -528,29 +592,29 @@ export default function ProductDetailBananaLab({
                                     >
                                         S/ {item?.final_price}
                                     </motion.span>
-                                    <motion.span
-                                        className="bg-[#F93232] text-white font-bold px-3 py-2 rounded-xl text-base"
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                    >
-                                        -
-                                        {Number(item?.discount_percent).toFixed(
-                                            1
-                                        )}
-                                        %
-                                    </motion.span>
+                                    {item?.discount && item?.discount < item?.price && item?.discount > 0 && (
+                                        <motion.span
+                                            className="bg-[#F93232] text-white font-bold px-3 py-2 rounded-xl text-base"
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                        >
+                                            -
+                                            {Number(item?.discount_percent).toFixed(
+                                                1
+                                            )}
+                                            %
+                                        </motion.span>)}
                                 </div>
                             </motion.div>
 
                             {/* Specifications */}
-                            <div className="block  flex-1 w-full ">
+                            <div className="block flex-1 w-full max-h-max">
                                 <div className="bg-sections-color rounded-lg p-6">
                                     <ul
-                                        className={`space-y-2  customtext-neutral-light mb-4 transition-all duration-300 ${
-                                            expandedSpecificationMain
-                                                ? "max-h-full"
-                                                : "max-h-24 overflow-hidden"
-                                        }`}
+                                        className={`space-y-2 customtext-neutral-light mb-4 transition-all duration-300 max-h-full ${expandedSpecificationMain
+                                            ? "md:max-h-full"
+                                            : "md:max-h-24 md:overflow-hidden"
+                                            }`}
                                         style={{ listStyleType: "disc" }}
                                     >
                                         {item?.specifications.map(
@@ -560,17 +624,31 @@ export default function ProductDetailBananaLab({
                                                         key={index}
                                                         className="flex gap-2"
                                                     >
-                                                        <CircleCheckIcon className="customtext-primary" />
-                                                        <span className="font-semibold">
-                                                            {spec.title} :
-                                                        </span>
-                                                        {spec.description}
+                                                        <div className="hidden lg:flex gap-2">
+                                                            <CircleCheckIcon className="customtext-primary" />
+                                                            <span className="font-semibold">
+                                                                {spec.title} :
+                                                            </span>
+                                                            {spec.description}
+                                                        </div>
+                                                        <div className="flex flex-col lg:hidden gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <CircleCheckIcon className="min-h-4 min-w-4 max-w-4 max-h-4 customtext-primary" />
+                                                                <span className="font-semibold">
+                                                                    {spec.title} :
+                                                                </span>
+                                                            </div>
+                                                            <span className="ml-6">
+                                                                {spec.description}
+                                                            </span>
+                                                        </div>
                                                     </li>
                                                 )
                                         )}
                                     </ul>
+                                    {/* Solo mostrar botón en desktop (md y superior) */}
                                     <button
-                                        className="customtext-primary text-sm font-semibold hover:underline flex items-center gap-1 transition-all duration-300"
+                                        className="customtext-primary text-sm font-semibold hover:underline hidden md:flex items-center gap-1 transition-all duration-300"
                                         onClick={() =>
                                             setExpanded(
                                                 !expandedSpecificationMain
@@ -589,92 +667,12 @@ export default function ProductDetailBananaLab({
                                 </div>
                             </div>
 
-                            {/* Selector de variantes */}
-                         {/*   <motion.div
-                                variants={slideUp}
-                                className="variants-selector flex flex-col gap-3"
-                            >
-                                <h3 className="w-full block opacity-85 customtext-neutral-dark text-sm 2xl:text-base">
-                                    Colores
-                                </h3>
 
-                                <div className="flex gap-3 items-center justify-start w-full flex-wrap">
-                                   
-                                    <Tippy content={item.color}>
-                                        <motion.a
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            className={`variant-option rounded-full object-fit-cover ${
-                                                !variationsItems.some(
-                                                    (v) => v.slug === item.slug
-                                                )
-                                                    ? "active p-[2px] border-2 border-primary"
-                                                    : ""
-                                            }`}
-                                        >
-                                            <img
-                                                className="color-box rounded-full h-9 w-9 object-cover"
-                                                src={`/storage/images/item/${item.texture}`}
-                                                onError={(e) =>
-                                                    (e.target.src =
-                                                        "/api/cover/thumbnail/null")
-                                                }
-                                            />
-                                        </motion.a>
-                                    </Tippy>
-                               
-                                    {variationsItems.map((variant) => (
-                                        <Tippy
-                                            content={variant.color}
-                                            key={variant.slug}
-                                        >
-                                            <motion.a
-                                                href={`/product/${variant.slug}`}
-                                                className="variant-option rounded-full object-fit-cover"
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.9 }}
-                                            >
-                                                <img
-                                                    className="color-box rounded-full h-9 w-9 object-fit-cover"
-                                                    src={`/storage/images/item/${variant.texture}`}
-                                                />
-                                            </motion.a>
-                                        </Tippy>
-                                    ))}
-                                </div>
-                            </motion.div> */}
-
-                            {/* Quantity 
-                            <motion.div
-                                variants={slideUp}
-                                className="flex flex-col mt-8"
-                            >
-                                <div className="flex items-center gap-4 mb-2">
-                                    <div className="flex items-center space-x-4 customtext-neutral-light text-sm 2xl:text-base">
-                                        <span className="opacity-85">
-                                            Cantidad
-                                        </span>
-                                        <motion.div
-                                            className="relative flex items-center border rounded-md px-2 py-1"
-                                            whileHover={{ scale: 1.05 }}
-                                        >
-                                            <input
-                                                type="number"
-                                                value={quantity}
-                                                onChange={handleChange}
-                                                min="1"
-                                                max="10"
-                                                className="w-10 py-1 customtext-neutral-dark text-center bg-transparent outline-none appearance-none"
-                                            />
-                                        </motion.div>
-                                    </div>
-                                </div>
-                            </motion.div>*/}
 
                             {/* Add to Cart */}
                             <motion.div
                                 variants={slideUp}
-                                className="flex flex-col mt-4"
+                                className="flex flex-col mt-4 lg:mt-0"
                             >
                                 <motion.button
                                     onClick={handleCreateCanvasProject}
@@ -685,7 +683,7 @@ export default function ProductDetailBananaLab({
                                     Crea y edita tu regalo
                                     <Brush width={20} />
                                 </motion.button>
-                         {/*       <motion.button
+                                {/*       <motion.button
                                     onClick={(e) =>
                                         onAddFavoritesClicked(e, item)
                                     }
@@ -718,8 +716,8 @@ export default function ProductDetailBananaLab({
                                     <img
                                         src="/assets/img/salafabulosa/whatsapp.png"
                                         onError={(e) =>
-                                            (e.target.src =
-                                                "assets/img/noimage/no_imagen_circular.png")
+                                        (e.target.src =
+                                            "assets/img/noimage/no_imagen_circular.png")
                                         }
                                         className="w-12 h-12 object-contain"
                                         loading="lazy"
@@ -759,11 +757,10 @@ export default function ProductDetailBananaLab({
                                         spec.type === "general" && (
                                             <motion.div
                                                 key={index}
-                                                className={`grid grid-cols-2 gap-4 p-4 ${
-                                                    index % 2 === 0
-                                                        ? "bg-sections-color"
-                                                        : "bg-white"
-                                                }`}
+                                                className={`grid grid-cols-2 gap-4 p-4 ${index % 2 === 0
+                                                    ? "bg-sections-color"
+                                                    : "bg-white"
+                                                    }`}
                                                 whileHover={{ x: 5 }}
                                             >
                                                 <div className="customtext-neutral-light opacity-85">
@@ -791,11 +788,10 @@ export default function ProductDetailBananaLab({
                         )}
 
                         <motion.div
-                            className={`space-y-2 ${
-                                !isExpanded
-                                    ? "max-h-[400px] overflow-hidden"
-                                    : ""
-                            }`}
+                            className={`space-y-2 ${!isExpanded
+                                ? "max-h-[400px] overflow-hidden"
+                                : ""
+                                }`}
                         >
                             {item?.description?.replace(/<[^>]+>/g, "") && (
                                 <>
