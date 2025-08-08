@@ -890,7 +890,7 @@ const HeaderBananaLab = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.2 }}
-                        className="md:hidden bg-transparent text-textWhite shadow-lg w-full min-h-screen absolute z-10 top-20"
+                        className="md:hidden bg-transparent text-textWhite shadow-lg w-full min-h-screen absolute z-[999] top-20"
                         ref={menuRef}
                     >
                         <MobileMenu
