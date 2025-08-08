@@ -311,8 +311,10 @@ export default function ProductDetailBananaLab({
                 allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Redirigir al login
-                    window.location.href = "/iniciar-sesion";
+                    // Guardar la URL actual y redirigir al login
+                    const currentUrl = window.location.href;
+                    const loginUrl = `/iniciar-sesion?redirect=${encodeURIComponent(currentUrl)}`;
+                    window.location.href = loginUrl;
                 }
             });
             return;

@@ -7882,7 +7882,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Login.jsx": {
-    "file": "assets/Login-C0s7ONe8.js",
+    "file": "assets/Login-BB3nQtL0.js",
     "name": "Login",
     "src": "resources/js/Components/Tailwind/Login.jsx",
     "isDynamicEntry": true,
@@ -8088,7 +8088,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-BCkaJwhg.js",
+    "file": "assets/ProductDetail-CyiFwzYb.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -8214,7 +8214,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx": {
-    "file": "assets/ProductDetailBananaLab-DQyVDFur.js",
+    "file": "assets/ProductDetailBananaLab-C1HqwQLS.js",
     "name": "ProductDetailBananaLab",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx",
     "isDynamicEntry": true,
@@ -10162,7 +10162,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-D2j4jeRW.js",
+    "file": "assets/System-BPggU-mh.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

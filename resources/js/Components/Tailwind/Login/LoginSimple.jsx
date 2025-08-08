@@ -32,6 +32,12 @@ export default function LoginSimple() {
         setShowPassword(!showPassword);
     };
 
+    // Obtener URL de redirección de los parámetros de consulta
+    const getRedirectUrl = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('redirect') || '/';
+    };
+
     useEffect(() => {
         if (GET.message)
             Swal.fire({
@@ -59,12 +65,26 @@ export default function LoginSimple() {
         setLoading(false);
 
         if (!result || result.status !== 200) {
-
-
+            toast.error("Error de autenticación", {
+                description: "Credenciales incorrectas. Por favor, verifica tu email y contraseña.",
+                duration: 4000,
+                position: "bottom-center",
+            });
             return;
         }
 
-        window.location.href = "/";
+        // Mostrar mensaje de éxito
+        toast.success("¡Bienvenido!", {
+            description: "Has iniciado sesión correctamente.",
+            duration: 2000,
+            position: "bottom-center",
+        });
+
+        // Redirigir a la URL guardada o a la página principal
+        const redirectUrl = getRedirectUrl();
+        setTimeout(() => {
+            window.location.href = redirectUrl;
+        }, 1000);
     };
 
     return (
@@ -179,7 +199,7 @@ export default function LoginSimple() {
                                             </label>
                                         </div>
                                         <a
-                                            href="/forgot-password"
+                                            href={`/forgot-password${window.location.search}`}
                                             className="text-sm font-semibold customtext-primary hover:text-primary flex items-center gap-1"
                                         >
                                             <svg
@@ -206,7 +226,10 @@ export default function LoginSimple() {
                                     <div className="text-center mt-4">
                                         <p className="text-sm text-gray-600">
                                             ¿Eres nuevo por aquí?{" "}
-                                            <a href="/crear-cuenta" className="font-medium customtext-primary hover:text-primary">
+                                            <a 
+                                                href={`/crear-cuenta${window.location.search}`} 
+                                                className="font-medium customtext-primary hover:text-primary"
+                                            >
                                                 Crea una cuenta
                                             </a>
                                         </p>
