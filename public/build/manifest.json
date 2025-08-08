@@ -8005,7 +8005,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Product.jsx": {
-    "file": "assets/Product-Cdv3R0OL.js",
+    "file": "assets/Product-DQqcsjXT.js",
     "name": "Product",
     "src": "resources/js/Components/Tailwind/Product.jsx",
     "isDynamicEntry": true,
@@ -8031,7 +8031,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-C9wvEqVx.js",
+    "file": "assets/ProductDetail-Cw4wbcV3.js",
     "name": "ProductDetail",
     "src": "resources/js/Components/Tailwind/ProductDetail.jsx",
     "isDynamicEntry": true,
@@ -8157,7 +8157,7 @@
     ]
   },
   "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx": {
-    "file": "assets/ProductDetailBananaLab-02GTOzPx.js",
+    "file": "assets/ProductDetailBananaLab-CNIfPvPK.js",
     "name": "ProductDetailBananaLab",
     "src": "resources/js/Components/Tailwind/ProductDetails/ProductDetailBananaLab.jsx",
     "isDynamicEntry": true,
@@ -8199,7 +8199,9 @@
       "_index-CmxRu895.js",
       "_navigation-8XRQbJaH.js",
       "_create-element-if-not-defined-ubJ3ncqT.js",
+      "_pagination-BlBBVkNx.js",
       "_grid-BZ4EKnFQ.js",
+      "resources/js/Components/About/Strengths.jsx",
       "_CardProductBananaLab-AJ1xEozu.js",
       "resources/js/Components/Tailwind/Headers/HeaderBananaLab.jsx",
       "_shopping-bag-CoWGrL8C.js",
@@ -8460,7 +8462,7 @@
     ]
   },
   "resources/js/Components/Tailwind/Products/ProductBananaLab.jsx": {
-    "file": "assets/ProductBananaLab-B7mO3f5w.js",
+    "file": "assets/ProductBananaLab-BQdE1WUS.js",
     "name": "ProductBananaLab",
     "src": "resources/js/Components/Tailwind/Products/ProductBananaLab.jsx",
     "isDynamicEntry": true,
@@ -8469,9 +8471,11 @@
       "_index-BH53Isel.js",
       "resources/js/Components/Tailwind/Blogs/BlogCarousel.jsx",
       "_navigation-8XRQbJaH.js",
+      "_pagination-BlBBVkNx.js",
       "_grid-BZ4EKnFQ.js",
       "resources/js/Components/Tailwind/Blogs/Components/BlogCarrusel.jsx",
       "resources/js/Components/Tailwind/Products/ProductMakita.jsx",
+      "resources/js/Components/About/Strengths.jsx",
       "_CardProductBananaLab-AJ1xEozu.js",
       "_adjustTextColor-DJKJvkxA.js",
       "_chevron-left-B2s3ZsB7.js",
@@ -9949,7 +9953,7 @@
     ]
   },
   "resources/js/Pages/Test/ProductDetail.jsx": {
-    "file": "assets/ProductDetail-BCs81gRb.js",
+    "file": "assets/ProductDetail-DS2BwZET.js",
     "name": "ProductDetail",
     "src": "resources/js/Pages/Test/ProductDetail.jsx",
     "isEntry": true,
@@ -9964,6 +9968,7 @@
       "resources/js/Components/Tailwind/Products/ProductMakita.jsx",
       "resources/js/Components/Tailwind/Products/ProductNavigation.jsx",
       "resources/js/Components/Tailwind/Headers/HeaderSearch.jsx",
+      "resources/js/Components/About/Strengths.jsx",
       "resources/js/Components/Tailwind/Headers/HeaderBananaLab.jsx",
       "_index-yBjzXJbu.js",
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js",
@@ -10100,7 +10105,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-CChQmt9W.js",
+    "file": "assets/System-CAR2Y9tn.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
