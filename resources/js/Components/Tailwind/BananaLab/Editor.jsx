@@ -1196,6 +1196,13 @@ export default function EditorLibro() {
                 }
             },
             onDeselected: () => {
+                console.log('🎯 [TOUR-COMPLETED] Tour completado por el usuario');
+
+                // Marcar tour como completado para este usuario específico
+                const userId = projectData?.user_id || 'anonymous';
+                const userTourKey = `bananalab_editor_tour_user_${userId}`;
+                localStorage.setItem('bananalab_editor_tour_completed', 'true');
+                localStorage.setItem(userTourKey, new Date().toISOString());
 
                 // Opcional: mostrar mensaje de bienvenida final
                 toast.success('¡Guía completada! Ya puedes empezar a crear tu diseño.', {
@@ -1205,11 +1212,50 @@ export default function EditorLibro() {
         });
     }, [activeTab, setActiveTab]);
 
-    // Función para iniciar la guía
-    const startTour = useCallback(() => {
+    // 🎯 SISTEMA DE TOUR AUTOMÁTICO PARA USUARIOS NUEVOS
+    const checkAndStartAutoTour = useCallback(() => {
+        // Verificar si el usuario ya ha visto el tour
+        const hasSeenTour = localStorage.getItem('bananalab_editor_tour_completed');
+        const userId = projectData?.user_id || 'anonymous';
+        const userTourKey = `bananalab_editor_tour_user_${userId}`;
+        const hasUserSeenTour = localStorage.getItem(userTourKey);
 
+        // Si es la primera vez (ni global ni por usuario), iniciar tour automáticamente
+        if (!hasSeenTour && !hasUserSeenTour) {
+            console.log('🎯 [AUTO-TOUR] Usuario nuevo detectado, iniciando tour automático');
+
+            // Pequeño delay para asegurar que el DOM esté completamente cargado
+            setTimeout(() => {
+                startTour();
+
+                // Marcar como completado tanto globalmente como por usuario
+                localStorage.setItem('bananalab_editor_tour_completed', 'true');
+                localStorage.setItem(userTourKey, new Date().toISOString());
+            }, 1500); // 1.5 segundos de delay para mejor UX
+        } else {
+            console.log('🎯 [AUTO-TOUR] Usuario experimentado, no se inicia tour automático');
+        }
+    }, [projectData?.user_id]);
+
+    // Función para iniciar la guía manualmente
+    const startTour = useCallback(() => {
+        console.log('🎯 [MANUAL-TOUR] Iniciando tour manual');
         driverObj.drive();
     }, [driverObj]);
+
+    // 🔧 FUNCIÓN DE UTILIDAD: Resetear estado del tour (para testing/admin)
+    const resetTourState = useCallback(() => {
+        const userId = projectData?.user_id || 'anonymous';
+        const userTourKey = `bananalab_editor_tour_user_${userId}`;
+
+        localStorage.removeItem('bananalab_editor_tour_completed');
+        localStorage.removeItem(userTourKey);
+
+        console.log('🔧 [TOUR-RESET] Estado del tour reseteado para usuario:', userId);
+        toast.info('Estado del tour reseteado. Recarga la página para ver el tour automático.', {
+            duration: 4000
+        });
+    }, [projectData?.user_id]);
 
     // 🖼️ Función para cargar thumbnails guardados desde la base de datos (OPCIONAL)
     const loadStoredThumbnails = useCallback(async () => {
@@ -4482,6 +4528,20 @@ export default function EditorLibro() {
         }
     }, [projectData?.id, isLoading, pages.length, checkAndLoadSavedProgress, hasInitializedProgress]);
 
+    // 🎯 EFECTO PARA TOUR AUTOMÁTICO: Ejecutar cuando el editor esté completamente cargado
+    useEffect(() => {
+        // Verificar que todo esté listo para el tour automático
+        const isEditorReady = projectData?.id &&
+            !isLoading &&
+            pages.length > 0 &&
+            hasInitializedProgress;
+
+        if (isEditorReady) {
+            console.log('🎯 [AUTO-TOUR] Editor completamente cargado, verificando si mostrar tour');
+            checkAndStartAutoTour();
+        }
+    }, [projectData?.id, isLoading, pages.length, hasInitializedProgress, checkAndStartAutoTour]);
+
     // Cargar thumbnails existentes cuando las páginas se cargan
     useEffect(() => {
         // Limpiar timeout anterior si existe
@@ -6961,6 +7021,23 @@ export default function EditorLibro() {
     window.generateHighQualityThumbnail = generateHighQualityThumbnail;
     window.captureCurrentWorkspace = captureCurrentWorkspace;
 
+    // 🎯 FUNCIONES DE TOUR EXPUESTAS GLOBALMENTE
+    window.startEditorTour = startTour;
+    window.resetEditorTourState = resetTourState;
+    window.checkTourStatus = () => {
+        const hasSeenTour = localStorage.getItem('bananalab_editor_tour_completed');
+        const userId = projectData?.user_id || 'anonymous';
+        const userTourKey = `bananalab_editor_tour_user_${userId}`;
+        const hasUserSeenTour = localStorage.getItem(userTourKey);
+
+        return {
+            hasSeenTourGlobally: !!hasSeenTour,
+            hasUserSeenTour: !!hasUserSeenTour,
+            userId: userId,
+            shouldShowAutoTour: !hasSeenTour && !hasUserSeenTour
+        };
+    };
+
     // 🚨 SOLUCIÓN DE EMERGENCIA: Función global para regenerar la miniatura actual con un clic
     window.regenerateCurrentThumbnailNow = () => {
 
@@ -7675,14 +7752,35 @@ export default function EditorLibro() {
                                     {albumPreparationModal.isOpen ? `Creando ${contentType.name.toLowerCase()}...` : contentType.description}
                                 </Button>
 
-                                {/* Botón de Ayuda/Guía */}
+                                {/* Botón de Ayuda/Guía con indicador para usuarios nuevos */}
                                 <button
-                                    onClick={startTour}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-[#040404] border border-gray-200"
-                                    title="Inicia la guía paso a paso"
+                                    onClick={() => {
+                                        console.log('🎯 [MANUAL-TOUR] Usuario solicitó tour manual');
+                                        startTour();
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-[#040404] border border-gray-200 relative"
+                                    title="Inicia la guía paso a paso del editor"
                                 >
                                     <HelpCircle className="h-4 w-4" />
                                     <span className="text-sm font-medium">Ayuda</span>
+
+                                    {/* Indicador pulsante para usuarios nuevos */}
+                                    {(() => {
+                                        const hasSeenTour = localStorage.getItem('bananalab_editor_tour_completed');
+                                        const userId = projectData?.user_id || 'anonymous';
+                                        const userTourKey = `bananalab_editor_tour_user_${userId}`;
+                                        const hasUserSeenTour = localStorage.getItem(userTourKey);
+
+                                        // Solo mostrar indicador si el usuario NO ha visto el tour
+                                        if (!hasSeenTour && !hasUserSeenTour) {
+                                            return (
+                                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse">
+                                                    <div className="absolute inset-0 w-3 h-3 bg-red-500 rounded-full animate-ping opacity-75"></div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </button>
 
 
