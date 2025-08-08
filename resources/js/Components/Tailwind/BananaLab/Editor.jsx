@@ -415,6 +415,9 @@ import SaveIndicator from "./components/UI/SaveIndicator";
 import ProgressRecoveryModal from "./components/UI/ProgressRecoveryModal";
 import domtoimage from 'dom-to-image-more';
 
+// 🚀 NUEVO: Hook para convertir data URLs a Blob URLs automáticamente
+import { useBlobThumbnails } from "./hooks/useBlobThumbnails";
+
 // 🔧 FUNCIÓN MEJORADA PARA CALCULAR DIMENSIONES DE CELDAS EN LAYOUTS
 const calculateCellDimensions = (layout, cellIndex, workspaceDimensions) => {
     if (!layout || !layout.template) {
@@ -508,6 +511,13 @@ const ThumbnailImage = React.memo(({ pageId, thumbnail, altText, type }) => {
                         imageRendering: 'optimizeQuality'
                     }}
                 />
+
+                {/* Indicador de optimización Blob URL (solo en desarrollo) */}
+                {process.env.NODE_ENV === 'development' && thumbnail && (
+                    <div className="absolute bottom-1 right-1 text-xs bg-black/70 text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        {thumbnail.startsWith('blob:') ? '🔗 BLOB' : '📄 DATA'}
+                    </div>
+                )}
             </div>
         );
     }
@@ -787,6 +797,49 @@ export default function EditorLibro() {
     const [previewMode, setPreviewMode] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [pageThumbnails, setPageThumbnails] = useState({});
+
+    // 🚀 OPTIMIZACIÓN: Convertir data URLs a Blob URLs automáticamente
+    const {
+        thumbnails: optimizedThumbnails,
+        isConverting: isConvertingThumbnails,
+        getStats: getThumbnailStats,
+        cleanup: cleanupThumbnail,
+        cleanupAll: cleanupAllThumbnails
+    } = useBlobThumbnails(pageThumbnails);
+
+    // 🔍 DEBUG: Exponer funciones globalmente para verificar el sistema
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.checkBlobOptimization = () => {
+                const stats = getThumbnailStats();
+                console.log('📊 [BLOB-OPTIMIZATION] Estadísticas del sistema:');
+                console.log(`📄 Data URLs originales: ${stats.dataCount}`);
+                console.log(`🔗 Blob URLs optimizados: ${stats.blobCount}`);
+                console.log(`📈 Tasa de conversión: ${stats.conversionRate}%`);
+                console.log(`💾 Memoria liberada: ~${stats.totalSizeMB} MB`);
+                console.log(`⚡ Convirtiendo: ${isConvertingThumbnails ? 'Sí' : 'No'}`);
+
+                // Mostrar comparación
+                console.log('\n🔍 [COMPARISON] Comparación de thumbnails:');
+                Object.entries(pageThumbnails).forEach(([pageId, originalUrl]) => {
+                    const optimizedUrl = optimizedThumbnails[pageId];
+                    if (originalUrl && optimizedUrl) {
+                        const isOptimized = optimizedUrl.startsWith('blob:');
+                        console.log(`📄 ${pageId}: ${isOptimized ? '✅ OPTIMIZADO' : '❌ SIN OPTIMIZAR'}`);
+                    }
+                });
+
+                return stats;
+            };
+
+            window.forceBlobConversion = () => {
+                console.log('🔄 [FORCE-CONVERSION] Forzando conversión de todos los thumbnails...');
+                // El hook se encarga automáticamente cuando cambian los pageThumbnails
+                setPageThumbnails(prev => ({ ...prev })); // Trigger re-conversion
+            };
+        }
+    }, [pageThumbnails, optimizedThumbnails, getThumbnailStats, isConvertingThumbnails]);
+
     const [isPDFGenerating, setIsPDFGenerating] = useState(false);
     const [projectImages, setProjectImages] = useState([]); // Nueva: imágenes del proyecto
     const [projectImagesLoading, setProjectImagesLoading] = useState(false);
@@ -1400,7 +1453,7 @@ export default function EditorLibro() {
             if (isComplexLayout) {
                 console.log('🏗️ [LAYOUT COMPLEJO] Usando generador especializado para layout:', currentLayout.id);
                 try {
-                   // thumbnail = await generateThumbnailForComplexLayout(currentPageData, workspaceDimensions, currentLayout);
+                    // thumbnail = await generateThumbnailForComplexLayout(currentPageData, workspaceDimensions, currentLayout);
                     console.log('✅ [LAYOUT COMPLEJO] Thumbnail generado exitosamente');
                 } catch (error) {
                     console.error('❌ [LAYOUT COMPLEJO] Error, usando fallback:', error);
@@ -8324,7 +8377,7 @@ export default function EditorLibro() {
                                                                     <div className="relative bg-purple-50 overflow-hidden border aspect-[4/3] rounded-lg">
                                                                         <ThumbnailImage
                                                                             pageId={page.id}
-                                                                            thumbnail={pageThumbnails[page.id]}
+                                                                            thumbnail={optimizedThumbnails[page.id]}
                                                                             altText="Cover"
                                                                             type="cover"
                                                                         />
@@ -8365,7 +8418,7 @@ export default function EditorLibro() {
                                                                     <div className="relative overflow-hidden border aspect-[4/3] rounded-lg">
                                                                         <ThumbnailImage
                                                                             pageId={page.id}
-                                                                            thumbnail={pageThumbnails[page.id]}
+                                                                            thumbnail={optimizedThumbnails[page.id]}
                                                                             altText={`Page ${page.pageNumber}`}
                                                                             type="content"
                                                                         />
@@ -8408,7 +8461,7 @@ export default function EditorLibro() {
                                                                     <div className="relative overflow-hidden border mb-1 aspect-[4/3] rounded-lg">
                                                                         <ThumbnailImage
                                                                             pageId={page.id}
-                                                                            thumbnail={pageThumbnails[page.id]}
+                                                                            thumbnail={optimizedThumbnails[page.id]}
                                                                             altText="Back Cover"
                                                                             type="final"
                                                                         />

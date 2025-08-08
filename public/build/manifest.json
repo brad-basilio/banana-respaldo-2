@@ -747,22 +747,22 @@
       "_index-BH53Isel.js"
     ]
   },
+  "_dataUrlToBlobUrl-Dt_VdBHQ.js": {
+    "file": "assets/dataUrlToBlobUrl-Dt_VdBHQ.js",
+    "name": "dataUrlToBlobUrl",
+    "css": [
+      "dataUrlToBlobUrl.css"
+    ]
+  },
+  "_dataUrlToBlobUrl.css": {
+    "file": "dataUrlToBlobUrl.css",
+    "src": "_dataUrlToBlobUrl.css"
+  },
   "_defineProperty-DRmM3rRU.js": {
     "file": "assets/defineProperty-DRmM3rRU.js",
     "name": "defineProperty",
     "imports": [
       "_typeof-QjJsDpFa.js"
-    ]
-  },
-  "_dom-to-image-more.css": {
-    "file": "dom-to-image-more.css",
-    "src": "_dom-to-image-more.css"
-  },
-  "_dom-to-image-more.min-BtE-uU7c.js": {
-    "file": "assets/dom-to-image-more.min-BtE-uU7c.js",
-    "name": "dom-to-image-more.min",
-    "css": [
-      "dom-to-image-more.css"
     ]
   },
   "_door-closed-Z4GbcMb-.js": {
@@ -4144,7 +4144,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-D3KGcO4K.js",
+    "file": "assets/BananaLab-C_iuWnPT.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4203,7 +4203,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-BgIhCr-b.js",
+    "file": "assets/Editor-B5AMkWWl.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4213,7 +4213,7 @@
       "_index-BH53Isel.js",
       "_FilterControls-DiQ2YtQP.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
-      "_dom-to-image-more.min-BtE-uU7c.js",
+      "_dataUrlToBlobUrl-Dt_VdBHQ.js",
       "_layers-6oegOx-p.js",
       "_chevron-down-DS-mdh9v.js",
       "_chevron-right-Ckt5D2ka.js",
@@ -9889,7 +9889,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-DOeiYGgr.js",
+    "file": "assets/Editor-BupEMw35.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9920,7 +9920,7 @@
       "_chevron-up-D78jyEhP.js",
       "_chevron-down-DS-mdh9v.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
-      "_dom-to-image-more.min-BtE-uU7c.js",
+      "_dataUrlToBlobUrl-Dt_VdBHQ.js",
       "_layers-6oegOx-p.js",
       "_chevron-right-Ckt5D2ka.js",
       "_eye-CKCH9ORv.js",
@@ -10100,7 +10100,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-4sJAMuOi.js",
+    "file": "assets/System-DLO5wOPm.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
