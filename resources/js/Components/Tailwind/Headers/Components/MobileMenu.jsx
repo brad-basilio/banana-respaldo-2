@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Search, X, ChevronRight, ChevronLeft, Home, ShoppingCart, User, Menu } from "lucide-react";
 import MenuSimple from "../../Menu/MenuSimple";
 
-export default function MobileMenu({ search, setSearch, pages, items, onClose }) {
-    const [menuLevel, setMenuLevel] = useState("main");
+export default function MobileMenu({ search, setSearch, pages, items, onClose, startFromCategories = false }) {
+    const [menuLevel, setMenuLevel] = useState(startFromCategories ? "categories" : "main");
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedSubcategory, setSelectedSubcategory] = useState(null);
     const [previousMenus, setPreviousMenus] = useState([]);
@@ -47,9 +47,16 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
     };
 
     const handleCategoryClick = (category) => {
-        setSelectedSubcategory(category.name);
-        setPreviousMenus([...previousMenus, { level: menuLevel, name: "Categorías" }]);
-        navigateTo("subcategories", "right", category.name);
+        // Verificar si la categoría tiene subcategorías
+        if (category.subcategories && category.subcategories.length > 0) {
+            // Si tiene subcategorías, navegar al menú de subcategorías
+            setSelectedSubcategory(category.name);
+            setPreviousMenus([...previousMenus, { level: menuLevel, name: "Categorías" }]);
+            navigateTo("subcategories", "right", category.name);
+        } else {
+            // Si no tiene subcategorías, ir directamente al catálogo con la categoría
+            window.location.href = `/catalogo?category=${category.slug}`;
+        }
     };
 
     const handleBackClick = () => {
@@ -60,7 +67,7 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
         } else {
             if (menuLevel === "subcategories") {
                 navigateTo("categories", "left");
-            } else if (menuLevel === "categories") {
+            } else if (menuLevel === "categories" && !startFromCategories) {
                 navigateTo("main", "left");
             }
         }
@@ -74,8 +81,12 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
 
     // Determina el título según el nivel
     const getMenuTitle = () => {
-         return "Menú principal";
-       
+        if (menuLevel === "categories") {
+            return "Categorías";
+        } else if (menuLevel === "subcategories") {
+            return selectedCategory || "Subcategorías";
+        }
+        return "Menú principal";
     };
 
     const renderMenuItems = () => {
@@ -94,21 +105,23 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                         <ChevronRight className="h-5 w-5 customtext-neutral-light" />
                     </button>
                     
-                    {/* Páginas del menú */}
-                    <div className="space-y-2">
-                        {pages.map(
-                            (page, index) =>
-                                page.menuable && (
-                                    <a
-                                        key={index}
-                                        href={page.path}
-                                        className="p-4 py-2 flex justify-between items-center w-full hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
-                                    >
-                                        <span className="font-medium">{page.name}</span>
-                                    </a>
-                                )
-                        )}
-                    </div>
+                    {/* Páginas del menú - solo mostrar si hay páginas */}
+                    {pages && pages.length > 0 && (
+                        <div className="space-y-2">
+                            {pages.map(
+                                (page, index) =>
+                                    page.menuable && (
+                                        <a
+                                            key={index}
+                                            href={page.path}
+                                            className="p-4 py-2 flex justify-between items-center w-full hover:bg-gray-50 active:bg-primary transition-all  rounded-xl"
+                                        >
+                                            <span className="font-medium">{page.name}</span>
+                                        </a>
+                                    )
+                            )}
+                        </div>
+                    )}
                 </div>
             );
         } else if (menuLevel === "categories") {
@@ -120,16 +133,27 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
             return (
                 <div className={animationDirection === "right" ? "animate-fade-left animate-duration-300" : "animate-fade-right animate-duration-300"}>
                     <div className="space-y-2">
-                        {sortedCategories.map((category) => (
-                            <div
-                                key={category.id}
-                                className="px-4 py-2  rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 active:bg-primary transition-all"
-                                onClick={() => handleCategoryClick(category)}
-                            >
-                                <span className="font-medium">{category.name}</span>
-                                <ChevronRight className="h-5 w-5 customtext-neutral-light" />
-                            </div>
-                        ))}
+                        {sortedCategories.map((category) => {
+                            const hasSubcategories = category.subcategories && category.subcategories.length > 0;
+                            
+                            return (
+                                <div
+                                    key={category.id}
+                                    className="px-4 py-2 rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-all"
+                                    onClick={() => handleCategoryClick(category)}
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">{category.name}</span>
+                                       
+                                    </div>
+                                    {hasSubcategories ? (
+                                        <ChevronRight className="h-5 w-5 customtext-neutral-light" />
+                                    ) : (
+                                      <></>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             );
@@ -244,17 +268,17 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose })
                         </div>
 
                         {/* Botón de retroceso */}
-                        {menuLevel !== "main" && (
+                        {(menuLevel !== "main" && !startFromCategories) || (startFromCategories && menuLevel === "subcategories") ? (
                             <button
                                 onClick={handleBackClick}
                                 className="flex items-center customtext-primary mb-4 font-medium"
                             >
                                 <ChevronLeft className="h-5 w-5 mr-1" />
                                 <span>
-                                    {menuLevel === "categories" ? "Categorías" : selectedCategory}
+                                    {menuLevel === "categories" ? "Menú principal" : "Categorías"}
                                 </span>
                             </button>
-                        )}
+                        ) : null}
 
                         {/* Lista de ítems */}
                         <div className="pb-16">
