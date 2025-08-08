@@ -22,7 +22,7 @@ const BannerBananaLab = ({ data }) => {
                     </div>
 
                     {/* Right side - Content */}
-                    <div className="md:order-1 md:w-5/12 xl:w-7/12 text-white z-10 ">
+                    <div className="md:order-1 md:w-5/12 xl:w-7/12 text-white z-20 ">
                         <div className="max-w-sm 2xl:max-w-lg">
                             <h1 className="text-[32px] leading-[1.2]  font-semibold mb-2 lg:text-4xl ">
                                 {data?.name}
