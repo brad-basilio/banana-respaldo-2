@@ -173,7 +173,7 @@ const FloatingSearchButton = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[65] flex items-start justify-center"
+                        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[999] flex items-start justify-center"
                         onClick={() => setIsSearchOpen(false)}
                     >
                         <motion.div
