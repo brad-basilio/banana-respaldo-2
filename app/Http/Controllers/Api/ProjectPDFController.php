@@ -135,16 +135,12 @@ class ProjectPDFController extends Controller
                 return response()->json(['error' => 'No se encontraron thumbnails para generar el PDF'], 400);
             }
 
-            // Configurar DOMPDF
-            $options = new Options();
-            $options->set('isHtml5ParserEnabled', true);
-            $options->set('isRemoteEnabled', true);
-            $options->set('defaultFont', 'sans-serif');
-            $options->set('dpi', $quality === 'high' ? 300 : 150);
-            $options->set('fontHeightRatio', 1.1);
-            $options->set('isPhpEnabled', true);
-
-            $dompdf = new Dompdf($options);
+            // 🚀 OPTIMIZACIÓN: Usar TCPDF directamente (sin HTML, sin base64)
+            Log::info("🚀 [PDF-OPTIMIZED] Usando TCPDF directo para máximo rendimiento");
+            
+            // Configurar límites para VPS
+            ini_set('memory_limit', '256M');
+            set_time_limit(30);
 
             // Calcular dimensiones del PDF basado en las dimensiones disponibles
             $pageWidth = $workspaceDimensions['width'] ?? 800;
@@ -215,34 +211,60 @@ class ProjectPDFController extends Controller
                 Log::info("📐 [PDF-GENERATOR] Usando dimensiones personalizadas: {$pageWidthMm}mm x {$pageHeightMm}mm");
             }
 
-            // Generar HTML para el PDF
-            $html = $this->generatePDFHtml($thumbnailPaths, $pageWidthMm, $pageHeightMm, $project);
+            // 🚀 OPTIMIZACIÓN CRÍTICA: Usar TCPDF directamente (sin HTML, sin base64)
+            require_once(base_path('vendor/tecnickcom/tcpdf/tcpdf.php'));
+            
+            // Determinar orientación
+            $orientation = $pageWidthMm > $pageHeightMm ? 'L' : 'P';
+            
+            Log::info("📐 [PDF-OPTIMIZED] Dimensiones: {$pageWidthMm}mm x {$pageHeightMm}mm, orientación: {$orientation}");
 
-            $dompdf->loadHtml($html);
-            
-            // Determinar orientación basándonos en las dimensiones reales
-            $orientation = $pageWidthMm > $pageHeightMm ? 'landscape' : 'portrait';
-            
-            // Verificar si se debe forzar el uso de landscape para A4 horizontal
-            if ($originalWidthMm && $originalHeightMm) {
-                // Si las dimensiones originales son 297x210, estamos ante un A4 horizontal
-                if (abs($originalWidthMm - 297) < 5 && abs($originalHeightMm - 210) < 5) {
-                    $orientation = 'landscape';
-                    Log::info("📏 [PDF-GENERATOR] Forzando orientación landscape para A4 horizontal (297x210mm)");
+            // Crear PDF con TCPDF (mucho más eficiente que DOMPDF)
+            $pdf = new \TCPDF($orientation, 'mm', [$pageWidthMm, $pageHeightMm], true, 'UTF-8', false);
+
+            // Configuración mínima para máximo rendimiento
+            $pdf->SetCreator('BananaLab');
+            $pdf->SetTitle('Álbum - ' . ($project->name ?? 'Proyecto'));
+            $pdf->SetMargins(0, 0, 0);
+            $pdf->SetAutoPageBreak(false, 0);
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+
+            // 🚀 PROCESAR IMÁGENES DIRECTAMENTE (la clave del rendimiento)
+            foreach ($thumbnailPaths as $pageIndex => $imagePath) {
+                try {
+                    Log::info("🖼️ [PDF-OPTIMIZED] Procesando imagen {$pageIndex}: {$imagePath}");
+
+                    // Agregar página
+                    $pdf->AddPage();
+
+                    // 🚀 INSERTAR IMAGEN DIRECTAMENTE (sin base64, sin HTML)
+                    $pdf->Image(
+                        $imagePath,           // Ruta directa al archivo (¡sin base64!)
+                        0,                    // X position
+                        0,                    // Y position  
+                        $pageWidthMm,         // Width
+                        $pageHeightMm,        // Height
+                        '',                   // Type (auto-detect)
+                        '',                   // Link
+                        '',                   // Align
+                        false,                // Resize
+                        300,                  // DPI
+                        '',                   // Palign
+                        false,                // Ismask
+                        false,                // Imgmask
+                        0,                    // Border
+                        false,                // Fitbox
+                        false,                // Hidden
+                        true                  // Fitonpage
+                    );
+
+                    Log::info("✅ [PDF-OPTIMIZED] Imagen {$pageIndex} insertada directamente");
+
+                } catch (\Exception $e) {
+                    Log::error("❌ [PDF-OPTIMIZED] Error procesando imagen {$pageIndex}: " . $e->getMessage());
                 }
             }
-            
-            // Convertir mm a puntos (1 pt = 0.352778 mm, así que multiplicamos por 2.83465)
-            $widthPts = $pageWidthMm * 2.83465;
-            $heightPts = $pageHeightMm * 2.83465;
-            
-            Log::info("📐 [PDF-GENERATOR] Configurando PDF con dimensiones: {$widthPts}pt x {$heightPts}pt, orientación: {$orientation}");
-            
-            // Establecer las dimensiones exactas y orientación
-            $dompdf->setPaper([0, 0, $widthPts, $heightPts], $orientation);
-
-            // Renderizar el PDF
-            $dompdf->render();
 
             // Crear directorio para PDFs solo en storage/app/images
             $pdfDir = "images/pdf/{$projectId}";
