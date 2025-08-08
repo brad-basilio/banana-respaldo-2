@@ -867,50 +867,7 @@ const HeaderBananaLab = ({
                 </div>
             </div>
 
-            {/* NUEVA SECCIÓN MÓVIL DE BÚSQUEDA */}
-            {!shouldHideMobileSearch() && (
-                <div className="block md:hidden mb-4 space-y-4 px-primary">
-                    <div className="w-full relative">
-                        <form onSubmit={handleMobileSearch} role="search" className="relative w-full">
-                            <input
-                                type="search"
-                                name="search"
-                                placeholder="Buscar..."
-                                value={search}
-                                onChange={(e) => handleSearchChange(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                onFocus={() => {
-                                    if (search.trim().length >= 2) {
-                                        fetchSearchSuggestions(search);
-                                    }
-                                }}
-                                className="w-full pr-14 py-3 font-normal pl-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent focus:outline-none bg-gray-50"
-                                enterKeyHint="search"
-                                inputMode="search"
-                                autoComplete="off"
-                                role="searchbox"
-                                aria-label="Buscar productos"
-                            />
-                            <button
-                                type="submit"
-                                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                                aria-label="Buscar"
-                            >
-                                <Search size={18} />
-                            </button>
-                        </form>
 
-                        <AnimatePresence>
-                            <SearchSuggestions
-                                suggestions={searchSuggestions}
-                                isLoading={isLoadingSuggestions}
-                                onSelect={selectSuggestion}
-                                selectedIndex={selectedSuggestionIndex}
-                            />
-                        </AnimatePresence>
-                    </div>
-                </div>
-            )}
 
             {/* Mobile menu */}
             <AnimatePresence>

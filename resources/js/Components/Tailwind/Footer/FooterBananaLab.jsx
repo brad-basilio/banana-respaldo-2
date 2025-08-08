@@ -8,6 +8,7 @@ import Global from "../../../Utils/Global";
 import HtmlContent from "../../../Utils/HtmlContent";
 import { CheckCircleIcon, X } from "lucide-react";
 import { toast } from "sonner";
+import FloatingSearchButton from "../Headers/Components/FloatingSearchButton";
 
 const FooterBananaLab = ({  pages, generals, contacts }) => {
     const subscriptionsRest = new SubscriptionsRest();
@@ -16,6 +17,14 @@ const FooterBananaLab = ({  pages, generals, contacts }) => {
     const [modalOpen, setModalOpen] = useState(null);
     const [saving, setSaving] = useState();
     const [socials, setSocials] = useState([]);
+
+    // Estados para búsqueda flotante
+    const [search, setSearch] = useState("");
+    const [searchSuggestions, setSearchSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+    const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+    const searchTimeoutRef = useRef(null);
 
     // useEffect para cargar socials activos
     useEffect(() => {
@@ -75,7 +84,153 @@ const FooterBananaLab = ({  pages, generals, contacts }) => {
 
         emailRef.current.value = null;
     };
+
+    // Función para verificar si estamos en rutas donde no queremos mostrar la búsqueda móvil
+    const shouldHideMobileSearch = () => {
+        try {
+            const currentPath = window.location.pathname || '';
+            const hiddenRoutes = ['/cart', '/checkout'];
+            return hiddenRoutes.some(route => currentPath.includes(route));
+        } catch (error) {
+            console.warn('Error checking path:', error);
+            return false;
+        }
+    };
+
+    // Función para obtener sugerencias de búsqueda
+    const fetchSearchSuggestions = async (query) => {
+        if (!query.trim() || query.length < 2) {
+            setSearchSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        setIsLoadingSuggestions(true);
+
+        try {
+            const response = await fetch('/api/items/paginate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    take: 8,
+                    skip: 0,
+                    filter: [
+                        ['name', 'contains', query],
+                        'or',
+                        ['summary', 'contains', query],
+                        'or',
+                        ['description', 'contains', query]
+                    ],
+                    sort: [{ selector: 'name', desc: false }],
+                    requireTotalCount: false,
+                    with: 'category,brand'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Error en la búsqueda');
+            }
+
+            const data = await response.json();
+
+            if (data.status === 200 && Array.isArray(data.data)) {
+                setSearchSuggestions(data.data);
+                setShowSuggestions(data.data.length > 0);
+            } else {
+                setSearchSuggestions([]);
+                setShowSuggestions(false);
+            }
+        } catch (error) {
+            console.error('Error fetching search suggestions:', error);
+            setSearchSuggestions([]);
+            setShowSuggestions(false);
+        } finally {
+            setIsLoadingSuggestions(false);
+        }
+    };
+
+    // Función para manejar cambios en el input de búsqueda
+    const handleSearchChange = (value) => {
+        setSearch(value);
+        setSelectedSuggestionIndex(-1);
+
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        searchTimeoutRef.current = setTimeout(() => {
+            fetchSearchSuggestions(value);
+        }, 300);
+    };
+
+    // Función para limpiar sugerencias
+    const clearSuggestions = () => {
+        setShowSuggestions(false);
+        setSearchSuggestions([]);
+        setSelectedSuggestionIndex(-1);
+    };
+
+    // Función para seleccionar una sugerencia
+    const selectSuggestion = (suggestion) => {
+        if (!suggestion) return;
+
+        setShowSuggestions(false);
+
+        const url = suggestion.slug
+            ? `/product/${suggestion.slug}`
+            : `/catalogo?search=${encodeURIComponent(suggestion.name)}`;
+
+        window.location.href = url;
+    };
+
+    // Handler de teclado
+    const handleKeyDown = (e) => {
+        if (!showSuggestions || searchSuggestions.length === 0) return;
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => {
+                    const next = prev < searchSuggestions.length - 1 ? prev + 1 : prev;
+                    return next;
+                });
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => {
+                    const next = prev > 0 ? prev - 1 : 0;
+                    return next;
+                });
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < searchSuggestions.length) {
+                    selectSuggestion(searchSuggestions[selectedSuggestionIndex]);
+                } else if (search.trim()) {
+                    const trimmedSearch = search.trim();
+                    window.location.href = `/catalogo?search=${encodeURIComponent(trimmedSearch)}`;
+                }
+                break;
+            case 'Escape':
+                setShowSuggestions(false);
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Cleanup timeout en unmount
+    useEffect(() => {
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, []);
     return (
+        <>
         <footer className="bg-accent text-white py-12 font-paragraph  text-sm px-[5%]">
             <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-5">
                 {/* Logo Column */}
@@ -408,6 +563,7 @@ const FooterBananaLab = ({  pages, generals, contacts }) => {
                         </div>
                     </div>
             </div>
+        
 
             {Object.keys(policyItems).map((key, index) => {
                 const title = policyItems[key];
@@ -435,6 +591,25 @@ const FooterBananaLab = ({  pages, generals, contacts }) => {
                 );
             })}
         </footer>
+            <FloatingSearchButton
+                search={search}
+                setSearch={setSearch}
+                searchSuggestions={searchSuggestions}
+                setSearchSuggestions={setSearchSuggestions}
+                showSuggestions={showSuggestions}
+                setShowSuggestions={setShowSuggestions}
+                isLoadingSuggestions={isLoadingSuggestions}
+                setIsLoadingSuggestions={setIsLoadingSuggestions}
+                selectedSuggestionIndex={selectedSuggestionIndex}
+                setSelectedSuggestionIndex={setSelectedSuggestionIndex}
+                fetchSearchSuggestions={fetchSearchSuggestions}
+                handleSearchChange={handleSearchChange}
+                selectSuggestion={selectSuggestion}
+                clearSuggestions={clearSuggestions}
+                handleKeyDown={handleKeyDown}
+                shouldHideMobileSearch={shouldHideMobileSearch}
+            />
+            </>
     );
 };
 export default FooterBananaLab;
