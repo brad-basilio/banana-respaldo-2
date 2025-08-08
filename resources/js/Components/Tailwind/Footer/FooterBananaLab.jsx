@@ -229,6 +229,17 @@ const FooterBananaLab = ({  pages, generals, contacts }) => {
             }
         };
     }, []);
+
+    const phoneWhatsappObj = generals.find(
+        (item) => item.correlative === "phone_whatsapp"
+    );
+    const messageWhatsappObj = generals.find(
+        (item) => item.correlative === "message_whatsapp"
+    );
+
+    const phoneWhatsapp = phoneWhatsappObj?.description ?? null;
+    const messageWhatsapp = messageWhatsappObj?.description ?? null;
+    
     return (
         <>
         <footer className="bg-accent text-white py-12 font-paragraph  text-sm px-[5%]">
@@ -609,6 +620,27 @@ const FooterBananaLab = ({  pages, generals, contacts }) => {
                 handleKeyDown={handleKeyDown}
                 shouldHideMobileSearch={shouldHideMobileSearch}
             />
+
+            
+            {/* WhatsApp flotante */}
+            {phoneWhatsapp && messageWhatsapp && (
+                <div className="flex justify-end w-full mx-auto z-[100] relative">
+                    <div className="block fixed bottom-6 sm:bottom-[2rem] lg:bottom-[4rem] z-20 cursor-pointer">
+                        <a
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            id="whatsapp-toggle"
+                            href={`https://api.whatsapp.com/send?phone=${encodeURIComponent(phoneWhatsapp)}&text=${encodeURIComponent(messageWhatsapp)}`}
+                        >
+                            <img
+                                src="/assets/img/whatsapp.svg"
+                                alt="whatsapp"
+                                className="mr-3 w-12 h-12 md:w-[60px] md:h-[60px] animate-bounce duration-300"
+                            />
+                        </a>
+                    </div>
+                </div>
+            )}
             </>
     );
 };

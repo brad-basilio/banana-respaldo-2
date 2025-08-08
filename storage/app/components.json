@@ -2257,6 +2257,24 @@
                 ]
             },
             {
+                "id": "FooterBananaLab",
+                "name": "FooterBananaLab",
+                "image": "footer-simple.png",
+                "using": {
+                    "model": "Social",
+                    "limit": 10
+                },
+                "generals": [
+                    "terms_conditions",
+                    "privacy_policy",
+                    "delivery_policy",
+                    "saleback_policy",
+                    "address",
+                    "support_phone",
+                    "support_email"
+                ]
+            },
+            {
                 "id": "FooterMakita",
                 "name": "FooterMakita",
                 "image": "footer-simple.png",
