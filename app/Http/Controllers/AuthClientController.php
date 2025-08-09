@@ -143,12 +143,13 @@ class AuthClientController extends BasicController
                 : null;
 
             // Enviar correo de bienvenida con el cupón
-            $notificationService = new EmailNotificationService();
+            //EMAIL
+            /*$notificationService = new EmailNotificationService();
             $notificationService->sendToUser(
                 $user, 
                 new VerifyAccountNotification(url('/'), $cuponDescuento, $mensajeCupon)
             );
-
+*/
             // Asignar rol
             $role = Role::firstOrCreate(['name' => 'Customer']);
             $user->assignRole($role);

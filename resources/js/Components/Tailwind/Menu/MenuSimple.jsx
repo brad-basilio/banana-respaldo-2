@@ -95,7 +95,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
             className={
                 `${
                 showOnlyTagsMobile
-                        ? " block w-full relative md:block bg-secondary font-paragraph text-sm"
+                        ? " block w-full relative md:block bg-white font-paragraph text-sm"
                         : " relative w-full md:block bg-secondary font-paragraph text-sm"
                 }`
             }
@@ -105,7 +105,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                 <ul className="flex items-center gap-4 lg:gap-6 text-sm justify-between">
                     {/* Mostrar solo tags en mobile si corresponde */}
                     {showOnlyTagsMobile ? (
-                        <div className="w-full py-3 px-4">
+                        <div className="w-full py-3 ">
                             {/* Carrusel de tags para mobile */}
                             <div className="relative">
                                 <div className="grid grid-cols-2 gap-3 h-10">
@@ -146,12 +146,7 @@ const MenuSimple = ({ pages = [], items, data ,visible=false}) => {
                                         );
                                     })}
                                     
-                                    {/* Rellenar espacios vacíos si hay menos de 2 tags */}
-                                    {tags.slice(currentTagIndex, currentTagIndex + 2).length < 2 && (
-                                        <div className="rounded-2xl bg-white/10 flex items-center justify-center">
-                                            <div className="text-white/50 text-xs">Más próximamente</div>
-                                        </div>
-                                    )}
+                                   
                                 </div>
                                 
                                 {/* Indicadores de posición */}

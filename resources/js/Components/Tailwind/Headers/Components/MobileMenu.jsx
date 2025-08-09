@@ -218,77 +218,66 @@ export default function MobileMenu({ search, setSearch, pages, items, onClose, s
     }, [search, onClose, setSearch]);
 
     return (
-        <div className="fixed inset-0 z-[99999] flex flex-col touch-none overscroll-none">
-            {/* Overlay oscuro */}
-            <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
-            
-            {/* Contenedor del menú */}
-            <div className="relative w-full md:w-[400px] md:mx-auto flex flex-col h-[100dvh]  ">
-                {/* Panel del menú - fijo en la parte inferior */}
-                <div className="mt-auto bg-white  shadow-xl flex flex-col max-h-[80vh] rounded-t-2xl overflow-hidden">
-                    {/* Header del menú */}
-                    <div className="p-4 bg-white flex justify-between items-center border-b border-gray-200 sticky top-0 z-[9999]">
-                        <h1 className="text-lg font-bold">{getMenuTitle()}</h1>
-                        <button 
-                            className="p-2 rounded-full hover:bg-gray-100"
-                            onClick={onClose}
+        <div className="flex flex-col h-full bg-white">
+            {/* Header con diseño creativo */}
+            <div className="px-6 pt-8 pb-4">
+                <div className="relative">
+                    <form onSubmit={handleSearchSubmit} role="search" className="relative w-full">
+                        <input
+                            ref={searchInputRef}
+                            type="search"
+                            name="search"
+                            placeholder="¿Qué estás buscando hoy?"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="w-full pr-12 py-4 pl-5 bg-gray-50/80 shadow-sm border-0 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:outline-none text-base"
+                            enterKeyHint="search"
+                            inputMode="search"
+                            autoComplete="off"
+                            role="searchbox"
+                            aria-label="Buscar productos"
+                        />
+                        <button
+                            type="submit"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 p-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg"
+                            aria-label="Buscar"
                         >
-                            <X className="h-5 w-5" />
+                            <Search className="h-4 w-4" />
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {/* Contenido principal con navegación */}
+            <div className="flex-1 overflow-hidden">
+                {/* Botón de retroceso con diseño mejorado */}
+                {(menuLevel !== "main" && !startFromCategories) || (startFromCategories && menuLevel === "subcategories") ? (
+                    <div className="px-6 mb-4">
+                        <button
+                            onClick={handleBackClick}
+                            className="flex items-center space-x-2 text-primary font-medium bg-primary/5 px-4 py-2 rounded-xl transition-all duration-300 hover:bg-primary/10"
+                        >
+                            <ChevronLeft className="h-5 w-5" />
+                            <span>
+                                {menuLevel === "categories" ? "Menú principal" : "Categorías"}
+                            </span>
                         </button>
                     </div>
+                ) : null}
 
-                    {/* Contenido scrollable */}
-                    <div className="overflow-y-auto flex-1 p-4 overscroll-contain">
-                        {/* Buscador mejorado para móvil */}
-                        <div className="mb-5">
-                            <form onSubmit={handleSearchSubmit} role="search" className="relative w-full">
-                                <input
-                                    ref={searchInputRef}
-                                    type="search"
-                                    name="search"
-                                    placeholder="Buscar productos"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    className="w-full pr-12 py-3 pl-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                                    enterKeyHint="search"
-                                    inputMode="search"
-                                    autoComplete="off"
-                                    role="searchbox"
-                                    aria-label="Buscar productos"
-                                />
-                                <button
-                                    type="submit"
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                                    aria-label="Buscar"
-                                >
-                                    <Search className="h-4 w-4" />
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Botón de retroceso */}
-                        {(menuLevel !== "main" && !startFromCategories) || (startFromCategories && menuLevel === "subcategories") ? (
-                            <button
-                                onClick={handleBackClick}
-                                className="flex items-center customtext-primary mb-4 font-medium"
-                            >
-                                <ChevronLeft className="h-5 w-5 mr-1" />
-                                <span>
-                                    {menuLevel === "categories" ? "Menú principal" : "Categorías"}
-                                </span>
-                            </button>
-                        ) : null}
-
-                        {/* Lista de ítems */}
-                        <div className="pb-16">
-                            {renderMenuItems()}
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0  flex justify-center">
-                            <MenuSimple visible={true}/>
-                        </div>
+                {/* Lista de ítems con scroll suave */}
+                <div className="h-full overflow-y-auto px-6 pb-6 hide-scrollbar">
+                    <div className="space-y-3">
+                        {renderMenuItems()}
                     </div>
+                </div>
+            </div>
 
+            {/* Tags en la parte inferior con nuevo diseño */}
+            <div className="mt-auto border-t border-gray-100">
+                <div className="px-6 py-4 bg-gray-50/50 backdrop-blur-sm rounded-t-3xl">
+                    <MenuSimple visible={true}/>
                 </div>
             </div>
         </div>

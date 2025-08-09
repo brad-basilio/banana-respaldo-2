@@ -881,26 +881,73 @@ const HeaderBananaLab = ({
 
 
 
-            {/* Mobile menu */}
+            {/* Mobile menu - Diseño Creativo */}
             <AnimatePresence>
                 {openMenu && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="md:hidden bg-transparent text-textWhite shadow-lg w-full min-h-screen absolute z-[999] top-20"
-                        ref={menuRef}
-                    >
-                        <MobileMenu
-                            search={search}
-                            setSearch={setSearch}
-                            pages={[]} // Pasamos array vacío para que empiece desde categorías
-                            items={items}
-                            onClose={() => setOpenMenu(!openMenu)}
-                            startFromCategories={true} // Nueva prop para indicar que empiece desde categorías
+                    <>
+                        {/* Overlay con efecto de blur artístico */}
+                        <motion.div
+                            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                            animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
+                            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                            transition={{ duration: 0.3 }}
+                            className="fixed inset-0 bg-black/20 backdrop-blur-lg z-[998]"
+                            onClick={() => setOpenMenu(false)}
                         />
-                    </motion.div>
+                        
+                        {/* Menu Panel Creativo */}
+                        <motion.div
+                            initial={{ x: "-100%", opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: "-100%", opacity: 0 }}
+                            transition={{ 
+                                type: "spring", 
+                                damping: 25, 
+                                stiffness: 200,
+                                mass: 1
+                            }}
+                            className="md:hidden bg-white w-[90%] max-w-md h-screen fixed left-0 top-0 z-[999] shadow-[0_0_50px_rgba(0,0,0,0.1)] rounded-r-[1.5rem]"
+                            ref={menuRef}
+                        >
+                            <div className="h-24 flex items-center justify-between px-6">
+                                <motion.a
+                                    href="/"
+                                    className="flex-shrink-0 relative"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    <div className="relative z-10">
+                                        <img
+                                            className="h-7 w-auto"
+                                            src={`/assets/resources/logo.png?v=${crypto.randomUUID()}`}
+                                            alt={Global.APP_NAME}
+                                            onError={(e) => (e.target.src = "/api/thumbnail/null")}
+                                        />
+                                    </div>
+                                    <div className="absolute inset-0 bg-primary/5 rounded-full transform rotate-6 scale-110"></div>
+                                </motion.a>
+                                <motion.button
+                                    whileHover={{ scale: 1.1, rotate: 90 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => setOpenMenu(false)}
+                                    className="p-0 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-300"
+                                >
+                                    <X className="h-6 w-6 text-gray-600" />
+                                </motion.button>
+                            </div>
+                            
+                            <div className="overflow-y-auto h-[calc(100vh-5rem)] pb-safe">
+                                <MobileMenu
+                                    search={search}
+                                    setSearch={setSearch}
+                                    pages={[]}
+                                    items={items}
+                                    onClose={() => setOpenMenu(false)}
+                                    startFromCategories={true}
+                                />
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
 
