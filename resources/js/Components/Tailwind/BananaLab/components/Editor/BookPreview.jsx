@@ -89,6 +89,7 @@ const BookPreviewModal = ({
     const [pdfGenerated, setPdfGenerated] = useState(false);
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
     const [purchaseStep, setPurchaseStep] = useState(0);
+    const [pdfGenerationInProgress, setPdfGenerationInProgress] = useState(false); // 🔧 NUEVO: Prevenir múltiples generaciones
     const [albumPreparationModal, setAlbumPreparationModal] = useState({
         isOpen: false,
         message: "Iniciando proceso...",
@@ -325,9 +326,18 @@ const BookPreviewModal = ({
     // Función para generar PDF silenciosamente (sin alertas ni descargas)
     const generatePDFSilently = async () => {
         if (!projectData?.id) {
-            console.warn('No hay proyecto cargado para generar PDF automáticamente.');
-            return;
+            console.warn('📄 [AUTO-PDF] No hay proyecto cargado para generar PDF automáticamente.');
+            return false;
         }
+
+        // 🔧 PREVENIR MÚLTIPLES GENERACIONES SIMULTÁNEAS
+        if (pdfGenerationInProgress) {
+            console.warn('⚠️ [AUTO-PDF] Generación ya en progreso, omitiendo llamada duplicada');
+            return false;
+        }
+
+        setPdfGenerationInProgress(true);
+        console.log('🚀 [AUTO-PDF] Iniciando generación única de PDF...');
 
         try {
             const pdfData = preparePDFData();
@@ -343,21 +353,30 @@ const BookPreviewModal = ({
 
             if (response.ok) {
                 setPdfGenerated(true);
+                console.log('✅ [AUTO-PDF] PDF generado exitosamente');
                 
                 // Verificar la URL del PDF generado para mostrar disponibilidad
                 try {
                     const pdfInfoResponse = await fetch(`/api/customer/projects/${projectData.id}/pdf-info`);
                     if (pdfInfoResponse.ok) {
                         const pdfInfo = await pdfInfoResponse.json();
+                        console.log('📄 [AUTO-PDF] Info del PDF:', pdfInfo);
                     }
                 } catch (infoError) {
                     console.warn('⚠️ [AUTO-PDF] No se pudo obtener info del PDF:', infoError.message);
                 }
+                
+                return true;
             } else {
                 console.warn('⚠️ [AUTO-PDF] Error al generar PDF automáticamente');
+                return false;
             }
         } catch (error) {
             console.warn('⚠️ [AUTO-PDF] Error en generación automática:', error.message);
+            return false;
+        } finally {
+            setPdfGenerationInProgress(false);
+            console.log('🏁 [AUTO-PDF] Proceso finalizado, flag liberado');
         }
     };
 
@@ -415,23 +434,28 @@ const BookPreviewModal = ({
             // NO generar nuevos thumbnails aquí para evitar problemas de rendimiento
             if (Object.keys(pageThumbnails).length > 0) {
                 setGeneratedThumbnails(pageThumbnails);
+                console.log('🖼️ [BOOK-PREVIEW] Thumbnails cargados:', Object.keys(pageThumbnails).length);
             } else {
                 // Solo usar placeholders, no generar thumbnails
                 setGeneratedThumbnails({});
+                console.log('📄 [BOOK-PREVIEW] Sin thumbnails, usando placeholders');
             }
             
-            // 🚀 Generar PDF automáticamente cuando se abre el modal
-            if (projectData?.id) {
-                setTimeout(() => {
-                    generatePDFSilently();
-                }, 1000); // Pequeño retraso para que el modal se cargue completamente primero
-            }
+            // � REMOVIDO: No generar PDF automáticamente aquí para evitar duplicados
+            // La generación de PDF solo debe ocurrir cuando el usuario hace clic en "Comprar ahora"
+            console.log('📖 [BOOK-PREVIEW] Modal abierto, inicializando estado...');
+            console.log('📄 [BOOK-PREVIEW] ProjectData ID:', projectData?.id);
         }
-    }, [isOpen, pageThumbnails, projectData]);
+    }, [isOpen, pageThumbnails]);
 
     useEffect(() => {
         if (!isOpen) {
             setGeneratedThumbnails({});
+            // 🔧 RESETEAR Estados de PDF al cerrar modal
+            setPdfGenerated(false);
+            setPdfGenerationInProgress(false);
+            setIsProcessing(false);
+            console.log('🔄 [BOOK-PREVIEW] Modal cerrado, estados reseteados');
         }
     }, [isOpen]);
 
@@ -1001,6 +1025,9 @@ const BookPreviewModal = ({
                     onClick={async () => {
                         if (isProcessing) return;
 
+                        // Establecer estado de procesamiento
+                        setIsProcessing(true);
+
                         // Mostrar modal premium de preparación
                         setAlbumPreparationModal({
                             isOpen: true,
@@ -1011,11 +1038,11 @@ const BookPreviewModal = ({
 
                         // Simular proceso paso a paso con el modal premium
                         const steps = [
-                            { progress: 20, message: "Verificando proyecto", subMessage: "Validando contenido del álbum", delay: 800 },
-                            { progress: 40, message: "Preparando tu álbum", subMessage: "Organizando páginas y elementos", delay: 1200 },
-                            { progress: 60, message: "Agregando al carrito", subMessage: "Configurando tu pedido", delay: 1500 },
-                            { progress: 80, message: "Finalizando proceso", subMessage: "Últimos detalles", delay: 1000 },
-                            { progress: 100, message: "¡Proceso completado!", subMessage: "Redirigiendo al carrito", delay: 800 }
+                            { progress: 20, message: "Verificando proyecto", subMessage: "Validando contenido del álbum", delay: 500 },
+                            { progress: 40, message: "Preparando tu álbum", subMessage: "Organizando páginas y elementos", delay: 800 },
+                            { progress: 60, message: "Agregando al carrito", subMessage: "Configurando tu pedido", delay: 1000 },
+                            { progress: 80, message: "Finalizando proceso", subMessage: "Últimos detalles", delay: 700 },
+                            { progress: 100, message: "¡Proceso completado!", subMessage: "Preparando redirección", delay: 500 }
                         ];
 
                         try {
@@ -1046,21 +1073,20 @@ const BookPreviewModal = ({
                             }
 
                             // Agregar al carrito (proceso silencioso)
-                            const cartResult = addAlbumToCart({
-                                project_id: projectData.id,
-                                pages: pages,
-                                workspace_dimensions: workspaceDimensions,
-                                quality: 'high',
-                                format: 'album',
-                                generate_pdf: true
-                            });
+                            // La función addAlbumToCart no espera parámetros, ya tiene acceso al contexto necesario
+                            console.log('🛒 [CART] Iniciando addAlbumToCart...');
+                            const cartResult = addAlbumToCart();
 
                             let addedToCart;
                             if (cartResult && typeof cartResult.then === 'function') {
+                                console.log('🛒 [CART] addAlbumToCart es async, esperando resultado...');
                                 addedToCart = await cartResult;
                             } else {
+                                console.log('🛒 [CART] addAlbumToCart es sync, resultado inmediato:', cartResult);
                                 addedToCart = cartResult;
                             }
+
+                            console.log('🛒 [CART] Resultado final de addAlbumToCart:', addedToCart);
 
                             if (!addedToCart) {
                                 console.error('❌ No se pudo agregar al carrito');
@@ -1069,18 +1095,40 @@ const BookPreviewModal = ({
                                 return;
                             }
 
-                            // Generar PDF silenciosamente en background
-                            generatePDFSilently().catch(error => {
-                                console.warn('⚠️ Error al generar PDF (continuando):', error.message);
+                            // 🔧 GENERAR PDF SOLO UNA VEZ y solo si no se ha generado ya
+                            if (!pdfGenerated && !pdfGenerationInProgress) {
+                                console.log('📄 [PURCHASE] Generando PDF para compra...');
+                                const pdfSuccess = await generatePDFSilently();
+                                if (!pdfSuccess) {
+                                    console.warn('⚠️ [PURCHASE] PDF no se pudo generar, pero continuando con el proceso');
+                                }
+                            } else {
+                                console.log('📄 [PURCHASE] PDF ya disponible o en progreso, omitiendo generación');
+                            }
+
+                            // Mostrar mensaje de éxito final
+                            setAlbumPreparationModal({
+                                isOpen: true,
+                                message: "¡Álbum agregado al carrito!",
+                                subMessage: "Redirigiendo automáticamente...",
+                                progress: 100
                             });
 
-                            // Pequeña pausa para mostrar completado
+                            // La función addAlbumToCart ya maneja la redirección automática
+                            // Pequeña pausa para mostrar el mensaje de éxito antes de la redirección
                             await new Promise(resolve => setTimeout(resolve, 1000));
                             
-                            // Cerrar modal y redirigir
+                            // Cerrar modal 
                             setAlbumPreparationModal({ isOpen: false, message: "", subMessage: "", progress: 0 });
                             onRequestClose();
-                            window.location.href = '/cart';
+
+                            // Redirección de respaldo en caso de que addAlbumToCart no redirija
+                            setTimeout(() => {
+                                if (window.location.pathname !== '/cart') {
+                                    console.log('🔄 [BACKUP] Redirección de respaldo ejecutándose...');
+                                    window.location.href = '/cart';
+                                }
+                            }, 3000); // Esperar 3 segundos para dar tiempo a la redirección principal
                             
                         } catch (error) {
                             console.error('❌ Error en proceso de compra:', error);
@@ -1091,15 +1139,26 @@ const BookPreviewModal = ({
                                 const cartKey = `${window.Global?.APP_CORRELATIVE || 'bananalab'}_cart`;
                                 const verifyCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
                                 if (verifyCart.length > 0) {
+                                    // Si hay elementos en el carrito, probablemente se agregó correctamente
+                                    console.log('✅ [RECOVERY] Producto encontrado en carrito, redirigiendo...');
                                     onRequestClose();
-                                    window.location.href = '/cart';
+                                    setTimeout(() => {
+                                        window.location.href = '/cart';
+                                    }, 500);
                                     return;
                                 }
                             } catch (recoveryError) {
                                 console.error('❌ Error en recuperación:', recoveryError);
                             }
 
-                            alert(`Error: ${error.message}. Si el álbum se agregó, puede ir manualmente al carrito.`);
+                            // Mostrar error al usuario con opciones
+                            const userChoice = confirm(`Error: ${error.message}\n\n¿Desea intentar ir al carrito manualmente?`);
+                            if (userChoice) {
+                                window.location.href = '/cart';
+                            }
+                        } finally {
+                            // Asegurar que el estado de procesamiento se resetee
+                            setIsProcessing(false);
                         }
                     }}
                     disabled={isProcessing || isGeneratingPDF}

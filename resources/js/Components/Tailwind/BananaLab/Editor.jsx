@@ -352,7 +352,7 @@ const generateThumbnailForComplexLayout = async (pageData, workspaceDimensions, 
         const { default: html2canvas } = await import('html2canvas');
 
         const canvas = await html2canvas(workspaceElement, {
-            scale: 2, // Alta calidad para layouts complejos
+            scale: 4, // ULTRA ALTA calidad para layouts complejos (4000x3200px)
             useCORS: true,
             allowTaint: false,
             backgroundColor: pageData.backgroundColor || '#ffffff',
@@ -1044,7 +1044,7 @@ export default function EditorLibro() {
     const thumbnailTimeout = useRef();
 
     // Estado para las dimensiones calculadas
-    const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 800, height: 600 });
+    const [workspaceDimensions, setWorkspaceDimensions] = useState({ width: 1000, height: 800 });
 
     // 🛡️ FUNCIÓN SEGURA PARA ESTABLECER THUMBNAILS (con protección)
     const setPageThumbnailsSafely = useCallback((pageId, thumbnail, source = 'unknown') => {
@@ -2104,7 +2104,7 @@ export default function EditorLibro() {
                     realPageNumber = index;
                 }
 
-                const pdfUrl = `/storage/images/thumbnails/${projectData.id}/page-${realPageNumber}-pdf.png`;
+                const pdfUrl = `/storage/images/thumbnails/${projectData.id}/page-${realPageNumber}-pdf.webp`;
                 const pageId = page.id || `page-${index}`;
                 pdfThumbnails[pageId] = pdfUrl;
 
@@ -2340,6 +2340,84 @@ export default function EditorLibro() {
         };
     };
 
+    // Función para obtener dimensiones completas sin escalado para PDFs de alta resolución
+    const getFullWorkspaceDimensions = () => {
+        // Si hay preset con dimensiones, usar esas dimensiones COMPLETAS
+        if (presetData?.width && presetData?.height) {
+            // Las dimensiones vienen en centímetros desde la base de datos
+            let widthCm = presetData.width;
+            let heightCm = presetData.height;
+            let widthPx = widthCm * 37.8; // Conversión aproximada cm a px (300 DPI)
+            let heightPx = heightCm * 37.8;
+
+            if (widthPx && heightPx) {
+                return {
+                    width: Math.round(widthPx),
+                    height: Math.round(heightPx),
+                    originalWidth: widthCm,
+                    originalHeight: heightCm,
+                    scale: 1, // Sin escalado para PDF
+                    unit: 'cm',
+                    originalWidthPx: Math.round(widthPx),
+                    originalHeightPx: Math.round(heightPx)
+                };
+            }
+        }
+
+        // Fallback si hay canvas_config en extra_settings
+        if (presetData?.extra_settings) {
+            try {
+                const extraSettings = typeof presetData.extra_settings === 'string'
+                    ? JSON.parse(presetData.extra_settings)
+                    : presetData.extra_settings;
+
+                if (extraSettings?.canvas_config) {
+                    const canvasConfig = extraSettings.canvas_config;
+                    let widthCm = canvasConfig.width;
+                    let heightCm = canvasConfig.height;
+                    let widthPx = widthCm * 37.8;
+                    let heightPx = heightCm * 37.8;
+
+                    if (widthPx && heightPx) {
+                        return {
+                            width: Math.round(widthPx),
+                            height: Math.round(heightPx),
+                            originalWidth: widthCm,
+                            originalHeight: heightCm,
+                            scale: 1, // Sin escalado para PDF
+                            unit: 'cm',
+                            originalWidthPx: Math.round(widthPx),
+                            originalHeightPx: Math.round(heightPx)
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn('Error parsing extra_settings:', e);
+            }
+        }
+
+        // Fallback a tamaños grandes para PDF
+        const pdfSizes = {
+            "square": { width: 1000, height: 1000 },
+            "landscape": { width: 1280, height: 800 },
+            "portrait": { width: 1000, height: 1200 },
+            "wide": { width: 1400, height: 800 },
+            "tall": { width: 800, height: 1200 },
+            "preset": { width: 1000, height: 800 } // Default más grande para PDF
+        };
+
+        const size = pdfSizes[workspaceSize] || pdfSizes.preset;
+
+        return {
+            width: size.width,
+            height: size.height,
+            originalWidth: size.width,
+            originalHeight: size.height,
+            scale: 1, // Sin escalado
+            unit: 'px'
+        };
+    };
+
     // Función para capturar el workspace actual con alta calidad y sin bordes
     const captureCurrentWorkspace = useCallback(async (options = { type: 'thumbnail' }) => {
         // 🚀 CRÍTICO VPS: No ejecutar en entorno servidor para evitar consumo masivo
@@ -2402,13 +2480,16 @@ export default function EditorLibro() {
 
             // Configuración según el tipo de captura (thumbnail vs PDF)
             const isPDF = options.type === 'pdf';
-            // �️ IMPRESIÓN PROFESIONAL: Escalado optimizado para 300 DPI
+            // 🖨️ IMPRESIÓN PROFESIONAL: Escalado optimizado para 300 DPI
             // 🚀 OPTIMIZACIÓN VPS: Factor de escala adaptivo según entorno
             const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
             const scaleFactor = isPDF ?
-                11.81 : // 11.81x para PDF 300 DPI exacto (300/25.4 ≈ 11.81)
-                (isProduction ? 2 : 3); // 2x en VPS para ahorrar memoria, 3x en local
+                4 : // 4x para PDF 4000px alta calidad consistente
+                4; // 4x para ULTRA ALTA calidad (4000x3200px) tanto en producción como local
             const quality = 1.0; // Calidad máxima sin compresión
+
+            // Obtener dimensiones apropiadas según el tipo
+            const dimensions = isPDF ? getFullWorkspaceDimensions() : workspaceDimensions;
 
             // CORRECCIÓN THUMBNAIL: Obtener las dimensiones reales del workspace de la BD
             const workspaceStyle = getComputedStyle(workspaceElement);
@@ -2428,16 +2509,16 @@ export default function EditorLibro() {
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: workspaceBackground,
-                width: workspaceDimensions.width,
-                height: workspaceDimensions.height,
+                width: dimensions.width,
+                height: dimensions.height,
                 x: 0,
                 y: 0,
                 scrollX: 0,
                 scrollY: 0,
-                // � OPTIMIZACIÓN VPS: Reducir opciones pesadas en producción
+                // 🔧 OPTIMIZACIÓN VPS: Reducir opciones pesadas en producción
                 ...(isLayoutMode && {
-                    windowWidth: workspaceDimensions.width,
-                    windowHeight: workspaceDimensions.height,
+                    windowWidth: dimensions.width,
+                    windowHeight: dimensions.height,
                     ignoreElements: (el) => {
                         // 🚀 OPTIMIZACIÓN: Logs solo en desarrollo
                         if (el.style && el.style.filter && options.preserveFilters) {
@@ -2481,8 +2562,14 @@ export default function EditorLibro() {
                 }),
                 // 🖨️ CONFIGURACIÓN CRÍTICA para impresión profesional
                 canvas: isPDF ? document.createElement('canvas') : null,
-                windowWidth: isPDF ? workspaceDimensions.width * scaleFactor : null,
-                windowHeight: isPDF ? workspaceDimensions.height * scaleFactor : null,
+                windowWidth: isPDF ? (() => {
+                    const fullDims = getFullWorkspaceDimensions();
+                    return fullDims.width * scaleFactor;
+                })() : null,
+                windowHeight: isPDF ? (() => {
+                    const fullDims = getFullWorkspaceDimensions();
+                    return fullDims.height * scaleFactor;
+                })() : null,
                 onclone: async (clonedDoc) => {
 
                     // CORRECCIÓN THUMBNAIL: Limpiar elementos de UI que no pertenecen al workspace
@@ -2527,8 +2614,8 @@ export default function EditorLibro() {
 
                         if (clonedPageElement) {
                             // CORRECCIÓN THUMBNAIL: Asegurar dimensiones exactas del workspace de la BD
-                            clonedPageElement.style.width = workspaceDimensions.width + 'px';
-                            clonedPageElement.style.height = workspaceDimensions.height + 'px';
+                            clonedPageElement.style.width = dimensions.width + 'px';
+                            clonedPageElement.style.height = dimensions.height + 'px';
 
                             // 🔧 LAYOUT MODE: No cambiar position si es un grid (preservar layout)
                             if (!isLayoutMode) {
@@ -2766,8 +2853,8 @@ export default function EditorLibro() {
                         style.textContent = `
                             /* CORRECCIÓN THUMBNAIL: Estructura del elemento de página */
                             #page-${pages[currentPage].id} {
-                                width: ${workspaceDimensions.width}px !important;
-                                height: ${workspaceDimensions.height}px !important;
+                                width: ${dimensions.width}px !important;
+                                height: ${dimensions.height}px !important;
                                 position: relative !important;
                                 overflow: hidden !important;
                                 box-sizing: border-box !important;
@@ -2964,9 +3051,9 @@ export default function EditorLibro() {
             // Fallback: crear thumbnail con las dimensiones exactas del workspace de la BD
             try {
                 const canvas = document.createElement('canvas');
-                const scaleFactor = options.type === 'pdf' ? 11.81 : 1; // 🖨️ 11.81x para PDF 300 DPI exacto
-                canvas.width = workspaceDimensions.width * scaleFactor;
-                canvas.height = workspaceDimensions.height * scaleFactor;
+                // Usar el scaleFactor ya definido arriba (4x para ambos casos)
+                canvas.width = dimensions.width * scaleFactor;
+                canvas.height = dimensions.height * scaleFactor;
                 const ctx = canvas.getContext('2d');
 
                 // CORRECCIÓN THUMBNAIL: Aplicar background del elemento de página en fallback
@@ -5424,7 +5511,11 @@ export default function EditorLibro() {
                         backgroundImage: page.backgroundImage
                     })),
                     workspaceDimensions: workspaceDimensions,
-                    quality: 300
+                    width: workspaceDimensions.width,
+                    height: workspaceDimensions.height,
+                    quality: 95,
+                    scale: 4,
+                    dpi: 300
                 })
             });
 
@@ -6588,6 +6679,15 @@ export default function EditorLibro() {
             window.dispatchEvent(new CustomEvent('cartUpdated', {
                 detail: { cart: newCart, action: 'add', product: albumProduct }
             }));
+
+            // 🎯 REDIRECCIÓN AUTOMÁTICA AL CARRITO
+            console.log('✅ [CART] Álbum agregado exitosamente, redirigiendo al carrito...');
+            
+            // Usar timeout para permitir que las notificaciones se muestren
+            setTimeout(() => {
+                console.log('🔄 [CART] Ejecutando redirección a /cart');
+                window.location.href = '/cart';
+            }, 2000); // Aumentado a 2 segundos para mejor UX
 
             return true;
 

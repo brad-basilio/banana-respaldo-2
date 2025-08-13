@@ -147,14 +147,14 @@ class ProjectPDFController extends Controller
             // 🚀 OPTIMIZACIÓN: Usar TCPDF directamente (sin HTML, sin base64)
             Log::info("🚀 [PDF-OPTIMIZED] Usando TCPDF directo para máximo rendimiento");
 
-            // Configurar límites para VPS - más generosos para PDFs grandes
+            // Configurar límites para VPS - más generosos para PDFs grandes con imágenes 4K
             $currentMemoryLimit = ini_get('memory_limit');
             $currentTimeLimit = ini_get('max_execution_time');
 
-            ini_set('memory_limit', '512M'); // Más memoria para PDFs grandes
-            set_time_limit(60); // Más tiempo para procesar
+            ini_set('memory_limit', '1024M'); // Más memoria para imágenes 4K WebP
+            set_time_limit(300); // 5 minutos para procesar imágenes de alta resolución
 
-            Log::info("⚙️ [PDF-GENERATOR] Límites configurados - Memoria: 512M, Tiempo: 60s (anteriores: {$currentMemoryLimit}, {$currentTimeLimit}s)");
+            Log::info("⚙️ [PDF-GENERATOR] Límites configurados - Memoria: 1024M, Tiempo: 300s (anteriores: {$currentMemoryLimit}, {$currentTimeLimit}s)");
 
             // Calcular dimensiones del PDF basado en las dimensiones disponibles
             $pageWidth = $workspaceDimensions['width'] ?? 800;

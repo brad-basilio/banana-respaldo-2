@@ -38,28 +38,28 @@ class ThumbnailService
                 }
             }
             
-            // 🔄 NUEVA ESTRUCTURA: Usar naming consistente con ThumbnailGeneratorService
-            $pdfFilename = "page-{$pageIndex}-pdf.png";        // Para PDFs de alta calidad
-            $thumbnailFilename = "page-{$pageIndex}-thumbnail.png"; // Para sidebar
+            // � NUEVA ESTRUCTURA: Usar WebP para mejor compresión
+            $pdfFilename = "page-{$pageIndex}-pdf.webp";        // Para PDFs de alta calidad
+            $thumbnailFilename = "page-{$pageIndex}-thumbnail.webp"; // Para sidebar
             
-            // Guardar como PNG para PDF (alta calidad)
+            // 🔧 OPTIMIZACIÓN: Convertir a WebP usando Intervention Image
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            $image = $manager->read($decodedImage);
+            
+            // Guardar como WebP para PDF (alta calidad - 95% calidad)
             $pdfPath = "{$projectPath}/{$pdfFilename}";
-            $savedPdf = Storage::put($pdfPath, $decodedImage);
+            $pdfFullPath = storage_path("app/{$pdfPath}");
+            $image->toWebp(95)->save($pdfFullPath);
             
-            if ($savedPdf) {
-                // Generar thumbnail pequeño para sidebar usando Intervention Image
-                self::generateSidebarThumbnailFromBase64($decodedImage, $projectId, $pageIndex, $thumbnailFilename);
-                
-                // Devolver URL usando el servicio de imágenes con timestamp para evitar cache
-                $encodedPath = base64_encode($pdfPath);
-                $timestamp = time();
-
-                $url = "/api/canvas/serve-image/{$encodedPath}?v={$timestamp}";
-                  return "/storage/images/thumbnails/{$projectId}/{$thumbnailFilename}?v={$timestamp}";
-            }
+            // Generar thumbnail pequeño para sidebar
+            self::generateSidebarThumbnailFromImage($image, $projectId, $pageIndex, $thumbnailFilename);
+            
+            // Devolver URL usando timestamp para evitar cache
+            $timestamp = time();
+            return "/storage/images/thumbnails/{$projectId}/{$thumbnailFilename}?v={$timestamp}";
 
         } catch (\Exception $e) {
-           // Log::error("ThumbnailService: Error guardando thumbnail: " . $e->getMessage());
+           Log::error("ThumbnailService: Error guardando thumbnail WebP: " . $e->getMessage());
         }
 
         return null;
@@ -180,19 +180,16 @@ class ThumbnailService
     }
 
     /**
-     * Generar thumbnail pequeño para sidebar usando Intervention Image
+     * Generar thumbnail pequeño para sidebar usando Intervention Image con WebP
      */
-    private static function generateSidebarThumbnailFromBase64($imageData, $projectId, $pageIndex, $filename)
+    private static function generateSidebarThumbnailFromImage($image, $projectId, $pageIndex, $filename)
     {
         try {
-            // Crear manager de Intervention Image v3
-            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
-            
-            // Crear imagen con Intervention Image v3
-            $image = $manager->read($imageData);
+            // Clonar la imagen para no afectar la original
+            $sidebarImage = clone $image;
             
             // Redimensionar para sidebar (1200x1600 px) manteniendo aspecto
-            $image->scale(1200, 1600);
+            $sidebarImage->scale(1200, 1600);
             
             // Guardar en storage/app/images/thumbnails para mantener consistencia
             $sidebarPath = "images/thumbnails/{$projectId}";
@@ -206,12 +203,31 @@ class ThumbnailService
                 }
             }
             
-            // Guardar como PNG para sidebar usando Storage::put
-            $image->save(storage_path("app/{$sidebarFullPath}"));
-            
+            // 🚀 OPTIMIZACIÓN: Guardar como WebP para sidebar (85% calidad para tamaño óptimo)
+            $sidebarImage->toWebp(85)->save(storage_path("app/{$sidebarFullPath}"));
             
         } catch (\Exception $e) {
-            // No lanzar excepción, solo log del error
+            Log::error("ThumbnailService: Error generando thumbnail sidebar WebP: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generar thumbnail pequeño para sidebar usando Intervention Image (LEGACY - para base64)
+     */
+    private static function generateSidebarThumbnailFromBase64($imageData, $projectId, $pageIndex, $filename)
+    {
+        try {
+            // Crear manager de Intervention Image v3
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            
+            // Crear imagen con Intervention Image v3
+            $image = $manager->read($imageData);
+            
+            // Usar la nueva función con WebP
+            self::generateSidebarThumbnailFromImage($image, $projectId, $pageIndex, $filename);
+            
+        } catch (\Exception $e) {
+            Log::error("ThumbnailService: Error en generateSidebarThumbnailFromBase64: " . $e->getMessage());
         }
     }
 
@@ -225,31 +241,32 @@ class ThumbnailService
         try {
             $projectPath = "images/thumbnails/{$projectId}";
             
-           
-            
             if (Storage::exists($projectPath)) {
                 // Buscar archivos de thumbnail para cada página
                 foreach ($pages as $index => $page) {
                     $pageId = $page['id'] ?? "page-{$index}";
-                    $thumbnailFilename = "page-{$index}-thumbnail.png";
-                    $thumbnailPath = "{$projectPath}/{$thumbnailFilename}";
                     
-                  
+                    // 🚀 OPTIMIZACIÓN: Buscar archivos WebP primero, PNG como fallback
+                    $thumbnailFilenameWebP = "page-{$index}-thumbnail.webp";
+                    $thumbnailFilenamePNG = "page-{$index}-thumbnail.png";
                     
-                    if (Storage::exists($thumbnailPath)) {
-                        // Generar URL para el thumbnail con timestamp para evitar cache
-                        $encodedPath = base64_encode($thumbnailPath);
-                        $timestamp = Storage::lastModified($thumbnailPath);
-                        $thumbnails[$pageId] = "/storage/images/thumbnails/{$projectId}/{$thumbnailFilename}?v={$timestamp}";
-                          
-                       
+                    $thumbnailPathWebP = "{$projectPath}/{$thumbnailFilenameWebP}";
+                    $thumbnailPathPNG = "{$projectPath}/{$thumbnailFilenamePNG}";
+                    
+                    if (Storage::exists($thumbnailPathWebP)) {
+                        // Usar WebP si existe
+                        $timestamp = Storage::lastModified($thumbnailPathWebP);
+                        $thumbnails[$pageId] = "/storage/images/thumbnails/{$projectId}/{$thumbnailFilenameWebP}?v={$timestamp}";
+                    } elseif (Storage::exists($thumbnailPathPNG)) {
+                        // Fallback a PNG si existe
+                        $timestamp = Storage::lastModified($thumbnailPathPNG);
+                        $thumbnails[$pageId] = "/storage/images/thumbnails/{$projectId}/{$thumbnailFilenamePNG}?v={$timestamp}";
                     }
                 }
             }
             
-          
         } catch (\Exception $e) {
-           // Log::error("ThumbnailService: Error cargando thumbnails existentes: " . $e->getMessage());
+           Log::error("ThumbnailService: Error cargando thumbnails existentes: " . $e->getMessage());
         }
         
         return $thumbnails;

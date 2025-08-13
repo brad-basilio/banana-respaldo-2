@@ -42,9 +42,10 @@ class ThumbnailController extends Controller
             }
 
             // Configuración de thumbnails
+            // Configuración optimizada para PDFs de ALTA CALIDAD
             $config = [
-                'width' => $request->get('width', 800),
-                'height' => $request->get('height', 600),
+                'width' => $request->get('width', 1000),  // 🚀 4000px con scale 4
+                'height' => $request->get('height', 800), // 🚀 3200px con scale 4
                 'quality' => $request->get('quality', 95),
                 'scale' => $request->get('scale', 4), // 4x para alta calidad
                 'dpi' => $request->get('dpi', 300), // 300 DPI para impresión
@@ -94,8 +95,8 @@ class ThumbnailController extends Controller
             }
 
             $config = [
-                'width' => $request->get('width', 800),
-                'height' => $request->get('height', 600),
+                'width' => $request->get('width', 1000),  // 🚀 4000px con scale 4  
+                'height' => $request->get('height', 800), // 🚀 3200px con scale 4
                 'quality' => $request->get('quality', 95),
                 'scale' => $request->get('scale', 4),
                 'dpi' => $request->get('dpi', 300),
@@ -170,8 +171,8 @@ class ThumbnailController extends Controller
                     continue;
                 }
                 
-                // Guardar como archivo
-                $thumbnailUrl = $this->thumbnailService->saveBase64AsFile($project, $pageId, $thumbnailData);
+                // 🚀 OPTIMIZACIÓN: Guardar como archivo WebP usando ThumbnailService
+                $thumbnailUrl = ThumbnailService::saveBase64Thumbnail($thumbnailData, $projectId, $pageId);
                 
                 if ($thumbnailUrl) {
                     $savedThumbnails[] = [

@@ -19,14 +19,14 @@ class ThumbnailGeneratorService
     {
         $thumbnails = [];
         
-        // Configuración por defecto
+        // Configuración por defecto optimizada para WebP de ALTA CALIDAD
         $defaultConfig = [
-            'width' => 800,
-            'height' => 600,
+            'width' => 1000,  // 🚀 Aumentado para mejor calidad PDF
+            'height' => 800,  // 🚀 Aumentado para mejor calidad PDF
             'quality' => 95,
-            'scale' => 4,
+            'scale' => 4,     // Con scale 4: 1000*4 = 4000px width, 800*4 = 3200px height
             'dpi' => 300,
-            'format' => 'png'
+            'format' => 'webp' // 🚀 WebP por defecto
         ];
         
         $config = array_merge($defaultConfig, $config);
@@ -127,8 +127,8 @@ class ThumbnailGeneratorService
             return [
                 'page_index' => $pageIndex,
                 'page_id' => $page['id'] ?? "page-{$pageIndex}",
-                'pdf_filename' => "page-{$pageIndex}-pdf.png", // Archivo para PDF
-                'thumbnail_filename' => "page-{$pageIndex}-thumbnail.png", // Archivo para sidebar
+                'pdf_filename' => "page-{$pageIndex}-pdf.webp", // 🚀 Archivo WebP para PDF
+                'thumbnail_filename' => "page-{$pageIndex}-thumbnail.webp", // 🚀 Archivo WebP para sidebar
                 'thumbnail_url' => $thumbnailPath, // URL completa para usar inmediatamente
                 'width' => $finalWidth,
                 'height' => $finalHeight,
@@ -279,15 +279,15 @@ class ThumbnailGeneratorService
     }
 
     /**
-     * Guardar thumbnail (alta calidad para PDF + thumbnail pequeño para sidebar)
+     * Guardar thumbnail (alta calidad para PDF + thumbnail pequeño para sidebar) - WEBP OPTIMIZADO
      */
     private function saveThumbnail($canvas, CanvasProject $project, int $pageIndex, array $config)
     {
         $quality = $config['quality'] ?? 95;
         
-        // 🔄 NUEVA ESTRUCTURA: Nombres más descriptivos
-        $pdfFilename = "page-{$pageIndex}-pdf.png";        // Para PDFs de alta calidad
-        $thumbnailFilename = "page-{$pageIndex}-thumbnail.png"; // Para sidebar
+        // � NUEVA ESTRUCTURA: WebP para mejor compresión
+        $pdfFilename = "page-{$pageIndex}-pdf.webp";        // Para PDFs de alta calidad
+        $thumbnailFilename = "page-{$pageIndex}-thumbnail.webp"; // Para sidebar
         
         $projectPath = "images/thumbnails/{$project->id}";
         $pdfRelativePath = "{$projectPath}/{$pdfFilename}";
@@ -300,66 +300,49 @@ class ThumbnailGeneratorService
             }
         }
 
-        // 1. Guardar thumbnail de alta calidad (para PDF) como PNG
+        // 🚀 OPTIMIZACIÓN: Convertir canvas GD a Intervention Image para WebP
         ob_start();
-        imagepng($canvas, null, 9); // PNG con máxima compresión (0-9)
+        imagepng($canvas, null, 0); // PNG sin compresión para conversión
         $imageContent = ob_get_contents();
         ob_end_clean();
 
-        // Guardar usando Storage en la carpeta correcta (storage/app/images/thumbnails)
-        $pdfRelativePath = "images/thumbnails/{$project->id}/{$pdfFilename}";
-        $saved = Storage::put($pdfRelativePath, $imageContent);
+        // Crear manager de Intervention Image v3
+        $manager = new ImageManager(new Driver());
+        $image = $manager->read($imageContent);
 
-        if ($saved) {
-            // 2. Generar thumbnail pequeño para sidebar usando Intervention Image
-            $this->generateSidebarThumbnail($canvas, $project, $pageIndex, $thumbnailFilename);
-            
-            // 🚀 RETORNAR URL DIRECTA usando storage:link
-            return "/storage/images/thumbnails/{$project->id}/{$thumbnailFilename}";
-        } else {
-            throw new \Exception("Error guardando thumbnail: {$pdfFilename}");
-        }
+        // 1. Guardar thumbnail de ULTRA ALTA calidad (para PDF) como WebP
+        // Dimensiones: 4000x3200px para impresión profesional
+        $pdfFullPath = storage_path("app/{$projectPath}/{$pdfFilename}");
+        $image->toWebp(95)->save($pdfFullPath); // 95% calidad para PDF
+
+        // 2. Generar thumbnail pequeño para sidebar (optimizado para UI)
+        $this->generateSidebarThumbnailWebP($image, $project, $pageIndex, $thumbnailFilename);
+        
+        // 🚀 RETORNAR URL DIRECTA usando storage:link
+        return "/storage/images/thumbnails/{$project->id}/{$thumbnailFilename}";
     }
 
     /**
-     * Generar thumbnail pequeño para sidebar
+     * Generar thumbnail pequeño para sidebar - WebP optimizado
      */
-    private function generateSidebarThumbnail($canvas, CanvasProject $project, int $pageIndex, string $filename)
+    private function generateSidebarThumbnailWebP($image, CanvasProject $project, int $pageIndex, string $filename)
     {
         try {
-            // Convertir canvas GD a string
-            ob_start();
-            imagepng($canvas, null, 9); // PNG para mejor calidad
-            $imageContent = ob_get_contents();
-            ob_end_clean();
-
-            // Crear manager de Intervention Image v3
-            $manager = new ImageManager(new Driver());
+            // Clonar la imagen para no afectar la original
+            $sidebarImage = clone $image;
             
-            // Crear imagen con Intervention Image v3
-            $image = $manager->read($imageContent);
-            
-            // Redimensionar para sidebar (150x200 px) manteniendo aspecto
-            $image->scale(600, 800);
+            // Redimensionar para sidebar (1200x1600 px) manteniendo aspecto
+            $sidebarImage->scale(1200, 1600);
             
             // Guardar en storage/app/images/thumbnails para mantener consistencia
             $sidebarPath = "images/thumbnails/{$project->id}";
-            $sidebarFullPath = "{$sidebarPath}/{$filename}";
+            $sidebarFullPath = storage_path("app/{$sidebarPath}/{$filename}");
             
-            // Crear directorio si no existe con permisos correctos
-            if (!Storage::exists($sidebarPath)) {
-                $fullPath = storage_path('app/' . $sidebarPath);
-                if (!file_exists($fullPath)) {
-                    mkdir($fullPath, 0775, true); // Crear con permisos 775 recursivamente
-                }
-            }
-            
-            // Guardar como PNG para sidebar usando Storage::put
-            $image->save(storage_path("app/{$sidebarFullPath}"));
-            
+            // 🚀 OPTIMIZACIÓN: Guardar como WebP para sidebar (85% calidad para tamaño óptimo)
+            $sidebarImage->toWebp(85)->save($sidebarFullPath);
             
         } catch (\Exception $e) {
-            // No lanzar excepción, solo log del error
+            Log::error("ThumbnailGeneratorService: Error generando thumbnail sidebar WebP: " . $e->getMessage());
         }
     }
 

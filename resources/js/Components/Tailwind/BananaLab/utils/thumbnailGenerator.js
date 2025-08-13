@@ -14,15 +14,15 @@ const THUMBNAIL_CONFIGS = {
         quality: 0.8
     },
     high_quality: {
-        scale: 2,
-        width: 800,
-        height: 600,
+        scale: 4,  // ULTRA ALTA calidad - 4000x3200px para impresión profesional
+        width: 1000,
+        height: 800,
         quality: 1.0
     },
     pdf: {
-        scale: 3,
-        width: 1200,
-        height: 900,
+        scale: 4,  // Actualizado a 4000x3200px
+        width: 1000,
+        height: 800,
         quality: 1.0
     }
 };

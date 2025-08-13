@@ -1242,8 +1242,8 @@
       "_createLucideIcon-Cy5Ya80P.js"
     ]
   },
-  "_thumbnailGenerator-CvzbIndF.js": {
-    "file": "assets/thumbnailGenerator-CvzbIndF.js",
+  "_thumbnailGenerator-CDq815ue.js": {
+    "file": "assets/thumbnailGenerator-CDq815ue.js",
     "name": "thumbnailGenerator",
     "imports": [
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx"
@@ -4181,7 +4181,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-Qp9w0GXB.js",
+    "file": "assets/BananaLab-BcMICH8r.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4240,7 +4240,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-CWBgfLlY.js",
+    "file": "assets/Editor-jsf8Nwwm.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4266,7 +4266,7 @@
       "_main-6DCdASTx.js",
       "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
       "_Global-D6eBBAMK.js",
-      "_thumbnailGenerator-CvzbIndF.js",
+      "_thumbnailGenerator-CDq815ue.js",
       "_save-BvSyoVHO.js",
       "_clock-BTrEpQej.js",
       "_triangle-alert-vFMqKi4t.js",
@@ -4300,7 +4300,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor_00.jsx": {
-    "file": "assets/Editor_00-Drxfckaj.js",
+    "file": "assets/Editor_00--0HdIcCt.js",
     "name": "Editor_00",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor_00.jsx",
     "isEntry": true,
@@ -4375,7 +4375,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx": {
-    "file": "assets/V1Edit-DxCbUNhQ.js",
+    "file": "assets/V1Edit--oUpkMOQ.js",
     "name": "V1Edit",
     "src": "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
     "isEntry": true,
@@ -4620,14 +4620,14 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/components/Editor/ThumbnailIntegration.jsx": {
-    "file": "assets/ThumbnailIntegration-DXv1cWRZ.js",
+    "file": "assets/ThumbnailIntegration-smGrovrg.js",
     "name": "ThumbnailIntegration",
     "src": "resources/js/Components/Tailwind/BananaLab/components/Editor/ThumbnailIntegration.jsx",
     "isEntry": true,
     "imports": [
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
-      "_thumbnailGenerator-CvzbIndF.js",
+      "_thumbnailGenerator-CDq815ue.js",
       "_book-BuHIVa2d.js",
       "_index-yBjzXJbu.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
@@ -9960,7 +9960,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-BS-H-e1c.js",
+    "file": "assets/Editor-BXNbbEE-.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -10007,7 +10007,7 @@
       "_x-DBMwyD6F.js",
       "_chevron-left-B2s3ZsB7.js",
       "_Global-D6eBBAMK.js",
-      "_thumbnailGenerator-CvzbIndF.js",
+      "_thumbnailGenerator-CDq815ue.js",
       "_save-BvSyoVHO.js",
       "_clock-BTrEpQej.js",
       "_triangle-alert-vFMqKi4t.js",
@@ -10172,7 +10172,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-A3OximUY.js",
+    "file": "assets/System-4Yy3gc73.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,
