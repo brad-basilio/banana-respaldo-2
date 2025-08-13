@@ -1001,8 +1001,8 @@
       "____vite-browser-external_commonjs-proxy-0zb4Agf2.js"
     ]
   },
-  "_jspdf.es.min-D3plwuQr.js": {
-    "file": "assets/jspdf.es.min-D3plwuQr.js",
+  "_jspdf.es.min-CPZgRw3w.js": {
+    "file": "assets/jspdf.es.min-CPZgRw3w.js",
     "name": "jspdf.es.min",
     "isDynamicEntry": true,
     "imports": [
@@ -4181,7 +4181,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab.jsx": {
-    "file": "assets/BananaLab-BcMICH8r.js",
+    "file": "assets/BananaLab-B62mr5QF.js",
     "name": "BananaLab",
     "src": "resources/js/Components/Tailwind/BananaLab.jsx",
     "isDynamicEntry": true,
@@ -4240,7 +4240,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor.jsx": {
-    "file": "assets/Editor-jsf8Nwwm.js",
+    "file": "assets/Editor-DdtWhBpW.js",
     "name": "Editor",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor.jsx",
     "isDynamicEntry": true,
@@ -4261,7 +4261,7 @@
       "resources/js/Components/Tailwind/BananaLab/components/Editor/EditorMain.jsx",
       "_image-BEA0kkBS.js",
       "resources/js/Components/Tailwind/BananaLab/components/Editor/EditorLayout.jsx",
-      "_jspdf.es.min-D3plwuQr.js",
+      "_jspdf.es.min-CPZgRw3w.js",
       "_index-BZYhE2TF.js",
       "_main-6DCdASTx.js",
       "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
@@ -4296,11 +4296,11 @@
       "_x-DBMwyD6F.js"
     ],
     "dynamicImports": [
-      "_jspdf.es.min-D3plwuQr.js"
+      "_jspdf.es.min-CPZgRw3w.js"
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/Editor_00.jsx": {
-    "file": "assets/Editor_00--0HdIcCt.js",
+    "file": "assets/Editor_00-B7VpiLDg.js",
     "name": "Editor_00",
     "src": "resources/js/Components/Tailwind/BananaLab/Editor_00.jsx",
     "isEntry": true,
@@ -4309,7 +4309,7 @@
       "_index-BH53Isel.js",
       "resources/js/Components/Tailwind/BananaLab/components/Editor/EditorLayout.jsx",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
-      "_jspdf.es.min-D3plwuQr.js",
+      "_jspdf.es.min-CPZgRw3w.js",
       "_index-BZYhE2TF.js",
       "_main-6DCdASTx.js",
       "resources/js/Components/Tailwind/BananaLab/components/Editor/EditorMain.jsx",
@@ -4375,7 +4375,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx": {
-    "file": "assets/V1Edit--oUpkMOQ.js",
+    "file": "assets/V1Edit-M-yOTp2R.js",
     "name": "V1Edit",
     "src": "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
     "isEntry": true,
@@ -4386,7 +4386,7 @@
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
       "resources/js/Components/Tailwind/BananaLab/components/Editor/EditorMain.jsx",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
-      "_jspdf.es.min-D3plwuQr.js",
+      "_jspdf.es.min-CPZgRw3w.js",
       "_x-DBMwyD6F.js",
       "_chevron-left-B2s3ZsB7.js",
       "_chevron-right-Ckt5D2ka.js",
@@ -4441,7 +4441,7 @@
     ]
   },
   "resources/js/Components/Tailwind/BananaLab/components/Editor/BookPreview.jsx": {
-    "file": "assets/BookPreview-BvtTfftR.js",
+    "file": "assets/BookPreview-B-8mc1BC.js",
     "name": "BookPreview",
     "src": "resources/js/Components/Tailwind/BananaLab/components/Editor/BookPreview.jsx",
     "isEntry": true,
@@ -4449,7 +4449,7 @@
       "resources/js/Components/Tailwind/AboutUs/AboutSimple.jsx",
       "_index-BH53Isel.js",
       "resources/js/Components/Tailwind/Checkouts/Components/PaymentModal.jsx",
-      "_jspdf.es.min-D3plwuQr.js",
+      "_jspdf.es.min-CPZgRw3w.js",
       "resources/js/Components/Tailwind/BananaLab/utils/thumbnailGenerator.jsx",
       "_index-yBjzXJbu.js",
       "_index-fNjTmf9T.js",
@@ -9960,7 +9960,7 @@
     ]
   },
   "resources/js/Pages/Canvas/Editor.jsx": {
-    "file": "assets/Editor-BXNbbEE-.js",
+    "file": "assets/Editor-Bq0zYrz-.js",
     "name": "Editor",
     "src": "resources/js/Pages/Canvas/Editor.jsx",
     "isEntry": true,
@@ -9998,7 +9998,7 @@
       "_star-wPQTHY_n.js",
       "_image-BEA0kkBS.js",
       "resources/js/Components/Tailwind/BananaLab/components/Editor/EditorLayout.jsx",
-      "_jspdf.es.min-D3plwuQr.js",
+      "_jspdf.es.min-CPZgRw3w.js",
       "_typeof-QjJsDpFa.js",
       "_main-6DCdASTx.js",
       "resources/js/Components/Tailwind/BananaLab/V1Edit.jsx",
@@ -10172,7 +10172,7 @@
     ]
   },
   "resources/js/System.jsx": {
-    "file": "assets/System-4Yy3gc73.js",
+    "file": "assets/System-BJQYTWNf.js",
     "name": "System",
     "src": "resources/js/System.jsx",
     "isEntry": true,

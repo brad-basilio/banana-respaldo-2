@@ -564,4 +564,108 @@ class ProjectPDFController extends Controller
             return response()->json(['error' => 'Error descargando PDF'], 500);
         }
     }
+
+    /**
+     * 🚀 Recibir PDF generado en frontend y guardarlo
+     */
+    public function uploadPDF(Request $request, $projectId)
+    {
+        // 🔧 Log de entrada muy visible
+        \Illuminate\Support\Facades\Log::info("🚀🚀🚀 [UPLOAD-PDF] PETICIÓN RECIBIDA - Proyecto: {$projectId}");
+        \Illuminate\Support\Facades\Log::info("🚀🚀🚀 [UPLOAD-PDF] Datos recibidos:", [
+            'project_id' => $projectId,
+            'has_file' => $request->hasFile('pdf'),
+            'file_size' => $request->hasFile('pdf') ? $request->file('pdf')->getSize() : 'N/A',
+            'pages_count' => $request->get('pages_count', 'N/A')
+        ]);
+        
+        try {
+            Log::info("📤 [UPLOAD-PDF] Recibiendo PDF generado en frontend para proyecto: {$projectId}");
+
+            // Validar que el proyecto existe
+            $project = CanvasProject::findOrFail($projectId);
+
+            // Validar que se envió el archivo PDF
+            if (!$request->hasFile('pdf')) {
+                Log::warning("⚠️ [UPLOAD-PDF] No se recibió archivo PDF");
+                return response()->json(['error' => 'No se recibió archivo PDF'], 400);
+            }
+
+            $pdfFile = $request->file('pdf');
+            
+            // Validar que es un archivo PDF válido
+            if ($pdfFile->getMimeType() !== 'application/pdf') {
+                Log::warning("⚠️ [UPLOAD-PDF] Archivo no es PDF válido: " . $pdfFile->getMimeType());
+                return response()->json(['error' => 'El archivo debe ser un PDF válido'], 400);
+            }
+
+            // Verificar tamaño del archivo (máximo 50MB)
+            if ($pdfFile->getSize() > 50 * 1024 * 1024) {
+                Log::warning("⚠️ [UPLOAD-PDF] Archivo PDF demasiado grande: " . ($pdfFile->getSize() / 1024 / 1024) . " MB");
+                return response()->json(['error' => 'El archivo PDF es demasiado grande (máximo 50MB)'], 400);
+            }
+
+            // Crear directorio para el proyecto si no existe (mantener consistencia con generatePDF)
+            $projectDirectory = "images/pdf/{$projectId}";
+            if (!Storage::exists($projectDirectory)) {
+                Storage::makeDirectory($projectDirectory);
+                Log::info("📁 [UPLOAD-PDF] Directorio creado: {$projectDirectory}");
+            }
+
+            // Generar nombre del archivo PDF (mantener consistencia con generatePDF)
+            $filename = "{$projectId}.pdf";
+            $pdfPath = "{$projectDirectory}/{$filename}";
+
+            // Eliminar PDF anterior si existe
+            if (Storage::exists($pdfPath)) {
+                Storage::delete($pdfPath);
+                Log::info("🗑️ [UPLOAD-PDF] PDF anterior eliminado: {$pdfPath}");
+            }
+
+            // Guardar el nuevo PDF
+            $savedPath = $pdfFile->storeAs($projectDirectory, $filename);
+            
+            if ($savedPath) {
+                // Obtener información del archivo guardado
+                $fileSize = Storage::size($savedPath);
+                $pagesCount = $request->get('pages_count', 0);
+
+                Log::info("✅ [UPLOAD-PDF] PDF guardado exitosamente:", [
+                    'path' => $savedPath,
+                    'size' => round($fileSize / 1024 / 1024, 2) . ' MB',
+                    'pages' => $pagesCount
+                ]);
+
+                // Actualizar el proyecto con información del PDF
+                $project->update([
+                    'pdf_generated' => true,
+                    'pdf_path' => $savedPath,
+                    'pdf_size' => $fileSize,
+                    'pdf_pages_count' => $pagesCount,
+                    'pdf_generated_at' => now(),
+                    'pdf_generation_method' => 'frontend'
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'PDF subido y guardado exitosamente',
+                    'pdf_info' => [
+                        'path' => $savedPath,
+                        'size' => round($fileSize / 1024 / 1024, 2) . ' MB',
+                        'pages' => $pagesCount,
+                        'generated_at' => now()->toISOString(),
+                        'method' => 'frontend'
+                    ]
+                ]);
+
+            } else {
+                Log::error("❌ [UPLOAD-PDF] Error guardando archivo PDF");
+                return response()->json(['error' => 'Error guardando archivo PDF'], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error("❌ [UPLOAD-PDF] Error: " . $e->getMessage());
+            return response()->json(['error' => 'Error procesando PDF: ' . $e->getMessage()], 500);
+        }
+    }
 }

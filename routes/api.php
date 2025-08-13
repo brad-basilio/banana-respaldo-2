@@ -259,6 +259,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/projects/{projectId}/pdf-info', [App\Http\Controllers\Api\ProjectPDFController::class, 'getPDFInfo']);
     Route::get('/projects/{projectId}/download-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'downloadPDF']);
     
+    // 🚀 Ruta para recibir PDF generado en frontend
+    Route::post('/projects/{projectId}/upload-pdf', [App\Http\Controllers\Api\ProjectPDFController::class, 'uploadPDF']);
+    
     // 🛒 Rutas para carrito con PDFs backend
     Route::post('/cart/process-pdfs', [CartPDFController::class, 'processCartPDFs']);
     Route::post('/cart/check-pdf-status', [CartPDFController::class, 'checkCartPDFStatus']);
