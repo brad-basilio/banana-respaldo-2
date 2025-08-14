@@ -573,9 +573,12 @@ const BookPreviewModal = ({
             console.log('📦 [FRONTEND-PDF] Verificando jsPDF:', typeof jsPDF);
 
             // Configurar dimensiones del PDF (usar las del workspace)
-            const pdfWidthMm = workspaceDimensions.originalWidth || 210;
-            const pdfHeightMm = workspaceDimensions.originalHeight || 297;
+            const pdfWidthMm4 = workspaceDimensions.originalWidth || 210;
+            const pdfHeightMm4 = workspaceDimensions.originalHeight || 297;
 
+            // Configurar dimensiones del PDF (usar las del workspace)
+            const pdfWidthMm = pdfWidthMm4/4;
+            const pdfHeightMm = pdfHeightMm4/4;
             console.log('📐 [FRONTEND-PDF] Dimensiones PDF:', pdfWidthMm + 'mm x ' + pdfHeightMm + 'mm');
 
             // Crear PDF
