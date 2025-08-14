@@ -577,8 +577,8 @@ const BookPreviewModal = ({
             const pdfHeightMm4 = workspaceDimensions.originalHeight || 297;
 
             // Configurar dimensiones del PDF (usar las del workspace)
-            const pdfWidthMm = pdfWidthMm4/4;
-            const pdfHeightMm = pdfHeightMm4/4;
+            const pdfWidthMm = pdfWidthMm4/6;
+            const pdfHeightMm = pdfHeightMm4/6;
             console.log('📐 [FRONTEND-PDF] Dimensiones PDF:', pdfWidthMm + 'mm x ' + pdfHeightMm + 'mm');
 
             // Crear PDF

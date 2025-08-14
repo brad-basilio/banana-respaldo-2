@@ -2245,8 +2245,8 @@ export default function EditorLibro() {
         // Si hay preset con dimensiones, usar esas dimensiones
         if (presetData?.width && presetData?.height) {
             // Las dimensiones vienen en centímetros desde la base de datos
-            let widthCm = presetData.width;
-            let heightCm = presetData.height;
+            let widthCm = presetData.width*6;
+            let heightCm = presetData.height*6;
             let widthPx = widthCm * 37.8; // Conversión aproximada cm a px (300 DPI)
             let heightPx = heightCm * 37.8;
 
