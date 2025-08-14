@@ -20,8 +20,8 @@ export default function EditableCell({
 }) {
     // 📏 CONFIGURACIÓN DE VALIDACIÓN DE IMÁGENES
     const IMAGE_VALIDATION = {
-        maxSizeBytes: 2 * 1024 * 1024, // 2MB en bytes
-        maxSizeMB: 2,
+        maxSizeBytes: 10 * 1024 * 1024, // 10MB en bytes
+        maxSizeMB: 10,
         allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
     };
 

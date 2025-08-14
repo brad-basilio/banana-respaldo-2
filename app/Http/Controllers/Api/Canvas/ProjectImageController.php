@@ -447,7 +447,7 @@ class ProjectImageController extends Controller
     {
         try {
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp',
                 'projectId' => 'required|string',
             ]);
 
