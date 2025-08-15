@@ -3702,6 +3702,7 @@ export default function EditorLibro() {
 
     // Función para manejar la carga de imágenes (OPTIMIZADA)
     const handleImageUpload = useCallback(async (event) => {
+        console.log('aqui entro ')
         const file = event.target.files[0];
         if (!file || !projectData?.id) return;
 
@@ -3730,8 +3731,53 @@ export default function EditorLibro() {
         // 🚀 OPTIMIZACIÓN: Añadir al canvas inmediatamente para mejor UX
         addImageElement(imageUrl);
 
+         const { height, width, dpi } = projectData.canvas_preset;
+        const maxSizeMm = Math.max(height, width);
+        const maxSizePx = Math.round((maxSizeMm * dpi) / 25.4);
+
+        // Function to resize image if needed
+        const resizeImageIfNeeded = async (file) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxImageDimension = Math.max(img.width, img.height);
+
+                    // If image is smaller than maxSizePx, return original file
+                    if (maxImageDimension <= maxSizePx) {
+                        URL.revokeObjectURL(img.src);
+                        resolve(file);
+                        return;
+                    }
+
+                    // Calculate new dimensions maintaining aspect ratio
+                    const scale = maxSizePx / maxImageDimension;
+                    const newWidth = Math.round(img.width * scale);
+                    const newHeight = Math.round(img.height * scale);
+
+                    // Create canvas for resizing
+                    const canvas = document.createElement('canvas');
+                    canvas.width = newWidth;
+                    canvas.height = newHeight;
+
+                    // Draw and resize image
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+                    // Convert to blob
+                    canvas.toBlob((blob) => {
+                        URL.revokeObjectURL(img.src);
+                        resolve(new File([blob], file.name, { type: file.type }));
+                    }, file.type);
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        };
+
+        const fileToUpload = await resizeImageIfNeeded(file)
+
         const formData = new FormData();
-        formData.append('image', file);
+        // formData.append('image', file);
+        formData.append('image', fileToUpload);
         formData.append('projectId', projectData.id);
 
         try {
@@ -3749,11 +3795,13 @@ export default function EditorLibro() {
                 // 🚀 OPTIMIZACIÓN: Reemplazar imagen temporal con la real
                 const finalImage = {
                     id: result.id || Date.now(),
-                    filename: file.name,
+                    // filename: file.name,
+                    filename: fileToUpload.name,
                     url: result.url,
                     thumbnail_url: result.thumbnail_url || result.url,
                     has_thumbnail: result.has_thumbnail || false,
-                    size: file.size,
+                    // size: file.size,
+                    size: fileToUpload.size,
                     last_modified: Date.now() / 1000,
                     created_at: new Date().toISOString()
                 };

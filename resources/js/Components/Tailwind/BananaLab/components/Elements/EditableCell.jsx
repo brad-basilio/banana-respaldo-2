@@ -60,7 +60,52 @@ export default function EditableCell({
         console.log(`📤 [UPLOAD] Iniciando upload de imagen: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
 
         // 🔍 VALIDAR ARCHIVO ANTES DE SUBIR
-        const validation = validateImageFile(file);
+        // Calculate maximum preset size in pixels
+        const { height, width, dpi } = projectData.canvas_preset;
+        const maxSizeMm = Math.max(height, width);
+        const maxSizePx = Math.round((maxSizeMm * dpi) / 25.4);
+
+        // Function to resize image if needed
+        const resizeImageIfNeeded = async (file) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxImageDimension = Math.max(img.width, img.height);
+                    
+                    // If image is smaller than maxSizePx, return original file
+                    if (maxImageDimension <= maxSizePx) {
+                        URL.revokeObjectURL(img.src);
+                        resolve(file);
+                        return;
+                    }
+
+                    // Calculate new dimensions maintaining aspect ratio
+                    const scale = maxSizePx / maxImageDimension;
+                    const newWidth = Math.round(img.width * scale);
+                    const newHeight = Math.round(img.height * scale);
+
+                    // Create canvas for resizing
+                    const canvas = document.createElement('canvas');
+                    canvas.width = newWidth;
+                    canvas.height = newHeight;
+                    
+                    // Draw and resize image
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, newWidth, newHeight);
+                    
+                    // Convert to blob
+                    canvas.toBlob((blob) => {
+                        URL.revokeObjectURL(img.src);
+                        resolve(new File([blob], file.name, { type: file.type }));
+                    }, file.type);
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        };
+
+        const fileToUpload = await resizeImageIfNeeded(file)
+
+        const validation = validateImageFile(fileToUpload);
 
         if (!validation.isValid) {
             console.error('❌ [VALIDATION] Archivo inválido:', validation.errors);
@@ -77,7 +122,8 @@ export default function EditableCell({
 
         // 🚀 SUBIR ARCHIVO VALIDADO
         const formData = new FormData();
-        formData.append('image', file);
+        // formData.append('image', file);
+        formData.append('image', fileToUpload);
         formData.append('projectId', projectData.id);
 
         // Mostrar toast de progreso
@@ -207,11 +253,11 @@ export default function EditableCell({
 
                 // Mostrar información sobre límites si hay archivos grandes
                 const largeFiles = files.filter(file => file.size > IMAGE_VALIDATION.maxSizeBytes);
-              /*  if (largeFiles.length > 0) {
-                    toast.warning(`⚠️ ${largeFiles.length} imagen(es) exceden el límite de ${IMAGE_VALIDATION.maxSizeMB}MB y serán rechazadas`, {
-                        duration: 6000
-                    });
-                }*/
+                /*  if (largeFiles.length > 0) {
+                      toast.warning(`⚠️ ${largeFiles.length} imagen(es) exceden el límite de ${IMAGE_VALIDATION.maxSizeMB}MB y serán rechazadas`, {
+                          duration: 6000
+                      });
+                  }*/
 
                 // Procesar archivos uno por uno
                 let successCount = 0;
