@@ -59,19 +59,18 @@ export default function LayoutSelector({ currentLayoutId, onLayoutChange }) {
                             <div
                                 className={`w-full h-full grid ${layout.template}`}
                                 style={{
-                                    gap: '2px',
-                                    padding: '4px'
+                                    gap:  '4px',
+                                    padding: '0px'
                                 }}
                             >
                                 {Array.from({ length: layout.cells }).map((_, i) => (
                                     <div
                                         key={i}
-                                        className={`bg-gradient-to-br from-purple-100 to-purple-200 ${layout.cellStyles?.[i]?.includes('rounded')
-                                                ? 'rounded'
-                                                : 'rounded-sm'
-                                            }`}
+                                        className={`bg-gradient-to-br from-purple-100 to-purple-200 ${layout.cellStyles?.[i] || ''}`}
                                         style={{
-                                            minHeight: '8px'
+                                            minHeight: '8px',
+                                            gridColumn: layout.cellStyles?.[i]?.includes('col-span') ? undefined : undefined,
+                                            gridRow: layout.cellStyles?.[i]?.includes('row-span') ? undefined : undefined
                                         }}
                                     />
                                 ))}
