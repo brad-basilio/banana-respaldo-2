@@ -2245,8 +2245,8 @@ export default function EditorLibro() {
         // Si hay preset con dimensiones, usar esas dimensiones
         if (presetData?.width && presetData?.height) {
             // Las dimensiones vienen en centímetros desde la base de datos
-            let widthCm = presetData.width*6;
-            let heightCm = presetData.height*6;
+            let widthCm = presetData.width * 6;
+            let heightCm = presetData.height * 6;
             let widthPx = widthCm * 37.8; // Conversión aproximada cm a px (300 DPI)
             let heightPx = heightCm * 37.8;
 
@@ -2735,6 +2735,11 @@ export default function EditorLibro() {
                                     const containerAspect = containerWidth / containerHeight;
                                     const imageAspect = naturalWidth / naturalHeight;
 
+                                    const maxContainer = Math.max(containerWidth, containerHeight)
+                                    const maxOriginal = Math.max(naturalWidth, naturalHeight)
+
+                                    const scaleFactor = maxOriginal / maxContainer
+
                                     let cropWidth, cropHeight, cropX, cropY;
                                     let displayWidth, displayHeight;
 
@@ -2758,8 +2763,8 @@ export default function EditorLibro() {
 
                                     // Crear canvas temporal para el recorte
                                     const tempCanvas = clonedDoc.createElement('canvas');
-                                    tempCanvas.width = containerWidth;
-                                    tempCanvas.height = containerHeight;
+                                    tempCanvas.width = containerWidth * scaleFactor;
+                                    tempCanvas.height = containerHeight * scaleFactor;
                                     const tempCtx = tempCanvas.getContext('2d');
 
                                     // Crear nueva imagen para el canvas
@@ -2772,7 +2777,7 @@ export default function EditorLibro() {
                                             tempCtx.drawImage(
                                                 tempImg,
                                                 cropX, cropY, cropWidth, cropHeight,  // Source rectangle (crop)
-                                                0, 0, containerWidth, containerHeight  // Destination rectangle
+                                                0, 0, containerWidth * scaleFactor, containerHeight * scaleFactor  // Destination rectangle
                                             );
 
                                             // 🚀 Convertir a máxima calidad 4K
@@ -3006,7 +3011,7 @@ export default function EditorLibro() {
                 }
 
                 // Convertir a dataURL con la calidad apropiada
-                dataUrl = canvas.toDataURL('image/png', quality);
+                dataUrl = canvas.toDataURL('image/png', 2);
 
                 if (!isProduction) {
                     //continue producction
@@ -3355,6 +3360,7 @@ export default function EditorLibro() {
                 setCurrentPage(originalPage);
             }
 
+            console.log('canvas 3363')
             return canvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
 
         } catch (error) {
@@ -6682,7 +6688,7 @@ export default function EditorLibro() {
 
             // 🎯 REDIRECCIÓN AUTOMÁTICA AL CARRITO
             console.log('✅ [CART] Álbum agregado exitosamente, redirigiendo al carrito...');
-            
+
             // Usar timeout para permitir que las notificaciones se muestren
             setTimeout(() => {
                 console.log('🔄 [CART] Ejecutando redirección a /cart');
