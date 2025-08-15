@@ -1,6 +1,6 @@
 // Definimos los layouts con estilos avanzados y tendencias modernas para álbumes de fotos
 export const layouts = [
-    // LAYOUTS BÁSICOS PARA COMPATIBILIDAD
+    // LAYOUTS BÁSICOS PARA COMPATIBILIDAD LAYOUT
     {
         id: "layout-1",
         name: "Básico - Una Celda",
