@@ -399,7 +399,9 @@ const generateThumbnailForComplexLayout = async (pageData, workspaceDimensions, 
         });
 
         if (canvas) {
-            return canvas.toDataURL('image/png', 0.9);
+            const dataURL = canvas.toDataURL('image/png', 0.9);
+            // console.log('th [402]:', dataURL)
+            return dataURL
         }
 
         return null;
@@ -2782,6 +2784,7 @@ export default function EditorLibro() {
 
                                             // 🚀 Convertir a máxima calidad 4K
                                             const croppedDataUrl = tempCanvas.toDataURL('image/png', 1.0);
+                                            // console.log('th [2786]:', croppedDataUrl)
 
                                             // Aplicar la imagen pre-procesada
                                             img.src = croppedDataUrl;
@@ -3012,6 +3015,7 @@ export default function EditorLibro() {
 
                 // Convertir a dataURL con la calidad apropiada
                 dataUrl = canvas.toDataURL('image/png', 2);
+                // console.log('th [3017]:', dataUrl)
 
                 if (!isProduction) {
                     //continue producction
@@ -3078,6 +3082,7 @@ export default function EditorLibro() {
                     return canvas;
                 } else {
                     const fallbackDataUrl = canvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
+                    // console.log('th [3084]:', fallbackDataUrl)
                     return fallbackDataUrl;
                 }
             } catch (fallbackError) {
@@ -3346,6 +3351,7 @@ export default function EditorLibro() {
                 ctx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
 
                 const dataUrl = resizeCanvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
+                // console.log('th [3353]:', dataUrl)
 
                 // Restaurar página original
                 if (pageIndex !== originalPage) {
@@ -3360,8 +3366,9 @@ export default function EditorLibro() {
                 setCurrentPage(originalPage);
             }
 
-            console.log('canvas 3363')
-            return canvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
+            const dataURL = canvas.toDataURL('image/png', 1.0); // 🚀 Máxima calidad
+            // console.log('th [3369]:', dataURL)
+            return dataURL
 
         } catch (error) {
             console.error('❌ Error generando thumbnail de alta calidad:', error);
@@ -3731,7 +3738,7 @@ export default function EditorLibro() {
         // 🚀 OPTIMIZACIÓN: Añadir al canvas inmediatamente para mejor UX
         addImageElement(imageUrl);
 
-         const { height, width, dpi } = projectData.canvas_preset;
+        const { height, width, dpi } = projectData.canvas_preset;
         const maxSizeMm = Math.max(height, width);
         const maxSizePx = Math.round((maxSizeMm * dpi) / 50.8);
 
@@ -6529,11 +6536,12 @@ export default function EditorLibro() {
                     }
 
                     const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+                    // console.log('th [6539]:', thumbnail)
 
-                    setPageThumbnails(prev => ({
-                        ...prev,
-                        [page.id]: thumbnail
-                    }));
+                    // setPageThumbnails(prev => ({
+                    //     ...prev,
+                    //     [page.id]: thumbnail
+                    // }));
 
 
                     // Pausa entre generaciones
@@ -7064,6 +7072,7 @@ export default function EditorLibro() {
 
                         // 🖨️ CALIDAD PROFESIONAL: PNG sin compresión para impresión
                         const imgData = canvas.toDataURL('image/png', 1.0);
+                        // console.log('th [7074]:', imgData)
 
                         // Agregar página si no es la primera
                         if (i > 0) {
